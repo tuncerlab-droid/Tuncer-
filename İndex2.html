@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TUNCER ZEKA - V10 PRO ANIMATED</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://js.puter.com/v2/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+    <style>
+        :root { --neon: #ffffff; --glow: 0 0 20px rgba(255, 255, 255, 0.6); --accent: #00d4ff; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; color: white; }
+
+        /* Arka Plan */
+        #video-bg { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; filter: brightness(0.6); transition: 1s; }
+        #vision-canvas { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+
+        /* Gelişmiş Animasyonlu Pencereler */
+        .window {
+            position: absolute; z-index: 10; padding: 20px;
+            background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 20px; backdrop-filter: blur(20px); box-shadow: var(--glow);
+            visibility: hidden; opacity: 0; transform: translateY(30px) scale(0.9);
+            transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .window.active { visibility: visible; opacity: 1; transform: translateY(0) scale(1); border-color: var(--neon); }
+
+        #win-harita { top: 50%; left: 50%; margin-left: -160px; margin-top: -160px; width: 320px; height: 320px; border-radius: 50%; overflow: hidden; box-shadow: 0 0 50px rgba(0,212,255,0.3); }
+        #win-info { top: 20px; width: calc(100% - 40px); left: 20px; display: flex; justify-content: space-between; border: none; background: none; box-shadow: none; visibility: visible; opacity: 1; transform: none; }
+        
+        .info-card { 
+            background: rgba(255,255,255,0.1); padding: 12px 25px; border-radius: 15px; 
+            border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(15px);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+
+        /* AI Ses Dalgası */
+        #ai-status { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%); z-index: 20; text-align: center; width: 100%; }
+        .wave-container { display: flex; justify-content: center; align-items: center; height: 50px; gap: 5px; }
+        .wave { width: 4px; height: 15px; background: var(--accent); border-radius: 2px; transition: 0.3s; }
+        .wave.speaking { animation: wave-anim 0.5s ease-in-out infinite; background: var(--neon); }
+
+        @keyframes wave-anim { 0%, 100% { height: 10px; } 50% { height: 45px; } }
+
+        /* Başlangıç Ekranı (Loader) */
+        #loader { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 1s; }
+        .scan-line { width: 200px; height: 2px; background: var(--accent); box-shadow: 0 0 15px var(--accent); position: relative; overflow: hidden; margin-top: 20px; }
+        .scan-line::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: white; animation: scan 2s infinite; }
+        @keyframes scan { 100% { left: 100%; } }
+
+        #boot-btn { 
+            margin-top: 30px; padding: 15px 50px; border: 1px solid var(--accent); 
+            background: rgba(0, 212, 255, 0.1); color: var(--accent); cursor: pointer;
+            font-weight: bold; letter-spacing: 2px; display: none; transition: 0.3s;
+        }
+        #boot-btn:hover { background: var(--accent); color: black; box-shadow: 0 0 30px var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div id="loader">
+        <h1 style="letter-spacing: 12px; margin: 0; font-weight: 300;">TUNCER <span style="font-weight: 800; color: var(--accent);">ZEKA</span></h1>
+        <div class="scan-line"></div>
+        <p id="status" style="font-size: 10px; margin-top: 15px; letter-spacing: 2px; opacity: 0.7;">MODÜLLER BAŞLATILIYOR...</p>
+        <button id="boot-btn" onclick="startSystem()">SİSTEME GİRİŞ YAP</button>
+    </div>
+
+    <video id="video-bg" autoplay playsinline></video>
+    <canvas id="vision-canvas"></canvas>
+
+    <div id="win-info" class="window">
+        <div class="info-card" style="animation-delay: 0s;"><b>$</b> 32.15 | <b>€</b> 34.80</div>
+        <div class="info-card" style="animation-delay: 0.5s;">GÜNEŞLİ 24°C</div>
+    </div>
+
+    <div id="win-harita" class="window"></div>
+
+    <div id="ai-status">
+        <div class="wave-container" id="waves">
+            <div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div><div class="wave"></div>
+        </div>
+        <div id="log" style="margin-top: 15px; font-size: 14px; letter-spacing: 1px; opacity: 0.8;">SİSTEM BEKLEMEDE...</div>
+    </div>
+
+    <script>
+        let map, visionModel, userPos = {lat: 41.0082, lon: 28.9784}, isScanning = false;
+        const waves = document.querySelectorAll('.wave');
+
+        // Adım 1: Modülleri Önceden Yükle (Takılmayı Önler)
+        async function init() {
+            try {
+                visionModel = await cocoSsd.load();
+                updateStatus("GÖRSEL ZEKA YÜKLENDİ");
+                
+                // Konum bilgisini hemen al
+                navigator.geolocation.getCurrentPosition(p => { 
+                    userPos.lat = p.coords.latitude; userPos.lon = p.coords.longitude; 
+                    updateStatus("GPS BAĞLANTISI AKTİF");
+                });
+
+                setTimeout(() => {
+                    document.getElementById('boot-btn').style.display = "block";
+                    updateStatus("TÜM SİSTEMLER HAZIR");
+                }, 1000);
+            } catch (e) {
+                updateStatus("BAĞLANTI HATASI!");
+            }
+        }
+
+        function updateStatus(msg) {
+            document.getElementById('status').innerText = msg;
+        }
+
+        // Adım 2: Sistemi Başlat
+        async function startSystem() {
+            document.getElementById('loader').style.opacity = "0";
+            setTimeout(() => document.getElementById('loader').style.display = "none", 1000);
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+            document.getElementById('video-bg').srcObject = stream;
+            
+            sesliKonus("Hoş geldiniz patron. Tuncer Zeka V10 kontrolünüzde.");
+            startVoiceEngine();
+        }
+
+        // Adım 3: Sesli Zeka (Puter AI Destekli)
+        function startVoiceEngine() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = 'tr-TR';
+            recognition.continuous = true;
+
+            recognition.onresult = async (event) => {
+                const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                document.getElementById('log').innerText = text.toUpperCase();
+
+                if (text.includes("tuncer")) {
+                    setWaves(true);
+                    await handleCommand(text);
+                    setWaves(false);
+                }
+            };
+            recognition.start();
+        }
+
+        async function handleCommand(userText) {
+            const prompt = `Kullanıcı: "${userText}". Eylemler: MAP_OPEN, MAP_CLOSE, SCAN_ON, SCAN_OFF, CHAT. Sadece anahtar kodu döndür.`;
+            const action = await puter.ai.chat(prompt);
+            const cmd = action.toString().trim();
+
+            if (cmd.includes("MAP_OPEN")) {
+                document.getElementById('win-harita').classList.add('active');
+                if(!map) initMap();
+                sesliKonus("Uydu haritası yansıtılıyor.");
+            } else if (cmd.includes("MAP_CLOSE")) {
+                document.getElementById('win-harita').classList.remove('active');
+            } else if (cmd.includes("SCAN_ON")) {
+                isScanning = true;
+                renderScan();
+                sesliKonus("Nesne tanımlama aktif.");
+            } else if (cmd.includes("SCAN_OFF")) {
+                isScanning = false;
+                sesliKonus("Tarayıcı kapatıldı.");
+            } else {
+                const reply = await puter.ai.chat(`Sen Tuncer Zeka'sın. Çok kısa cevap ver: ${userText}`);
+                sesliKonus(reply.toString());
+            }
+        }
+
+        function setWaves(active) {
+            waves.forEach((w, i) => {
+                if(active) {
+                    w.classList.add('speaking');
+                    w.style.animationDelay = (i * 0.1) + "s";
+                } else {
+                    w.classList.remove('speaking');
+                }
+            });
+        }
+
+        function initMap() {
+            map = L.map('win-harita', { zoomControl: false }).setView([userPos.lat, userPos.lon], 16);
+            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+            L.circleMarker([userPos.lat, userPos.lon], {color: '#00d4ff', radius: 10, fillOpacity: 0.8}).addTo(map);
+        }
+
+        async function renderScan() {
+            if (!isScanning) { 
+                const c = document.getElementById('vision-canvas');
+                c.getContext('2d').clearRect(0,0,c.width,c.height); 
+                return; 
+            }
+            const preds = await visionModel.detect(document.getElementById('video-bg'));
+            const c = document.getElementById('vision-canvas');
+            const cx = c.getContext('2d');
+            c.width = window.innerWidth; c.height = window.innerHeight;
+            cx.clearRect(0, 0, c.width, c.height);
+            preds.forEach(p => {
+                cx.strokeStyle = "#00d4ff"; cx.lineWidth = 2;
+                cx.strokeRect(...p.bbox);
+                cx.fillStyle = "white"; cx.font = "14px Segoe UI";
+                cx.fillText(p.class.toUpperCase(), p.bbox[0], p.bbox[1] - 5);
+            });
+            requestAnimationFrame(renderScan);
+        }
+
+        function sesliKonus(m) {
+            const u = new SpeechSynthesisUtterance(m);
+            u.lang = 'tr-TR';
+            u.onstart = () => setWaves(true);
+            u.onend = () => setWaves(false);
+            window.speechSynthesis.speak(u);
+        }
+
+        init();
+    </script>
+</body>
+</html>
