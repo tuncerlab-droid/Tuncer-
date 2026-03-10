@@ -98,4 +98,4 @@ app.get('*', (req, res) => {
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`TuncerLab Shop aktif: http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`TuncerLab Shop aktif: http://localhost:10000/`));
