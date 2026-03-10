@@ -14,8 +14,8 @@ let products = [
     { id: 1, name: "Mark-V Taktik Zırh", category: "savunma", price: 12500, stock: 10, image: "https://images.unsplash.com/photo-1590483736622-39da8af75bba?w=400" },
     { id: 2, name: "EM-4 Pulse Tüfeği", category: "savunma", price: 8900, stock: 5, image: "https://images.unsplash.com/photo-1595231712325-9fdec00518f2?w=400" },
     { id: 3, name: "Balistik Kask V3", category: "savunma", price: 3200, stock: 15, image: "https://images.unsplash.com/photo-1584386161274-91d1fcb00801?w=400" },
-    { id: 4, name: "Taktik Gece Görüş", category: "savunma", price: 15600, stock: 3, image: "https://images.unsplash.com/photo-1579227114347-15d08fc37cae?w=400" },
     { id: 5, name: "Sinyal Kesici Jammer", category: "savunma", price: 7800, stock: 8, image: "https://images.unsplash.com/photo-1558494949-ef010ccdcc32?w=400" },
+    { id: 4, name: "Taktik Gece Görüş", category: "savunma", price: 15600, stock: 3, image: "https://images.unsplash.com/photo-1579227114347-15d08fc37cae?w=400" },
     
     // Star Wars (5 Ürün)
     { id: 6, name: "Vader Legacy Kılıç", category: "starwars", price: 4500, stock: 12, image: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=400" },
@@ -33,12 +33,10 @@ let orders = [];
 
 // --- API ENDPOINTS ---
 
-// 1. Ürünleri Getir
 app.get('/api/products', (req, res) => {
     res.json(products);
 });
 
-// 2. Sipariş Ver
 app.post('/api/orders', (req, res) => {
     const newOrder = {
         id: "TL-" + Math.floor(Math.random() * 900000 + 100000), 
@@ -47,7 +45,6 @@ app.post('/api/orders', (req, res) => {
         date: new Date().toLocaleString('tr-TR')
     };
     
-    // Stokları düşür
     newOrder.items.forEach(cartItem => {
         const product = products.find(p => p.id === cartItem.id);
         if (product && product.stock > 0) {
@@ -59,18 +56,15 @@ app.post('/api/orders', (req, res) => {
     res.json({ success: true, orderId: newOrder.id });
 });
 
-// 3. Sipariş Takibi (Gmail ile)
 app.get('/api/orders/track/:email', (req, res) => {
     const userOrders = orders.filter(o => o.email.toLowerCase() === req.params.email.toLowerCase());
     res.json(userOrders);
 });
 
-// 4. Admin - Tüm Siparişleri Getir
 app.get('/api/admin/orders', (req, res) => {
     res.json(orders);
 });
 
-// 5. Admin - Sipariş Durumu Güncelle
 app.put('/api/admin/orders/:id/status', (req, res) => {
     const order = orders.find(o => o.id == req.params.id);
     if (order) {
@@ -81,7 +75,6 @@ app.put('/api/admin/orders/:id/status', (req, res) => {
     }
 });
 
-// 6. Admin - Stok Güncelle
 app.put('/api/products/:id/stock', (req, res) => {
     const product = products.find(p => p.id == req.params.id);
     if (product) {
@@ -92,11 +85,10 @@ app.put('/api/products/:id/stock', (req, res) => {
     }
 });
 
-// Herhangi bir tanımlanmayan rotada ana sayfayı gönder
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// PORT DEĞİŞİKLİĞİ BURADA YAPILDI
-const PORT = 10000;
+// Sunucu Portu: Çevresel değişken (PORT) varsa onu kullan, yoksa 10000'i kullan
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`TuncerLab Shop aktif: http://localhost:${PORT}`));
