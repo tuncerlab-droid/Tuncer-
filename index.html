@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuncerLab Shop | Premium</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Poppins:wght@300;400;600&display=swap');
+
+        :root {
+            --primary: #00e5ff;
+            --bg-dark: #0a0f16;
+            --glass-bg: rgba(20, 25, 35, 0.6);
+            --glass-border: rgba(0, 229, 255, 0.15);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.08), transparent 25%),
+                              radial-gradient(circle at 85% 30%, rgba(58, 123, 213, 0.08), transparent 25%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .heading-font { font-family: 'Orbitron', sans-serif; }
+
+        /* Premium Glassmorphism & Yumuşatılmış Köşeler */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.4) !important;
+            border: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 16px !important;
+            color: white !important;
+            padding: 14px 18px !important;
+            transition: border-color 0.3s;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+        }
+
+        /* Sekme (View) Geçiş Animasyonları (Çakışmayı önler) */
+        .view-section {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .view-section.active {
+            display: block;
+            animation: fadeInSlideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeInSlideUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Ürün Hover Efektleri */
+        .product-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(0, 229, 255, 0.5);
+            box-shadow: 0 15px 35px rgba(0, 229, 255, 0.1);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #00e5ff, #0077ff);
+            color: #000;
+            font-weight: bold;
+            border-radius: 16px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.03);
+            box-shadow: 0 10px 20px rgba(0, 229, 255, 0.3);
+        }
+
+        /* Toast Bildirim */
+        #toast {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #toast.show { bottom: 30px; }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Toast Bildirim -->
+    <div id="toast" class="glass-card px-8 py-4 text-center font-bold tracking-wide shadow-2xl border-cyan-500/50"></div>
+
+    <!-- Üst Menü -->
+    <nav class="glass-card mx-4 mt-4 md:mx-10 md:mt-6 p-4 md:px-8 flex justify-between items-center z-50 sticky top-4">
+        <div class="heading-font font-black text-2xl md:text-3xl tracking-wider cursor-pointer flex items-center gap-2" onclick="switchView('shop')">
+            TUNCERLAB<span class="text-cyan-400">.</span>
+        </div>
+        
+        <!-- Desktop Menü -->
+        <div class="hidden md:flex items-center space-x-8 font-semibold text-sm tracking-widest">
+            <button onclick="switchView('shop')" class="hover:text-cyan-400 transition">MAĞAZA</button>
+            <button onclick="switchView('track')" class="hover:text-cyan-400 transition">TAKİP</button>
+            <button onclick="switchView('cart')" class="flex items-center gap-2 hover:text-cyan-400 transition">
+                SEPET <span id="cart-count" class="bg-cyan-400 text-black px-2 py-0.5 rounded-full text-xs">0</span>
+            </button>
+            <button onclick="openAdmin()" class="text-red-400 hover:text-red-300 ml-4">YÖNETİM</button>
+        </div>
+        
+        <!-- Mobil Menü Butonu (Basit) -->
+        <div class="md:hidden flex gap-4 text-sm font-bold">
+            <button onclick="switchView('cart')" class="text-cyan-400">SEPET (<span id="cart-count-mobile">0</span>)</button>
+            <button onclick="openAdmin()" class="text-red-400">ADMİN</button>
+        </div>
+    </nav>
+
+    <!-- Mobil Alt Menü Barı -->
+    <div class="md:hidden fixed bottom-0 w-full glass-card rounded-none rounded-t-3xl border-b-0 p-4 flex justify-around items-center z-50 text-xs font-bold tracking-wider">
+        <button onclick="switchView('shop')" class="hover:text-cyan-400">MAĞAZA</button>
+        <button onclick="switchView('track')" class="hover:text-cyan-400">TAKİP</button>
+    </div>
+
+    <!-- ANA İÇERİK ALANI -->
+    <main class="container mx-auto px-4 py-8 md:py-12 mb-20 md:mb-0">
+
+        <!-- 1. MAĞAZA GÖRÜNÜMÜ -->
+        <section id="view-shop" class="view-section active">
+            <!-- Kategoriler -->
+            <div class="flex flex-nowrap overflow-x-auto gap-3 mb-10 pb-4 scrollbar-hide justify-start md:justify-center">
+                <button onclick="filterCat('tümü', this)" class="cat-btn glass-card px-8 py-3 text-sm font-bold border-cyan-400 text-cyan-400">Tümü</button>
+                <button onclick="filterCat('savunma', this)" class="cat-btn glass-card px-8 py-3 text-sm font-bold opacity-70 hover:opacity-100">Savunma</button>
+                <button onclick="filterCat('starwars', this)" class="cat-btn glass-card px-8 py-3 text-sm font-bold opacity-70 hover:opacity-100">Star Wars</button>
+                <button onclick="filterCat('teknoloji', this)" class="cat-btn glass-card px-8 py-3 text-sm font-bold opacity-70 hover:opacity-100">Teknoloji</button>
+            </div>
+
+            <!-- Ürün Grid -->
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+                <!-- JS ile yüklenecek -->
+            </div>
+        </section>
+
+        <!-- 2. SEPET VE ÖDEME GÖRÜNÜMÜ -->
+        <section id="view-cart" class="view-section">
+            <div class="flex flex-col lg:flex-row gap-8">
+                <!-- Sepetteki Ürünler -->
+                <div class="w-full lg:w-3/5">
+                    <h2 class="heading-font text-3xl mb-6">Alışveriş Sepeti</h2>
+                    <div id="cart-list" class="space-y-4"></div>
+                </div>
+                
+                <!-- Ödeme Formu -->
+                <div class="w-full lg:w-2/5">
+                    <div class="glass-card p-6 md:p-8">
+                        <h3 class="heading-font text-xl mb-6 text-cyan-400">Teslimat & Onay</h3>
+                        <form id="checkout-form" onsubmit="submitOrder(event)" class="space-y-4">
+                            <input type="text" id="c-name" placeholder="Ad Soyad" required class="w-full glass-input">
+                            <input type="email" id="c-email" placeholder="Gmail Adresiniz" required class="w-full glass-input">
+                            <div class="flex gap-4">
+                                <input type="text" id="c-city" placeholder="İl" required class="w-1/2 glass-input">
+                                <input type="text" id="c-dist" placeholder="İlçe" required class="w-1/2 glass-input">
+                            </div>
+                            <textarea id="c-addr" placeholder="Açık Adresinizi giriniz" rows="3" required class="w-full glass-input"></textarea>
+                            
+                            <!-- Toplam Fiyat & Bilgi -->
+                            <div class="bg-cyan-900/20 border border-cyan-500/30 rounded-2xl p-4 mt-6">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-gray-400">Ara Toplam:</span>
+                                    <span id="cart-total" class="font-bold text-lg">0 TL</span>
+                                </div>
+                                <div class="text-xs text-cyan-300 text-center mt-2 p-2 bg-black/30 rounded-xl">
+                                    Sadece <b>KAPIDA ÖDEME</b> (Nakit veya Temassız)
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full btn-primary py-4 text-lg mt-4 heading-font tracking-wider">SİPARİŞİ TAMAMLA</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. SİPARİŞ TAKİP GÖRÜNÜMÜ -->
+        <section id="view-track" class="view-section">
+            <div class="max-w-2xl mx-auto text-center mt-10">
+                <div class="glass-card p-8 md:p-12">
+                    <h2 class="heading-font text-3xl mb-4 text-cyan-400">SİPARİŞİNİ BUL</h2>
+                    <p class="text-sm text-gray-400 mb-8">Sipariş oluştururken kullandığınız Gmail adresini girin.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 mb-10">
+                        <input type="email" id="track-email" placeholder="ornek@gmail.com" class="flex-1 glass-input text-center md:text-left">
+                        <button onclick="trackOrder()" class="btn-primary px-8 py-3 md:py-0">SORGULA</button>
+                    </div>
+
+                    <div id="track-results" class="space-y-4 text-left"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. ADMIN PANELİ GÖRÜNÜMÜ -->
+        <section id="view-admin" class="view-section">
+            <div class="glass-card p-6 md:p-10 border-red-500/30">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-white/10 pb-6 gap-4">
+                    <h2 class="heading-font text-2xl md:text-3xl text-red-400">ADMİN MERKEZİ</h2>
+                    <div class="flex gap-4">
+                        <button onclick="toggleAdminTab('orders')" id="tab-btn-orders" class="text-sm font-bold text-cyan-400 pb-1 border-b-2 border-cyan-400">SİPARİŞLER</button>
+                        <button onclick="toggleAdminTab('stock')" id="tab-btn-stock" class="text-sm font-bold text-gray-500 pb-1">STOK YÖNETİMİ</button>
+                    </div>
+                </div>
+
+                <!-- Admin Siparişler Listesi -->
+                <div id="admin-orders-tab" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="text-xs text-gray-400 border-b border-white/10 uppercase tracking-wider">
+                                <th class="pb-4 font-normal">Sipariş / Tarih</th>
+                                <th class="pb-4 font-normal">Müşteri Detayı</th>
+                                <th class="pb-4 font-normal">Tutar & Ürünler</th>
+                                <th class="pb-4 font-normal">Durum</th>
+                                <th class="pb-4 font-normal">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-order-list" class="divide-y divide-white/5"></tbody>
+                    </table>
+                </div>
+
+                <!-- Admin Stok Listesi -->
+                <div id="admin-stock-tab" class="hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Stoklar JS ile buraya -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Sunucu API Rotası
+        const API = '/api'; 
+        let products = [];
+        let cart = [];
+
+        // Sayfa yüklendiğinde çalışacaklar
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+        });
+
+        // ------------------
+        // GENEL UI/UX İŞLEMLERİ
+        // ------------------
+        function switchView(viewName) {
+            // Tüm sekmeleri kapat (çakışmayı önler)
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            
+            // İstenen sekmeyi küçük bir gecikmeyle aç (Animasyonun pürüzsüz olması için)
+            setTimeout(() => {
+                document.getElementById(`view-${viewName}`).classList.add('active');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }, 50);
+
+            // Gerekli verileri tazele
+            if(viewName === 'cart') renderCart();
+            if(viewName === 'admin') loadAdminData();
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.style.backgroundColor = isError ? 'rgba(220, 38, 38, 0.9)' : 'rgba(0, 229, 255, 0.9)';
+            t.style.color = isError ? '#fff' : '#000';
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // ------------------
+        // MAĞAZA VE ÜRÜNLER
+        // ------------------
+        async function fetchProducts() {
+            try {
+                const response = await fetch(`${API}/products`);
+                products = await response.json();
+                renderProducts(products);
+            } catch (err) {
+                console.error("API Bağlantı Hatası:", err);
+                showToast("Sunucuya bağlanılamadı!", true);
+            }
+        }
+
+        function renderProducts(list) {
+            const grid = document.getElementById('product-grid');
+            grid.innerHTML = '';
+            
+            list.forEach(p => {
+                const inStock = p.stock > 0;
+                grid.innerHTML += `
+                    <div class="glass-card product-card p-4 flex flex-col relative overflow-hidden group">
+                        <!-- Stok Etiketi -->
+                        <div class="absolute top-6 right-6 z-10 px-3 py-1 rounded-full text-[10px] font-bold shadow-lg ${inStock ? 'bg-black/70 text-cyan-400 backdrop-blur' : 'bg-red-500 text-white'}">
+                            ${inStock ? `${p.stock} Adet` : 'TÜKENDİ'}
+                        </div>
+                        
+                        <div class="h-48 md:h-56 mb-4 rounded-xl overflow-hidden relative bg-black/40">
+                            <img src="${p.image}" alt="${p.name}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition duration-500">
+                        </div>
+                        
+                        <h3 class="font-bold text-lg leading-tight mb-1">${p.name}</h3>
+                        <p class="text-cyan-400 font-black text-xl mb-5">${p.price.toLocaleString('tr-TR')} TL</p>
+                        
+                        <button onclick="addToCart(${p.id})" ${!inStock ? 'disabled' : ''} 
+                            class="mt-auto w-full py-3 rounded-xl font-bold tracking-widest text-sm transition-all
+                            ${inStock ? 'bg-white/10 hover:bg-cyan-400 hover:text-black' : 'bg-red-900/20 text-red-500/50 cursor-not-allowed'}">
+                            ${inStock ? 'SEPETE EKLE' : 'STOK YOK'}
+                        </button>
+                    </div>
+                `;
+            });
+        }
+
+        function filterCat(cat, btnElement) {
+            // Buton stillerini güncelle
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                b.classList.remove('border-cyan-400', 'text-cyan-400');
+                b.classList.add('opacity-70');
+            });
+            btnElement.classList.add('border-cyan-400', 'text-cyan-400');
+            btnElement.classList.remove('opacity-70');
+
+            // Listeyi filtrele
+            if (cat === 'tümü') renderProducts(products);
+            else renderProducts(products.filter(p => p.category === cat));
+        }
+
+        // ------------------
+        // SEPET İŞLEMLERİ
+        // ------------------
+        function addToCart(id) {
+            const item = products.find(x => x.id === id);
+            cart.push(item);
+            updateCartCount();
+            showToast(`${item.name} eklendi.`);
+        }
+
+        function updateCartCount() {
+            document.getElementById('cart-count').innerText = cart.length;
+            document.getElementById('cart-count-mobile').innerText = cart.length;
+        }
+
+        function renderCart() {
+            const list = document.getElementById('cart-list');
+            let total = 0;
+            
+            if (cart.length === 0) {
+                list.innerHTML = `<div class="glass-card p-12 text-center text-gray-500 font-bold">Sepetinizde ürün bulunmamaktadır.</div>`;
+                document.getElementById('cart-total').innerText = "0 TL";
+                return;
+            }
+
+            list.innerHTML = '';
+            cart.forEach((item, index) => {
+                total += item.price;
+                list.innerHTML += `
+                    <div class="glass-card p-4 flex items-center gap-4">
+                        <img src="${item.image}" class="w-16 h-16 rounded-xl object-cover">
+                        <div class="flex-1">
+                            <h4 class="font-bold text-sm md:text-base">${item.name}</h4>
+                            <p class="text-cyan-400 font-bold text-sm">${item.price.toLocaleString('tr-TR')} TL</p>
+                        </div>
+                        <button onclick="removeFromCart(${index})" class="p-2 bg-red-500/10 text-red-400 rounded-xl hover:bg-red-500 hover:text-white transition">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            });
+            document.getElementById('cart-total').innerText = total.toLocaleString('tr-TR') + " TL";
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartCount();
+            renderCart();
+        }
+
+        async function submitOrder(e) {
+            e.preventDefault();
+            if (cart.length === 0) return showToast("Sepetiniz boş!", true);
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerText = "İŞLENİYOR...";
+            btn.disabled = true;
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0);
+            const orderData = {
+                name: document.getElementById('c-name').value,
+                email: document.getElementById('c-email').value,
+                city: document.getElementById('c-city').value,
+                district: document.getElementById('c-dist').value,
+                address: document.getElementById('c-addr').value,
+                items: cart,
+                total: total
+            };
+
+            try {
+                const response = await fetch(`${API}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showToast("SİPARİŞ BAŞARILI! Kodunuz: " + data.orderId);
+                    cart = []; // Sepeti boşalt
+                    updateCartCount();
+                    e.target.reset(); // Formu sıfırla
+                    fetchProducts(); // Stokları güncellemek için ürünleri yeniden çek
+                    
+                    setTimeout(() => switchView('track'), 1500); // Takip sayfasına yönlendir
+                }
+            } catch (err) {
+                showToast("Sipariş verilirken bir hata oluştu.", true);
+            } finally {
+                btn.innerText = "SİPARİŞİ TAMAMLA";
+                btn.disabled = false;
+            }
+        }
+
+        // ------------------
+        // SİPARİŞ TAKİBİ
+        // ------------------
+        async function trackOrder() {
+            const email = document.getElementById('track-email').value;
+            if(!email) return showToast("Lütfen Gmail adresinizi girin.", true);
+
+            const resDiv = document.getElementById('track-results');
+            resDiv.innerHTML = '<div class="text-center text-cyan-400 animate-pulse">Sorgulanıyor...</div>';
+
+            try {
+                const res = await fetch(`${API}/orders/track/${email}`);
+                const orders = await res.json();
+                
+                if (orders.length === 0) {
+                    resDiv.innerHTML = `<div class="p-4 bg-red-900/20 border border-red-500/30 rounded-xl text-red-400 text-center">Bu e-posta adresine ait sipariş bulunamadı.</div>`;
+                    return;
+                }
+
+                resDiv.innerHTML = '';
+                // En son sipariş en üstte çıksın diye ters çevir
+                orders.reverse().forEach(o => {
+                    // Duruma göre renk belirleme
+                    let statusColor = "text-yellow-400 bg-yellow-400/10 border-yellow-400/30";
+                    if(o.status.includes('Teslim')) statusColor = "text-green-400 bg-green-400/10 border-green-400/30";
+                    if(o.status.includes('İptal')) statusColor = "text-red-400 bg-red-400/10 border-red-400/30";
+
+                    resDiv.innerHTML += `
+                        <div class="glass-card p-5 md:p-6 mb-4 relative overflow-hidden">
+                            <div class="flex flex-col md:flex-row justify-between md:items-center gap-4">
+                                <div>
+                                    <div class="text-xs text-gray-400 mb-1 font-mono">${o.id} • ${o.date}</div>
+                                    <h4 class="font-bold text-lg">${o.items.length} Ürün Alındı</h4>
+                                    <p class="text-cyan-400 font-black">${o.total.toLocaleString('tr-TR')} TL</p>
+                                </div>
+                                <div class="px-4 py-2 rounded-xl border font-bold text-sm tracking-widest text-center ${statusColor}">
+                                    ${o.status.toUpperCase()}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                showToast("Sorgulama hatası!", true);
+            }
+        }
+
+        // ------------------
+        // ADMIN PANELİ
+        // ------------------
+        function openAdmin() {
+            const pass = prompt("Güvenlik Duvarı Aktif. Lütfen Yönetici Şifresini Giriniz:");
+            if (pass === "175017") {
+                switchView('admin');
+            } else if (pass !== null) {
+                showToast("Erişim Reddedildi: Hatalı Şifre!", true);
+            }
+        }
+
+        function toggleAdminTab(tab) {
+            document.getElementById('admin-orders-tab').classList.toggle('hidden', tab !== 'orders');
+            document.getElementById('admin-stock-tab').classList.toggle('hidden', tab !== 'stock');
+            
+            document.getElementById('tab-btn-orders').className = tab === 'orders' ? 'text-sm font-bold text-cyan-400 pb-1 border-b-2 border-cyan-400' : 'text-sm font-bold text-gray-500 pb-1';
+            document.getElementById('tab-btn-stock').className = tab === 'stock' ? 'text-sm font-bold text-cyan-400 pb-1 border-b-2 border-cyan-400' : 'text-sm font-bold text-gray-500 pb-1';
+        }
+
+        async function loadAdminData() {
+            // 1. Siparişleri Yükle
+            try {
+                const res = await fetch(`${API}/admin/orders`);
+                const orders = await res.json();
+                const tbody = document.getElementById('admin-order-list');
+                tbody.innerHTML = '';
+                
+                orders.reverse().forEach(o => {
+                    // Duruma göre renk
+                    let sColor = o.status.includes('İptal') ? 'text-red-400' : (o.status.includes('Teslim') ? 'text-green-400' : 'text-yellow-400');
+                    
+                    tbody.innerHTML += `
+                        <tr class="hover:bg-white/5 transition border-b border-white/5">
+                            <td class="py-4 text-xs font-mono text-gray-400">${o.id}<br/>${o.date}</td>
+                            <td class="py-4 text-sm font-bold">${o.name}<br/><span class="text-xs text-cyan-400 font-normal">${o.email}</span><br/><span class="text-[10px] text-gray-500">${o.city}/${o.district}</span></td>
+                            <td class="py-4 text-sm"><span class="font-bold text-cyan-400">${o.total} TL</span><br/><span class="text-xs text-gray-400">${o.items.length} Ürün</span></td>
+                            <td class="py-4 font-bold text-xs tracking-wider ${sColor}">${o.status}</td>
+                            <td class="py-4">
+                                <select onchange="updateOrderStatus('${o.id}', this.value)" class="bg-black/50 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-cyan-400 outline-none">
+                                    <option value="" disabled selected>Düzenle</option>
+                                    <option value="Hazırlanıyor">Hazırlanıyor</option>
+                                    <option value="Kargoya Verildi">Kargoya Verildi</option>
+                                    <option value="Teslim Edildi">Teslim Edildi</option>
+                                    <option value="İptal Edildi">İptal Et</option>
+                                </select>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch(e) { console.error("Admin sipariş yükleme hatası"); }
+
+            // 2. Stokları Yükle (Admin Stock Tab)
+            const stockTab = document.getElementById('admin-stock-tab');
+            stockTab.innerHTML = '';
+            products.forEach(p => {
+                stockTab.innerHTML += `
+                    <div class="glass-card p-4 flex justify-between items-center bg-black/20">
+                        <div class="flex items-center gap-3">
+                            <img src="${p.image}" class="w-10 h-10 rounded-lg object-cover">
+                            <span class="text-sm font-bold line-clamp-1">${p.name}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" value="${p.stock}" min="0" onchange="updateStock(${p.id}, this.value)" class="w-16 bg-black/50 border border-white/20 rounded-lg p-1 text-center font-bold text-cyan-400 outline-none">
+                            <span class="text-xs text-gray-400">Adet</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function updateOrderStatus(id, newStatus) {
+            if(!newStatus) return;
+            try {
+                await fetch(`${API}/admin/orders/${id}/status`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ status: newStatus })
+                });
+                showToast("Sipariş durumu güncellendi.");
+                loadAdminData(); // Tabloyu yenile
+            } catch(e) { showToast("Güncelleme hatası!", true); }
+        }
+
+        async function updateStock(id, newStock) {
+            try {
+                await fetch(`${API}/products/${id}/stock`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ stock: newStock })
+                });
+                showToast("Stok başarıyla güncellendi.");
+                fetchProducts(); // Müşteri tarafındaki mağazayı da güncelle
+            } catch(e) { showToast("Stok güncelleme hatası!", true); }
+        }
+    </script>
+</body>
+</html>
