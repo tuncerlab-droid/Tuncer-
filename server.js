@@ -41,7 +41,7 @@ app.get('/api/products', (req, res) => {
 // 2. Sipariş Ver
 app.post('/api/orders', (req, res) => {
     const newOrder = {
-        id: "TL-" + Math.floor(Math.random() * 900000 + 100000), // TL-123456 formatında ID
+        id: "TL-" + Math.floor(Math.random() * 900000 + 100000), 
         ...req.body,
         status: "Hazırlanıyor",
         date: new Date().toLocaleString('tr-TR')
@@ -92,10 +92,11 @@ app.put('/api/products/:id/stock', (req, res) => {
     }
 });
 
-// Herhangi bir tanımlanmayan rotada ana sayfayı gönder (SPA desteği)
+// Herhangi bir tanımlanmayan rotada ana sayfayı gönder
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`TuncerLab Shop aktif: http://localhost:10000/`));
+// PORT DEĞİŞİKLİĞİ BURADA YAPILDI
+const PORT = 10000;
+app.listen(PORT, () => console.log(`TuncerLab Shop aktif: http://localhost:${PORT}`));
