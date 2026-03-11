@@ -13,7 +13,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- VERİ TABANI ---
 let products = [
-    { id: 1, name: "Mark-V Taktik Zırh", category: "savunma", price: 12500, stock: 10, image: "https://images.unsplash.com/photo-1590483736622-39da8af75bba?w=400" },
+    { id: 1, name: "tuncer fire shoter", category: "savunma", price: 12500, stock: 10, image: "https://images.unsplash.com/photo-1590483736622-39da8af75bba?w=400" },
     { id: 2, name: "EM-4 Pulse Tüfeği", category: "savunma", price: 8900, stock: 5, image: "https://images.unsplash.com/photo-1595231712325-9fdec00518f2?w=400" },
     { id: 3, name: "Balistik Kask V3", category: "savunma", price: 3200, stock: 15, image: "https://images.unsplash.com/photo-1584386161274-91d1fcb00801?w=400" },
     { id: 4, name: "Taktik Gece Görüş", category: "savunma", price: 15600, stock: 3, image: "https://images.unsplash.com/photo-1579227114347-15d08fc37cae?w=400" },
