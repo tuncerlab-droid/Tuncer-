@@ -63,7 +63,7 @@ app.put('/api/products/:id/stock', (req, res) => {
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 // --- RENDER PORT AYARI ---
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 10000;
 app.listen(port, () => {
     console.log(`Sunucu aktif: Port ${port}`);
 });
