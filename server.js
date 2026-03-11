@@ -18,10 +18,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // --- VERİ TABANI ---
 let products = [
-    { id: 1, name: "Mark-V Taktik Zırh", category: "savunma", price: 12500, stock: 10, image: "https://images.unsplash.com/photo-1590483736622-39da8af75bba?w=400" },
-    { id: 2, name: "EM-4 Pulse Tüfeği", category: "savunma", price: 8900, stock: 5, image: "https://images.unsplash.com/photo-1595231712325-9fdec00518f2?w=400" },
-    { id: 6, name: "Vader Legacy Kılıç", category: "starwars", price: 4500, stock: 12, image: "https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=400" },
-    { id: 11, name: "Holoprojector V2", category: "teknoloji", price: 4200, stock: 10, image: "https://images.unsplash.com/photo-1535223289827-42f1e9919769?w=400" }
+    { id: 1, name: "tuncer ateş atar", category: "savunma", price: 700, stock: 10, image: "" },
+    { id: 2, name: "flash pamuğu", category: "savunma", price: 250, stock: 5, image: "https://ibb.co/mFDWP4mX" },
+    { id: 6, name: "tuncer zeka pro", category: "starwars", price: 4500, stock: 12, image: "https://ibb.co/4n0Q3fCF" },
+    { id: 11, name: "ışın kılıcı analin skywalker", category: "teknoloji", price: 4200, stock: 10, image: "https://ibb.co/M5RkzMGf" }
 ];
 let orders = [];
 
