@@ -60,7 +60,7 @@ app.put('/api/products/:id/stock', (req, res) => {
 });
 
 // Port Ayarı (Render için Kritik!)
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 10000;
 app.listen(port, () => {
     console.log(`Sunucu ${port} portunda aktif.`);
 });
