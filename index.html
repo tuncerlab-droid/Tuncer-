@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TuncerLab | Geleceğin Teknolojisi</title>
+    <title>TuncerLab Shop</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@300;400;600&display=swap');
@@ -18,57 +18,84 @@
 </head>
 <body class="p-4">
 
-    <div id="toast" class="glass px-6 py-3 font-bold text-center w-80"></div>
+    <div id="toast" class="glass px-6 py-3 font-bold text-center w-80 shadow-2xl"></div>
 
-    <nav class="glass max-w-6xl mx-auto p-4 flex justify-between items-center mb-8 sticky top-2 z-50">
+    <nav class="glass max-w-6xl mx-auto p-4 flex flex-col md:flex-row justify-between items-center mb-8 sticky top-2 z-50 gap-4">
         <h1 class="font-bold text-2xl tracking-tighter cursor-pointer" style="font-family:'Orbitron'" onclick="switchView('shop')">TUNCER<span class="text-cyan-400">LAB.</span></h1>
-        <div class="flex gap-4 text-xs font-bold">
-            <button onclick="switchView('shop')">MAĞAZA</button>
-            <button onclick="switchView('track')">TAKİP</button>
-            <button onclick="switchView('cart')" class="text-cyan-400">SEPET (<span id="cart-count">0</span>)</button>
-            <button onclick="openAdmin()" class="text-red-500">ADMİN</button>
+        <div class="flex flex-wrap justify-center gap-6 text-sm font-bold items-center">
+            <button onclick="switchView('shop')" class="hover:text-cyan-400 transition uppercase">Mağaza</button>
+            <button onclick="switchView('track')" class="hover:text-cyan-400 transition uppercase">Takip</button>
+            <button onclick="switchView('cart')" class="text-cyan-400 border border-cyan-500/40 px-4 py-2 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 transition uppercase">
+                Sepet (<span id="cart-count">0</span>)
+            </button>
+            <button onclick="openAdmin()" class="text-red-500 uppercase text-xs">Admin</button>
         </div>
     </nav>
 
-    <main class="max-w-6xl mx-auto">
+    <main class="max-w-6xl mx-auto pb-12">
+        <!-- Mağaza -->
         <section id="view-shop" class="view-section active">
             <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
         </section>
 
+        <!-- Takip -->
         <section id="view-track" class="view-section">
-            <div class="glass p-8 max-w-lg mx-auto text-center">
-                <h2 class="text-xl font-bold mb-4">Sipariş Takibi</h2>
-                <input type="email" id="track-email" placeholder="E-posta" class="w-full bg-black/40 border border-white/10 p-3 rounded-xl mb-4 outline-none focus:border-cyan-400">
-                <button onclick="trackOrder()" class="w-full bg-cyan-500 text-black font-bold py-3 rounded-xl">SORGULA</button>
+            <div class="glass p-8 max-w-lg mx-auto text-center border-cyan-500/20">
+                <h2 class="text-2xl font-bold mb-4" style="font-family:'Orbitron'">Sipariş Takibi</h2>
+                <input type="email" id="track-email" placeholder="E-posta Adresiniz" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 mb-4 outline-none focus:border-cyan-400">
+                <button onclick="trackOrder()" class="w-full bg-cyan-500 text-black font-bold py-3 rounded-xl hover:bg-cyan-400">SORGULA</button>
                 <div id="track-results" class="mt-6 space-y-4 text-left"></div>
             </div>
         </section>
 
+        <!-- Sepet -->
         <section id="view-cart" class="view-section">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div id="cart-list" class="lg:col-span-2 space-y-4"></div>
-                <div class="glass p-6 h-fit">
-                    <h2 class="text-xl font-bold mb-4">Sipariş Ver</h2>
+                <div class="lg:col-span-2 space-y-4">
+                    <h2 class="text-xl font-bold mb-2">Alışveriş Sepeti</h2>
+                    <div id="cart-list" class="space-y-4"></div>
+                </div>
+                <div class="glass p-6 h-fit sticky top-24 border-cyan-500/20">
+                    <h2 class="text-xl font-bold mb-4 text-cyan-400">Siparişi Tamamla</h2>
+                    
+                    <!-- İndirim Kodu Alanı -->
+                    <div class="flex gap-2 mb-6">
+                        <input type="text" id="d-code" placeholder="İndirim Kodu (Örn: TUNCER10)" class="w-full bg-black/50 border border-white/10 p-3 rounded-xl uppercase outline-none focus:border-cyan-400 text-sm">
+                        <button type="button" onclick="applyDiscount()" class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/40 px-4 rounded-xl font-bold hover:bg-cyan-500 hover:text-black transition text-sm">Uygula</button>
+                    </div>
+
                     <form onsubmit="submitOrder(event)" class="space-y-4">
-                        <input type="text" id="c-name" placeholder="Ad Soyad" required class="w-full bg-black/40 border border-white/10 p-3 rounded-xl">
-                        <input type="email" id="c-email" placeholder="E-posta" required class="w-full bg-black/40 border border-white/10 p-3 rounded-xl">
-                        <textarea id="c-addr" placeholder="Adres" required class="w-full bg-black/40 border border-white/10 p-3 rounded-xl"></textarea>
-                        <div class="text-xl font-bold text-cyan-400 text-center py-2 border-y border-white/5">Toplam: <span id="cart-total">0 TL</span></div>
-                        <button type="submit" class="w-full bg-cyan-500 text-black font-bold py-3 rounded-xl">ONAYLA</button>
+                        <input type="text" id="c-name" placeholder="Ad Soyad" required class="w-full bg-black/50 border border-white/10 p-3 rounded-xl outline-none">
+                        <input type="email" id="c-email" placeholder="E-Posta" required class="w-full bg-black/50 border border-white/10 p-3 rounded-xl outline-none">
+                        <textarea id="c-addr" placeholder="Teslimat Adresi" rows="3" required class="w-full bg-black/50 border border-white/10 p-3 rounded-xl outline-none"></textarea>
+                        
+                        <div class="p-4 bg-black/40 rounded-xl border border-white/5 space-y-2">
+                            <div class="flex justify-between text-sm text-gray-400"><span>Ara Toplam:</span> <span id="cart-subtotal">0 TL</span></div>
+                            <div id="discount-row" class="flex justify-between text-sm text-green-400 hidden"><span>İndirim:</span> <span id="cart-discount">-0 TL</span></div>
+                            <div class="flex justify-between font-bold text-cyan-400 text-xl pt-2 border-t border-white/10"><span>Toplam:</span> <span id="cart-total">0 TL</span></div>
+                        </div>
+                        
+                        <button type="submit" class="w-full bg-cyan-500 text-black font-bold py-4 rounded-xl hover:bg-cyan-400 transition shadow-lg">SİPARİŞİ ONAYLA</button>
                     </form>
                 </div>
             </div>
         </section>
 
+        <!-- Admin -->
         <section id="view-admin" class="view-section">
-            <div class="glass p-6 overflow-x-auto">
-                <h2 class="text-xl font-bold text-red-500 mb-4">Admin Paneli</h2>
-                <table class="w-full text-left text-sm mb-8">
-                    <thead class="text-gray-400 border-b border-white/5"><tr><th class="pb-2">Müşteri</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead>
-                    <tbody id="admin-order-list"></tbody>
-                </table>
-                <h2 class="text-xl font-bold text-cyan-400 mb-4">Stok Kontrol</h2>
-                <div id="admin-stock-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            <div class="glass p-8 overflow-x-auto">
+                <h2 class="text-2xl font-bold text-red-500 mb-6" style="font-family:'Orbitron'">Yönetim Paneli</h2>
+                <div class="mb-10">
+                    <h3 class="font-bold text-lg mb-4 text-gray-300">Gelen Siparişler</h3>
+                    <table class="w-full text-left text-sm min-w-[700px]">
+                        <thead class="text-gray-500 border-b border-white/10"><tr class="uppercase text-[10px] tracking-widest"><th class="pb-3">Sipariş Bilgisi</th><th>Ürünler</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead>
+                        <tbody id="admin-order-list"></tbody>
+                    </table>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-4 text-gray-300">Envanter & Stok</h3>
+                    <div id="admin-stock-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
+                </div>
             </div>
         </section>
     </main>
@@ -76,28 +103,30 @@
     <script>
         const API_URL = "https://tuncer.onrender.com/api";
         let products = [];
-        let cart = [];
+        let cart = []; // Artık objeler { ...product, qty: 1 } şeklinde
+        let currentDiscountRate = 0;
+        let appliedCode = "";
 
         async function fetchProducts() {
             try {
                 const res = await fetch(`${API_URL}/products`);
                 products = await res.json();
                 renderProducts();
-            } catch (e) { showToast("Sunucu kapalı!", true); }
+            } catch (e) { showToast("Sunucu Bağlantı Hatası!", true); }
         }
 
         function renderProducts() {
             const grid = document.getElementById('product-grid');
             grid.innerHTML = products.map(p => `
-                <div class="glass p-4 flex flex-col group">
-                    <img src="${p.image}" class="h-40 w-full object-cover rounded-lg mb-4">
-                    <h3 class="font-bold">${p.name}</h3>
-                    <div class="flex justify-between items-center mt-4">
-                        <span class="text-cyan-400 font-bold">${p.price} TL</span>
-                        <span class="text-xs text-gray-500">Stok: ${p.stock}</span>
+                <div class="glass p-4 flex flex-col group hover:border-cyan-500/40 transition">
+                    <img src="${p.image}" class="h-44 w-full object-cover rounded-lg mb-4 group-hover:scale-105 transition duration-500">
+                    <h3 class="font-bold text-sm">${p.name}</h3>
+                    <div class="flex justify-between items-center mt-auto pt-4">
+                        <span class="text-cyan-400 font-bold">${p.price.toLocaleString('tr-TR')} TL</span>
+                        <span class="text-[10px] text-gray-500">Stok: ${p.stock}</span>
                     </div>
-                    <button onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''} class="mt-4 ${p.stock <= 0 ? 'bg-gray-700' : 'bg-white/5 hover:bg-cyan-500 hover:text-black'} py-2 rounded-lg font-bold transition">
-                        ${p.stock <= 0 ? 'TÜKENDİ' : 'EKLE'}
+                    <button onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''} class="mt-4 ${p.stock <= 0 ? 'bg-gray-800 text-gray-500' : 'bg-white/5 hover:bg-cyan-500 hover:text-black'} py-2 rounded-xl text-xs font-bold transition">
+                        ${p.stock <= 0 ? 'TÜKENDİ' : 'SEPETE EKLE'}
                     </button>
                 </div>
             `).join('');
@@ -105,39 +134,116 @@
 
         function addToCart(id) {
             const p = products.find(x => x.id === id);
-            cart.push(p);
-            document.getElementById('cart-count').innerText = cart.length;
+            const existingItem = cart.find(x => x.id === id);
+            
+            if(existingItem) {
+                if(existingItem.qty >= p.stock) return showToast("Stok limitine ulaştınız!", true);
+                existingItem.qty += 1;
+            } else {
+                cart.push({ ...p, qty: 1 });
+            }
+            updateCartCount();
             showToast(p.name + " eklendi.");
+        }
+
+        function updateCartCount() {
+            // Sepetteki toplam "adet" sayısını hesaplar
+            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+            document.getElementById('cart-count').innerText = totalItems;
+        }
+
+        async function applyDiscount() {
+            const codeInput = document.getElementById('d-code').value.toUpperCase();
+            if(!codeInput) return showToast("Lütfen bir kod girin!", true);
+            
+            try {
+                const res = await fetch(`${API_URL}/discount/${codeInput}`);
+                const data = await res.json();
+                if(data.success) {
+                    currentDiscountRate = data.rate;
+                    appliedCode = codeInput;
+                    showToast(`%${data.rate * 100} İndirim Uygulandı!`);
+                    renderCart(); // Tutarları güncelle
+                } else {
+                    showToast("Geçersiz veya süresi dolmuş kod!", true);
+                    currentDiscountRate = 0;
+                    appliedCode = "";
+                    renderCart();
+                }
+            } catch(e) { showToast("Bağlantı hatası", true); }
         }
 
         function renderCart() {
             const list = document.getElementById('cart-list');
-            let total = 0;
-            list.innerHTML = cart.map((item, i) => {
-                total += item.price;
-                return `<div class="glass p-4 flex justify-between"><span>${item.name}</span><b>${item.price} TL</b></div>`;
+            let subtotal = 0;
+            
+            list.innerHTML = cart.map(item => {
+                subtotal += (item.price * item.qty);
+                return `
+                <div class="glass p-4 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <img src="${item.image}" class="w-12 h-12 object-cover rounded-lg">
+                        <div>
+                            <div class="font-bold text-sm">${item.name}</div>
+                            <div class="text-xs text-cyan-400 font-bold">${item.qty} Adet x ${item.price.toLocaleString('tr-TR')} TL</div>
+                        </div>
+                    </div>
+                    <button onclick="removeFromCart(${item.id})" class="text-red-500 text-xs bg-red-500/10 px-3 py-1 rounded-lg hover:bg-red-500 hover:text-white transition">Kaldır</button>
+                </div>`;
             }).join('');
-            document.getElementById('cart-total').innerText = total + " TL";
-            if(cart.length === 0) list.innerHTML = '<div class="glass p-10 text-center">Sepet boş</div>';
+            
+            if(cart.length === 0) list.innerHTML = '<div class="glass p-8 text-center text-gray-500 uppercase text-sm">Sepetiniz Boş</div>';
+
+            // İndirim Hesaplama
+            let discountAmount = subtotal * currentDiscountRate;
+            let finalTotal = subtotal - discountAmount;
+
+            document.getElementById('cart-subtotal').innerText = subtotal.toLocaleString('tr-TR') + " TL";
+            document.getElementById('cart-total').innerText = finalTotal.toLocaleString('tr-TR') + " TL";
+            
+            const discRow = document.getElementById('discount-row');
+            if(currentDiscountRate > 0) {
+                discRow.classList.remove('hidden');
+                document.getElementById('cart-discount').innerText = "-" + discountAmount.toLocaleString('tr-TR') + " TL";
+            } else {
+                discRow.classList.add('hidden');
+            }
+        }
+
+        function removeFromCart(id) {
+            cart = cart.filter(x => x.id !== id);
+            updateCartCount();
+            renderCart();
         }
 
         async function submitOrder(e) {
             e.preventDefault();
+            if(cart.length === 0) return showToast("Sepetiniz boş!", true);
+            
+            let subtotal = cart.reduce((s,i) => s + (i.price * i.qty), 0);
+            let finalTotal = subtotal - (subtotal * currentDiscountRate);
+
             const data = { 
                 name: document.getElementById('c-name').value, 
                 email: document.getElementById('c-email').value,
                 address: document.getElementById('c-addr').value,
-                items: cart, total: cart.reduce((s,i) => s + i.price, 0)
+                items: cart, // Artık adetleri {qty: X} içeriyor
+                total: finalTotal,
+                discountCode: appliedCode
             };
-            const res = await fetch(`${API_URL}/orders`, { 
-                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) 
-            });
-            const result = await res.json();
-            if(result.success) {
-                showToast("Sipariş alındı! Kod: " + result.orderId);
-                cart = []; document.getElementById('cart-count').innerText = "0"; e.target.reset();
-                switchView('shop'); fetchProducts();
-            }
+
+            try {
+                const res = await fetch(`${API_URL}/orders`, { 
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) 
+                });
+                const result = await res.json();
+                if(result.success) {
+                    showToast("Sipariş Başarılı! Kod: " + result.orderId);
+                    cart = []; currentDiscountRate = 0; appliedCode = "";
+                    document.getElementById('d-code').value = "";
+                    updateCartCount(); e.target.reset(); switchView('shop'); fetchProducts();
+                }
+            } catch(err) { showToast("Sipariş Hatası!", true); }
         }
 
         async function trackOrder() {
@@ -145,49 +251,77 @@
             const res = await fetch(`${API_URL}/orders/track/${email}`);
             const data = await res.json();
             const resDiv = document.getElementById('track-results');
-            resDiv.innerHTML = data.map(o => `
-                <div class="glass p-4 border-l-4 border-cyan-500">
-                    <div class="flex justify-between"><span>ID: ${o.id}</span><b>${o.status}</b></div>
-                    <div class="text-xs text-gray-500 mt-1">${o.date}</div>
-                </div>
-            `).join('');
+            
+            resDiv.innerHTML = data.reverse().map(o => {
+                // Hangi ürünlerden kaç adet almış listeliyoruz
+                const itemsList = o.items.map(i => `<span class="inline-block bg-white/5 px-2 py-1 rounded text-[10px] text-gray-300 mr-1 mb-1 border border-white/10">${i.qty}x ${i.name}</span>`).join('');
+                return `
+                <div class="glass p-5 border-l-4 border-cyan-500">
+                    <div class="flex justify-between items-center mb-3">
+                        <div><div class="text-[10px] text-gray-500">Sipariş: ${o.id}</div><div class="text-xs font-bold">${o.date}</div></div>
+                        <span class="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-lg text-xs font-bold">${o.status}</span>
+                    </div>
+                    <div class="mb-3">${itemsList}</div>
+                    <div class="flex justify-between items-center pt-3 border-t border-white/5">
+                        <span class="text-[10px] text-green-400">${o.discountCode ? 'Kupon: ' + o.discountCode : ''}</span>
+                        <b class="text-cyan-400 text-lg">${o.total.toLocaleString('tr-TR')} TL</b>
+                    </div>
+                </div>`
+            }).join('');
+            
+            if(data.length === 0) resDiv.innerHTML = '<p class="text-red-400 text-center">Sipariş bulunamadı.</p>';
         }
 
         function openAdmin() {
-            const p = prompt("Şifre:");
+            const p = prompt("Yönetici Şifresi:");
             if(p === "175017") switchView('admin');
         }
 
         async function loadAdmin() {
             const resO = await fetch(`${API_URL}/admin/orders`);
             const orders = await resO.json();
-            document.getElementById('admin-order-list').innerHTML = orders.reverse().map(o => `
-                <tr class="border-b border-white/5">
-                    <td class="py-3">${o.name}</td><td>${o.total} TL</td><td class="text-cyan-400 font-bold">${o.status}</td>
-                    <td><button onclick="updateStatus('${o.id}')" class="text-xs underline">Durum Değiştir</button></td>
-                </tr>
-            `).join('');
+            document.getElementById('admin-order-list').innerHTML = orders.reverse().map(o => {
+                const itemsHtml = o.items.map(i => `<span class="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded text-[10px] mr-1 inline-block mb-1">${i.qty}x ${i.name}</span>`).join('');
+                return `
+                <tr class="border-b border-white/5 hover:bg-white/5">
+                    <td class="py-4"><div class="font-bold text-xs">${o.name}</div><div class="text-[10px] text-gray-500">${o.id}</div></td>
+                    <td class="max-w-[200px]">${itemsHtml}</td>
+                    <td class="text-xs font-bold">${o.total.toLocaleString('tr-TR')} TL <br><span class="text-[10px] text-green-400">${o.discountCode || ''}</span></td>
+                    <td class="text-cyan-400 font-bold text-[10px] uppercase">${o.status}</td>
+                    <td>
+                        <select onchange="updateStatus('${o.id}', this.value)" class="bg-black/60 border border-white/10 rounded p-1 text-[10px] outline-none">
+                            <option value="" disabled selected>Değiştir</option>
+                            <option value="Hazırlanıyor">Hazırlanıyor</option>
+                            <option value="Kargoya Verildi">Kargoda</option>
+                            <option value="Teslim Edildi">Tamamlandı</option>
+                        </select>
+                    </td>
+                </tr>`
+            }).join('');
 
             const resP = await fetch(`${API_URL}/products`);
             const prods = await resP.json();
             document.getElementById('admin-stock-list').innerHTML = prods.map(p => `
-                <div class="glass p-3 flex justify-between"><span>${p.name}</span><button onclick="updateStock(${p.id})" class="font-bold text-green-400">${p.stock} Adet</button></div>
+                <div class="glass p-4 flex justify-between items-center border border-white/5">
+                    <div>
+                        <div class="font-bold text-sm">${p.name}</div>
+                        <div class="text-xs text-gray-400">Stok: <span class="text-white">${p.stock}</span></div>
+                    </div>
+                    <button onclick="updateStock(${p.id}, ${p.stock})" class="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded">GÜNCELLE</button>
+                </div>
             `).join('');
         }
 
-        async function updateStatus(id) {
-            const s = prompt("Yeni Durum (Hazırlanıyor/Kargoda/Teslim Edildi):");
-            if(s) {
-                await fetch(`${API_URL}/admin/orders/${id}/status`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: s}) });
-                loadAdmin();
-            }
+        async function updateStatus(id, s) {
+            await fetch(`${API_URL}/admin/orders/${id}/status`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: s}) });
+            loadAdmin(); showToast("Durum Güncellendi");
         }
 
-        async function updateStock(id) {
-            const n = prompt("Yeni stok adedi:");
-            if(n) {
+        async function updateStock(id, current) {
+            const n = prompt(`Yeni stok adedi (Mevcut: ${current}):`);
+            if(n !== null && n !== "") {
                 await fetch(`${API_URL}/products/${id}/stock`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({stock: n}) });
-                loadAdmin(); fetchProducts();
+                loadAdmin(); fetchProducts(); showToast("Stok Güncellendi");
             }
         }
 
@@ -196,6 +330,7 @@
             document.getElementById('view-' + v).classList.add('active');
             if(v === 'cart') renderCart();
             if(v === 'admin') loadAdmin();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function showToast(m, err = false) {
@@ -208,3 +343,5 @@
     </script>
 </body>
 </html>
+
+
