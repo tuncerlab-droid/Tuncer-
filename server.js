@@ -4,7 +4,7 @@ const app = express();
 
 app.use(express.json());
 
-// CORS: Farklı sitelerden (Github Pages gibi) gelen isteklere izin verir
+// CORS Ayarları
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS");
@@ -13,30 +13,54 @@ app.use((req, res, next) => {
     next();
 });
 
-// Statik Dosyalar (public klasörünü sunar)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // --- VERİ TABANI ---
 let products = [
-    { id: 1, name: "tuncer ateş atar", category: "savunma", price: 700, stock: 10, image: "" },
-    { id: 2, name: "flash pamuğu", category: "savunma", price: 250, stock: 5, image: "https://ibb.co/mFDWP4mX" },
-    { id: 6, name: "tuncer zeka pro", category: "starwars", price: 4500, stock: 12, image: "https://ibb.co/4n0Q3fCF" },
-    { id: 11, name: "ışın kılıcı analin skywalker", category: "teknoloji", price: 4200, stock: 10, image: "https://ibb.co/M5RkzMGf" }
+    { id: 1, name: "hidrojen repulsor set", category: "savunma", price: 12500, stock: 10, image: "https://images.unsplash.com/photo-1590483736622-39da" },
+    { id: 2, name: "tuncer ateş atar", category: "savunma", price: 700, stock: 5, image:" },
+    { id: 6, name: "Vader ışın Kılıç", category: "starwars", price: 4500, stock: 12, image: "" },
+    { id: 7, name: "flash pamuğu(nitroseliloz)", category: "savunma", price: 260, stock: 7, image: "https://ibb.co/mFDWP4mX" },
+    { id: 11, name: "tuncer zeka pro", category: "teknoloji", price: 4200, stock: 10, image:" },
+    { id: 12, name: "anakin skywalker ışın kılıcı", category: "teknoloji", price: 4500, stock: 0, image:"https://ibb.co/M5RkzMGf" }
 ];
+
 let orders = [];
 
-// --- API ---
+// Tanımlı İndirim Kodları (Admin buradan kod ekleyebilir/değiştirebilir)
+const discountCodes = {
+    "TUNCER10": 0.10, // %10 indirim
+    "EFSANE20": 0.20  // %20 indirim
+};
+
+// --- API ENDPOINTS ---
+
 app.get('/api/products', (req, res) => res.json(products));
+
+// İndirim Kodu Kontrol API
+app.get('/api/discount/:code', (req, res) => {
+    const code = req.params.code.toUpperCase();
+    if (discountCodes[code]) {
+        res.json({ success: true, rate: discountCodes[code] });
+    } else {
+        res.json({ success: false });
+    }
+});
 
 app.post('/api/orders', (req, res) => {
     const newOrder = {
-        id: "TL-" + Math.floor(Math.random() * 900000 + 100000),
-        ...req.body, status: "Hazırlanıyor", date: new Date().toLocaleString('tr-TR')
+        id: "TL-" + Math.floor(Math.random() * 900000 + 100000), 
+        ...req.body, 
+        status: "Hazırlanıyor", 
+        date: new Date().toLocaleString('tr-TR')
     };
-    newOrder.items.forEach(item => {
-        const p = products.find(x => x.id === item.id);
-        if (p && p.stock > 0) p.stock -= 1;
+    
+    // Stok düşürme işlemi (Artık sepetteki "adet" (qty) baz alınarak düşüyor)
+    newOrder.items.forEach(cartItem => {
+        const product = products.find(p => p.id === cartItem.id);
+        if (product && product.stock >= cartItem.qty) product.stock -= cartItem.qty;
     });
+    
     orders.push(newOrder);
     res.json({ success: true, orderId: newOrder.id });
 });
@@ -48,18 +72,19 @@ app.get('/api/orders/track/:email', (req, res) => {
 app.get('/api/admin/orders', (req, res) => res.json(orders));
 
 app.put('/api/admin/orders/:id/status', (req, res) => {
-    const o = orders.find(x => x.id == req.params.id);
-    if (o) { o.status = req.body.status; res.json({ success: true }); }
-    else res.status(404).json({ error: "Bulunamadı" });
+    const order = orders.find(o => o.id == req.params.id);
+    if (order) { 
+        order.status = req.body.status; res.json({ success: true }); 
+    } else res.status(404).json({ error: "Sipariş bulunamadı" });
 });
 
 app.put('/api/products/:id/stock', (req, res) => {
-    const p = products.find(x => x.id == req.params.id);
-    if (p) { p.stock = parseInt(req.body.stock); res.json({ success: true }); }
-    else res.status(404).json({ error: "Ürün bulunamadı" });
+    const product = products.find(p => p.id == req.params.id);
+    if (product) { 
+        product.stock = parseInt(req.body.stock); res.json({ success: true }); 
+    } else res.status(404).json({ error: "Ürün bulunamadı" });
 });
 
-// Port Ayarı (Render için Kritik!)
 const port = process.env.PORT || 10000;
 app.listen(port, () => {
     console.log(`Sunucu ${port} portunda aktif.`);
