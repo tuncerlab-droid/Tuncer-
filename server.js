@@ -1,91 +1,75 @@
+// Gerekli modüller: npm install express cors
 const express = require('express');
+const cors = require('cors');
+const fs = require('fs');
 const path = require('path');
+
 const app = express();
+// Frontend'in (HTML dosyanın) bu sunucuya istek atabilmesi için CORS izni
+app.use(cors());
+app.use(express.json({ limit: '50mb' })); // Yüz verileri büyük olabilir
 
-app.use(express.json());
+const PORT = process.env.PORT || 3000;
+const DATA_FILE = path.join(__dirname, 'data.json');
 
-// CORS Ayarları
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS");
-    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    if (req.method === "OPTIONS") return res.status(200).end();
-    next();
-});
+// --- BAŞLANGIÇ VERİTABANI DOSYASI OLUŞTURMA ---
+if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ 
+        faceData: null, 
+        chatHistory: [{ role: "system", content: 'Sen "Tuncer Zeka"sın. Geliştiricin: Ahmet Tuncer. Kullanıcıya "patron" de. Bir Iron Man zırh yapay zekası gibi davran. Çok kısa ve net konuş.' }] 
+    }));
+}
 
-app.use(express.static(path.join(__dirname, 'public')));
-
-// --- VERİ TABANI ---
-let products = [
-    { id: 1, name: "hidrojen repulsor set", category: "savunma", price: 12500, stock: 10, image: "https://images.unsplash.com/photo-1590483736622-39da" },
-    { id: 2, name: "tuncer ateş atar", category: "savunma", price: 700, stock: 5, image:" },
-    { id: 6, name: "Vader ışın Kılıç", category: "starwars", price: 4500, stock: 12, image: "" },
-    { id: 7, name: "flash pamuğu(nitroseliloz)", category: "savunma", price: 260, stock: 7, image: "https://ibb.co/mFDWP4mX" },
-    { id: 11, name: "tuncer zeka pro", category: "teknoloji", price: 4200, stock: 10, image:" },
-    { id: 12, name: "anakin skywalker ışın kılıcı", category: "teknoloji", price: 4500, stock: 0, image:"https://ibb.co/M5RkzMGf" }
-];
-
-let orders = [];
-
-// Tanımlı İndirim Kodları (Admin buradan kod ekleyebilir/değiştirebilir)
-const discountCodes = {
-    "TUNCER10": 0.10, // %10 indirim
-    "EFSANE20": 0.20  // %20 indirim
+// JSON Okuma yardımcı fonksiyonu
+const readData = () => {
+    try {
+        return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    } catch (e) {
+        return { faceData: null, chatHistory: [] };
+    }
 };
 
-// --- API ENDPOINTS ---
+// JSON Yazma yardımcı fonksiyonu
+const writeData = (data) => {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+};
 
-app.get('/api/products', (req, res) => res.json(products));
+// ==========================================
+// API UÇ NOKTALARI (ENDPOINTS)
+// ==========================================
 
-// İndirim Kodu Kontrol API
-app.get('/api/discount/:code', (req, res) => {
-    const code = req.params.code.toUpperCase();
-    if (discountCodes[code]) {
-        res.json({ success: true, rate: discountCodes[code] });
-    } else {
-        res.json({ success: false });
+// 1. Yüz verisini getir
+app.get('/api/face', (req, res) => {
+    const data = readData();
+    res.json({ faceData: data.faceData });
+});
+
+// 2. Yüz verisini kaydet
+app.post('/api/face', (req, res) => {
+    const data = readData();
+    data.faceData = req.body.faceData;
+    writeData(data);
+    console.log("Yeni biyometrik yüz verisi sunucuya kaydedildi.");
+    res.json({ success: true, message: "Yüz verisi kaydedildi." });
+});
+
+// 3. Sohbet geçmişini getir
+app.get('/api/chat', (req, res) => {
+    const data = readData();
+    res.json({ chatHistory: data.chatHistory });
+});
+
+// 4. Yeni mesajı sohbet geçmişine ekle
+app.post('/api/chat', (req, res) => {
+    const data = readData();
+    if (req.body.message) {
+        data.chatHistory.push(req.body.message);
+        writeData(data);
     }
+    res.json({ success: true });
 });
 
-app.post('/api/orders', (req, res) => {
-    const newOrder = {
-        id: "TL-" + Math.floor(Math.random() * 900000 + 100000), 
-        ...req.body, 
-        status: "Hazırlanıyor", 
-        date: new Date().toLocaleString('tr-TR')
-    };
-    
-    // Stok düşürme işlemi (Artık sepetteki "adet" (qty) baz alınarak düşüyor)
-    newOrder.items.forEach(cartItem => {
-        const product = products.find(p => p.id === cartItem.id);
-        if (product && product.stock >= cartItem.qty) product.stock -= cartItem.qty;
-    });
-    
-    orders.push(newOrder);
-    res.json({ success: true, orderId: newOrder.id });
-});
-
-app.get('/api/orders/track/:email', (req, res) => {
-    res.json(orders.filter(o => o.email.toLowerCase() === req.params.email.toLowerCase()));
-});
-
-app.get('/api/admin/orders', (req, res) => res.json(orders));
-
-app.put('/api/admin/orders/:id/status', (req, res) => {
-    const order = orders.find(o => o.id == req.params.id);
-    if (order) { 
-        order.status = req.body.status; res.json({ success: true }); 
-    } else res.status(404).json({ error: "Sipariş bulunamadı" });
-});
-
-app.put('/api/products/:id/stock', (req, res) => {
-    const product = products.find(p => p.id == req.params.id);
-    if (product) { 
-        product.stock = parseInt(req.body.stock); res.json({ success: true }); 
-    } else res.status(404).json({ error: "Ürün bulunamadı" });
-});
-
-const port = process.env.PORT || 10000;
-app.listen(port, () => {
-    console.log(`Sunucu ${port} portunda aktif.`);
+// Sunucuyu Başlat
+app.listen(PORT, () => {
+    console.log(`Tuncer OS Sunucusu ${PORT} portunda çalışıyor...`);
 });
