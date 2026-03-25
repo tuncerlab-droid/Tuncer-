@@ -1,75 +1,83 @@
-// Gerekli modüller: npm install express cors
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 
 const app = express();
-// Frontend'in (HTML dosyanın) bu sunucuya istek atabilmesi için CORS izni
+
+// Render ve diğer dış servisler için CORS ayarlarını genişlettik
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Yüz verileri büyük olabilir
+app.use(express.json({ limit: '50mb' }));
 
 const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, 'data.json');
 
-// --- BAŞLANGIÇ VERİTABANI DOSYASI OLUŞTURMA ---
-if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ 
-        faceData: null, 
-        chatHistory: [{ role: "system", content: 'Sen "Tuncer Zeka"sın. Geliştiricin: Ahmet Tuncer. Kullanıcıya "patron" de. Bir Iron Man zırh yapay zekası gibi davran. Çok kısa ve net konuş.' }] 
-    }));
-}
+// --- VERİ DOSYASI KONTROLÜ ---
+const initializeData = () => {
+    if (!fs.existsSync(DATA_FILE)) {
+        const initialData = { 
+            faceData: null, 
+            chatHistory: [{ role: "system", content: 'Sen "Tuncer Zeka"sın. Geliştiricin: Ahmet Tuncer. Kullanıcıya "patron" de. Iron Man zırh yapay zekası gibi davran.' }] 
+        };
+        fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+    }
+};
 
-// JSON Okuma yardımcı fonksiyonu
+initializeData();
+
 const readData = () => {
     try {
-        return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+        const raw = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(raw);
     } catch (e) {
+        console.error("Dosya okuma hatası:", e);
         return { faceData: null, chatHistory: [] };
     }
 };
 
-// JSON Yazma yardımcı fonksiyonu
 const writeData = (data) => {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    try {
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    } catch (e) {
+        console.error("Dosya yazma hatası:", e);
+    }
 };
 
-// ==========================================
-// API UÇ NOKTALARI (ENDPOINTS)
-// ==========================================
+// API Endpoints
+app.get('/', (req, res) => res.send("Tuncer OS Online.")); // Sunucunun açık olduğunu anlamak için
 
-// 1. Yüz verisini getir
 app.get('/api/face', (req, res) => {
-    const data = readData();
-    res.json({ faceData: data.faceData });
+    res.json(readData());
 });
 
-// 2. Yüz verisini kaydet
 app.post('/api/face', (req, res) => {
     const data = readData();
     data.faceData = req.body.faceData;
     writeData(data);
-    console.log("Yeni biyometrik yüz verisi sunucuya kaydedildi.");
-    res.json({ success: true, message: "Yüz verisi kaydedildi." });
+    res.json({ success: true });
 });
 
-// 3. Sohbet geçmişini getir
 app.get('/api/chat', (req, res) => {
-    const data = readData();
-    res.json({ chatHistory: data.chatHistory });
+    res.json(readData());
 });
 
-// 4. Yeni mesajı sohbet geçmişine ekle
 app.post('/api/chat', (req, res) => {
     const data = readData();
     if (req.body.message) {
         data.chatHistory.push(req.body.message);
+        // Geçmiş çok şişmesin diye son 50 mesajı tutalım (opsiyonel)
+        if(data.chatHistory.length > 50) data.chatHistory.shift(); 
         writeData(data);
     }
     res.json({ success: true });
 });
 
-// Sunucuyu Başlat
-app.listen(PORT, () => {
-    console.log(`Tuncer OS Sunucusu ${PORT} portunda çalışıyor...`);
+// Hata yakalayıcı (Sunucunun çökmesini engeller)
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Sunucu tarafında bir hata oluştu!');
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Sunucu aktif: Port ${PORT}`);
 });
