@@ -3,345 +3,633 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TuncerLab Shop</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>TUNCER ZEKA - PRO OS</title>
+    
+    <!-- Puter.js -->
+    <script src="https://js.puter.com/v2/"></script>
+    
+    <!-- Yüz Tanıma Kütüphanesi -->
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+    
+    <!-- Leaflet Harita ve Navigasyon Kütüphaneleri -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Poppins:wght@300;400;600&display=swap');
-        body { font-family: 'Poppins', sans-serif; background-color: #0a0f16; color: white; min-height: 100vh; }
-        .glass { background: rgba(20, 25, 35, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(0, 229, 255, 0.1); border-radius: 20px; }
-        .view-section { display: none; }
-        .view-section.active { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        #toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); transition: 0.4s; z-index: 100; }
-        #toast.show { bottom: 20px; }
+        :root {
+            --neon-color: #00f0ff; 
+            --dark-bg: #0a0a0a;
+        }
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            background-color: var(--dark-bg);
+            color: #e0e0e0;
+            font-family: 'Segoe UI', 'Courier New', monospace;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* --- AÇILIŞ ANİMASYONU (BOOT SCREEN) --- */
+        #boot-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+
+        #terminal-loader {
+            position: absolute;
+            top: 20px; left: 20px;
+            width: 300px; height: 400px;
+            font-family: monospace;
+            font-size: 10px;
+            color: var(--neon-color);
+            overflow: hidden;
+            opacity: 0.7;
+        }
+
+        #central-logo {
+            text-align: center;
+            animation: pulse-logo 2s infinite ease-in-out;
+        }
+
+        #central-logo h1 {
+            font-size: 42px;
+            margin: 0;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 0 20px var(--neon-color), 0 0 40px var(--neon-color);
+        }
+
+        #central-logo p {
+            font-size: 12px;
+            letter-spacing: 4px;
+            color: var(--neon-color);
+            margin-top: 10px;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse-logo {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.98); }
+        }
+
+        .scan-line {
+            width: 100%; height: 2px;
+            background: rgba(0, 240, 255, 0.1);
+            position: absolute;
+            top: 0;
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+
+        /* --- YÜZ TANIMA KAMERA ARAYÜZÜ --- */
+        #kamera-arayuzu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 5000;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .kamera-kapsayici {
+            position: relative; width: 320px; height: 240px;
+            border: 2px solid var(--neon-color); border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3); overflow: hidden;
+        }
+
+        #video-element {
+            width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1);
+        }
+
+        .hud-scan-line {
+            position: absolute; top: 0; left: 0; width: 100%; height: 4px;
+            background: var(--neon-color); box-shadow: 0 0 10px var(--neon-color);
+            animation: radar-scan 2s linear infinite;
+        }
+
+        .hud-kose {
+            position: absolute; width: 30px; height: 30px; border-color: var(--neon-color); border-style: solid;
+        }
+        .tl { top: 10px; left: 10px; border-width: 3px 0 0 3px; }
+        .tr { top: 10px; right: 10px; border-width: 3px 3px 0 0; }
+        .bl { bottom: 10px; left: 10px; border-width: 0 0 3px 3px; }
+        .br { bottom: 10px; right: 10px; border-width: 0 3px 3px 0; }
+
+        @keyframes radar-scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
+
+        #kamera-metni {
+            margin-top: 20px; color: var(--neon-color); font-size: 14px;
+            letter-spacing: 3px; text-shadow: 0 0 10px var(--neon-color); font-weight: bold;
+        }
+
+        /* --- ANA HUD TASARIMI --- */
+        #main-ui {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+        }
+
+        #ust-panel {
+            position: absolute;
+            top: 20px; width: 90%;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 100;
+        }
+
+        .etiket { font-size: 11px; color: var(--neon-color); letter-spacing: 2px; text-shadow: 0 0 5px var(--neon-color); transition: 0.3s;}
+
+        #kalan-hak-kutusu {
+            border: 1px solid var(--neon-color); padding: 5px 15px; border-radius: 4px; 
+            background: rgba(0, 240, 255, 0.1); color: var(--neon-color);
+            box-shadow: 0 0 10px rgba(0,240,255,0.2); transition: 0.3s;
+        }
+
+        .mod-btn {
+            background: #222; border: 1px solid var(--neon-color); color: var(--neon-color); padding: 8px 15px;
+            font-size: 11px; cursor: pointer; border-radius: 4px; margin-left: 5px; transition: 0.3s;
+        }
+        .mod-btn.aktif { background: var(--neon-color); color: #000; box-shadow: 0 0 15px var(--neon-color); }
+
+        #btn-arduino {
+            background: #002233; color: var(--neon-color); border: 1px solid var(--neon-color);
+            padding: 8px 15px; font-size: 11px; cursor: pointer; border-radius: 4px; margin-left: 5px; transition: 0.3s;
+        }
+
+        #hud-container {
+            width: 150px; height: 150px; position: relative; display: flex;
+            align-items: center; justify-content: center; margin-bottom: 20px;
+        }
+
+        #outer-ring {
+            position: absolute; width: 100%; height: 100%; border: 2px solid rgba(0, 240, 255, 0.2);
+            border-top: 2px solid var(--neon-color); border-bottom: 2px solid var(--neon-color); border-radius: 50%;
+            animation: spin 4s linear infinite; transition: 0.3s;
+        }
+        #inner-ring {
+            position: absolute; width: 75%; height: 75%; border: 1px dashed var(--neon-color); opacity: 0.5;
+            border-radius: 50%; animation: spin-reverse 6s linear infinite; transition: 0.3s;
+        }
+
+        #core {
+            width: 60px; height: 60px; background: radial-gradient(circle, var(--neon-color) 10%, #005577 60%, #000 100%);
+            border-radius: 50%; box-shadow: 0 0 20px var(--neon-color); transition: 0.3s;
+        }
+
+        .isliyor #core { background: #fff; box-shadow: 0 0 50px var(--neon-color); transform: scale(1.1); }
+        .kilitli #core { background: #550000; box-shadow: 0 0 30px red; border: 1px solid red; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+
+        #sohbet-kutusu {
+            width: 80%; max-width: 700px; height: 20vh; border: 1px solid var(--neon-color); background: rgba(0,0,0,0.6);
+            padding: 20px; overflow-y: auto; border-radius: 8px; margin-bottom: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8); font-size: 14px; transition: height 0.5s ease, border-color 0.3s;
+            backdrop-filter: blur(5px);
+        }
+
+        #harita-wrapper {
+            width: 80%; max-width: 700px; height: 35vh; margin-bottom: 15px;
+            display: none; opacity: 0; transform: translateY(-30px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        #harita-wrapper.aktif { opacity: 1; transform: translateY(0); }
+        #harita-alani { width: 100%; height: 100%; border-radius: 8px; border: 1px solid var(--neon-color); background: #222; transition: 0.3s;}
+
+        .mesaj { margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .yapay-zeka { color: var(--neon-color); font-weight: bold; transition: 0.3s; }
+        .sen { color: #aaa; text-align: right; }
+        .sistem { color: #00ffaa; text-align: center; font-size: 12px; }
+        .hata { color: #ff3333; text-align: center; font-weight: bold; }
+
+        #komut-btn {
+            background: var(--neon-color); color: #000; border: none; padding: 12px 40px;
+            font-size: 15px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.3s;
+        }
+        #komut-btn:hover { background: #fff; transform: scale(1.05); }
+
+        /* RADAR ICON CSS */
+        .gps-pulse-container { width: 20px; height: 20px; position: relative; }
+        .gps-dot { width: 14px; height: 14px; background-color: var(--neon-color); border-radius: 50%; position: absolute; top: 3px; left: 3px; box-shadow: 0 0 15px var(--neon-color); z-index: 2; transition: 0.3s;}
+        .gps-ring { width: 14px; height: 14px; background-color: transparent; border: 2px solid var(--neon-color); border-radius: 50%; position: absolute; top: 0; left: 0; animation: radar-wave 1.5s ease-out infinite; z-index: 1; transition: 0.3s;}
+        @keyframes radar-wave { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(4); opacity: 0; } }
+
+        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
-<body class="p-4">
+<body>
 
-    <div id="toast" class="glass px-6 py-3 font-bold text-center w-80 shadow-2xl"></div>
-
-    <nav class="glass max-w-6xl mx-auto p-4 flex flex-col md:flex-row justify-between items-center mb-8 sticky top-2 z-50 gap-4">
-        <h1 class="font-bold text-2xl tracking-tighter cursor-pointer" style="font-family:'Orbitron'" onclick="switchView('shop')">TUNCER<span class="text-cyan-400">LAB.</span></h1>
-        <div class="flex flex-wrap justify-center gap-6 text-sm font-bold items-center">
-            <button onclick="switchView('shop')" class="hover:text-cyan-400 transition uppercase">Mağaza</button>
-            <button onclick="switchView('track')" class="hover:text-cyan-400 transition uppercase">Takip</button>
-            <button onclick="switchView('cart')" class="text-cyan-400 border border-cyan-500/40 px-4 py-2 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 transition uppercase">
-                Sepet (<span id="cart-count">0</span>)
-            </button>
-            <button onclick="openAdmin()" class="text-red-500 uppercase text-xs">Admin</button>
+    <!-- BOOT SCREEN -->
+    <div id="boot-screen">
+        <div class="scan-line"></div>
+        <div id="terminal-loader"></div>
+        <div id="central-logo">
+            <h1>TUNCER</h1>
+            <p>INDUSTRIES - PRO OS v4.6</p>
         </div>
-    </nav>
+    </div>
 
-    <main class="max-w-6xl mx-auto pb-12">
-        <!-- Mağaza -->
-        <section id="view-shop" class="view-section active">
-            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
-        </section>
+    <!-- KAMERA / YÜZ TANIMA ARAYÜZÜ -->
+    <div id="kamera-arayuzu">
+        <div class="kamera-kapsayici">
+            <video id="video-element" autoplay muted playsinline></video>
+            <div class="hud-scan-line"></div>
+            <div class="hud-kose tl"></div>
+            <div class="hud-kose tr"></div>
+            <div class="hud-kose bl"></div>
+            <div class="hud-kose br"></div>
+        </div>
+        <div id="kamera-metni">BİYOMETRİK TARAMA BEKLENİYOR...</div>
+    </div>
 
-        <!-- Takip -->
-        <section id="view-track" class="view-section">
-            <div class="glass p-8 max-w-lg mx-auto text-center border-cyan-500/20">
-                <h2 class="text-2xl font-bold mb-4" style="font-family:'Orbitron'">Sipariş Takibi</h2>
-                <input type="email" id="track-email" placeholder="E-posta Adresiniz" class="w-full bg-black/50 border border-white/10 rounded-xl p-3 mb-4 outline-none focus:border-cyan-400">
-                <button onclick="trackOrder()" class="w-full bg-cyan-500 text-black font-bold py-3 rounded-xl hover:bg-cyan-400">SORGULA</button>
-                <div id="track-results" class="mt-6 space-y-4 text-left"></div>
-            </div>
-        </section>
-
-        <!-- Sepet -->
-        <section id="view-cart" class="view-section">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 space-y-4">
-                    <h2 class="text-xl font-bold mb-2">Alışveriş Sepeti</h2>
-                    <div id="cart-list" class="space-y-4"></div>
-                </div>
-                <div class="glass p-6 h-fit sticky top-24 border-cyan-500/20">
-                    <h2 class="text-xl font-bold mb-4 text-cyan-400">Siparişi Tamamla</h2>
-                    
-                    <!-- İndirim Kodu Alanı -->
-                    <div class="flex gap-2 mb-6">
-                        <input type="text" id="d-code" placeholder="İndirim Kodu (Örn: TUNCER10)" class="w-full bg-black/50 border border-white/10 p-3 rounded-xl uppercase outline-none focus:border-cyan-400 text-sm">
-                        <button type="button" onclick="applyDiscount()" class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/40 px-4 rounded-xl font-bold hover:bg-cyan-500 hover:text-black transition text-sm">Uygula</button>
-                    </div>
-
-                    <form onsubmit="submitOrder(event)" class="space-y-4">
-                        <input type="text" id="c-name" placeholder="Ad Soyad" required class="w-full bg-black/50 border border-white/10 p-3 rounded-xl outline-none">
-                        <input type="email" id="c-email" placeholder="E-Posta" required class="w-full bg-black/50 border border-white/10 p-3 rounded-xl outline-none">
-                        <textarea id="c-addr" placeholder="Teslimat Adresi" rows="3" required class="w-full bg-black/50 border border-white/10 p-3 rounded-xl outline-none"></textarea>
-                        
-                        <div class="p-4 bg-black/40 rounded-xl border border-white/5 space-y-2">
-                            <div class="flex justify-between text-sm text-gray-400"><span>Ara Toplam:</span> <span id="cart-subtotal">0 TL</span></div>
-                            <div id="discount-row" class="flex justify-between text-sm text-green-400 hidden"><span>İndirim:</span> <span id="cart-discount">-0 TL</span></div>
-                            <div class="flex justify-between font-bold text-cyan-400 text-xl pt-2 border-t border-white/10"><span>Toplam:</span> <span id="cart-total">0 TL</span></div>
-                        </div>
-                        
-                        <button type="submit" class="w-full bg-cyan-500 text-black font-bold py-4 rounded-xl hover:bg-cyan-400 transition shadow-lg">SİPARİŞİ ONAYLA</button>
-                    </form>
+    <!-- MAIN UI -->
+    <div id="main-ui">
+        <div id="ust-panel">
+            <div class="etiket" id="sistem-durum-etiketi">SİSTEM DURUMU: UYKU MODU</div>
+            <div style="display:flex; align-items:center;">
+                <button id="btn-arduino" onclick="arduinoBaglan()">DONANIM BAĞLA</button>
+                <div id="kalan-hak-kutusu" style="margin-left: 20px;">GÜÇ: <span id="sayac">100</span>%</div>
+                <div style="margin-left: 20px;">
+                    <button id="btn-manuel" class="mod-btn aktif" onclick="modDegistir('manuel')">MANUEL</button>
+                    <button id="btn-oto" class="mod-btn" onclick="modDegistir('oto')">OTOMATİK</button>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Admin -->
-        <section id="view-admin" class="view-section">
-            <div class="glass p-8 overflow-x-auto">
-                <h2 class="text-2xl font-bold text-red-500 mb-6" style="font-family:'Orbitron'">Yönetim Paneli</h2>
-                <div class="mb-10">
-                    <h3 class="font-bold text-lg mb-4 text-gray-300">Gelen Siparişler</h3>
-                    <table class="w-full text-left text-sm min-w-[700px]">
-                        <thead class="text-gray-500 border-b border-white/10"><tr class="uppercase text-[10px] tracking-widest"><th class="pb-3">Sipariş Bilgisi</th><th>Ürünler</th><th>Tutar</th><th>Durum</th><th>İşlem</th></tr></thead>
-                        <tbody id="admin-order-list"></tbody>
-                    </table>
-                </div>
-                <div>
-                    <h3 class="font-bold text-lg mb-4 text-gray-300">Envanter & Stok</h3>
-                    <div id="admin-stock-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4"></div>
-                </div>
-            </div>
-        </section>
-    </main>
+        <div id="hud-container" class="kilitli">
+            <div id="outer-ring"></div>
+            <div id="inner-ring"></div>
+            <div id="core"></div>
+        </div>
+        
+        <div id="harita-wrapper">
+            <div id="harita-alani"></div>
+        </div>
+
+        <div id="sohbet-kutusu">
+            <div class="mesaj yapay-zeka">Tuncer Zeka: Sistem yüklemesi tamamlandı. Yüz tanıma modülleri hazır. Lütfen yetkilendirme için sistemi başlatın.</div>
+        </div>
+
+        <button id="komut-btn" onclick="manuelDinle()">DİNLE</button>
+        <div id="durum-metni" style="margin-top:10px; color:var(--neon-color); font-size:11px; opacity:0.6;">Sistem Beklemede</div>
+    </div>
 
     <script>
-        const API_URL = "https://tuncer.onrender.com/api";
-        let products = [];
-        let cart = []; // Artık objeler { ...product, qty: 1 } şeklinde
-        let currentDiscountRate = 0;
-        let appliedCode = "";
+        // --- SİSTEM DEĞİŞKENLERİ ---
+        const sohbet = document.getElementById("sohbet-kutusu");
+        const haritaWrapper = document.getElementById("harita-wrapper");
+        const hud = document.getElementById("hud-container");
+        const core = document.getElementById("core");
+        const komutBtn = document.getElementById("komut-btn");
+        const durumMetni = document.getElementById("durum-metni");
+        const btnManuel = document.getElementById("btn-manuel");
+        const btnOto = document.getElementById("btn-oto");
+        const sistemDurumEtiketi = document.getElementById("sistem-durum-etiketi");
+        
+        const video = document.getElementById("video-element");
+        const kameraArayuzu = document.getElementById("kamera-arayuzu");
+        const kameraMetni = document.getElementById("kamera-metni");
 
-        async function fetchProducts() {
+        let kalanHak = 100;
+        let aktifMod = 'manuel'; 
+        let dinlemeAktif = false;
+        let sistemAktif = false;     
+        let taramaDevamEdiyor = false; // Mükerrer taramayı önlemek için
+        
+        let port, writer, map, routingControl, kullaniciMarker;
+
+        let sohbetGecmisi = [{ role: "system", content: 'Sen "Tuncer Zeka"sın. Geliştiricin: Ahmet Tuncer. Kullanıcıya "patron" de. Bir Iron Man zırh yapay zekası gibi davran. Çok kısa ve net konuş.' }];
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'tr-TR';
+
+        let faceMatcher = null;
+        let yuzTanimaHazir = false;
+
+        async function yuzTanimaModulleriniYukle() {
+            const modelUrl = 'https://justadudewhohacks.github.io/face-api.js/models';
             try {
-                const res = await fetch(`${API_URL}/products`);
-                products = await res.json();
-                renderProducts();
-            } catch (e) { showToast("Sunucu Bağlantı Hatası!", true); }
-        }
-
-        function renderProducts() {
-            const grid = document.getElementById('product-grid');
-            grid.innerHTML = products.map(p => `
-                <div class="glass p-4 flex flex-col group hover:border-cyan-500/40 transition">
-                    <img src="${p.image}" class="h-44 w-full object-cover rounded-lg mb-4 group-hover:scale-105 transition duration-500">
-                    <h3 class="font-bold text-sm">${p.name}</h3>
-                    <div class="flex justify-between items-center mt-auto pt-4">
-                        <span class="text-cyan-400 font-bold">${p.price.toLocaleString('tr-TR')} TL</span>
-                        <span class="text-[10px] text-gray-500">Stok: ${p.stock}</span>
-                    </div>
-                    <button onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''} class="mt-4 ${p.stock <= 0 ? 'bg-gray-800 text-gray-500' : 'bg-white/5 hover:bg-cyan-500 hover:text-black'} py-2 rounded-xl text-xs font-bold transition">
-                        ${p.stock <= 0 ? 'TÜKENDİ' : 'SEPETE EKLE'}
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        function addToCart(id) {
-            const p = products.find(x => x.id === id);
-            const existingItem = cart.find(x => x.id === id);
-            
-            if(existingItem) {
-                if(existingItem.qty >= p.stock) return showToast("Stok limitine ulaştınız!", true);
-                existingItem.qty += 1;
-            } else {
-                cart.push({ ...p, qty: 1 });
-            }
-            updateCartCount();
-            showToast(p.name + " eklendi.");
-        }
-
-        function updateCartCount() {
-            // Sepetteki toplam "adet" sayısını hesaplar
-            const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
-            document.getElementById('cart-count').innerText = totalItems;
-        }
-
-        async function applyDiscount() {
-            const codeInput = document.getElementById('d-code').value.toUpperCase();
-            if(!codeInput) return showToast("Lütfen bir kod girin!", true);
-            
-            try {
-                const res = await fetch(`${API_URL}/discount/${codeInput}`);
-                const data = await res.json();
-                if(data.success) {
-                    currentDiscountRate = data.rate;
-                    appliedCode = codeInput;
-                    showToast(`%${data.rate * 100} İndirim Uygulandı!`);
-                    renderCart(); // Tutarları güncelle
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl);
+                yuzTanimaHazir = true;
+                
+                const kayitliYuz = localStorage.getItem("tuncer_face_data");
+                if (kayitliYuz) {
+                    const descriptorArray = new Float32Array(JSON.parse(kayitliYuz));
+                    const labeledDescriptor = new faceapi.LabeledFaceDescriptors("Ahmet Tuncer", [descriptorArray]);
+                    faceMatcher = new faceapi.FaceMatcher(labeledDescriptor, 0.45);
+                    console.log("Ahmet Tuncer biyometrik verisi yüklendi.");
                 } else {
-                    showToast("Geçersiz veya süresi dolmuş kod!", true);
-                    currentDiscountRate = 0;
-                    appliedCode = "";
-                    renderCart();
+                    setTimeout(ilkYuzKaydiniBaslat, 3000); 
                 }
-            } catch(e) { showToast("Bağlantı hatası", true); }
-        }
-
-        function renderCart() {
-            const list = document.getElementById('cart-list');
-            let subtotal = 0;
-            
-            list.innerHTML = cart.map(item => {
-                subtotal += (item.price * item.qty);
-                return `
-                <div class="glass p-4 flex justify-between items-center">
-                    <div class="flex items-center gap-4">
-                        <img src="${item.image}" class="w-12 h-12 object-cover rounded-lg">
-                        <div>
-                            <div class="font-bold text-sm">${item.name}</div>
-                            <div class="text-xs text-cyan-400 font-bold">${item.qty} Adet x ${item.price.toLocaleString('tr-TR')} TL</div>
-                        </div>
-                    </div>
-                    <button onclick="removeFromCart(${item.id})" class="text-red-500 text-xs bg-red-500/10 px-3 py-1 rounded-lg hover:bg-red-500 hover:text-white transition">Kaldır</button>
-                </div>`;
-            }).join('');
-            
-            if(cart.length === 0) list.innerHTML = '<div class="glass p-8 text-center text-gray-500 uppercase text-sm">Sepetiniz Boş</div>';
-
-            // İndirim Hesaplama
-            let discountAmount = subtotal * currentDiscountRate;
-            let finalTotal = subtotal - discountAmount;
-
-            document.getElementById('cart-subtotal').innerText = subtotal.toLocaleString('tr-TR') + " TL";
-            document.getElementById('cart-total').innerText = finalTotal.toLocaleString('tr-TR') + " TL";
-            
-            const discRow = document.getElementById('discount-row');
-            if(currentDiscountRate > 0) {
-                discRow.classList.remove('hidden');
-                document.getElementById('cart-discount').innerText = "-" + discountAmount.toLocaleString('tr-TR') + " TL";
-            } else {
-                discRow.classList.add('hidden');
+            } catch (err) {
+                console.error("Yüz modülleri yüklenemedi:", err);
             }
         }
 
-        function removeFromCart(id) {
-            cart = cart.filter(x => x.id !== id);
-            updateCartCount();
-            renderCart();
-        }
-
-        async function submitOrder(e) {
-            e.preventDefault();
-            if(cart.length === 0) return showToast("Sepetiniz boş!", true);
-            
-            let subtotal = cart.reduce((s,i) => s + (i.price * i.qty), 0);
-            let finalTotal = subtotal - (subtotal * currentDiscountRate);
-
-            const data = { 
-                name: document.getElementById('c-name').value, 
-                email: document.getElementById('c-email').value,
-                address: document.getElementById('c-addr').value,
-                items: cart, // Artık adetleri {qty: X} içeriyor
-                total: finalTotal,
-                discountCode: appliedCode
-            };
-
+        async function kamerayiAc() {
+            kameraArayuzu.style.display = 'flex';
             try {
-                const res = await fetch(`${API_URL}/orders`, { 
-                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) 
-                });
-                const result = await res.json();
-                if(result.success) {
-                    showToast("Sipariş Başarılı! Kod: " + result.orderId);
-                    cart = []; currentDiscountRate = 0; appliedCode = "";
-                    document.getElementById('d-code').value = "";
-                    updateCartCount(); e.target.reset(); switchView('shop'); fetchProducts();
-                }
-            } catch(err) { showToast("Sipariş Hatası!", true); }
-        }
-
-        async function trackOrder() {
-            const email = document.getElementById('track-email').value;
-            const res = await fetch(`${API_URL}/orders/track/${email}`);
-            const data = await res.json();
-            const resDiv = document.getElementById('track-results');
-            
-            resDiv.innerHTML = data.reverse().map(o => {
-                // Hangi ürünlerden kaç adet almış listeliyoruz
-                const itemsList = o.items.map(i => `<span class="inline-block bg-white/5 px-2 py-1 rounded text-[10px] text-gray-300 mr-1 mb-1 border border-white/10">${i.qty}x ${i.name}</span>`).join('');
-                return `
-                <div class="glass p-5 border-l-4 border-cyan-500">
-                    <div class="flex justify-between items-center mb-3">
-                        <div><div class="text-[10px] text-gray-500">Sipariş: ${o.id}</div><div class="text-xs font-bold">${o.date}</div></div>
-                        <span class="px-3 py-1 bg-cyan-500/10 text-cyan-400 rounded-lg text-xs font-bold">${o.status}</span>
-                    </div>
-                    <div class="mb-3">${itemsList}</div>
-                    <div class="flex justify-between items-center pt-3 border-t border-white/5">
-                        <span class="text-[10px] text-green-400">${o.discountCode ? 'Kupon: ' + o.discountCode : ''}</span>
-                        <b class="text-cyan-400 text-lg">${o.total.toLocaleString('tr-TR')} TL</b>
-                    </div>
-                </div>`
-            }).join('');
-            
-            if(data.length === 0) resDiv.innerHTML = '<p class="text-red-400 text-center">Sipariş bulunamadı.</p>';
-        }
-
-        function openAdmin() {
-            const p = prompt("Yönetici Şifresi:");
-            if(p === "175017") switchView('admin');
-        }
-
-        async function loadAdmin() {
-            const resO = await fetch(`${API_URL}/admin/orders`);
-            const orders = await resO.json();
-            document.getElementById('admin-order-list').innerHTML = orders.reverse().map(o => {
-                const itemsHtml = o.items.map(i => `<span class="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded text-[10px] mr-1 inline-block mb-1">${i.qty}x ${i.name}</span>`).join('');
-                return `
-                <tr class="border-b border-white/5 hover:bg-white/5">
-                    <td class="py-4"><div class="font-bold text-xs">${o.name}</div><div class="text-[10px] text-gray-500">${o.id}</div></td>
-                    <td class="max-w-[200px]">${itemsHtml}</td>
-                    <td class="text-xs font-bold">${o.total.toLocaleString('tr-TR')} TL <br><span class="text-[10px] text-green-400">${o.discountCode || ''}</span></td>
-                    <td class="text-cyan-400 font-bold text-[10px] uppercase">${o.status}</td>
-                    <td>
-                        <select onchange="updateStatus('${o.id}', this.value)" class="bg-black/60 border border-white/10 rounded p-1 text-[10px] outline-none">
-                            <option value="" disabled selected>Değiştir</option>
-                            <option value="Hazırlanıyor">Hazırlanıyor</option>
-                            <option value="Kargoya Verildi">Kargoda</option>
-                            <option value="Teslim Edildi">Tamamlandı</option>
-                        </select>
-                    </td>
-                </tr>`
-            }).join('');
-
-            const resP = await fetch(`${API_URL}/products`);
-            const prods = await resP.json();
-            document.getElementById('admin-stock-list').innerHTML = prods.map(p => `
-                <div class="glass p-4 flex justify-between items-center border border-white/5">
-                    <div>
-                        <div class="font-bold text-sm">${p.name}</div>
-                        <div class="text-xs text-gray-400">Stok: <span class="text-white">${p.stock}</span></div>
-                    </div>
-                    <button onclick="updateStock(${p.id}, ${p.stock})" class="text-[10px] bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded">GÜNCELLE</button>
-                </div>
-            `).join('');
-        }
-
-        async function updateStatus(id, s) {
-            await fetch(`${API_URL}/admin/orders/${id}/status`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({status: s}) });
-            loadAdmin(); showToast("Durum Güncellendi");
-        }
-
-        async function updateStock(id, current) {
-            const n = prompt(`Yeni stok adedi (Mevcut: ${current}):`);
-            if(n !== null && n !== "") {
-                await fetch(`${API_URL}/products/${id}/stock`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({stock: n}) });
-                loadAdmin(); fetchProducts(); showToast("Stok Güncellendi");
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+                video.srcObject = stream;
+                return true;
+            } catch (err) {
+                ekranaYaz("Sistem", "Kamera erişimi reddedildi.", "hata");
+                return false;
             }
         }
 
-        function switchView(v) {
-            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-            document.getElementById('view-' + v).classList.add('active');
-            if(v === 'cart') renderCart();
-            if(v === 'admin') loadAdmin();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+        function kamerayiKapat() {
+            if(video.srcObject) {
+                video.srcObject.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+            }
+            kameraArayuzu.style.display = 'none';
+            taramaDevamEdiyor = false;
         }
 
-        function showToast(m, err = false) {
-            const t = document.getElementById('toast');
-            t.innerText = m; t.style.background = err ? "#ef4444" : "#00e5ff"; t.style.color = err ? "white" : "black";
-            t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000);
+        async function ilkYuzKaydiniBaslat() {
+            if (taramaDevamEdiyor) return;
+            taramaDevamEdiyor = true;
+
+            ekranaYaz("Sistem", "Ahmet Tuncer için biyometrik kayıt başlatılıyor...");
+            sesliKonus("Hoşgeldiniz patron. Lütfen yüzünüzü taratmak için kameraya bakın.");
+            kameraMetni.innerText = "PATRON KAYDEDİLİYOR...";
+            
+            const acildi = await kamerayiAc();
+            if (!acildi) return;
+
+            const taramaAraligi = setInterval(async () => {
+                const tespit = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                if (tespit) {
+                    clearInterval(taramaAraligi);
+                    const descriptorArray = Array.from(tespit.descriptor);
+                    localStorage.setItem("tuncer_face_data", JSON.stringify(descriptorArray));
+                    const labeledDescriptor = new faceapi.LabeledFaceDescriptors("Ahmet Tuncer", [new Float32Array(descriptorArray)]);
+                    faceMatcher = new faceapi.FaceMatcher(labeledDescriptor, 0.45);
+                    kamerayiKapat();
+                    ekranaYaz("Sistem", "Ahmet Tuncer profili başarıyla oluşturuldu.");
+                    sesliKonus("Profiliniz kaydedildi patron. Artık güvendeyiz.");
+                }
+            }, 1000);
         }
 
-        window.onload = fetchProducts;
+        async function yuzIleSistemiAc() {
+            if (taramaDevamEdiyor) return;
+            if (!yuzTanimaHazir || !faceMatcher) {
+                sesliKonus("Biyometrik modüller yükleniyor, bekleyin.");
+                return;
+            }
+
+            taramaDevamEdiyor = true;
+            ekranaYaz("Sistem", "Biyometrik kimlik doğrulanıyor...");
+            sesliKonus("Lütfen kameraya bakın patron.");
+            kameraMetni.innerText = "KİMLİK DOĞRULANIYOR...";
+            
+            const acildi = await kamerayiAc();
+            if (!acildi) return;
+
+            let denemeSayisi = 0;
+            const taramaAraligi = setInterval(async () => {
+                denemeSayisi++;
+                const tespit = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                
+                if (tespit) {
+                    const eslesme = faceMatcher.findBestMatch(tespit.descriptor);
+                    if (eslesme.label === "Ahmet Tuncer" && eslesme.distance < 0.45) { 
+                        clearInterval(taramaAraligi);
+                        
+                        sistemAktif = true;
+                        hud.classList.remove("kilitli");
+                        sistemDurumEtiketi.innerText = "SİSTEM DURUMU: AKTİF";
+                        arduinoKomutGonder("POWER_ON");
+                        document.documentElement.style.setProperty('--neon-color', '#00f0ff');
+                        
+                        ekranaYaz("Tuncer Zeka", "Erişim Onaylandı. Hoşgeldiniz Ahmet Tuncer.");
+                        sesliKonus("Erişim onaylandı. Tüm sistemler emrinizde Ahmet Tuncer.");
+                        kamerayiKapat(); // En son kapatıyoruz ki döngü kırılsın
+                        return;
+                    }
+                }
+
+                // Eşleşme olmadan 10 deneme biterse reddet
+                if (denemeSayisi >= 10) {
+                    clearInterval(taramaAraligi);
+                    kamerayiKapat();
+                    ekranaYaz("Tuncer Zeka", "ERİŞİM REDDEDİLDİ. YETKİSİZ KİŞİ.", "hata");
+                    sesliKonus("Yetkisiz erişim denemesi tespit edildi. Sistem kilitlendi.");
+                }
+            }, 800);
+        }
+
+        // --- AÇILIŞ LOGLARI ---
+        const terminal = document.getElementById("terminal-loader");
+        const bootScreen = document.getElementById("boot-screen");
+        const logs = [
+            "> INITIALIZING KERNEL...",
+            "> LOADING NEURAL NETWORK...",
+            "> CONNECTING TO SATELLITE...",
+            "> LOADING BIOMETRIC AI MODELS...",
+            "> PREPARING FACE RECOGNITION API...",
+            "> WEAPON SYSTEMS STANDBY...",
+            "> TUNCER INDUSTRIES PROTOCOL v4.6",
+            "> SYSTEM READY."
+        ];
+
+        let logIndex = 0;
+        function runLogs() {
+            if (logIndex < logs.length) {
+                terminal.innerHTML += logs[logIndex] + "<br>";
+                logIndex++;
+                setTimeout(runLogs, 150);
+            } else {
+                setTimeout(() => {
+                    bootScreen.style.transform = "translateY(-100%)";
+                    yuzTanimaModulleriniYukle(); 
+                }, 800);
+            }
+        }
+
+        window.onload = runLogs;
+
+        async function arduinoBaglan() {
+            try {
+                port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 }); 
+                const textEncoder = new TextEncoderStream();
+                textEncoder.readable.pipeTo(port.writable);
+                writer = textEncoder.writable.getWriter();
+                document.getElementById('btn-arduino').style.background = "var(--neon-color)";
+                document.getElementById('btn-arduino').style.color = "#000";
+                document.getElementById('btn-arduino').innerText = "DONANIM BAĞLI";
+                ekranaYaz("Sistem", "Donanım Protokolü Bağlandı.", "sistem");
+                sesliKonus("Donanım arayüzü aktif edildi patron.");
+            } catch (e) { ekranaYaz("Hata", "Port seçilemedi.", "hata"); }
+        }
+
+        async function arduinoKomutGonder(komutStr) {
+            if (writer) await writer.write(komutStr + "\n");
+        }
+
+        function modDegistir(mod) {
+            aktifMod = mod;
+            if (mod === 'manuel') {
+                btnManuel.classList.add("aktif"); btnOto.classList.remove("aktif");
+                komutBtn.style.display = "block";
+            } else {
+                btnManuel.classList.remove("aktif"); btnOto.classList.add("aktif");
+                komutBtn.style.display = "none"; setTimeout(otoDinleBaslat, 1000);
+            }
+        }
+
+        function manuelDinle() { if (!dinlemeAktif) try { recognition.start(); } catch(e){} }
+        function otoDinleBaslat() { if (aktifMod === 'oto' && !dinlemeAktif) try { recognition.start(); } catch(e){ setTimeout(otoDinleBaslat, 500); } }
+
+        recognition.onstart = () => { dinlemeAktif = true; hud.classList.add("isliyor"); durumMetni.innerText = "Dinleniyor..."; };
+        recognition.onend = () => {
+            dinlemeAktif = false; hud.classList.remove("isliyor");
+            if (aktifMod === 'oto') setTimeout(otoDinleBaslat, 300);
+        };
+
+        recognition.onresult = async (event) => {
+            let ses = event.results[0][0].transcript;
+            let kucukSes = ses.toLowerCase().trim();
+
+            if (aktifMod === 'oto' && !sistemAktif) {
+                if (!kucukSes.includes("sistemi başlat") && !kucukSes.includes("uyan")) return;
+            }
+
+            ekranaYaz("Sen", ses, "sen");
+            await cevapla(ses);
+        };
+
+        async function cevapla(cumle) {
+            let k = cumle.toLowerCase();
+
+            if (k.includes("sistemi başlat") || k.includes("uyan")) {
+                if(sistemAktif) { sesliKonus("Sistem zaten devrede patron."); return; }
+                yuzIleSistemiAc();
+                return;
+            }
+
+            if (!sistemAktif) {
+                sesliKonus("Sistem şu an kilitli. Lütfen önce beni uyandırın.");
+                return;
+            }
+
+            if (k.includes("silahları hazırla")) { 
+                arduinoKomutGonder("WEAPON_90");
+                sesliKonus("Silahlar çevrimiçi patron.");
+                return; 
+            }
+            if (k.includes("enerji durumu")) { sesliKonus(`Güç seviyesi yüzde ${kalanHak}.`); return; }
+            if (k.includes("savaş modu")) {
+                document.documentElement.style.setProperty('--neon-color', '#ff0033'); 
+                sistemDurumEtiketi.innerText = "SİSTEM: SAVAŞ MODU";
+                arduinoKomutGonder("COMBAT_ON");
+                sesliKonus("Savaş modu aktif."); return;
+            }
+            if (k.includes("normal mod")) {
+                document.documentElement.style.setProperty('--neon-color', '#00f0ff');
+                sistemDurumEtiketi.innerText = "SİSTEM: AKTİF";
+                arduinoKomutGonder("COMBAT_OFF");
+                sesliKonus("Normale dönüldü."); return;
+            }
+            
+            if (k.includes("ışıkları aç")) { arduinoKomutGonder("LIGHTS_ON"); sesliKonus("Işıklar açıldı."); return; }
+            if (k.includes("ışıkları kapat")) { arduinoKomutGonder("LIGHTS_OFF"); sesliKonus("Işıklar kapandı."); return; }
+            if (k.includes("sistemi kilitle") || k.includes("uyku modu")) {
+                sistemAktif = false;
+                hud.classList.add("kilitli");
+                arduinoKomutGonder("POWER_OFF");
+                document.documentElement.style.setProperty('--neon-color', '#555555'); 
+                sistemDurumEtiketi.innerText = "SİSTEM: UYKU MODU";
+                sesliKonus("Sistem kilitlendi."); return;
+            }
+
+            if (await navigasyonAnaliz(cumle)) return;
+
+            sohbetGecmisi.push({ role: "user", content: cumle });
+            try {
+                const cevap = await puter.ai.chat(sohbetGecmisi, { model: 'gpt-4o-mini' });
+                sohbetGecmisi.push({ role: "assistant", content: cevap.toString() });
+                ekranaYaz("Tuncer Zeka", cevap);
+                sesliKonus(cevap);
+            } catch (e) { ekranaYaz("Hata", "İletişim hatası."); }
+        }
+
+        async function navigasyonAnaliz(cumle) {
+            let k = cumle.toLowerCase();
+            if (k.includes("götür") || k.includes("yol tarifi") || k.includes("rota")) {
+                let hedef = k.replace("tuncer", "").replace("beni", "").replace("götür", "").replace("yol tarifi", "").replace("rota çiz", "").trim();
+                if(hedef.length > 2) { sesliKonus(hedef + " için rota hesaplanıyor."); rotayiCiz(hedef); return true; }
+            }
+            return false;
+        }
+
+        function rotayiCiz(hedefMetin) {
+            navigator.geolocation.getCurrentPosition(async (pos) => {
+                const bLat = pos.coords.latitude; const bLng = pos.coords.longitude;
+                let r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(hedefMetin)}&countrycodes=tr`);
+                let d = await r.json();
+                if(d.length > 0) haritaGoster(bLat, bLng, d[0].lat, d[0].lon);
+            }, null, { enableHighAccuracy: true });
+        }
+
+        function haritaGoster(basLat, basLng, bitLat, bitLng) {
+            haritaWrapper.style.display = "block";
+            setTimeout(() => { haritaWrapper.classList.add("aktif"); sohbet.style.height = "10vh"; }, 50);
+
+            if (!map) {
+                map = L.map('harita-alani', { zoomControl: false }).setView([basLat, basLng], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                let radarIcon = L.divIcon({ className: 'radar', html: '<div class="gps-pulse-container"><div class="gps-ring"></div><div class="gps-dot"></div></div>', iconSize: [20, 20] });
+                kullaniciMarker = L.marker([basLat, basLng], {icon: radarIcon}).addTo(map);
+            }
+            if (routingControl) map.removeControl(routingControl);
+            routingControl = L.Routing.control({
+                waypoints: [L.latLng(basLat, basLng), L.latLng(bitLat, bitLng)],
+                show: false,
+                lineOptions: { styles: [{color: 'var(--neon-color)', opacity: 0.8, weight: 6}] }
+            }).addTo(map);
+
+            routingControl.on('routesfound', (e) => {
+                map.flyToBounds(L.latLngBounds(e.routes[0].coordinates), { padding: [30, 30], duration: 2 });
+                sesliKonus("Rota hazır patron.");
+            });
+        }
+
+        function ekranaYaz(kim, yazi, tur="normal") {
+            let stil = kim === "Tuncer Zeka" ? "yapay-zeka" : (tur === "sen" ? "sen" : (tur === "hata" ? "hata" : "sistem"));
+            sohbet.innerHTML += `<div class="mesaj ${stil}"><b>${kim}:</b> ${yazi}</div>`;
+            sohbet.scrollTop = sohbet.scrollHeight;
+        }
+
+        function sesliKonus(metin) {
+            window.speechSynthesis.cancel(); 
+            const u = new SpeechSynthesisUtterance(metin);
+            u.lang = 'tr-TR';
+            u.pitch = 0.8;
+            u.onend = () => { if (aktifMod === 'oto') setTimeout(otoDinleBaslat, 500); };
+            window.speechSynthesis.speak(u);
+        }
     </script>
 </body>
 </html>
-
 
