@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUNCER CORE v9.0 | LOCAL ENGINE</title>
+    <title>TUNCER CORE v10.0 | TOTAL ENGINE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -12,7 +12,6 @@
 
         :root {
             --glow-cyan: #0891b2;
-            --glow-red: #ef4444;
             --glow-orange: #f59e0b;
             --hud-bg: rgba(2, 6, 23, 0.9);
         }
@@ -24,7 +23,6 @@
             overflow: hidden;
             margin: 0;
             height: 100vh;
-            user-select: none;
         }
 
         .orbitron { font-family: 'Orbitron', sans-serif; }
@@ -32,385 +30,328 @@
         /* HUD Vision Layers */
         #video-layer {
             position: fixed; inset: 0; z-index: -2; object-fit: cover;
-            opacity: 0; transition: opacity 1.5s ease; transform: scaleX(-1);
-            filter: contrast(1.2) saturate(0.5) sepia(0.3) hue-rotate(180deg);
+            opacity: 0; transition: opacity 1s ease; transform: scaleX(-1);
+            filter: brightness(0.6) contrast(1.4) saturate(0.2) sepia(0.2) hue-rotate(180deg);
         }
 
         .hud-overlay {
             position: fixed; inset: 0; z-index: -1; pointer-events: none;
-            border: 2px solid rgba(8, 145, 178, 0.2);
-            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%);
+            border: 20px solid rgba(8, 145, 178, 0.05);
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
             display: none;
         }
 
         .scan-line {
-            position: absolute; width: 100%; height: 3px;
-            background: rgba(8, 145, 178, 0.4); opacity: 0.3;
+            position: absolute; width: 100%; height: 2px;
+            background: rgba(8, 145, 178, 0.3); opacity: 0.5;
             animation: scan 4s infinite linear;
-            box-shadow: 0 0 20px var(--glow-cyan);
+            box-shadow: 0 0 15px var(--glow-cyan);
         }
 
-        @keyframes scan { from { top: -10%; } to { top: 110%; } }
-
-        /* Custom Scrollbar */
-        .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); border-radius: 4px; }
+        @keyframes scan { from { top: -5%; } to { top: 105%; } }
 
         /* Components */
         .glass-panel {
             background: var(--hud-bg); backdrop-filter: blur(12px);
-            border: 1px solid rgba(8, 145, 178, 0.3);
-            box-shadow: 0 0 20px rgba(0,0,0,0.9), inset 0 0 15px rgba(8, 145, 178, 0.05);
+            border: 1px solid rgba(8, 145, 178, 0.2);
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
         .arc-reactor {
-            position: relative; width: 110px; height: 110px; border-radius: 50%;
-            border: 3px solid var(--glow-cyan); display: flex; align-items: center; justify-content: center;
+            position: relative; width: 100px; height: 100px; border-radius: 50%;
+            border: 4px solid var(--glow-cyan); display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: all 0.3s ease;
-            box-shadow: 0 0 30px rgba(8, 145, 178, 0.4);
+            box-shadow: 0 0 20px rgba(8, 145, 178, 0.4);
         }
 
-        .arc-reactor:active { scale: 0.95; }
-        .arc-reactor.listening { border-color: #fff; box-shadow: 0 0 50px #fff; }
-        .arc-reactor.processing { border-color: var(--glow-orange); box-shadow: 0 0 50px var(--glow-orange); animation: pulse 1s infinite; }
+        .arc-reactor.listening { border-color: #fff; box-shadow: 0 0 40px #fff; }
+        .arc-reactor.processing { border-color: var(--glow-orange); box-shadow: 0 0 40px var(--glow-orange); animation: pulse 1s infinite; }
+
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
         #map-container {
             height: 200px; width: 100%; display: none; border: 1px solid var(--glow-cyan);
-            margin-bottom: 1rem; filter: hue-rotate(180deg) brightness(0.7) contrast(1.5);
-            border-radius: 8px;
+            margin-bottom: 1rem; border-radius: 8px; filter: invert(1) hue-rotate(180deg) brightness(0.8);
         }
 
-        .logic-node { font-size: 10px; font-weight: bold; margin-bottom: 4px; display: block; letter-spacing: 1px; }
+        .custom-scroll::-webkit-scrollbar { width: 3px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); }
         
-        /* Grid Background for offline vibe */
-        .grid-bg {
-            background-size: 40px 40px;
-            background-image: linear-gradient(to right, rgba(8, 145, 178, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(8, 145, 178, 0.05) 1px, transparent 1px);
-            position: absolute; inset: 0; z-index: -3;
-        }
+        .status-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; border: 1px solid currentColor; text-transform: uppercase; }
     </style>
 </head>
-<body class="flex flex-col relative">
-    
-    <div class="grid-bg"></div>
+<body class="flex flex-col p-4">
 
-    <!-- VISION BACKGROUND -->
+    <!-- VISION LAYER -->
     <video id="video-layer" autoplay playsinline muted></video>
     <div id="hud-frame" class="hud-overlay">
         <div class="scan-line"></div>
-        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-cyan-500/20 rounded-full animate-ping opacity-20"></div>
+        <!-- HUD Corners -->
+        <div class="absolute top-4 left-4 w-10 h-10 border-t-2 border-l-2 border-cyan-500/50"></div>
+        <div class="absolute top-4 right-4 w-10 h-10 border-t-2 border-r-2 border-cyan-500/50"></div>
+        <div class="absolute bottom-4 left-4 w-10 h-10 border-b-2 border-l-2 border-cyan-500/50"></div>
+        <div class="absolute bottom-4 right-4 w-10 h-10 border-b-2 border-r-2 border-cyan-500/50"></div>
     </div>
 
-    <!-- MAIN INTERFACE -->
-    <div class="relative z-10 flex flex-col h-full p-4 max-w-4xl mx-auto w-full">
-        
-        <!-- HEADER -->
-        <header class="flex justify-between items-start glass-panel p-4 rounded-xl mb-4 border-l-4 border-l-orange-500">
-            <div>
-                <h1 class="orbitron text-2xl font-bold tracking-tighter text-white">TUNCER_CORE <span class="text-orange-500 text-sm">v9.0</span></h1>
-                <div class="text-[10px] text-orange-400 mt-1 uppercase tracking-widest font-bold">100% OFFLINE LOCAL ENGINE</div>
-                <div class="flex gap-2 mt-2">
-                    <span class="text-[9px] px-2 py-0.5 bg-cyan-950 rounded text-cyan-200 border border-cyan-900">USER: AHMET_TUNCER</span>
-                    <span id="hw-tag" class="text-[9px] px-2 py-0.5 bg-gray-900 rounded text-gray-500 border border-gray-800">HW: OFFLINE</span>
-                </div>
+    <!-- UI HEADER -->
+    <header class="flex justify-between items-start glass-panel p-4 rounded-xl mb-4 border-l-4 border-l-orange-500">
+        <div>
+            <h1 class="orbitron text-2xl font-bold text-white tracking-tighter">TUNCER_CORE <span class="text-orange-500 text-sm">v10.0</span></h1>
+            <div class="flex gap-2 mt-2">
+                <span id="auth-tag" class="status-tag text-cyan-500 border-cyan-900 bg-cyan-950/20">USER: AHMET_TUNCER</span>
+                <span id="hw-tag" class="status-tag text-gray-500 border-gray-800 bg-gray-900">HW: DISCONNECTED</span>
             </div>
-            <div class="text-right">
-                <div id="status-display" class="orbitron text-[12px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold shadow-[0_0_10px_rgba(239,68,68,0.2)]">System Sleep</div>
-                <div class="text-[8px] opacity-60 mt-2 text-cyan-300">CLOUD_LINK: SEVERED</div>
-                <div class="text-[8px] opacity-60 mt-1 text-orange-300">LOCAL_PROC: ACTIVE</div>
+        </div>
+        <div class="text-right flex flex-col items-end gap-1">
+            <div id="status-display" class="orbitron text-[11px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold">Offline_Sleep</div>
+            <div class="text-[8px] text-cyan-400 opacity-60">MODE: PURE_LOGIC</div>
+        </div>
+    </header>
+
+    <!-- INTERACTIVE MAP -->
+    <div id="map-container"></div>
+
+    <!-- MAIN CONSOLE -->
+    <main id="chat-stream" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-4 pr-2">
+        <div class="text-center opacity-30 text-[10px] uppercase tracking-[0.3em] my-10">
+            [Sistem Tam Kapasite Hazır] <br> "Uyan" Komutu Bekleniyor
+        </div>
+    </main>
+
+    <!-- RIGHT HUD (SIDEBAR) -->
+    <aside id="eng-hud" class="hidden fixed right-6 top-40 w-44 space-y-4 pointer-events-none">
+        <div class="glass-panel p-3 rounded text-[9px] space-y-2 border-r-4 border-r-orange-500">
+            <div class="text-orange-500 font-bold border-b border-orange-900 pb-1 mb-1">LOCAL_ALU_METRICS</div>
+            <div class="flex justify-between"><span>CPU_LATENCY</span><span class="text-white">0.02ms</span></div>
+            <div class="flex justify-between"><span>MATH_MODULE</span><span class="text-green-400">READY</span></div>
+            <div class="flex justify-between"><span>GEO_PARSER</span><span class="text-green-400">READY</span></div>
+            <div class="flex justify-between"><span>HW_LINK</span><span id="hw-status" class="text-red-500">OFF</span></div>
+        </div>
+    </aside>
+
+    <!-- CONTROLS -->
+    <footer class="flex flex-col items-center gap-4">
+        <div class="flex gap-3">
+            <button onclick="connectSerial()" class="text-[10px] border border-cyan-800 px-5 py-2 rounded-lg uppercase hover:bg-cyan-900/60 transition-all font-bold">Donanım Bağla</button>
+            <button onclick="toggleVision()" class="text-[10px] border border-orange-800 px-5 py-2 rounded-lg uppercase text-orange-400 hover:bg-orange-900/60 transition-all font-bold">Vizyon Katmanı</button>
+            <button onclick="forceWake()" class="text-[10px] border border-red-800 px-5 py-2 rounded-lg uppercase text-red-500 hover:bg-red-900/60 transition-all font-bold">Manuel Başlat</button>
+        </div>
+
+        <div id="reactor" onclick="toggleListening()" class="arc-reactor">
+            <div class="w-14 h-14 rounded-full bg-cyan-950 flex items-center justify-center border border-cyan-500/50">
+                <div class="w-6 h-6 rounded-full bg-cyan-400 shadow-[0_0_20px_#0891b2]"></div>
             </div>
-        </header>
+        </div>
+        <div class="text-[9px] opacity-30 tracking-[0.5em] uppercase font-bold text-cyan-300">Aural Core Sensor</div>
+    </footer>
 
-        <!-- MAP PANEL -->
-        <div id="map-container"></div>
-
-        <!-- LOGS / CHAT -->
-        <main id="chat-stream" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-4 pr-2">
-            <div class="text-[10px] opacity-50 italic text-center uppercase tracking-widest text-orange-500">
-                [UYARI] Dış ağ bağlantıları kesildi. Sistem tamamen cihaz donanımında (Offline) çalışıyor. Kimlik doğrulaması bekleniyor...
-            </div>
-        </main>
-
-        <!-- ENG HUD OVERLAY -->
-        <aside id="eng-hud" class="hidden absolute right-6 top-40 w-40 space-y-3 pointer-events-none">
-            <div class="glass-panel p-3 rounded text-[9px] space-y-2">
-                <div class="text-orange-500 font-bold border-b border-orange-900 pb-1 mb-1">LOCAL_METRICS</div>
-                <div class="flex justify-between"><span>MATH_ALU</span><span class="text-green-400 font-bold">ON</span></div>
-                <div class="flex justify-between"><span>PATTERN_REC</span><span class="text-green-400 font-bold">ON</span></div>
-                <div class="flex justify-between"><span>NLP_REGEX</span><span class="text-green-400 font-bold">ON</span></div>
-                <div class="flex justify-between"><span>EXT_CLOUD</span><span class="text-red-500 font-bold">CUT</span></div>
-            </div>
-        </aside>
-
-        <!-- CONTROLS -->
-        <footer class="flex flex-col items-center gap-4 py-2">
-            <div class="flex gap-4">
-                <button onclick="connectSerial()" class="text-[10px] border border-cyan-800 bg-black/50 px-5 py-2 rounded hover:bg-cyan-900/60 hover:border-cyan-400 uppercase transition-all shadow-lg font-bold">Donanım Bağla</button>
-                <button onclick="toggleVision()" class="text-[10px] border border-orange-800 bg-black/50 text-orange-400 px-5 py-2 rounded hover:bg-orange-900/60 hover:border-orange-400 uppercase transition-all shadow-lg font-bold">Vizyon Modu</button>
-            </div>
-
-            <div id="reactor" onclick="toggleListening()" class="arc-reactor mt-2">
-                <div class="w-16 h-16 rounded-full bg-cyan-900/50 shadow-[inset_0_0_20px_#0891b2] flex items-center justify-center border border-cyan-500/30">
-                    <div class="w-8 h-8 rounded-full bg-cyan-400 shadow-[0_0_15px_#fff]"></div>
-                </div>
-            </div>
-            <div class="text-[9px] opacity-40 tracking-[0.4em] uppercase font-bold text-cyan-500">Local Voice Receptor</div>
-        </footer>
-    </div>
-
-    <!-- LOGIC SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
-        // --- FIREBASE INIT (SADECE VERİ KAYDI İÇİN, YAPAY ZEKA İÇİN DEĞİL) ---
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-v9';
+        // Firebase Fallback
+        try {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            signInAnonymously(auth);
+        } catch(e) { console.log("Local Mode: Firebase skipped."); }
 
-        let isSystemActive = false;
-        let muhendisModu = false;
-        let serialPort = null;
+        window.isSystemActive = false;
         let serialWriter = null;
         let map = null;
-        let currentUser = null;
 
-        // Firebase Auth
-        onAuthStateChanged(auth, async (user) => {
-            if (user) currentUser = user;
-            else await signInAnonymously(auth);
-        });
-
-        // --- YEREL BİLİŞSEL MOTOR (LOCAL NLP & PATTERN MATCHER) ---
-        // PUTER AI İPTAL EDİLDİ. Tüm mantık cihazın kendi işlemcisinde dönüyor.
+        // --- LOCAL COGNITIVE BRAIN (OFFLINE) ---
         const LocalBrain = {
-            patterns: [
-                { match: /(merhaba|selam|hey|günaydın)/, responses: ["Selamlar Ahmet Bey. Sistemlerim tamamen yerel donanımınız üzerinden çalışıyor.", "Merhaba patron. Dış ağ bağlantım kesik, güvendeyiz.", "Sizi dinliyorum patron."] },
-                { match: /(nasılsın|durum ne|rapor ver)/, responses: ["Bulut bağlantım kasten koparıldı. Bütün işlem gücümü cihazınızın işlemcisinden alıyorum. Stabilim.", "Çekirdek algoritmalarım çevrimdışı modda sorunsuz çalışıyor Ahmet Bey."] },
-                { match: /(sen kimsin|adın ne|nesin sen)/, responses: ["Ben Tuncer Core. Sizin için özel olarak kodlanmış, %100 çevrimdışı çalışan bir bilişsel motorum.", "İsmim Tuncer Zeka. Dışarıdan hiçbir veri almadan kendi mantığımda çalışan yerel bir asistanım."] },
-                { match: /(teşekkürler|sağ ol|aferin)/, responses: ["Benim görevim bu patron.", "Emrinizdeyim Ahmet Bey.", "Sizin kodlarınız sayesinde çalışıyorum patron, teşekkür etmenize gerek yok."] },
-                { match: /(saat|zaman)/, responses: [() => `Şu an yerel saat ${new Date().toLocaleTimeString('tr-TR')}`] },
-                { match: /(ne yapabilirsin|yeteneklerin)/, responses: ["Matematik hesaplamaları, regex tabanlı mantık yürütme, donanım kontrolü ve harita analizini internete ihtiyaç duymadan cihazınızda yapabilirim."] },
-                { match: /(kapat|uyu)/, responses: ["Çekirdekleri uyku moduna alıyorum patron. Görüşmek üzere.", "Sistem çevrimdışı uykuya geçiyor."] }
-            ],
-            
-            // Papağan olmamak için dinamik cevap üretici
+            responses: {
+                "merhaba": "Selamlar Ahmet Bey. Yerel çekirdek stabil ve emrinizde.",
+                "nasılsın": "Çevrimdışı modda %100 performansla çalışıyorum patron. Tüm birimler stabil.",
+                "kimsin": "Ben Tuncer Core v10.0. Sizin için özel olarak kodlanmış, bulutsuz çalışan yerel bir zekayım.",
+                "saat": () => `Yerel zaman kaydı: ${new Date().toLocaleTimeString('tr-TR')}`,
+                "durum": "ALU aktif, HW link hazır, Vizyon beklemede.",
+                "kapat": "Sistemler uyku moduna alınıyor. İyi günler patron."
+            },
             think: function(input) {
                 const text = input.toLowerCase();
                 
-                // Matematik Kontrolü
-                const mathResult = evaluateMath(text);
-                if (mathResult) return { type: 'math', text: `Hesaplandı: ${mathResult.equation} eşittir ${mathResult.result}` };
+                // 1. Math Local Processing
+                const mathResult = this.calc(text);
+                if(mathResult) return { type: 'math', msg: `İşlem Çözümlendi: ${mathResult}` };
 
-                // Regex Desen Eşleştirme (Bulanık değil, akıllı eşleştirme)
-                for (let item of this.patterns) {
-                    if (item.match.test(text)) {
-                        const res = item.responses[Math.floor(Math.random() * item.responses.length)];
-                        return { type: 'neural', text: typeof res === 'function' ? res() : res };
+                // 2. Pattern Matching
+                for(let key in this.responses) {
+                    if(text.includes(key)) {
+                        const r = this.responses[key];
+                        return { type: 'neural', msg: typeof r === 'function' ? r() : r };
                     }
                 }
-
-                // Eşleşme Bulunamazsa (Zekice Fallback)
-                const fallbacks = [
-                    "Bunu yerel veritabanımda bulamadım patron. Bulut bağlantım olmadığı için dışarıdan öğrenemiyorum.",
-                    "Bu komutu analiz ettim ancak offline kelime dağarcığımda tam bir karşılık bulamadım.",
-                    "Mantık devrem bu cümlenin niyetini tam çözemedi. Daha matematiksel veya net bir emir verebilir misiniz?"
-                ];
-                return { type: 'neural', text: fallbacks[Math.floor(Math.random() * fallbacks.length)] };
+                
+                return { type: 'neural', msg: "Bu komut yerel kütüphanemde tanımlı değil ancak mantık devrem analiz ediyor." };
+            },
+            calc: function(text) {
+                const clean = text.replace(/artı/g, '+').replace(/eksi/g, '-').replace(/çarpı/g, '*').replace(/bölü/g, '/').replace(/,/g, '.');
+                const match = clean.match(/(\d+\.?\d*)\s*([\+\-\*\/])\s*(\d+\.?\d*)/);
+                if(match) {
+                    try { return eval(match[0]); } catch(e) { return null; }
+                }
+                return null;
             }
         };
 
-        // --- YEREL ALU (MATEMATİK İŞLEMCİSİ) ---
-        const evaluateMath = (text) => {
-            let processed = text
-                .replace(/artı/g, '+').replace(/eksi/g, '-')
-                .replace(/çarpı/g, '*').replace(/çarp/g, '*')
-                .replace(/bölü/g, '/').replace(/böl/g, '/')
-                .replace(/yüzde/g, '*0.01*');
-            
-            const mathRegex = /(?:(?:\d+\.?\d*)\s*[\+\-\*\/]\s*)+(?:\d+\.?\d*)/g;
-            const match = processed.match(mathRegex);
-            
-            if (match) {
-                try {
-                    const eq = match[0];
-                    const result = Function('"use strict";return (' + eq + ')')();
-                    if (!isNaN(result) && isFinite(result)) return { equation: eq, result: result };
-                } catch (e) { return null; }
-            }
-            return null;
+        // --- CORE FUNCTIONS ---
+        window.forceWake = () => {
+            window.isSystemActive = true;
+            const sd = document.getElementById('status-display');
+            sd.innerText = "Active_Core";
+            sd.className = "orbitron text-[11px] text-green-400 bg-green-950/30 px-3 py-1 rounded border border-green-500 uppercase font-bold";
+            updateLog("Sistem manuel olarak uyandırıldı. Çekirdek birimler aktif.", "system");
+            speak("Sistem aktif. Hoş geldiniz patron.");
         };
 
-        // --- UI GÜNCELLEMELERİ ---
-        window.updateLog = (msg, role = 'core', type = 'text') => {
+        window.updateLog = (msg, role = 'core', type = 'neural') => {
             const stream = document.getElementById('chat-stream');
             const entry = document.createElement('div');
+            entry.className = role === 'user' ? "flex flex-col items-end mb-4" : "flex flex-col items-start mb-4";
             
-            if (role === 'user') {
-                entry.className = "flex flex-col items-end mb-4 animate-in slide-in-from-right";
-                entry.innerHTML = `<span class="text-[9px] text-cyan-600 mb-1 tracking-widest font-bold">PATRON</span><div class="glass-panel px-4 py-2 rounded-lg text-sm text-white">${msg}</div>`;
-            } else if (role === 'system') {
-                entry.innerHTML = `<div class="text-[9px] text-orange-400 opacity-60 uppercase tracking-[0.2em] text-center my-4 border-b border-orange-900/30 pb-1">${msg}</div>`;
-            } else {
-                entry.className = "flex flex-col items-start mb-4 animate-in slide-in-from-left";
-                let badge = type === 'math' ? '<span class="logic-node text-green-400">[LOCAL_ALU]</span>' : 
-                            type === 'nav' ? '<span class="logic-node text-blue-400">[LOCAL_GEO_ROUTING]</span>' :
-                            type === 'hw' ? '<span class="logic-node text-yellow-400">[LOCAL_HARDWARE]</span>' :
-                            '<span class="logic-node text-orange-400">[LOCAL_NLP_ENGINE]</span>';
-                
-                entry.innerHTML = `<span class="text-[9px] text-orange-500 mb-1 tracking-widest font-bold">TUNCER_CORE</span>
-                                   <div class="glass-panel px-4 py-2 rounded-lg text-sm border-l-2 ${type==='math'?'border-green-500':type==='hw'?'border-yellow-500':'border-orange-500'} bg-black/80">
-                                     ${badge}
-                                     <span class="${type==='math'?'text-green-200':'text-cyan-100'}">${msg}</span>
-                                   </div>`;
-            }
+            const badgeColor = type === 'math' ? 'text-green-400' : type === 'hw' ? 'text-yellow-400' : 'text-cyan-400';
+            const badgeText = type === 'math' ? '[LOCAL_ALU]' : type === 'hw' ? '[HW_SIGNAL]' : '[NEURAL_CORE]';
+            
+            entry.innerHTML = `
+                <span class="text-[8px] opacity-40 mb-1 uppercase tracking-widest">${role === 'user' ? 'Patron' : 'Tuncer_Core'}</span>
+                <div class="glass-panel px-4 py-2 rounded-lg text-sm border-l-2 ${role==='user'?'border-orange-500 text-white':'border-cyan-500 text-cyan-100'}">
+                    ${role !== 'user' ? `<div class="text-[9px] font-bold ${badgeColor} mb-1">${badgeText}</div>` : ''}
+                    ${msg}
+                </div>`;
             stream.appendChild(entry);
             stream.scrollTop = stream.scrollHeight;
         };
 
         window.speak = (text) => {
             window.speechSynthesis.cancel();
-            const speech = new SpeechSynthesisUtterance(text);
-            speech.lang = 'tr-TR'; speech.pitch = 0.7; speech.rate = 1.1; // Daha mekanik, kalın bir ses
-            window.speechSynthesis.speak(speech);
+            const s = new SpeechSynthesisUtterance(text);
+            s.lang = 'tr-TR'; s.pitch = 0.8; s.rate = 1.05;
+            window.speechSynthesis.speak(s);
         };
 
-        // --- DONANIM (TAMAMEN LOCAL) ---
+        window.processCommand = async (input) => {
+            if(!input) return;
+            updateLog(input, 'user');
+            
+            const raw = input.toLowerCase();
+
+            // Uyanma Kontrolü
+            if(raw.includes("uyan") || raw.includes("başlat")) {
+                forceWake(); return;
+            }
+
+            if(!window.isSystemActive) {
+                speak("Sistem kilitli. Lütfen uyan komutu verin."); return;
+            }
+
+            // Kapatma
+            if(raw.includes("kapat") || raw.includes("uyu")) {
+                window.isSystemActive = false;
+                const sd = document.getElementById('status-display');
+                sd.innerText = "Offline_Sleep";
+                sd.className = "orbitron text-[11px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold";
+                updateLog("Sistem uyku moduna geçiyor.", "system");
+                speak("Görüşmek üzere patron."); return;
+            }
+
+            // Donanım Komutları
+            if(raw.includes("ışık") || raw.includes("lazer")) {
+                if(raw.includes("aç")) { executeHardware("LED_ON"); updateLog("Işıklar açıldı.", "core", "hw"); speak("Donanım sinyali gönderildi."); return; }
+                if(raw.includes("kapat")) { executeHardware("LED_OFF"); updateLog("Işıklar kapatıldı.", "core", "hw"); speak("Işıklar devredışı."); return; }
+            }
+
+            // Harita / Lokasyon
+            if(raw.includes("harita") || raw.includes("nerede") || raw.includes("konum")) {
+                const target = raw.replace(/harita|nerede|konum|aç|çiz|bul/g, "").trim();
+                if(target.length > 2) {
+                    updateLog(`${target} aranıyor...`, "system");
+                    const found = await executeNav(target);
+                    if(found) { updateLog(`${target} koordinatları yansıtıldı.`, "core", "neural"); speak("Konum bulundu."); }
+                    else { updateLog("Lokasyon yerel bellekte bulunamadı.", "core", "neural"); speak("Lokasyon tespiti başarısız."); }
+                    return;
+                }
+            }
+
+            // Vizyon
+            if(raw.includes("vizyon")) { toggleVision(); return; }
+
+            // Bilişsel İşlem
+            const result = LocalBrain.think(raw);
+            updateLog(result.msg, 'core', result.type);
+            speak(result.msg);
+        };
+
+        // --- HARDWARE ---
         window.connectSerial = async () => {
             try {
-                serialPort = await navigator.serial.requestPort();
-                await serialPort.open({ baudRate: 9600 });
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
                 const encoder = new TextEncoderStream();
-                encoder.readable.pipeTo(serialPort.writable);
+                encoder.readable.pipeTo(port.writable);
                 serialWriter = encoder.writable.getWriter();
                 
-                const tag = document.getElementById('hw-tag');
-                tag.innerText = "HW: CONNECTED";
-                tag.classList.replace('bg-gray-900', 'bg-green-900/60');
-                tag.classList.replace('text-gray-500', 'text-green-300');
-                tag.classList.replace('border-gray-800', 'border-green-500');
-                
-                updateLog("Donanım arayüzü seri porta bağlandı.", "system");
-                speak("Donanım sistemleri devrede.");
-            } catch (e) { updateLog("Donanım reddedildi.", "system"); }
+                document.getElementById('hw-tag').innerText = "HW: CONNECTED";
+                document.getElementById('hw-tag').className = "status-tag text-green-400 border-green-900 bg-green-950/20";
+                document.getElementById('hw-status').innerText = "ON";
+                document.getElementById('hw-status').className = "text-green-400";
+                updateLog("Donanım (Seri Port) bağlantısı kuruldu.", "system");
+                speak("Donanım sistemleri senkronize edildi.");
+            } catch(e) { updateLog("Donanım erişimi reddedildi.", "system"); }
         };
 
         const executeHardware = async (cmd) => {
-            if (serialWriter) await serialWriter.write(cmd + "\n");
+            if(serialWriter) await serialWriter.write(cmd + "\n");
         };
 
-        // --- HARİTA ---
+        // --- MAP ---
         const executeNav = async (loc) => {
             try {
-                // Not: Koordinat bulmak için Nominatim kullanılır, harita çizimi cihazda yapılır.
                 const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}`);
                 const data = await res.json();
-                if (data && data.length > 0) {
+                if(data && data.length > 0) {
                     const { lat, lon } = data[0];
                     document.getElementById('map-container').style.display = "block";
-                    if (!map) {
-                        map = L.map('map-container').setView([lat, lon], 14);
+                    if(!map) {
+                        map = L.map('map-container').setView([lat, lon], 13);
                         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                    } else { map.setView([lat, lon], 14); }
+                    } else { map.setView([lat, lon], 13); }
                     L.marker([lat, lon]).addTo(map).bindPopup(loc).openPopup();
                     return true;
                 }
-            } catch (e) { return false; }
+            } catch(e) { return false; }
             return false;
         };
 
-        // --- VİZYON (KAMERA - LOCAL) ---
+        // --- VISION ---
         window.toggleVision = () => {
-            muhendisModu = !muhendisModu;
-            const video = document.getElementById('video-layer');
-            const hud = document.getElementById('hud-frame');
-            const engHud = document.getElementById('eng-hud');
-
-            if (muhendisModu) {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(stream => { video.srcObject = stream; video.style.opacity = "0.7"; });
-                hud.style.display = "block"; engHud.style.display = "block";
-                updateLog("Optik sensörler aktif edildi.", "system");
+            const v = document.getElementById('video-layer');
+            const h = document.getElementById('hud-frame');
+            const eh = document.getElementById('eng-hud');
+            if(v.style.opacity === "0.6") {
+                v.style.opacity = "0"; h.style.display = "none"; eh.style.display = "none";
+                if(v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
             } else {
-                if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-                video.style.opacity = "0"; hud.style.display = "none"; engHud.style.display = "none";
+                navigator.mediaDevices.getUserMedia({video: { facingMode: "environment" }})
+                    .then(s => { 
+                        v.srcObject = s; v.style.opacity = "0.6"; 
+                        h.style.display = "block"; eh.style.display = "block";
+                        speak("Vizyon katmanları aktif.");
+                    })
+                    .catch(e => updateLog("Vizyon erişimi engellendi.", "system"));
             }
         };
 
-        // --- ANA İŞLEMCİ (COMMAND PARSER) ---
-        window.processCommand = async (input) => {
-            const raw = input.toLowerCase().trim();
-            updateLog(input, 'user');
-
-            // Uyanma
-            if (raw.includes("uyan") || raw.includes("başlat")) {
-                isSystemActive = true;
-                const st = document.getElementById('status-display');
-                st.innerText = "LOCAL_ACTIVE"; st.classList.replace('text-red-500', 'text-green-400');
-                st.classList.replace('bg-red-950/30', 'bg-green-950/30');
-                st.classList.replace('border-red-900/50', 'border-green-500');
-                const msg = "Yerel algoritmalar aktif. Bulut bağlantısı yok, tamamen güvendeyiz patron.";
-                updateLog(msg, 'core', 'neural'); speak(msg); return;
-            }
-
-            if (!isSystemActive) { speak("Sistem kilitli."); return; }
-            if (raw.includes("kapat") || raw.includes("uyu")) { isSystemActive = false; const st = document.getElementById('status-display'); st.innerText = "System Sleep"; st.className="orbitron text-[12px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold shadow-[0_0_10px_rgba(239,68,68,0.2)]"; LocalBrain.think("kapat"); return; }
-
-            // Niyet Ayrıştırıcı (Intent Router)
-            setReactorState('processing');
-            
-            setTimeout(async () => {
-                // 1. Donanım Niyeti
-                if (raw.includes("ışık") || raw.includes("lazer")) {
-                    if (raw.includes("aç")) { executeHardware("LED_ON"); updateLog("Işıklar açıldı.", 'core', 'hw'); speak("Donanım aktif."); setReactorState('idle'); return; }
-                    if (raw.includes("kapat")) { executeHardware("LED_OFF"); updateLog("Işıklar kapatıldı.", 'core', 'hw'); speak("Donanım devredışı."); setReactorState('idle'); return; }
-                }
-
-                // 2. Vizyon Niyeti
-                if (raw.includes("vizyon")) { toggleVision(); speak("Kamera değiştirildi."); setReactorState('idle'); return; }
-
-                // 3. Navigasyon Niyeti
-                if (raw.includes("götür") || raw.includes("harita") || raw.includes("nerede")) {
-                    const target = raw.replace(/beni|götür|nerede|konum|harita|aç|çiz/g, "").trim();
-                    if (target.length > 2) {
-                        updateLog(`${target} koordinatları hesaplanıyor...`, "system");
-                        const found = await executeNav(target);
-                        if (found) {
-                            updateLog(`${target} haritaya yansıtıldı.`, 'core', 'nav'); speak("Rota çizildi.");
-                        } else {
-                            updateLog(`Yerel önbellekte ${target} bulunamadı.`, 'core', 'nav'); speak("Lokasyon tespiti başarısız.");
-                        }
-                        setReactorState('idle'); return;
-                    }
-                }
-
-                // 4. Bilişsel Niyet (NLP & Math)
-                const response = LocalBrain.think(raw);
-                updateLog(response.text, 'core', response.type);
-                speak(response.text);
-                setReactorState('idle');
-
-            }, 400); // Gerçekçi yerel işlem gecikmesi simülasyonu
-        };
-
-        // --- MİKROFON ---
-        const setReactorState = (state) => {
-            const r = document.getElementById('reactor');
-            r.className = "arc-reactor mt-2";
-            if (state === 'listening') r.classList.add('listening');
-            if (state === 'processing') r.classList.add('processing');
-        };
-
+        // --- VOICE ---
         window.toggleListening = () => {
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Rec) { updateLog("Tarayıcı mikrofonu desteklemiyor.", "system"); return; }
+            if(!Rec) return;
             const r = new Rec(); r.lang = 'tr-TR';
-            
-            r.onstart = () => setReactorState('listening');
-            r.onend = () => { if(document.getElementById('reactor').classList.contains('listening')) setReactorState('idle'); };
+            r.onstart = () => document.getElementById('reactor').classList.add('listening');
+            r.onend = () => document.getElementById('reactor').classList.remove('listening');
             r.onresult = (e) => processCommand(e.results[0][0].transcript);
             r.start();
         };
@@ -418,5 +359,4 @@
     </script>
 </body>
 </html>
-
 
