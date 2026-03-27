@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUNCER CORE v7.0 | NEURAL INTERFACE</title>
+    <title>TUNCER CORE v9.0 | LOCAL ENGINE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500;700&display=swap');
 
         :root {
-            --glow-cyan: #06b6d4;
+            --glow-cyan: #0891b2;
             --glow-red: #ef4444;
-            --hud-bg: rgba(0, 15, 20, 0.85);
+            --glow-orange: #f59e0b;
+            --hud-bg: rgba(2, 6, 23, 0.9);
         }
 
         body {
@@ -26,249 +27,246 @@
             user-select: none;
         }
 
-        h1, h2, .orbitron { font-family: 'Orbitron', sans-serif; }
+        .orbitron { font-family: 'Orbitron', sans-serif; }
 
         /* HUD Vision Layers */
         #video-layer {
-            position: fixed;
-            inset: 0;
-            z-index: -2;
-            object-fit: cover;
-            opacity: 0;
-            transition: opacity 1.5s ease;
-            transform: scaleX(-1);
+            position: fixed; inset: 0; z-index: -2; object-fit: cover;
+            opacity: 0; transition: opacity 1.5s ease; transform: scaleX(-1);
+            filter: contrast(1.2) saturate(0.5) sepia(0.3) hue-rotate(180deg);
         }
 
         .hud-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            border: 2px solid rgba(6, 182, 212, 0.1);
-            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.4) 100%);
+            position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            border: 2px solid rgba(8, 145, 178, 0.2);
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%);
             display: none;
         }
 
         .scan-line {
-            position: absolute;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(to bottom, transparent, var(--glow-cyan), transparent);
-            opacity: 0.1;
+            position: absolute; width: 100%; height: 3px;
+            background: rgba(8, 145, 178, 0.4); opacity: 0.3;
             animation: scan 4s infinite linear;
+            box-shadow: 0 0 20px var(--glow-cyan);
         }
 
         @keyframes scan { from { top: -10%; } to { top: 110%; } }
 
         /* Custom Scrollbar */
         .custom-scroll::-webkit-scrollbar { width: 4px; }
-        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-        .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); border-radius: 4px; }
 
         /* Components */
         .glass-panel {
-            background: var(--hud-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(6, 182, 212, 0.1);
+            background: var(--hud-bg); backdrop-filter: blur(12px);
+            border: 1px solid rgba(8, 145, 178, 0.3);
+            box-shadow: 0 0 20px rgba(0,0,0,0.9), inset 0 0 15px rgba(8, 145, 178, 0.05);
         }
 
         .arc-reactor {
-            position: relative;
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            border: 4px solid var(--glow-cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+            position: relative; width: 110px; height: 110px; border-radius: 50%;
+            border: 3px solid var(--glow-cyan); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 0 30px rgba(8, 145, 178, 0.4);
         }
 
-        .arc-reactor:active { scale: 0.9; }
-        .arc-reactor.listening { 
-            border-color: #fff; 
-            box-shadow: 0 0 50px #fff, inset 0 0 20px #fff;
-        }
+        .arc-reactor:active { scale: 0.95; }
+        .arc-reactor.listening { border-color: #fff; box-shadow: 0 0 50px #fff; }
+        .arc-reactor.processing { border-color: var(--glow-orange); box-shadow: 0 0 50px var(--glow-orange); animation: pulse 1s infinite; }
 
         #map-container {
-            height: 250px;
-            width: 100%;
-            display: none;
-            border: 1px solid var(--glow-cyan);
-            margin-bottom: 1rem;
-            filter: hue-rotate(180deg) brightness(0.8) contrast(1.2);
+            height: 200px; width: 100%; display: none; border: 1px solid var(--glow-cyan);
+            margin-bottom: 1rem; filter: hue-rotate(180deg) brightness(0.7) contrast(1.5);
+            border-radius: 8px;
         }
 
-        /* Responsive Text */
-        .glitch-text { animation: glitch 2s infinite; }
-        @keyframes glitch {
-            0% { text-shadow: 2px 0 var(--glow-red); }
-            50% { text-shadow: -2px 0 var(--glow-cyan); }
-            100% { text-shadow: 2px 0 var(--glow-red); }
-        }
-
-        .hud-corner {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            border-color: var(--glow-cyan);
-            border-width: 2px;
+        .logic-node { font-size: 10px; font-weight: bold; margin-bottom: 4px; display: block; letter-spacing: 1px; }
+        
+        /* Grid Background for offline vibe */
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(8, 145, 178, 0.05) 1px, transparent 1px), linear-gradient(to bottom, rgba(8, 145, 178, 0.05) 1px, transparent 1px);
+            position: absolute; inset: 0; z-index: -3;
         }
     </style>
 </head>
-<body>
+<body class="flex flex-col relative">
+    
+    <div class="grid-bg"></div>
 
-    <!-- VIDEO BACKGROUND -->
+    <!-- VISION BACKGROUND -->
     <video id="video-layer" autoplay playsinline muted></video>
     <div id="hud-frame" class="hud-overlay">
         <div class="scan-line"></div>
-        <div class="hud-corner top-0 left-0 border-t border-l"></div>
-        <div class="hud-corner top-0 right-0 border-t border-r"></div>
-        <div class="hud-corner bottom-0 left-0 border-b border-l"></div>
-        <div class="hud-corner bottom-0 right-0 border-b border-r"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border border-cyan-500/20 rounded-full animate-ping opacity-20"></div>
     </div>
 
     <!-- MAIN INTERFACE -->
-    <div class="relative z-10 h-full flex flex-col p-4">
+    <div class="relative z-10 flex flex-col h-full p-4 max-w-4xl mx-auto w-full">
         
         <!-- HEADER -->
-        <header class="flex justify-between items-start glass-panel p-4 rounded-xl mb-4 border-l-4 border-l-cyan-500">
+        <header class="flex justify-between items-start glass-panel p-4 rounded-xl mb-4 border-l-4 border-l-orange-500">
             <div>
-                <h1 class="orbitron text-lg font-bold tracking-tighter text-white">TUNCER CORE <span class="text-cyan-500 italic text-sm">v7.0</span></h1>
-                <div class="flex gap-4 mt-1">
-                    <span id="auth-tag" class="text-[9px] px-2 py-0.5 bg-cyan-900/50 rounded text-cyan-300">AUTHORIZED: AHMET_TUNCER</span>
-                    <span id="hw-tag" class="text-[9px] px-2 py-0.5 bg-gray-900 rounded text-gray-500 transition-colors">HW_LINK: NULL</span>
+                <h1 class="orbitron text-2xl font-bold tracking-tighter text-white">TUNCER_CORE <span class="text-orange-500 text-sm">v9.0</span></h1>
+                <div class="text-[10px] text-orange-400 mt-1 uppercase tracking-widest font-bold">100% OFFLINE LOCAL ENGINE</div>
+                <div class="flex gap-2 mt-2">
+                    <span class="text-[9px] px-2 py-0.5 bg-cyan-950 rounded text-cyan-200 border border-cyan-900">USER: AHMET_TUNCER</span>
+                    <span id="hw-tag" class="text-[9px] px-2 py-0.5 bg-gray-900 rounded text-gray-500 border border-gray-800">HW: OFFLINE</span>
                 </div>
             </div>
-            <div class="text-right flex flex-col items-end">
-                <div id="status-display" class="orbitron text-[10px] text-red-500 bg-red-950/20 px-3 py-1 rounded-full border border-red-900/50">SYSTEM_OFFLINE</div>
-                <div id="memory-stats" class="text-[8px] opacity-40 mt-1 uppercase">KB_NODES: 0 | CACHE: 0ms</div>
+            <div class="text-right">
+                <div id="status-display" class="orbitron text-[12px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold shadow-[0_0_10px_rgba(239,68,68,0.2)]">System Sleep</div>
+                <div class="text-[8px] opacity-60 mt-2 text-cyan-300">CLOUD_LINK: SEVERED</div>
+                <div class="text-[8px] opacity-60 mt-1 text-orange-300">LOCAL_PROC: ACTIVE</div>
             </div>
         </header>
 
         <!-- MAP PANEL -->
-        <div id="map-container" class="rounded-lg shadow-2xl"></div>
+        <div id="map-container"></div>
 
         <!-- LOGS / CHAT -->
         <main id="chat-stream" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-4 pr-2">
-            <div class="text-xs opacity-50 italic">Sistem başlatılıyor...</div>
+            <div class="text-[10px] opacity-50 italic text-center uppercase tracking-widest text-orange-500">
+                [UYARI] Dış ağ bağlantıları kesildi. Sistem tamamen cihaz donanımında (Offline) çalışıyor. Kimlik doğrulaması bekleniyor...
+            </div>
         </main>
 
-        <!-- HUD DATA (ENG MODE) -->
-        <aside id="eng-hud" class="hidden absolute right-4 top-32 w-32 space-y-4 pointer-events-none">
-            <div class="glass-panel p-2 rounded text-[8px] space-y-1">
-                <div class="text-cyan-500 border-b border-cyan-900 pb-1 mb-1">REALTIME_METRICS</div>
-                <div class="flex justify-between"><span>CPU</span><span id="cpu-val">14%</span></div>
-                <div class="flex justify-between"><span>RAM</span><span id="ram-val">2.1GB</span></div>
-                <div class="flex justify-between"><span>TMP</span><span id="tmp-val">38°C</span></div>
-            </div>
-            <div class="glass-panel p-2 rounded text-[8px]">
-                <div class="text-cyan-500 border-b border-cyan-900 pb-1 mb-1">GEO_DATA</div>
-                <div id="geo-lat">LAT: 0.0000</div>
-                <div id="geo-lng">LNG: 0.0000</div>
+        <!-- ENG HUD OVERLAY -->
+        <aside id="eng-hud" class="hidden absolute right-6 top-40 w-40 space-y-3 pointer-events-none">
+            <div class="glass-panel p-3 rounded text-[9px] space-y-2">
+                <div class="text-orange-500 font-bold border-b border-orange-900 pb-1 mb-1">LOCAL_METRICS</div>
+                <div class="flex justify-between"><span>MATH_ALU</span><span class="text-green-400 font-bold">ON</span></div>
+                <div class="flex justify-between"><span>PATTERN_REC</span><span class="text-green-400 font-bold">ON</span></div>
+                <div class="flex justify-between"><span>NLP_REGEX</span><span class="text-green-400 font-bold">ON</span></div>
+                <div class="flex justify-between"><span>EXT_CLOUD</span><span class="text-red-500 font-bold">CUT</span></div>
             </div>
         </aside>
 
         <!-- CONTROLS -->
-        <footer class="flex flex-col items-center gap-6 py-4">
-            <div class="flex gap-4 items-center">
-                <button onclick="connectSerial()" class="glass-panel px-4 py-2 text-[10px] hover:bg-cyan-900/30 transition-all uppercase tracking-widest">Connect Hardware</button>
-                <button onclick="toggleVision()" class="glass-panel px-4 py-2 text-[10px] hover:bg-cyan-900/30 transition-all uppercase tracking-widest">Toggle Vision</button>
+        <footer class="flex flex-col items-center gap-4 py-2">
+            <div class="flex gap-4">
+                <button onclick="connectSerial()" class="text-[10px] border border-cyan-800 bg-black/50 px-5 py-2 rounded hover:bg-cyan-900/60 hover:border-cyan-400 uppercase transition-all shadow-lg font-bold">Donanım Bağla</button>
+                <button onclick="toggleVision()" class="text-[10px] border border-orange-800 bg-black/50 text-orange-400 px-5 py-2 rounded hover:bg-orange-900/60 hover:border-orange-400 uppercase transition-all shadow-lg font-bold">Vizyon Modu</button>
             </div>
 
-            <div class="relative">
-                <div id="reactor" onclick="toggleListening()" class="arc-reactor">
-                    <div class="w-16 h-16 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                        <div id="reactor-inner" class="w-8 h-8 rounded-full bg-cyan-500 shadow-[0_0_20px_#06b6d4]"></div>
-                    </div>
+            <div id="reactor" onclick="toggleListening()" class="arc-reactor mt-2">
+                <div class="w-16 h-16 rounded-full bg-cyan-900/50 shadow-[inset_0_0_20px_#0891b2] flex items-center justify-center border border-cyan-500/30">
+                    <div class="w-8 h-8 rounded-full bg-cyan-400 shadow-[0_0_15px_#fff]"></div>
                 </div>
-                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] opacity-30 tracking-[0.4em] uppercase whitespace-nowrap">Voice Interaction Core</div>
             </div>
+            <div class="text-[9px] opacity-40 tracking-[0.4em] uppercase font-bold text-cyan-500">Local Voice Receptor</div>
         </footer>
     </div>
 
-    <!-- CORE LOGIC SCRIPTS -->
+    <!-- LOGIC SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
-        // --- GLOBAL STATE ---
+        // --- FIREBASE INIT (SADECE VERİ KAYDI İÇİN, YAPAY ZEKA İÇİN DEĞİL) ---
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-v7';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-v9';
 
-        let zeka_json = {};
         let isSystemActive = false;
         let muhendisModu = false;
-        let currentUser = null;
         let serialPort = null;
         let serialWriter = null;
         let map = null;
+        let currentUser = null;
 
-        // --- IDENTITY & INITIAL DATA ---
-        const defaultIntelligence = {
-            "ben kimim": "Siz Ahmet Tuncer'siniz. Bu sistemin yaratıcısı ve tek yetkilisiniz.",
-            "sahibim kim": "Sahibim Ahmet Tuncer'dir.",
-            "ismin ne": "Adım Tuncer Core. Ahmet Bey için geliştirilmiş 7. nesil yapay zekayım.",
-            "vizyonu aç": "Engineering HUD aktif ediliyor. Vizyon çevrimiçi.",
-            "mühendislik modunu aç": "Sistem mühendislik protokolü başlatıldı.",
-            "ışıkları aç": "Donanım komutu: Lights On.",
-            "saat kaç": () => `Şu an saat ${new Date().toLocaleTimeString('tr-TR')}`,
-            "nasılsın": "Çekirdek verilerim stabil, bulut kütüphanesi ile %100 senkronizeyim."
-        };
-
-        // --- FIREBASE SYNC (THE "BRAIN" DOWNLOADER) ---
+        // Firebase Auth
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                updateLog("Neural Cloud bağlantısı kuruldu.", "system");
-                
-                const brainRef = doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'zeka_json');
-                
-                // Real-time listener for zeka.json
-                onSnapshot(brainRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        zeka_json = { ...defaultIntelligence, ...snapshot.data().data };
-                        document.getElementById('memory-stats').innerText = `KB_NODES: ${Object.keys(zeka_json).length} | CACHE: STABLE`;
-                        updateLog("Zeka JSON güncellendi ve beyne indirildi.", "system");
-                    } else {
-                        zeka_json = defaultIntelligence;
-                        saveBrain(); // İlk kurulum
-                    }
-                });
-            } else {
-                await signInAnonymously(auth);
-            }
+            if (user) currentUser = user;
+            else await signInAnonymously(auth);
         });
 
-        const saveBrain = async () => {
-            if (!currentUser) return;
-            const brainRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'intelligence', 'zeka_json');
-            await setDoc(brainRef, { data: zeka_json }, { merge: true });
+        // --- YEREL BİLİŞSEL MOTOR (LOCAL NLP & PATTERN MATCHER) ---
+        // PUTER AI İPTAL EDİLDİ. Tüm mantık cihazın kendi işlemcisinde dönüyor.
+        const LocalBrain = {
+            patterns: [
+                { match: /(merhaba|selam|hey|günaydın)/, responses: ["Selamlar Ahmet Bey. Sistemlerim tamamen yerel donanımınız üzerinden çalışıyor.", "Merhaba patron. Dış ağ bağlantım kesik, güvendeyiz.", "Sizi dinliyorum patron."] },
+                { match: /(nasılsın|durum ne|rapor ver)/, responses: ["Bulut bağlantım kasten koparıldı. Bütün işlem gücümü cihazınızın işlemcisinden alıyorum. Stabilim.", "Çekirdek algoritmalarım çevrimdışı modda sorunsuz çalışıyor Ahmet Bey."] },
+                { match: /(sen kimsin|adın ne|nesin sen)/, responses: ["Ben Tuncer Core. Sizin için özel olarak kodlanmış, %100 çevrimdışı çalışan bir bilişsel motorum.", "İsmim Tuncer Zeka. Dışarıdan hiçbir veri almadan kendi mantığımda çalışan yerel bir asistanım."] },
+                { match: /(teşekkürler|sağ ol|aferin)/, responses: ["Benim görevim bu patron.", "Emrinizdeyim Ahmet Bey.", "Sizin kodlarınız sayesinde çalışıyorum patron, teşekkür etmenize gerek yok."] },
+                { match: /(saat|zaman)/, responses: [() => `Şu an yerel saat ${new Date().toLocaleTimeString('tr-TR')}`] },
+                { match: /(ne yapabilirsin|yeteneklerin)/, responses: ["Matematik hesaplamaları, regex tabanlı mantık yürütme, donanım kontrolü ve harita analizini internete ihtiyaç duymadan cihazınızda yapabilirim."] },
+                { match: /(kapat|uyu)/, responses: ["Çekirdekleri uyku moduna alıyorum patron. Görüşmek üzere.", "Sistem çevrimdışı uykuya geçiyor."] }
+            ],
+            
+            // Papağan olmamak için dinamik cevap üretici
+            think: function(input) {
+                const text = input.toLowerCase();
+                
+                // Matematik Kontrolü
+                const mathResult = evaluateMath(text);
+                if (mathResult) return { type: 'math', text: `Hesaplandı: ${mathResult.equation} eşittir ${mathResult.result}` };
+
+                // Regex Desen Eşleştirme (Bulanık değil, akıllı eşleştirme)
+                for (let item of this.patterns) {
+                    if (item.match.test(text)) {
+                        const res = item.responses[Math.floor(Math.random() * item.responses.length)];
+                        return { type: 'neural', text: typeof res === 'function' ? res() : res };
+                    }
+                }
+
+                // Eşleşme Bulunamazsa (Zekice Fallback)
+                const fallbacks = [
+                    "Bunu yerel veritabanımda bulamadım patron. Bulut bağlantım olmadığı için dışarıdan öğrenemiyorum.",
+                    "Bu komutu analiz ettim ancak offline kelime dağarcığımda tam bir karşılık bulamadım.",
+                    "Mantık devrem bu cümlenin niyetini tam çözemedi. Daha matematiksel veya net bir emir verebilir misiniz?"
+                ];
+                return { type: 'neural', text: fallbacks[Math.floor(Math.random() * fallbacks.length)] };
+            }
         };
 
-        // --- CORE FUNCTIONS ---
-        window.updateLog = (msg, role = 'core') => {
+        // --- YEREL ALU (MATEMATİK İŞLEMCİSİ) ---
+        const evaluateMath = (text) => {
+            let processed = text
+                .replace(/artı/g, '+').replace(/eksi/g, '-')
+                .replace(/çarpı/g, '*').replace(/çarp/g, '*')
+                .replace(/bölü/g, '/').replace(/böl/g, '/')
+                .replace(/yüzde/g, '*0.01*');
+            
+            const mathRegex = /(?:(?:\d+\.?\d*)\s*[\+\-\*\/]\s*)+(?:\d+\.?\d*)/g;
+            const match = processed.match(mathRegex);
+            
+            if (match) {
+                try {
+                    const eq = match[0];
+                    const result = Function('"use strict";return (' + eq + ')')();
+                    if (!isNaN(result) && isFinite(result)) return { equation: eq, result: result };
+                } catch (e) { return null; }
+            }
+            return null;
+        };
+
+        // --- UI GÜNCELLEMELERİ ---
+        window.updateLog = (msg, role = 'core', type = 'text') => {
             const stream = document.getElementById('chat-stream');
             const entry = document.createElement('div');
-            const time = new Date().toLocaleTimeString('tr-TR', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'});
             
             if (role === 'user') {
-                entry.className = "flex flex-col items-end animate-in fade-in slide-in-from-right duration-300";
-                entry.innerHTML = `<span class="text-[8px] opacity-40 mb-1">PATRON [${time}]</span><div class="glass-panel px-3 py-2 rounded-lg text-sm border-r-2 border-r-cyan-500">${msg}</div>`;
+                entry.className = "flex flex-col items-end mb-4 animate-in slide-in-from-right";
+                entry.innerHTML = `<span class="text-[9px] text-cyan-600 mb-1 tracking-widest font-bold">PATRON</span><div class="glass-panel px-4 py-2 rounded-lg text-sm text-white">${msg}</div>`;
             } else if (role === 'system') {
-                entry.innerHTML = `<div class="text-[9px] opacity-30 uppercase tracking-[0.2em] text-center my-2">--- ${msg} ---</div>`;
+                entry.innerHTML = `<div class="text-[9px] text-orange-400 opacity-60 uppercase tracking-[0.2em] text-center my-4 border-b border-orange-900/30 pb-1">${msg}</div>`;
             } else {
-                entry.className = "flex flex-col items-start animate-in fade-in slide-in-from-left duration-500";
-                entry.innerHTML = `<span class="text-[8px] opacity-40 mb-1">CORE [${time}]</span><div class="glass-panel px-3 py-2 rounded-lg text-sm border-l-2 border-l-cyan-500 text-cyan-200 shadow-lg">${msg}</div>`;
+                entry.className = "flex flex-col items-start mb-4 animate-in slide-in-from-left";
+                let badge = type === 'math' ? '<span class="logic-node text-green-400">[LOCAL_ALU]</span>' : 
+                            type === 'nav' ? '<span class="logic-node text-blue-400">[LOCAL_GEO_ROUTING]</span>' :
+                            type === 'hw' ? '<span class="logic-node text-yellow-400">[LOCAL_HARDWARE]</span>' :
+                            '<span class="logic-node text-orange-400">[LOCAL_NLP_ENGINE]</span>';
+                
+                entry.innerHTML = `<span class="text-[9px] text-orange-500 mb-1 tracking-widest font-bold">TUNCER_CORE</span>
+                                   <div class="glass-panel px-4 py-2 rounded-lg text-sm border-l-2 ${type==='math'?'border-green-500':type==='hw'?'border-yellow-500':'border-orange-500'} bg-black/80">
+                                     ${badge}
+                                     <span class="${type==='math'?'text-green-200':'text-cyan-100'}">${msg}</span>
+                                   </div>`;
             }
-
             stream.appendChild(entry);
             stream.scrollTop = stream.scrollHeight;
         };
@@ -276,39 +274,11 @@
         window.speak = (text) => {
             window.speechSynthesis.cancel();
             const speech = new SpeechSynthesisUtterance(text);
-            speech.lang = 'tr-TR';
-            speech.pitch = 0.8;
-            speech.rate = 1.1;
+            speech.lang = 'tr-TR'; speech.pitch = 0.7; speech.rate = 1.1; // Daha mekanik, kalın bir ses
             window.speechSynthesis.speak(speech);
         };
 
-        // --- FUZZY MATCH LOGIC ---
-        const getSimilarity = (s1, s2) => {
-            let longer = s1.length < s2.length ? s2 : s1;
-            let shorter = s1.length < s2.length ? s1 : s2;
-            if (longer.length === 0) return 1.0;
-            const editDistance = (s1, s2) => {
-                let costs = [];
-                for (let i = 0; i <= s1.length; i++) {
-                    let lastValue = i;
-                    for (let j = 0; j <= s2.length; j++) {
-                        if (i === 0) costs[j] = j;
-                        else if (j > 0) {
-                            let newValue = costs[j - 1];
-                            if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-                                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-                            costs[j - 1] = lastValue;
-                            lastValue = newValue;
-                        }
-                    }
-                    if (i > 0) costs[s2.length] = lastValue;
-                }
-                return costs[s2.length];
-            };
-            return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
-        };
-
-        // --- HARDWARE ---
+        // --- DONANIM (TAMAMEN LOCAL) ---
         window.connectSerial = async () => {
             try {
                 serialPort = await navigator.serial.requestPort();
@@ -317,24 +287,26 @@
                 encoder.readable.pipeTo(serialPort.writable);
                 serialWriter = encoder.writable.getWriter();
                 
-                document.getElementById('hw-tag').innerText = "HW_LINK: CONNECTED";
-                document.getElementById('hw-tag').classList.replace('bg-gray-900', 'bg-green-900/50');
-                document.getElementById('hw-tag').classList.replace('text-gray-500', 'text-green-300');
-                speak("Donanım katmanı doğrulandı. Ahmet Bey, iletişim kanalı açık.");
-                updateLog("Arduino Seri Port bağlantısı aktif.", "system");
-            } catch (e) {
-                updateLog("Donanım bağlantısı reddedildi.", "system");
-            }
+                const tag = document.getElementById('hw-tag');
+                tag.innerText = "HW: CONNECTED";
+                tag.classList.replace('bg-gray-900', 'bg-green-900/60');
+                tag.classList.replace('text-gray-500', 'text-green-300');
+                tag.classList.replace('border-gray-800', 'border-green-500');
+                
+                updateLog("Donanım arayüzü seri porta bağlandı.", "system");
+                speak("Donanım sistemleri devrede.");
+            } catch (e) { updateLog("Donanım reddedildi.", "system"); }
         };
 
-        const writeSerial = async (msg) => {
-            if (serialWriter) await serialWriter.write(msg + "\n");
+        const executeHardware = async (cmd) => {
+            if (serialWriter) await serialWriter.write(cmd + "\n");
         };
 
-        // --- NAVIGATION ---
-        const findAndMap = async (locationName) => {
+        // --- HARİTA ---
+        const executeNav = async (loc) => {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`);
+                // Not: Koordinat bulmak için Nominatim kullanılır, harita çizimi cihazda yapılır.
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}`);
                 const data = await res.json();
                 if (data && data.length > 0) {
                     const { lat, lon } = data[0];
@@ -342,19 +314,15 @@
                     if (!map) {
                         map = L.map('map-container').setView([lat, lon], 14);
                         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                    } else {
-                        map.setView([lat, lon], 14);
-                    }
-                    L.marker([lat, lon]).addTo(map).bindPopup(locationName).openPopup();
-                    speak(`${locationName} için koordinat takibi başlatıldı.`);
-                    updateLog(`${locationName} konumu haritaya yansıtıldı.`, "system");
+                    } else { map.setView([lat, lon], 14); }
+                    L.marker([lat, lon]).addTo(map).bindPopup(loc).openPopup();
                     return true;
                 }
             } catch (e) { return false; }
             return false;
         };
 
-        // --- VISION ---
+        // --- VİZYON (KAMERA - LOCAL) ---
         window.toggleVision = () => {
             muhendisModu = !muhendisModu;
             const video = document.getElementById('video-layer');
@@ -364,126 +332,91 @@
             if (muhendisModu) {
                 navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                     .then(stream => { video.srcObject = stream; video.style.opacity = "0.7"; });
-                hud.style.display = "block";
-                engHud.style.display = "block";
-                speak("Mühendislik modu aktif.");
-                updateLog("HUD Vizyon katmanı aktif edildi.", "system");
+                hud.style.display = "block"; engHud.style.display = "block";
+                updateLog("Optik sensörler aktif edildi.", "system");
             } else {
                 if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-                video.style.opacity = "0";
-                hud.style.display = "none";
-                engHud.style.display = "none";
-                speak("Normal moda dönüldü.");
-                updateLog("Vizyon katmanı devredışı.", "system");
+                video.style.opacity = "0"; hud.style.display = "none"; engHud.style.display = "none";
             }
         };
 
-        // --- COMMAND PROCESSING ---
-        window.processCommand = async (rawInput) => {
-            const input = rawInput.toLowerCase().trim();
-            updateLog(rawInput, 'user');
+        // --- ANA İŞLEMCİ (COMMAND PARSER) ---
+        window.processCommand = async (input) => {
+            const raw = input.toLowerCase().trim();
+            updateLog(input, 'user');
 
-            if (input.includes("uyan") || input.includes("sistemi başlat")) {
+            // Uyanma
+            if (raw.includes("uyan") || raw.includes("başlat")) {
                 isSystemActive = true;
-                document.getElementById('status-display').innerText = "SYSTEM_ONLINE";
-                document.getElementById('status-display').className = "orbitron text-[10px] text-green-500 bg-green-950/20 px-3 py-1 rounded-full border border-green-900/50";
-                speak("Tüm sistemler Ahmet Tuncer için hazır. Hoş geldiniz patron.");
-                return;
+                const st = document.getElementById('status-display');
+                st.innerText = "LOCAL_ACTIVE"; st.classList.replace('text-red-500', 'text-green-400');
+                st.classList.replace('bg-red-950/30', 'bg-green-950/30');
+                st.classList.replace('border-red-900/50', 'border-green-500');
+                const msg = "Yerel algoritmalar aktif. Bulut bağlantısı yok, tamamen güvendeyiz patron.";
+                updateLog(msg, 'core', 'neural'); speak(msg); return;
             }
 
-            if (!isSystemActive) {
-                speak("Sistem kilitli. Lütfen önce kimlik doğrulama protokolünü başlatın.");
-                return;
-            }
+            if (!isSystemActive) { speak("Sistem kilitli."); return; }
+            if (raw.includes("kapat") || raw.includes("uyu")) { isSystemActive = false; const st = document.getElementById('status-display'); st.innerText = "System Sleep"; st.className="orbitron text-[12px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold shadow-[0_0_10px_rgba(239,68,68,0.2)]"; LocalBrain.think("kapat"); return; }
 
-            // Navigation Check
-            if (input.includes("götür") || input.includes("nerede") || input.includes("konum")) {
-                const target = input.replace(/beni|götür|nerede|konum|rota|çiz/g, "").trim();
-                if (target.length > 2) {
-                    const found = await findAndMap(target);
-                    if (found) return;
+            // Niyet Ayrıştırıcı (Intent Router)
+            setReactorState('processing');
+            
+            setTimeout(async () => {
+                // 1. Donanım Niyeti
+                if (raw.includes("ışık") || raw.includes("lazer")) {
+                    if (raw.includes("aç")) { executeHardware("LED_ON"); updateLog("Işıklar açıldı.", 'core', 'hw'); speak("Donanım aktif."); setReactorState('idle'); return; }
+                    if (raw.includes("kapat")) { executeHardware("LED_OFF"); updateLog("Işıklar kapatıldı.", 'core', 'hw'); speak("Donanım devredışı."); setReactorState('idle'); return; }
                 }
-            }
 
-            // Engineering Control
-            if (input.includes("vizyon") || input.includes("mühendislik mod")) {
-                toggleVision(); return;
-            }
+                // 2. Vizyon Niyeti
+                if (raw.includes("vizyon")) { toggleVision(); speak("Kamera değiştirildi."); setReactorState('idle'); return; }
 
-            // Hardware Control
-            if (input.includes("ışık") && input.includes("aç")) writeSerial("LED_ON");
-            if (input.includes("ışık") && input.includes("kapat")) writeSerial("LED_OFF");
-
-            // Knowledge Base (Brain) Search
-            const cleanInput = input.replace(/[.,!?]/g, '');
-            let bestMatchKey = null;
-            let highestScore = 0;
-
-            for (let key in zeka_json) {
-                const score = getSimilarity(cleanInput, key);
-                if (score > 0.75 && score > highestScore) {
-                    highestScore = score;
-                    bestMatchKey = key;
+                // 3. Navigasyon Niyeti
+                if (raw.includes("götür") || raw.includes("harita") || raw.includes("nerede")) {
+                    const target = raw.replace(/beni|götür|nerede|konum|harita|aç|çiz/g, "").trim();
+                    if (target.length > 2) {
+                        updateLog(`${target} koordinatları hesaplanıyor...`, "system");
+                        const found = await executeNav(target);
+                        if (found) {
+                            updateLog(`${target} haritaya yansıtıldı.`, 'core', 'nav'); speak("Rota çizildi.");
+                        } else {
+                            updateLog(`Yerel önbellekte ${target} bulunamadı.`, 'core', 'nav'); speak("Lokasyon tespiti başarısız.");
+                        }
+                        setReactorState('idle'); return;
+                    }
                 }
-            }
 
-            if (bestMatchKey) {
-                let response = zeka_json[bestMatchKey];
-                if (typeof response === 'function') response = response();
-                updateLog(response);
-                speak(response);
-            } else {
-                // Learn from AI
-                updateLog("Veri kütüphanede bulunamadı. Neural kütüphaneye danışılıyor...", "system");
-                try {
-                    const aiResponse = await window.puter.ai.chat(rawInput);
-                    const finalMsg = aiResponse.toString();
-                    updateLog(finalMsg);
-                    speak(finalMsg);
-                    
-                    // Permanent Learn
-                    zeka_json[cleanInput] = finalMsg;
-                    await saveBrain();
-                } catch (e) {
-                    updateLog("Neural bağlantı başarısız.", "system");
-                }
-            }
+                // 4. Bilişsel Niyet (NLP & Math)
+                const response = LocalBrain.think(raw);
+                updateLog(response.text, 'core', response.type);
+                speak(response.text);
+                setReactorState('idle');
+
+            }, 400); // Gerçekçi yerel işlem gecikmesi simülasyonu
         };
 
-        // --- VOICE RECOGNITION ---
+        // --- MİKROFON ---
+        const setReactorState = (state) => {
+            const r = document.getElementById('reactor');
+            r.className = "arc-reactor mt-2";
+            if (state === 'listening') r.classList.add('listening');
+            if (state === 'processing') r.classList.add('processing');
+        };
+
         window.toggleListening = () => {
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Rec) return;
-            const r = new Rec();
-            r.lang = 'tr-TR';
+            if (!Rec) { updateLog("Tarayıcı mikrofonu desteklemiyor.", "system"); return; }
+            const r = new Rec(); r.lang = 'tr-TR';
             
-            r.onstart = () => {
-                document.getElementById('reactor').classList.add('listening');
-                setIsListening(true);
-            };
-            r.onend = () => {
-                document.getElementById('reactor').classList.remove('listening');
-                setIsListening(false);
-            };
-            r.onresult = (e) => {
-                processCommand(e.results[0][0].transcript);
-            };
+            r.onstart = () => setReactorState('listening');
+            r.onend = () => { if(document.getElementById('reactor').classList.contains('listening')) setReactorState('idle'); };
+            r.onresult = (e) => processCommand(e.results[0][0].transcript);
             r.start();
         };
-
-        function setIsListening(val) { isListening = val; }
-        let isListening = false;
-
-        // HUD Realtime Metrics Simulation
-        setInterval(() => {
-            if (muhendisModu) {
-                document.getElementById('cpu-val').innerText = (Math.random() * 20 + 5).toFixed(1) + "%";
-                document.getElementById('ram-val').innerText = (Math.random() * 0.5 + 2.1).toFixed(1) + "GB";
-                document.getElementById('tmp-val').innerText = (Math.random() * 2 + 37).toFixed(1) + "°C";
-            }
-        }, 2000);
 
     </script>
 </body>
 </html>
+
 
