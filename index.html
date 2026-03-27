@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInAnonymously, signInWithCustomToken } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
 
-// --- FIREBASE SETUP ---
+// --- CONFIG & FIREBASE ---
 const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -16,65 +16,102 @@ export default function App() {
   const [status, setStatus] = useState("SİSTEM UYKUDA");
   const [isSystemActive, setIsSystemActive] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [muhendisModu, setMuhendisModu] = useState(false);
   const [knowledgeBase, setKnowledgeBase] = useState({});
+  const [showMap, setShowMap] = useState(false);
+  const [muhendisModu, setMuhendisModu] = useState(false);
+  const [arduinoConnected, setArduinoConnected] = useState(false);
+  
   const chatEndRef = useRef(null);
+  const mapRef = useRef(null);
+  const videoRef = useRef(null);
+  const leafletMap = useRef(null);
+  const arduinoWriter = useRef(null);
 
-  // --- 1. ÖZEL KİMLİK VERİSİ (PATRON PROTOKOLÜ) ---
+  // --- INITIAL KNOWLEDGE ---
   const initialData = {
-    "ben kimim": "Siz benim yaratıcım, Ahmet Tuncer'siniz. Siz olmasaydınız bu kod satırları var olmazdı patron.",
-    "sahibim kim": "Sahibim ve tek yetkili yöneticim Ahmet Tuncer'dir.",
-    "ismin ne": "Benim ismim Tuncer Zeka. Sizin için geliştirilmiş özel bir yapay zekayım.",
-    "kim tarafından yapıldın": "Ben Ahmet Tuncer tarafından, en gelişmiş algoritmalarla inşa edildim.",
+    "ben kimim": "Siz benim yaratıcım Ahmet Tuncer'siniz.",
+    "ismin ne": "Ben Tuncer Zeka. Sizin için geliştirilmiş özel bir işletim sistemiyim.",
     "merhaba": "Merhaba patron. Tüm sistemler emrinizde.",
-    "naber": "Sistem değerlerim optimal seviyede, sizin için ne yapabilirim Ahmet Bey?",
-    "vizyonu aç": "Görüntü işleme motoru başlatılıyor. Çevreyi analiz ediyorum.",
-    "sistemi kapat": "Sistem uyku moduna alınıyor. Görüşürüz patron."
+    "vizyonu aç": "Görüntü işleme motoru başlatılıyor. Mühendislik modu aktif.",
+    "mühendislik modunu aç": "Mühendislik modu aktif ediliyor. Vizyon çevrimiçi.",
+    "vizyonu kapat": "Normal arayüze dönülüyor.",
+    "ışıkları aç": "Donanım komutu gönderildi: Işıklar aktif.",
+    "sistemi kapat": "Sistem uyku moduna geçiyor. Görüşürüz patron."
   };
 
-  // --- 2. AUTH VE BULUT SENKRONİZASYONU ---
+  // --- AUTH & CLOUD SYNC ---
   useEffect(() => {
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInWithCustomToken(auth, __initial_auth_token);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
+    const initAuth = async () => { await signInAnonymously(auth); };
     initAuth();
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
-      if (u) syncCloudKnowledge(u.uid);
+      if (u) {
+        const docRef = doc(db, 'artifacts', appId, 'users', u.uid, 'intelligence', 'core_json');
+        onSnapshot(docRef, (snap) => {
+          if (snap.exists()) setKnowledgeBase({ ...initialData, ...snap.data().data });
+          else setKnowledgeBase(initialData);
+        });
+      }
     });
     return () => unsubscribe();
   }, []);
 
-  const syncCloudKnowledge = (uid) => {
-    const docRef = doc(db, 'artifacts', appId, 'users', uid, 'intelligence', 'core_json');
-    onSnapshot(docRef, (snap) => {
-      if (snap.exists()) {
-        setKnowledgeBase(prev => ({ ...initialData, ...snap.data().data }));
-      } else {
-        setKnowledgeBase(initialData);
+  // --- CAMERA CONTROL ---
+  useEffect(() => {
+    if (muhendisModu) {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; })
+        .catch(err => console.error("Kamera hatası:", err));
+    } else {
+      if (videoRef.current && videoRef.current.srcObject) {
+        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
       }
-    }, (err) => console.error("Sync Error:", err));
-  };
+    }
+  }, [muhendisModu]);
 
-  const learnNewInfo = async (question, answer) => {
+  const learn = async (q, a) => {
     if (!user) return;
-    const cleanQ = question.toLowerCase().trim().replace(/[.,!?]/g, '');
-    const updatedKB = { ...knowledgeBase, [cleanQ]: answer };
-    
-    const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'core_json');
-    await setDoc(docRef, { data: updatedKB }, { merge: true });
+    const cleanQ = q.toLowerCase().trim().replace(/[.,!?]/g, '');
+    const updated = { ...knowledgeBase, [cleanQ]: a };
+    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'core_json'), { data: updated }, { merge: true });
   };
 
-  // --- 3. BULANIK MANTIK MOTORU ---
+  // --- HARDWARE & ARDUINO ---
+  const connectArduino = async () => {
+    try {
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 9600 });
+      const encoder = new TextEncoderStream();
+      encoder.readable.pipeTo(port.writable);
+      arduinoWriter.current = encoder.writable.getWriter();
+      setArduinoConnected(true);
+      speak("Donanım bağlantısı sağlandı patron.");
+    } catch (e) { console.error("Arduino bağlantı hatası"); }
+  };
+
+  // --- NAVIGATION ---
+  const initMap = (lat, lng, targetName) => {
+    setShowMap(true);
+    setTimeout(() => {
+      if (!leafletMap.current) {
+        leafletMap.current = L.map(mapRef.current).setView([lat, lng], 13);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(leafletMap.current);
+      } else { leafletMap.current.setView([lat, lng], 13); }
+      L.marker([lat, lng]).addTo(leafletMap.current).bindPopup(targetName).openPopup();
+      speak(`${targetName} konumu haritaya işlendi.`);
+    }, 100);
+  };
+
+  const speak = (t) => {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'tr-TR'; u.pitch = 0.85; window.speechSynthesis.speak(u);
+  };
+
   const getSimilarity = (s1, s2) => {
     let longer = s1.length < s2.length ? s2 : s1;
     let shorter = s1.length < s2.length ? s1 : s2;
     if (longer.length === 0) return 1.0;
-    
     const editDistance = (s1, s2) => {
       let costs = [];
       for (let i = 0; i <= s1.length; i++) {
@@ -96,103 +133,103 @@ export default function App() {
     return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
   };
 
-  const checkNeuralLibrary = (input) => {
-    const q = input.toLowerCase().trim().replace(/[.,!?]/g, '');
-    if (knowledgeBase[q]) return { ans: knowledgeBase[q], type: "DIRECT" };
+  const handleInput = async (input) => {
+    const cmd = input.toLowerCase().trim();
+    setMessages(prev => [...prev, { role: 'user', content: input }]);
 
-    let bestMatch = null;
-    let maxScore = 0;
+    if (cmd.includes("uyan") || cmd.includes("başlat")) {
+      setIsSystemActive(true); setStatus("AKTİF");
+      speak("Tuncer Core Ahmet Bey için hazır."); return;
+    }
+
+    if (!isSystemActive) { speak("Sistem kilitli."); return; }
+
+    // Mühendislik Modu Kontrolü
+    if (cmd.includes("vizyonu aç") || cmd.includes("mühendislik modunu aç")) {
+      setMuhendisModu(true); speak("Mühendislik modu aktif."); return;
+    }
+    if (cmd.includes("vizyonu kapat") || cmd.includes("normal mod")) {
+      setMuhendisModu(false); speak("Normal arayüze geçiliyor."); return;
+    }
+
+    // Neural Check
+    const cleanQ = cmd.replace(/[.,!?]/g, '');
+    let bestMatch = null; let maxScore = 0;
     for (let key in knowledgeBase) {
-      const score = getSimilarity(q, key);
-      if (score > 0.72 && score > maxScore) { 
-        maxScore = score;
-        bestMatch = knowledgeBase[key];
-      }
-    }
-    return bestMatch ? { ans: bestMatch, type: "NEURAL" } : null;
-  };
-
-  // --- 4. ASİSTAN MANTIĞI ---
-  const speak = (text) => {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'tr-TR'; u.pitch = 0.82; u.rate = 1.05;
-    window.speechSynthesis.speak(u);
-  };
-
-  const processInput = async (input) => {
-    const cmd = input.toLowerCase();
-    const userMsg = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMsg]);
-
-    if (cmd.includes("uyan") || cmd.includes("sistemi başlat")) {
-      setIsSystemActive(true); setStatus("SİSTEM AKTİF");
-      const resp = "Ahmet Bey, biyometrik verileriniz doğrulandı. Tüm sistemler emrinizde.";
-      setMessages(prev => [...prev, { role: 'assistant', content: resp }]);
-      speak(resp); return;
+      const score = getSimilarity(cleanQ, key);
+      if (score > 0.75 && score > maxScore) { maxScore = score; bestMatch = knowledgeBase[key]; }
     }
 
-    if (!isSystemActive) { speak("Sistem kilitli. Lütfen kimlik doğrulama için uyan deyin."); return; }
-
-    if (cmd.includes("vizyonu aç")) { setMuhendisModu(true); speak("Vizyon aktif edildi."); return; }
-    if (cmd.includes("vizyonu kapat")) { setMuhendisModu(false); speak("Normal arayüze geçiliyor."); return; }
-
-    const libraryFound = checkNeuralLibrary(cmd);
-    if (libraryFound) {
-      const resp = libraryFound.ans;
-      setMessages(prev => [...prev, { role: 'assistant', content: `[KB-${libraryFound.type}]: ${resp}` }]);
-      speak(resp); return;
-    }
-
-    setStatus("DÜŞÜNÜLÜYOR...");
-    try {
-      const response = await window.puter.ai.chat(input);
-      const aiResp = response.toString();
-      setMessages(prev => [...prev, { role: 'assistant', content: aiResp }]);
-      speak(aiResp);
-      await learnNewInfo(input, aiResp);
-      setStatus("SİSTEM AKTİF");
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Hafıza modülüne ulaşılamıyor." }]);
+    if (bestMatch) {
+      setMessages(prev => [...prev, { role: 'assistant', content: bestMatch }]);
+      speak(bestMatch);
+    } else {
+      setStatus("ÖĞRENİLİYOR...");
+      try {
+        const res = await window.puter.ai.chat(input);
+        const aiResp = res.toString();
+        setMessages(prev => [...prev, { role: 'assistant', content: aiResp }]);
+        speak(aiResp);
+        await learn(input, aiResp);
+        setStatus("AKTİF");
+      } catch (e) { setStatus("HATA"); }
     }
   };
 
   const listen = () => {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Recognition) return;
-    const rec = new Recognition(); rec.lang = 'tr-TR';
-    rec.onstart = () => { setIsListening(true); setStatus("DİNLENİYOR..."); };
-    rec.onend = () => { setIsListening(false); setStatus(isSystemActive ? "SİSTEM AKTİF" : "SİSTEM UYKUDA"); };
-    rec.onresult = (e) => processInput(e.results[0][0].transcript);
-    rec.start();
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) return;
+    const r = new Rec(); r.lang = 'tr-TR';
+    r.onstart = () => { setIsListening(true); setStatus("DİNLENİYOR..."); };
+    r.onend = () => { setIsListening(false); setStatus(isSystemActive ? "AKTİF" : "UYKUDA"); };
+    r.onresult = (e) => handleInput(e.results[0][0].transcript);
+    r.start();
   };
 
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
   return (
-    <div className={`min-h-screen ${muhendisModu ? 'bg-gray-900' : 'bg-black'} text-cyan-400 font-mono p-4 flex flex-col transition-all duration-700`}>
-      
-      {/* HEADER HUD */}
-      <div className="flex justify-between items-start mb-6 border-l-4 border-cyan-500 pl-4 bg-gray-950/60 p-3 shadow-lg">
-        <div>
-          <h1 className="text-xl font-black tracking-tighter">TUNCER CORE V5.6</h1>
-          <p className="text-[10px] opacity-70">NEURAL_ENGINE: STABLE</p>
-          <p className="text-[10px] text-yellow-500 uppercase">Authorized User: Ahmet Tuncer</p>
+    <div className={`min-h-screen ${muhendisModu ? 'bg-transparent' : 'bg-[#050505]'} text-cyan-400 font-mono flex flex-col p-4 transition-colors duration-1000 overflow-hidden relative`}>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+      {/* VIZYON KATMANI */}
+      {muhendisModu && (
+        <div className="fixed inset-0 z-[-1] overflow-hidden">
+          <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-60 scale-x-[-1]" />
+          <div className="absolute inset-0 bg-cyan-900/10 pointer-events-none border-[2px] border-cyan-500/30 m-4 shadow-[inset_0_0_100px_rgba(6,182,212,0.2)]"></div>
+          {/* HUD ELEMENTS */}
+          <div className="absolute top-20 right-8 text-[8px] space-y-2 opacity-60 animate-pulse">
+            <div>GPS: 36.8841° N, 30.7056° E</div>
+            <div>ALT: 42m</div>
+            <div>SPD: 0.0 KM/H</div>
+          </div>
         </div>
-        <div className="text-right">
-          <div className={`text-xs ${isSystemActive ? 'text-green-400' : 'text-red-400'}`}>STATUS: {status}</div>
-          <div className="text-[9px] opacity-50">ENCRYPTION: AES_256</div>
+      )}
+
+      {/* TOP HUD */}
+      <div className={`flex justify-between border-b border-cyan-900 pb-2 mb-4 bg-black/40 p-2 backdrop-blur-sm`}>
+        <div className="text-[10px] tracking-widest">
+          TUNCER_CORE_V6.0 <br/>
+          USER: AHMET_TUNCER <br/>
+          MOD: {muhendisModu ? "ENGINEERING" : "NORMAL"}
+        </div>
+        <div className="text-right text-[10px]">
+          STATUS: <span className="text-white">{status}</span> <br/>
+          DB: NEURAL_CLOUD_JSON
         </div>
       </div>
 
-      {/* CHAT AREA */}
-      <div className={`flex-1 overflow-y-auto mb-4 space-y-4 p-4 rounded bg-black/50 backdrop-blur-md border border-cyan-900/40 w-full max-w-2xl mx-auto shadow-inner`}>
+      {/* MAP */}
+      {showMap && (
+        <div className="w-full h-40 rounded-lg border border-cyan-500 mb-4 overflow-hidden relative shadow-lg">
+          <div ref={mapRef} className="w-full h-full" />
+        </div>
+      )}
+
+      {/* MESSAGES */}
+      <div className={`flex-1 overflow-y-auto space-y-4 p-2 ${muhendisModu ? 'max-w-[250px]' : 'max-w-2xl mx-auto w-full'}`}>
         {messages.map((m, i) => (
           <div key={i} className={`${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-            <span className="text-[8px] opacity-40 uppercase tracking-widest">{m.role === 'user' ? 'Ahmet Tuncer' : 'Tuncer Zeka'}</span>
-            <p className={`p-3 rounded-xl text-sm inline-block shadow-md ${m.role === 'user' ? 'bg-cyan-900/40 text-cyan-100' : 'bg-gray-800/80 text-cyan-400 border-l-2 border-cyan-500'}`}>
+            <p className={`inline-block px-3 py-2 rounded text-[11px] bg-black/60 border ${m.role === 'user' ? 'border-gray-700 text-gray-300' : 'border-cyan-900 text-cyan-400'}`}>
               {m.content}
             </p>
           </div>
@@ -201,20 +238,23 @@ export default function App() {
       </div>
 
       {/* CORE BUTTON */}
-      <div className="flex justify-center items-center py-8">
+      <div className="flex flex-col items-center gap-4 mt-4 z-10">
         <button 
           onClick={listen}
-          className={`group relative w-28 h-28 rounded-full border-4 flex items-center justify-center transition-all duration-500 ${isListening ? 'border-white scale-110 shadow-[0_0_60px_#fff]' : 'border-cyan-500 shadow-[0_0_30px_#06b6d4]'}`}
+          className={`w-24 h-24 rounded-full border-4 flex items-center justify-center transition-all duration-500 bg-black/20 ${isListening ? 'border-white shadow-[0_0_50px_white]' : 'border-cyan-500 shadow-[0_0_20px_#06b6d4]'}`}
         >
-          <div className={`w-14 h-14 rounded-full bg-cyan-500 shadow-inner ${isListening ? 'animate-pulse' : ''}`}></div>
-          <div className="absolute inset-0 rounded-full border border-cyan-400 opacity-20 group-hover:animate-ping"></div>
+          <div className={`w-12 h-12 rounded-full bg-cyan-500 ${isListening ? 'animate-ping' : ''}`} />
         </button>
+        {!arduinoConnected && (
+          <button onClick={connectArduino} className="text-[8px] border border-cyan-900 px-4 py-1 hover:bg-cyan-900/40">HW LINK</button>
+        )}
       </div>
 
-      {/* FOOTER INFO */}
-      <div className="text-[9px] opacity-30 text-center tracking-[0.2em] mb-2 uppercase">
-        Memory Nodes Localized | Neural Cloud Persistence Enabled
-      </div>
+      <style dangerouslySetInnerHTML={{ __html: `
+        body { margin: 0; padding: 0; background: black; }
+        ::-webkit-scrollbar { width: 2px; }
+        ::-webkit-scrollbar-thumb { background: #083344; }
+      `}} />
     </div>
   );
 }
