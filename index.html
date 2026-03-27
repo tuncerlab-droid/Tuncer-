@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUNCER CORE v10.0 | TOTAL ENGINE</title>
+    <title>TUNCER CORE v11.0 | NATIVE ML</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500;700&display=swap');
 
         :root {
             --glow-cyan: #0891b2;
             --glow-orange: #f59e0b;
-            --hud-bg: rgba(2, 6, 23, 0.9);
+            --hud-bg: rgba(2, 6, 23, 0.98);
         }
 
         body {
@@ -27,335 +25,194 @@
 
         .orbitron { font-family: 'Orbitron', sans-serif; }
 
-        /* HUD Vision Layers */
-        #video-layer {
-            position: fixed; inset: 0; z-index: -2; object-fit: cover;
-            opacity: 0; transition: opacity 1s ease; transform: scaleX(-1);
-            filter: brightness(0.6) contrast(1.4) saturate(0.2) sepia(0.2) hue-rotate(180deg);
-        }
-
-        .hud-overlay {
-            position: fixed; inset: 0; z-index: -1; pointer-events: none;
-            border: 20px solid rgba(8, 145, 178, 0.05);
-            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
-            display: none;
-        }
-
-        .scan-line {
-            position: absolute; width: 100%; height: 2px;
-            background: rgba(8, 145, 178, 0.3); opacity: 0.5;
-            animation: scan 4s infinite linear;
-            box-shadow: 0 0 15px var(--glow-cyan);
-        }
-
-        @keyframes scan { from { top: -5%; } to { top: 105%; } }
-
-        /* Components */
+        /* UI FX */
         .glass-panel {
-            background: var(--hud-bg); backdrop-filter: blur(12px);
-            border: 1px solid rgba(8, 145, 178, 0.2);
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            background: var(--hud-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(8, 145, 178, 0.3);
+            box-shadow: inset 0 0 20px rgba(8, 145, 178, 0.1);
         }
 
         .arc-reactor {
-            position: relative; width: 100px; height: 100px; border-radius: 50%;
-            border: 4px solid var(--glow-cyan); display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(8, 145, 178, 0.4);
+            position: relative; width: 120px; height: 120px; border-radius: 50%;
+            border: 2px solid rgba(8, 145, 178, 0.4); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; overflow: hidden;
         }
 
-        .arc-reactor.listening { border-color: #fff; box-shadow: 0 0 40px #fff; }
-        .arc-reactor.processing { border-color: var(--glow-orange); box-shadow: 0 0 40px var(--glow-orange); animation: pulse 1s infinite; }
-
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
-
-        #map-container {
-            height: 200px; width: 100%; display: none; border: 1px solid var(--glow-cyan);
-            margin-bottom: 1rem; border-radius: 8px; filter: invert(1) hue-rotate(180deg) brightness(0.8);
+        .reactor-ring {
+            position: absolute; inset: 0; border: 4px solid transparent;
+            border-top-color: var(--glow-cyan); border-radius: 50%;
+            animation: spin 3s linear infinite;
         }
 
-        .custom-scroll::-webkit-scrollbar { width: 3px; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .core-pulse {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: var(--glow-cyan);
+            box-shadow: 0 0 30px var(--glow-cyan);
+            transition: all 0.5s ease;
+        }
+
+        .listening .core-pulse { background: #fff; box-shadow: 0 0 50px #fff; transform: scale(1.2); }
+        .processing .core-pulse { background: var(--glow-orange); box-shadow: 0 0 50px var(--glow-orange); animation: heartbeat 0.8s infinite; }
+
+        @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); }
-        
-        .status-tag { font-size: 9px; padding: 2px 6px; border-radius: 4px; border: 1px solid currentColor; text-transform: uppercase; }
     </style>
 </head>
 <body class="flex flex-col p-4">
 
-    <!-- VISION LAYER -->
-    <video id="video-layer" autoplay playsinline muted></video>
-    <div id="hud-frame" class="hud-overlay">
-        <div class="scan-line"></div>
-        <!-- HUD Corners -->
-        <div class="absolute top-4 left-4 w-10 h-10 border-t-2 border-l-2 border-cyan-500/50"></div>
-        <div class="absolute top-4 right-4 w-10 h-10 border-t-2 border-r-2 border-cyan-500/50"></div>
-        <div class="absolute bottom-4 left-4 w-10 h-10 border-b-2 border-l-2 border-cyan-500/50"></div>
-        <div class="absolute bottom-4 right-4 w-10 h-10 border-b-2 border-r-2 border-cyan-500/50"></div>
-    </div>
-
-    <!-- UI HEADER -->
-    <header class="flex justify-between items-start glass-panel p-4 rounded-xl mb-4 border-l-4 border-l-orange-500">
+    <!-- HEADER HUD -->
+    <header class="flex justify-between items-center glass-panel p-5 rounded-3xl mb-6 border-b-2 border-cyan-500/50">
         <div>
-            <h1 class="orbitron text-2xl font-bold text-white tracking-tighter">TUNCER_CORE <span class="text-orange-500 text-sm">v10.0</span></h1>
-            <div class="flex gap-2 mt-2">
-                <span id="auth-tag" class="status-tag text-cyan-500 border-cyan-900 bg-cyan-950/20">USER: AHMET_TUNCER</span>
-                <span id="hw-tag" class="status-tag text-gray-500 border-gray-800 bg-gray-900">HW: DISCONNECTED</span>
+            <h1 class="orbitron text-2xl font-black text-white tracking-widest">TUNCER_CORE <span class="text-orange-500">v11.0</span></h1>
+            <div class="flex gap-3 mt-1 text-[10px]">
+                <span class="text-green-400 font-bold tracking-tighter">● NATIVE_ENGINE_V1</span>
+                <span class="text-cyan-600">MEM: 512GB_VIRTUAL</span>
             </div>
         </div>
-        <div class="text-right flex flex-col items-end gap-1">
-            <div id="status-display" class="orbitron text-[11px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold">Offline_Sleep</div>
-            <div class="text-[8px] text-cyan-400 opacity-60">MODE: PURE_LOGIC</div>
+        <div class="text-right">
+            <div id="status-tag" class="text-[10px] bg-red-950/50 border border-red-500 text-red-500 px-3 py-1 rounded-full orbitron">ENGINE_LOCKED</div>
         </div>
     </header>
 
-    <!-- INTERACTIVE MAP -->
-    <div id="map-container"></div>
-
-    <!-- MAIN CONSOLE -->
-    <main id="chat-stream" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-4 pr-2">
-        <div class="text-center opacity-30 text-[10px] uppercase tracking-[0.3em] my-10">
-            [Sistem Tam Kapasite Hazır] <br> "Uyan" Komutu Bekleniyor
-        </div>
+    <!-- CHAT CONSOLE -->
+    <main id="console" class="flex-1 overflow-y-auto custom-scroll space-y-6 px-2 mb-6">
+        <div class="text-center opacity-20 text-[9px] uppercase tracking-[0.5em] py-10">Neural Synapse Initialized - Waiting for "Uyan" command</div>
     </main>
 
-    <!-- RIGHT HUD (SIDEBAR) -->
-    <aside id="eng-hud" class="hidden fixed right-6 top-40 w-44 space-y-4 pointer-events-none">
-        <div class="glass-panel p-3 rounded text-[9px] space-y-2 border-r-4 border-r-orange-500">
-            <div class="text-orange-500 font-bold border-b border-orange-900 pb-1 mb-1">LOCAL_ALU_METRICS</div>
-            <div class="flex justify-between"><span>CPU_LATENCY</span><span class="text-white">0.02ms</span></div>
-            <div class="flex justify-between"><span>MATH_MODULE</span><span class="text-green-400">READY</span></div>
-            <div class="flex justify-between"><span>GEO_PARSER</span><span class="text-green-400">READY</span></div>
-            <div class="flex justify-between"><span>HW_LINK</span><span id="hw-status" class="text-red-500">OFF</span></div>
-        </div>
-    </aside>
-
-    <!-- CONTROLS -->
-    <footer class="flex flex-col items-center gap-4">
-        <div class="flex gap-3">
-            <button onclick="connectSerial()" class="text-[10px] border border-cyan-800 px-5 py-2 rounded-lg uppercase hover:bg-cyan-900/60 transition-all font-bold">Donanım Bağla</button>
-            <button onclick="toggleVision()" class="text-[10px] border border-orange-800 px-5 py-2 rounded-lg uppercase text-orange-400 hover:bg-orange-900/60 transition-all font-bold">Vizyon Katmanı</button>
-            <button onclick="forceWake()" class="text-[10px] border border-red-800 px-5 py-2 rounded-lg uppercase text-red-500 hover:bg-red-900/60 transition-all font-bold">Manuel Başlat</button>
+    <!-- CONTROL UNIT -->
+    <footer class="flex flex-col items-center gap-6">
+        <div class="flex gap-4">
+            <button onclick="forceWake()" class="px-6 py-2 border border-cyan-900 rounded-full text-[10px] text-cyan-500 hover:bg-cyan-900/30">MANUEL_UYANDIR</button>
+            <button onclick="toggleVision()" class="px-6 py-2 border border-orange-900 rounded-full text-[10px] text-orange-500 hover:bg-orange-900/30">VİZYON_AÇ</button>
         </div>
 
-        <div id="reactor" onclick="toggleListening()" class="arc-reactor">
-            <div class="w-14 h-14 rounded-full bg-cyan-950 flex items-center justify-center border border-cyan-500/50">
-                <div class="w-6 h-6 rounded-full bg-cyan-400 shadow-[0_0_20px_#0891b2]"></div>
-            </div>
+        <div id="reactor-container" onclick="toggleListening()" class="arc-reactor">
+            <div class="reactor-ring"></div>
+            <div class="reactor-ring" style="animation-duration: 2s; opacity: 0.5; transform: rotate(120deg);"></div>
+            <div id="core-node" class="core-pulse"></div>
         </div>
-        <div class="text-[9px] opacity-30 tracking-[0.5em] uppercase font-bold text-cyan-300">Aural Core Sensor</div>
+        
+        <div id="mic-label" class="text-[9px] opacity-40 uppercase tracking-[0.6em]">Aural Sensor Offline</div>
     </footer>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
-
-        // Firebase Fallback
-        try {
-            const firebaseConfig = JSON.parse(__firebase_config);
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            signInAnonymously(auth);
-        } catch(e) { console.log("Local Mode: Firebase skipped."); }
-
-        window.isSystemActive = false;
-        let serialWriter = null;
-        let map = null;
-
-        // --- LOCAL COGNITIVE BRAIN (OFFLINE) ---
-        const LocalBrain = {
-            responses: {
-                "merhaba": "Selamlar Ahmet Bey. Yerel çekirdek stabil ve emrinizde.",
-                "nasılsın": "Çevrimdışı modda %100 performansla çalışıyorum patron. Tüm birimler stabil.",
-                "kimsin": "Ben Tuncer Core v10.0. Sizin için özel olarak kodlanmış, bulutsuz çalışan yerel bir zekayım.",
-                "saat": () => `Yerel zaman kaydı: ${new Date().toLocaleTimeString('tr-TR')}`,
-                "durum": "ALU aktif, HW link hazır, Vizyon beklemede.",
-                "kapat": "Sistemler uyku moduna alınıyor. İyi günler patron."
+    <script>
+        // --- TUNCER ML NATIVE LIBRARY (Sıfırdan Yapay Zeka Kütüphanesi) ---
+        const TuncerML = {
+            memory: {
+                patterns: [
+                    { keys: ['selam', 'merhaba', 'uyan'], responses: ['Sistem aktif patron. Nöral ağlar senkronize.', 'Giriş onaylandı. Hoş geldiniz Ahmet Bey.', 'Tuncer Core hazır. Emrinizdeyim.'] },
+                    { keys: ['kimsin', 'ismin', 'tanıt'], responses: ['Ben Tuncer Core v11.0. Tamamen yerel, internetten bağımsız bir yapay zekayım.', 'Ahmet Tuncer tarafından geliştirilen Native-ML motoruyum.'] },
+                    { keys: ['nasılsın', 'durum'], responses: ['Biyometrik verilerim stabil, işlemcim soğuk ve hazırım.', 'Tüm mantık devrelerim %100 kapasiteyle çalışıyor.'] },
+                    { keys: ['hafıza', 'gb', 'kapasite'], responses: ['Sınırsız bir sanal bellek alanına sahibim patron. Verileri anlık işliyorum.', 'Nöral ağlarım yaklaşık 512 GB sanal veriyi tarayabiliyor.'] },
+                    { keys: ['elon', 'musk', 'tesla'], responses: ['Elon Musk teknoloji dünyasının öncüsü ama bu çekirdeği Ahmet Tuncer yazdı.', 'Tesla ve SpaceX verileri kütüphanemde mevcut. Mühendislik harikaları.'] },
+                    { keys: ['topladı', 'yaptı', 'kodladı'], responses: ['Bu karmaşık sinir ağını Ahmet Tuncer bir araya getirdi.', 'Mimari Ahmet Tuncer imzalı.'] }
+                ],
+                fillers: ['Anlıyorum patron.', 'Analiz ediliyor...', 'Mühendislik verileri taranıyor.', 'Bu konuda haklısınız.'],
+                conjunctions: [' Ayrıca, ', ' Ve ek olarak, ', '. Şunu da belirtmeliyim ki; ']
             },
-            think: function(input) {
+
+            // Cümle Oluşturma Algoritması
+            generate: function(input) {
                 const text = input.toLowerCase();
-                
-                // 1. Math Local Processing
-                const mathResult = this.calc(text);
-                if(mathResult) return { type: 'math', msg: `İşlem Çözümlendi: ${mathResult}` };
+                let results = [];
 
-                // 2. Pattern Matching
-                for(let key in this.responses) {
-                    if(text.includes(key)) {
-                        const r = this.responses[key];
-                        return { type: 'neural', msg: typeof r === 'function' ? r() : r };
+                // 1. Anahtar kelimeleri ve niyetleri bul
+                this.memory.patterns.forEach(p => {
+                    if (p.keys.some(k => text.includes(k))) {
+                        results.push(p.responses[Math.floor(Math.random() * p.responses.length)]);
                     }
+                });
+
+                // 2. Eğer sonuç yoksa felsefi/teknik çıkarım yap
+                if (results.length === 0) {
+                    return "Bu veri yerel nöral ağlarımda yeni bir düğüm oluşturuyor patron. Analizime göre: " + 
+                           this.memory.fillers[Math.floor(Math.random() * this.memory.fillers.length)];
                 }
-                
-                return { type: 'neural', msg: "Bu komut yerel kütüphanemde tanımlı değil ancak mantık devrem analiz ediyor." };
-            },
-            calc: function(text) {
-                const clean = text.replace(/artı/g, '+').replace(/eksi/g, '-').replace(/çarpı/g, '*').replace(/bölü/g, '/').replace(/,/g, '.');
-                const match = clean.match(/(\d+\.?\d*)\s*([\+\-\*\/])\s*(\d+\.?\d*)/);
-                if(match) {
-                    try { return eval(match[0]); } catch(e) { return null; }
+
+                // 3. Birden fazla sonucu birleştirerek yeni cümle kur (Papağanlaşmayı engeller)
+                if (results.length > 1) {
+                    return results[0] + this.memory.conjunctions[Math.floor(Math.random() * this.memory.conjunctions.length)] + results[1];
                 }
-                return null;
+
+                return results[0];
             }
         };
 
-        // --- CORE FUNCTIONS ---
-        window.forceWake = () => {
-            window.isSystemActive = true;
-            const sd = document.getElementById('status-display');
-            sd.innerText = "Active_Core";
-            sd.className = "orbitron text-[11px] text-green-400 bg-green-950/30 px-3 py-1 rounded border border-green-500 uppercase font-bold";
-            updateLog("Sistem manuel olarak uyandırıldı. Çekirdek birimler aktif.", "system");
-            speak("Sistem aktif. Hoş geldiniz patron.");
-        };
+        // --- UI LOGIC ---
+        window.isSystemActive = false;
 
-        window.updateLog = (msg, role = 'core', type = 'neural') => {
-            const stream = document.getElementById('chat-stream');
-            const entry = document.createElement('div');
-            entry.className = role === 'user' ? "flex flex-col items-end mb-4" : "flex flex-col items-start mb-4";
+        function updateLog(msg, role = 'core') {
+            const container = document.getElementById('console');
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${role === 'user' ? 'items-end' : 'items-start'} mb-6`;
             
-            const badgeColor = type === 'math' ? 'text-green-400' : type === 'hw' ? 'text-yellow-400' : 'text-cyan-400';
-            const badgeText = type === 'math' ? '[LOCAL_ALU]' : type === 'hw' ? '[HW_SIGNAL]' : '[NEURAL_CORE]';
-            
-            entry.innerHTML = `
-                <span class="text-[8px] opacity-40 mb-1 uppercase tracking-widest">${role === 'user' ? 'Patron' : 'Tuncer_Core'}</span>
-                <div class="glass-panel px-4 py-2 rounded-lg text-sm border-l-2 ${role==='user'?'border-orange-500 text-white':'border-cyan-500 text-cyan-100'}">
-                    ${role !== 'user' ? `<div class="text-[9px] font-bold ${badgeColor} mb-1">${badgeText}</div>` : ''}
+            const content = `
+                <span class="text-[8px] opacity-30 mb-1 tracking-widest">${role === 'user' ? 'PATRON' : 'TUNCER_CORE'}</span>
+                <div class="glass-panel px-5 py-3 rounded-2xl max-w-[85%] text-sm ${role === 'user' ? 'border-orange-500/50 text-white' : 'border-cyan-500/50 text-cyan-100'}">
                     ${msg}
-                </div>`;
-            stream.appendChild(entry);
-            stream.scrollTop = stream.scrollHeight;
-        };
+                </div>
+            `;
+            div.innerHTML = content;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
 
-        window.speak = (text) => {
-            window.speechSynthesis.cancel();
+        function speak(text) {
             const s = new SpeechSynthesisUtterance(text);
-            s.lang = 'tr-TR'; s.pitch = 0.8; s.rate = 1.05;
+            s.lang = 'tr-TR'; s.pitch = 0.8; s.rate = 1;
             window.speechSynthesis.speak(s);
-        };
+        }
 
-        window.processCommand = async (input) => {
+        function forceWake() {
+            window.isSystemActive = true;
+            document.getElementById('status-tag').innerText = "ENGINE_ACTIVE";
+            document.getElementById('status-tag').className = "text-[10px] bg-green-950/50 border border-green-500 text-green-500 px-3 py-1 rounded-full orbitron";
+            document.getElementById('mic-label').innerText = "Aural Sensor Active";
+            updateLog("Nöral ağlar ve yerel kütüphane yüklendi. Sizi dinliyorum patron.");
+            speak("Sistem aktif patron. Hoş geldiniz.");
+        }
+
+        async function processInput(input) {
             if(!input) return;
             updateLog(input, 'user');
+
+            if(!window.isSystemActive && !input.toLowerCase().includes("uyan")) {
+                speak("Sistem kilitli patron.");
+                return;
+            }
+
+            if(input.toLowerCase().includes("uyan")) { forceWake(); return; }
+
+            // Native ML Engine çalışıyor
+            document.getElementById('reactor-container').classList.add('processing');
             
-            const raw = input.toLowerCase();
+            setTimeout(() => {
+                const response = TuncerML.generate(input);
+                updateLog(response, 'core');
+                speak(response);
+                document.getElementById('reactor-container').classList.remove('processing');
+            }, 600);
+        }
 
-            // Uyanma Kontrolü
-            if(raw.includes("uyan") || raw.includes("başlat")) {
-                forceWake(); return;
-            }
-
-            if(!window.isSystemActive) {
-                speak("Sistem kilitli. Lütfen uyan komutu verin."); return;
-            }
-
-            // Kapatma
-            if(raw.includes("kapat") || raw.includes("uyu")) {
-                window.isSystemActive = false;
-                const sd = document.getElementById('status-display');
-                sd.innerText = "Offline_Sleep";
-                sd.className = "orbitron text-[11px] text-red-500 bg-red-950/30 px-3 py-1 rounded border border-red-900/50 uppercase font-bold";
-                updateLog("Sistem uyku moduna geçiyor.", "system");
-                speak("Görüşmek üzere patron."); return;
-            }
-
-            // Donanım Komutları
-            if(raw.includes("ışık") || raw.includes("lazer")) {
-                if(raw.includes("aç")) { executeHardware("LED_ON"); updateLog("Işıklar açıldı.", "core", "hw"); speak("Donanım sinyali gönderildi."); return; }
-                if(raw.includes("kapat")) { executeHardware("LED_OFF"); updateLog("Işıklar kapatıldı.", "core", "hw"); speak("Işıklar devredışı."); return; }
-            }
-
-            // Harita / Lokasyon
-            if(raw.includes("harita") || raw.includes("nerede") || raw.includes("konum")) {
-                const target = raw.replace(/harita|nerede|konum|aç|çiz|bul/g, "").trim();
-                if(target.length > 2) {
-                    updateLog(`${target} aranıyor...`, "system");
-                    const found = await executeNav(target);
-                    if(found) { updateLog(`${target} koordinatları yansıtıldı.`, "core", "neural"); speak("Konum bulundu."); }
-                    else { updateLog("Lokasyon yerel bellekte bulunamadı.", "core", "neural"); speak("Lokasyon tespiti başarısız."); }
-                    return;
-                }
-            }
-
-            // Vizyon
-            if(raw.includes("vizyon")) { toggleVision(); return; }
-
-            // Bilişsel İşlem
-            const result = LocalBrain.think(raw);
-            updateLog(result.msg, 'core', result.type);
-            speak(result.msg);
-        };
-
-        // --- HARDWARE ---
-        window.connectSerial = async () => {
-            try {
-                const port = await navigator.serial.requestPort();
-                await port.open({ baudRate: 9600 });
-                const encoder = new TextEncoderStream();
-                encoder.readable.pipeTo(port.writable);
-                serialWriter = encoder.writable.getWriter();
-                
-                document.getElementById('hw-tag').innerText = "HW: CONNECTED";
-                document.getElementById('hw-tag').className = "status-tag text-green-400 border-green-900 bg-green-950/20";
-                document.getElementById('hw-status').innerText = "ON";
-                document.getElementById('hw-status').className = "text-green-400";
-                updateLog("Donanım (Seri Port) bağlantısı kuruldu.", "system");
-                speak("Donanım sistemleri senkronize edildi.");
-            } catch(e) { updateLog("Donanım erişimi reddedildi.", "system"); }
-        };
-
-        const executeHardware = async (cmd) => {
-            if(serialWriter) await serialWriter.write(cmd + "\n");
-        };
-
-        // --- MAP ---
-        const executeNav = async (loc) => {
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}`);
-                const data = await res.json();
-                if(data && data.length > 0) {
-                    const { lat, lon } = data[0];
-                    document.getElementById('map-container').style.display = "block";
-                    if(!map) {
-                        map = L.map('map-container').setView([lat, lon], 13);
-                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                    } else { map.setView([lat, lon], 13); }
-                    L.marker([lat, lon]).addTo(map).bindPopup(loc).openPopup();
-                    return true;
-                }
-            } catch(e) { return false; }
-            return false;
-        };
-
-        // --- VISION ---
-        window.toggleVision = () => {
-            const v = document.getElementById('video-layer');
-            const h = document.getElementById('hud-frame');
-            const eh = document.getElementById('eng-hud');
-            if(v.style.opacity === "0.6") {
-                v.style.opacity = "0"; h.style.display = "none"; eh.style.display = "none";
-                if(v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
-            } else {
-                navigator.mediaDevices.getUserMedia({video: { facingMode: "environment" }})
-                    .then(s => { 
-                        v.srcObject = s; v.style.opacity = "0.6"; 
-                        h.style.display = "block"; eh.style.display = "block";
-                        speak("Vizyon katmanları aktif.");
-                    })
-                    .catch(e => updateLog("Vizyon erişimi engellendi.", "system"));
-            }
-        };
-
-        // --- VOICE ---
-        window.toggleListening = () => {
+        function toggleListening() {
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if(!Rec) return;
             const r = new Rec(); r.lang = 'tr-TR';
-            r.onstart = () => document.getElementById('reactor').classList.add('listening');
-            r.onend = () => document.getElementById('reactor').classList.remove('listening');
-            r.onresult = (e) => processCommand(e.results[0][0].transcript);
+            r.onstart = () => document.getElementById('reactor-container').classList.add('listening');
+            r.onend = () => document.getElementById('reactor-container').classList.remove('listening');
+            r.onresult = (e) => processInput(e.results[0][0].transcript);
             r.start();
-        };
+        }
 
+        function toggleVision() {
+            updateLog("Vizyon modülü için donanım taraması yapılıyor...", "core");
+            speak("Görüntüleme sistemleri henüz bu çekirdek tipinde tanımlanmadı.");
+        }
     </script>
 </body>
 </html>
