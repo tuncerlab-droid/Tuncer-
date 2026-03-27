@@ -3,109 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUNCER CORE OS</title>
+    <title>TUNCER CORE v7.0 | NEURAL INTERFACE</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
-        body { background-color: #000; color: #22d3ee; font-family: 'JetBrains+Mono', monospace; overflow: hidden; }
-        .arc-shadow { shadow-box: 0 0 30px rgba(6, 182, 212, 0.5); }
-        #map { height: 200px; width: 100%; display: none; border: 1px solid #0891b2; border-radius: 8px; margin-bottom: 1rem; }
-        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(6, 182, 212, 0.2); }
-        .custom-scroll::-webkit-scrollbar { width: 2px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #0891b2; }
-        #video-overlay { position: fixed; inset: 0; z-index: -1; object-fit: cover; opacity: 0; transition: opacity 1s; transform: scaleX(-1); }
-        .hud-scan { position: absolute; width: 100%; height: 2px; background: rgba(6, 182, 212, 0.3); animation: scan 3s infinite linear; display: none; }
-        @keyframes scan { from { top: 0; } to { top: 100%; } }
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono:wght@300;500&display=swap');
+
+        :root {
+            --glow-cyan: #06b6d4;
+            --glow-red: #ef4444;
+            --hud-bg: rgba(0, 15, 20, 0.85);
+        }
+
+        body {
+            background-color: #000;
+            color: var(--glow-cyan);
+            font-family: 'JetBrains+Mono', monospace;
+            overflow: hidden;
+            margin: 0;
+            height: 100vh;
+            user-select: none;
+        }
+
+        h1, h2, .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* HUD Vision Layers */
+        #video-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease;
+            transform: scaleX(-1);
+        }
+
+        .hud-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            border: 2px solid rgba(6, 182, 212, 0.1);
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.4) 100%);
+            display: none;
+        }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to bottom, transparent, var(--glow-cyan), transparent);
+            opacity: 0.1;
+            animation: scan 4s infinite linear;
+        }
+
+        @keyframes scan { from { top: -10%; } to { top: 110%; } }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); border-radius: 10px; }
+
+        /* Components */
+        .glass-panel {
+            background: var(--hud-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(6, 182, 212, 0.1);
+        }
+
+        .arc-reactor {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid var(--glow-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+        }
+
+        .arc-reactor:active { scale: 0.9; }
+        .arc-reactor.listening { 
+            border-color: #fff; 
+            box-shadow: 0 0 50px #fff, inset 0 0 20px #fff;
+        }
+
+        #map-container {
+            height: 250px;
+            width: 100%;
+            display: none;
+            border: 1px solid var(--glow-cyan);
+            margin-bottom: 1rem;
+            filter: hue-rotate(180deg) brightness(0.8) contrast(1.2);
+        }
+
+        /* Responsive Text */
+        .glitch-text { animation: glitch 2s infinite; }
+        @keyframes glitch {
+            0% { text-shadow: 2px 0 var(--glow-red); }
+            50% { text-shadow: -2px 0 var(--glow-cyan); }
+            100% { text-shadow: 2px 0 var(--glow-red); }
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--glow-cyan);
+            border-width: 2px;
+        }
     </style>
 </head>
-<body class="p-4 h-screen flex flex-col">
+<body>
 
-    <!-- VIDEO BACKGROUND (ENGINEERING MODE) -->
-    <video id="video-overlay" autoplay playsinline muted></video>
-    <div id="scan-line" class="hud-scan"></div>
-
-    <!-- HEADER HUD -->
-    <div class="glass p-3 flex justify-between items-start mb-4 rounded-lg">
-        <div>
-            <div class="text-xs font-bold tracking-widest">TUNCER_CORE_V6.2</div>
-            <div class="text-[10px] text-cyan-600">AUTH: AHMET_TUNCER</div>
-            <div id="hw-status" class="text-[9px] text-yellow-600">HW_LINK: DISCONNECTED</div>
-        </div>
-        <div class="text-right">
-            <div id="sys-status" class="text-[10px] text-red-500 font-bold uppercase">Sistem Uykuda</div>
-            <div class="text-[8px] opacity-40 uppercase">Memory_JSON: Active</div>
-        </div>
+    <!-- VIDEO BACKGROUND -->
+    <video id="video-layer" autoplay playsinline muted></video>
+    <div id="hud-frame" class="hud-overlay">
+        <div class="scan-line"></div>
+        <div class="hud-corner top-0 left-0 border-t border-l"></div>
+        <div class="hud-corner top-0 right-0 border-t border-r"></div>
+        <div class="hud-corner bottom-0 left-0 border-b border-l"></div>
+        <div class="hud-corner bottom-0 right-0 border-b border-r"></div>
     </div>
 
-    <!-- MAP CONTAINER -->
-    <div id="map"></div>
-
-    <!-- CHAT BOX -->
-    <div id="chat-box" class="flex-1 overflow-y-auto space-y-3 custom-scroll p-2 mb-4">
-        <!-- Mesajlar buraya gelecek -->
-    </div>
-
-    <!-- HUD DIAGNOSTICS (ONLY IN ENG MODE) -->
-    <div id="hud-diag" class="hidden absolute top-20 right-4 text-[8px] opacity-60 text-right space-y-1">
-        <div>LAT: 36.8841</div>
-        <div>LNG: 30.7056</div>
-        <div>CPU_LOAD: 12%</div>
-        <div>TEMP: 34°C</div>
-    </div>
-
-    <!-- FOOTER CONTROLS -->
-    <div class="flex flex-col items-center gap-6 pb-6">
-        <div class="flex gap-2">
-            <button onclick="connectArduino()" class="text-[9px] border border-cyan-900 px-3 py-1 hover:bg-cyan-950">Donanım Bağla</button>
-            <button onclick="toggleEngMode()" id="eng-btn" class="text-[9px] border border-cyan-900 px-3 py-1 hover:bg-cyan-950 uppercase">Mühendislik Modu</button>
-        </div>
-
-        <button id="mic-btn" onclick="startVoiceRecognition()" class="w-24 h-24 rounded-full border-4 border-cyan-500 flex items-center justify-center transition-all duration-500 shadow-[0_0_20px_#06b6d4]">
-            <div id="mic-core" class="w-12 h-12 rounded-full bg-cyan-500 transition-all duration-300"></div>
-        </button>
+    <!-- MAIN INTERFACE -->
+    <div class="relative z-10 h-full flex flex-col p-4">
         
-        <div class="text-[8px] opacity-20 tracking-[0.5em] uppercase">Vocal Command Only</div>
+        <!-- HEADER -->
+        <header class="flex justify-between items-start glass-panel p-4 rounded-xl mb-4 border-l-4 border-l-cyan-500">
+            <div>
+                <h1 class="orbitron text-lg font-bold tracking-tighter text-white">TUNCER CORE <span class="text-cyan-500 italic text-sm">v7.0</span></h1>
+                <div class="flex gap-4 mt-1">
+                    <span id="auth-tag" class="text-[9px] px-2 py-0.5 bg-cyan-900/50 rounded text-cyan-300">AUTHORIZED: AHMET_TUNCER</span>
+                    <span id="hw-tag" class="text-[9px] px-2 py-0.5 bg-gray-900 rounded text-gray-500 transition-colors">HW_LINK: NULL</span>
+                </div>
+            </div>
+            <div class="text-right flex flex-col items-end">
+                <div id="status-display" class="orbitron text-[10px] text-red-500 bg-red-950/20 px-3 py-1 rounded-full border border-red-900/50">SYSTEM_OFFLINE</div>
+                <div id="memory-stats" class="text-[8px] opacity-40 mt-1 uppercase">KB_NODES: 0 | CACHE: 0ms</div>
+            </div>
+        </header>
+
+        <!-- MAP PANEL -->
+        <div id="map-container" class="rounded-lg shadow-2xl"></div>
+
+        <!-- LOGS / CHAT -->
+        <main id="chat-stream" class="flex-1 overflow-y-auto custom-scroll space-y-4 mb-4 pr-2">
+            <div class="text-xs opacity-50 italic">Sistem başlatılıyor...</div>
+        </main>
+
+        <!-- HUD DATA (ENG MODE) -->
+        <aside id="eng-hud" class="hidden absolute right-4 top-32 w-32 space-y-4 pointer-events-none">
+            <div class="glass-panel p-2 rounded text-[8px] space-y-1">
+                <div class="text-cyan-500 border-b border-cyan-900 pb-1 mb-1">REALTIME_METRICS</div>
+                <div class="flex justify-between"><span>CPU</span><span id="cpu-val">14%</span></div>
+                <div class="flex justify-between"><span>RAM</span><span id="ram-val">2.1GB</span></div>
+                <div class="flex justify-between"><span>TMP</span><span id="tmp-val">38°C</span></div>
+            </div>
+            <div class="glass-panel p-2 rounded text-[8px]">
+                <div class="text-cyan-500 border-b border-cyan-900 pb-1 mb-1">GEO_DATA</div>
+                <div id="geo-lat">LAT: 0.0000</div>
+                <div id="geo-lng">LNG: 0.0000</div>
+            </div>
+        </aside>
+
+        <!-- CONTROLS -->
+        <footer class="flex flex-col items-center gap-6 py-4">
+            <div class="flex gap-4 items-center">
+                <button onclick="connectSerial()" class="glass-panel px-4 py-2 text-[10px] hover:bg-cyan-900/30 transition-all uppercase tracking-widest">Connect Hardware</button>
+                <button onclick="toggleVision()" class="glass-panel px-4 py-2 text-[10px] hover:bg-cyan-900/30 transition-all uppercase tracking-widest">Toggle Vision</button>
+            </div>
+
+            <div class="relative">
+                <div id="reactor" onclick="toggleListening()" class="arc-reactor">
+                    <div class="w-16 h-16 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                        <div id="reactor-inner" class="w-8 h-8 rounded-full bg-cyan-500 shadow-[0_0_20px_#06b6d4]"></div>
+                    </div>
+                </div>
+                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[9px] opacity-30 tracking-[0.4em] uppercase whitespace-nowrap">Voice Interaction Core</div>
+            </div>
+        </footer>
     </div>
 
-    <!-- FIREBASE & LOGIC -->
+    <!-- CORE LOGIC SCRIPTS -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
 
+        // --- GLOBAL STATE ---
         const firebaseConfig = JSON.parse(__firebase_config);
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-os';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-v7';
 
-        let knowledgeBase = {};
+        let zeka_json = {};
         let isSystemActive = false;
         let muhendisModu = false;
-        let arduinoWriter = null;
         let currentUser = null;
+        let serialPort = null;
+        let serialWriter = null;
         let map = null;
 
-        const initialData = {
-            "ben kimim": "Siz benim yaratıcım Ahmet Tuncer'siniz.",
-            "ismin ne": "Ben Tuncer Zeka. Sizin için geliştirilmiş özel bir işletim sistemiyim.",
-            "merhaba": "Merhaba patron. Tüm sistemler emrinizde.",
-            "vizyonu aç": "Görüntü işleme motoru başlatılıyor. Mühendislik modu aktif.",
-            "sistemi kapat": "Sistem uyku moduna geçiyor. Görüşürüz patron."
+        // --- IDENTITY & INITIAL DATA ---
+        const defaultIntelligence = {
+            "ben kimim": "Siz Ahmet Tuncer'siniz. Bu sistemin yaratıcısı ve tek yetkilisiniz.",
+            "sahibim kim": "Sahibim Ahmet Tuncer'dir.",
+            "ismin ne": "Adım Tuncer Core. Ahmet Bey için geliştirilmiş 7. nesil yapay zekayım.",
+            "vizyonu aç": "Engineering HUD aktif ediliyor. Vizyon çevrimiçi.",
+            "mühendislik modunu aç": "Sistem mühendislik protokolü başlatıldı.",
+            "ışıkları aç": "Donanım komutu: Lights On.",
+            "saat kaç": () => `Şu an saat ${new Date().toLocaleTimeString('tr-TR')}`,
+            "nasılsın": "Çekirdek verilerim stabil, bulut kütüphanesi ile %100 senkronizeyim."
         };
 
-        // --- AUTH & SYNC ---
+        // --- FIREBASE SYNC (THE "BRAIN" DOWNLOADER) ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'core_json');
-                onSnapshot(docRef, (snap) => {
-                    if (snap.exists()) {
-                        knowledgeBase = { ...initialData, ...snap.data().data };
+                updateLog("Neural Cloud bağlantısı kuruldu.", "system");
+                
+                const brainRef = doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'zeka_json');
+                
+                // Real-time listener for zeka.json
+                onSnapshot(brainRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        zeka_json = { ...defaultIntelligence, ...snapshot.data().data };
+                        document.getElementById('memory-stats').innerText = `KB_NODES: ${Object.keys(zeka_json).length} | CACHE: STABLE`;
+                        updateLog("Zeka JSON güncellendi ve beyne indirildi.", "system");
                     } else {
-                        knowledgeBase = initialData;
+                        zeka_json = defaultIntelligence;
+                        saveBrain(); // İlk kurulum
                     }
                 });
             } else {
@@ -113,82 +247,42 @@
             }
         });
 
-        const learn = async (q, a) => {
+        const saveBrain = async () => {
             if (!currentUser) return;
-            const cleanQ = q.toLowerCase().trim().replace(/[.,!?]/g, '');
-            knowledgeBase[cleanQ] = a;
-            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'intelligence', 'core_json'), { data: knowledgeBase }, { merge: true });
+            const brainRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'intelligence', 'zeka_json');
+            await setDoc(brainRef, { data: zeka_json }, { merge: true });
         };
 
-        // --- SPEECH ---
+        // --- CORE FUNCTIONS ---
+        window.updateLog = (msg, role = 'core') => {
+            const stream = document.getElementById('chat-stream');
+            const entry = document.createElement('div');
+            const time = new Date().toLocaleTimeString('tr-TR', {hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit'});
+            
+            if (role === 'user') {
+                entry.className = "flex flex-col items-end animate-in fade-in slide-in-from-right duration-300";
+                entry.innerHTML = `<span class="text-[8px] opacity-40 mb-1">PATRON [${time}]</span><div class="glass-panel px-3 py-2 rounded-lg text-sm border-r-2 border-r-cyan-500">${msg}</div>`;
+            } else if (role === 'system') {
+                entry.innerHTML = `<div class="text-[9px] opacity-30 uppercase tracking-[0.2em] text-center my-2">--- ${msg} ---</div>`;
+            } else {
+                entry.className = "flex flex-col items-start animate-in fade-in slide-in-from-left duration-500";
+                entry.innerHTML = `<span class="text-[8px] opacity-40 mb-1">CORE [${time}]</span><div class="glass-panel px-3 py-2 rounded-lg text-sm border-l-2 border-l-cyan-500 text-cyan-200 shadow-lg">${msg}</div>`;
+            }
+
+            stream.appendChild(entry);
+            stream.scrollTop = stream.scrollHeight;
+        };
+
         window.speak = (text) => {
             window.speechSynthesis.cancel();
-            const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'tr-TR';
-            u.pitch = 0.85;
-            window.speechSynthesis.speak(u);
+            const speech = new SpeechSynthesisUtterance(text);
+            speech.lang = 'tr-TR';
+            speech.pitch = 0.8;
+            speech.rate = 1.1;
+            window.speechSynthesis.speak(speech);
         };
 
-        // --- ARDUINO ---
-        window.connectArduino = async () => {
-            try {
-                const port = await navigator.serial.requestPort();
-                await port.open({ baudRate: 9600 });
-                const encoder = new TextEncoderStream();
-                encoder.readable.pipeTo(port.writable);
-                arduinoWriter = encoder.writable.getWriter();
-                document.getElementById('hw-status').innerText = "HW_LINK: STABLE";
-                document.getElementById('hw-status').className = "text-[9px] text-green-500";
-                speak("Donanım bağlantısı sağlandı patron.");
-            } catch (e) { console.error(e); }
-        };
-
-        // --- ENG MODE ---
-        window.toggleEngMode = () => {
-            muhendisModu = !muhendisModu;
-            const video = document.getElementById('video-overlay');
-            const scan = document.getElementById('scan-line');
-            const diag = document.getElementById('hud-diag');
-
-            if (muhendisModu) {
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                    .then(stream => { video.srcObject = stream; video.style.opacity = "0.6"; });
-                scan.style.display = "block";
-                diag.style.display = "block";
-                speak("Mühendislik modu aktif.");
-            } else {
-                if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
-                video.style.opacity = "0";
-                scan.style.display = "none";
-                diag.style.display = "none";
-                speak("Normal arayüze dönülüyor.");
-            }
-        };
-
-        // --- NAVIGATION ---
-        const findLocation = async (loc) => {
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}`);
-                const data = await res.json();
-                if (data && data.length > 0) {
-                    const lat = data[0].lat;
-                    const lon = data[0].lon;
-                    document.getElementById('map').style.display = "block";
-                    if (!map) {
-                        map = L.map('map').setView([lat, lon], 13);
-                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                    } else {
-                        map.setView([lat, lon], 13);
-                    }
-                    L.marker([lat, lon]).addTo(map).bindPopup(loc).openPopup();
-                    speak(`${loc} için rota hazırlandı.`);
-                    return true;
-                }
-            } catch (e) { return false; }
-            return false;
-        };
-
-        // --- FUZZY MATCH ---
+        // --- FUZZY MATCH LOGIC ---
         const getSimilarity = (s1, s2) => {
             let longer = s1.length < s2.length ? s2 : s1;
             let shorter = s1.length < s2.length ? s1 : s2;
@@ -214,80 +308,181 @@
             return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
         };
 
-        // --- PROCESS ---
-        window.processCommand = async (input) => {
-            const cmd = input.toLowerCase().trim();
-            addMessage('user', input);
+        // --- HARDWARE ---
+        window.connectSerial = async () => {
+            try {
+                serialPort = await navigator.serial.requestPort();
+                await serialPort.open({ baudRate: 9600 });
+                const encoder = new TextEncoderStream();
+                encoder.readable.pipeTo(serialPort.writable);
+                serialWriter = encoder.writable.getWriter();
+                
+                document.getElementById('hw-tag').innerText = "HW_LINK: CONNECTED";
+                document.getElementById('hw-tag').classList.replace('bg-gray-900', 'bg-green-900/50');
+                document.getElementById('hw-tag').classList.replace('text-gray-500', 'text-green-300');
+                speak("Donanım katmanı doğrulandı. Ahmet Bey, iletişim kanalı açık.");
+                updateLog("Arduino Seri Port bağlantısı aktif.", "system");
+            } catch (e) {
+                updateLog("Donanım bağlantısı reddedildi.", "system");
+            }
+        };
 
-            if (cmd.includes("uyan") || cmd.includes("başlat")) {
+        const writeSerial = async (msg) => {
+            if (serialWriter) await serialWriter.write(msg + "\n");
+        };
+
+        // --- NAVIGATION ---
+        const findAndMap = async (locationName) => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(locationName)}`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const { lat, lon } = data[0];
+                    document.getElementById('map-container').style.display = "block";
+                    if (!map) {
+                        map = L.map('map-container').setView([lat, lon], 14);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                    } else {
+                        map.setView([lat, lon], 14);
+                    }
+                    L.marker([lat, lon]).addTo(map).bindPopup(locationName).openPopup();
+                    speak(`${locationName} için koordinat takibi başlatıldı.`);
+                    updateLog(`${locationName} konumu haritaya yansıtıldı.`, "system");
+                    return true;
+                }
+            } catch (e) { return false; }
+            return false;
+        };
+
+        // --- VISION ---
+        window.toggleVision = () => {
+            muhendisModu = !muhendisModu;
+            const video = document.getElementById('video-layer');
+            const hud = document.getElementById('hud-frame');
+            const engHud = document.getElementById('eng-hud');
+
+            if (muhendisModu) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => { video.srcObject = stream; video.style.opacity = "0.7"; });
+                hud.style.display = "block";
+                engHud.style.display = "block";
+                speak("Mühendislik modu aktif.");
+                updateLog("HUD Vizyon katmanı aktif edildi.", "system");
+            } else {
+                if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+                video.style.opacity = "0";
+                hud.style.display = "none";
+                engHud.style.display = "none";
+                speak("Normal moda dönüldü.");
+                updateLog("Vizyon katmanı devredışı.", "system");
+            }
+        };
+
+        // --- COMMAND PROCESSING ---
+        window.processCommand = async (rawInput) => {
+            const input = rawInput.toLowerCase().trim();
+            updateLog(rawInput, 'user');
+
+            if (input.includes("uyan") || input.includes("sistemi başlat")) {
                 isSystemActive = true;
-                document.getElementById('sys-status').innerText = "Sistem Aktif";
-                document.getElementById('sys-status').className = "text-[10px] text-green-500 font-bold uppercase";
-                speak("Ahmet Bey, tüm sistemler emrinizde.");
+                document.getElementById('status-display').innerText = "SYSTEM_ONLINE";
+                document.getElementById('status-display').className = "orbitron text-[10px] text-green-500 bg-green-950/20 px-3 py-1 rounded-full border border-green-900/50";
+                speak("Tüm sistemler Ahmet Tuncer için hazır. Hoş geldiniz patron.");
                 return;
             }
 
-            if (!isSystemActive) { speak("Sistem kilitli."); return; }
+            if (!isSystemActive) {
+                speak("Sistem kilitli. Lütfen önce kimlik doğrulama protokolünü başlatın.");
+                return;
+            }
 
-            // Navigasyon
-            if (cmd.includes("götür") || cmd.includes("nerede")) {
-                const loc = cmd.replace("beni", "").replace("götür", "").replace("nerede", "").trim();
-                if (loc.length > 2) {
-                    const found = await findLocation(loc);
+            // Navigation Check
+            if (input.includes("götür") || input.includes("nerede") || input.includes("konum")) {
+                const target = input.replace(/beni|götür|nerede|konum|rota|çiz/g, "").trim();
+                if (target.length > 2) {
+                    const found = await findAndMap(target);
                     if (found) return;
                 }
             }
 
-            // Kütüphane Kontrol (Bulanık Mantık)
-            const cleanQ = cmd.replace(/[.,!?]/g, '');
-            let bestMatch = null; let maxScore = 0;
-            for (let key in knowledgeBase) {
-                const score = getSimilarity(cleanQ, key);
-                if (score > 0.75 && score > maxScore) { maxScore = score; bestMatch = knowledgeBase[key]; }
+            // Engineering Control
+            if (input.includes("vizyon") || input.includes("mühendislik mod")) {
+                toggleVision(); return;
             }
 
-            if (bestMatch) {
-                addMessage('assistant', bestMatch);
-                speak(bestMatch);
+            // Hardware Control
+            if (input.includes("ışık") && input.includes("aç")) writeSerial("LED_ON");
+            if (input.includes("ışık") && input.includes("kapat")) writeSerial("LED_OFF");
+
+            // Knowledge Base (Brain) Search
+            const cleanInput = input.replace(/[.,!?]/g, '');
+            let bestMatchKey = null;
+            let highestScore = 0;
+
+            for (let key in zeka_json) {
+                const score = getSimilarity(cleanInput, key);
+                if (score > 0.75 && score > highestScore) {
+                    highestScore = score;
+                    bestMatchKey = key;
+                }
+            }
+
+            if (bestMatchKey) {
+                let response = zeka_json[bestMatchKey];
+                if (typeof response === 'function') response = response();
+                updateLog(response);
+                speak(response);
             } else {
-                document.getElementById('sys-status').innerText = "Öğreniliyor...";
+                // Learn from AI
+                updateLog("Veri kütüphanede bulunamadı. Neural kütüphaneye danışılıyor...", "system");
                 try {
-                    const res = await window.puter.ai.chat(input);
-                    const aiResp = res.toString();
-                    addMessage('assistant', aiResp);
-                    speak(aiResp);
-                    await learn(input, aiResp);
-                    document.getElementById('sys-status').innerText = "Sistem Aktif";
+                    const aiResponse = await window.puter.ai.chat(rawInput);
+                    const finalMsg = aiResponse.toString();
+                    updateLog(finalMsg);
+                    speak(finalMsg);
+                    
+                    // Permanent Learn
+                    zeka_json[cleanInput] = finalMsg;
+                    await saveBrain();
                 } catch (e) {
-                    addMessage('assistant', "Bağlantı hatası.");
+                    updateLog("Neural bağlantı başarısız.", "system");
                 }
             }
         };
 
-        window.startVoiceRecognition = () => {
+        // --- VOICE RECOGNITION ---
+        window.toggleListening = () => {
             const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Rec) return;
-            const r = new Rec(); r.lang = 'tr-TR';
-            r.onstart = () => { 
-                document.getElementById('mic-btn').style.boxShadow = "0 0 50px white";
-                document.getElementById('mic-core').style.transform = "scale(1.2)";
+            const r = new Rec();
+            r.lang = 'tr-TR';
+            
+            r.onstart = () => {
+                document.getElementById('reactor').classList.add('listening');
+                setIsListening(true);
             };
             r.onend = () => {
-                document.getElementById('mic-btn').style.boxShadow = "0 0 20px #06b6d4";
-                document.getElementById('mic-core').style.transform = "scale(1)";
+                document.getElementById('reactor').classList.remove('listening');
+                setIsListening(false);
             };
-            r.onresult = (e) => processCommand(e.results[0][0].transcript);
+            r.onresult = (e) => {
+                processCommand(e.results[0][0].transcript);
+            };
             r.start();
         };
 
-        const addMessage = (role, text) => {
-            const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.className = role === 'user' ? 'text-right' : 'text-left';
-            div.innerHTML = `<p class="inline-block px-3 py-1 text-xs border ${role === 'user' ? 'border-gray-800 text-gray-400' : 'border-cyan-900 text-cyan-400'} rounded bg-black/50">${text}</p>`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        };
+        function setIsListening(val) { isListening = val; }
+        let isListening = false;
+
+        // HUD Realtime Metrics Simulation
+        setInterval(() => {
+            if (muhendisModu) {
+                document.getElementById('cpu-val').innerText = (Math.random() * 20 + 5).toFixed(1) + "%";
+                document.getElementById('ram-val').innerText = (Math.random() * 0.5 + 2.1).toFixed(1) + "GB";
+                document.getElementById('tmp-val').innerText = (Math.random() * 2 + 37).toFixed(1) + "°C";
+            }
+        }, 2000);
+
     </script>
 </body>
 </html>
