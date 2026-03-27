@@ -610,7 +610,7 @@
             mesajiSunucuyaKaydet(userMsg); 
 
             try {
-                const cevap = await puter.ai.chat(sohbetGecmisi, { model: 'gpt-4o-mini' });
+                const cevap = await puter.ai.chat(sohbetGecmisi, { model: 'claude' });
                 const aiCevap = cevap.toString();
                 
                 const asstMsg = { role: "assistant", content: aiCevap };
