@@ -1,261 +1,294 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUNCER CORE OS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&display=swap');
+        body { background-color: #000; color: #22d3ee; font-family: 'JetBrains+Mono', monospace; overflow: hidden; }
+        .arc-shadow { shadow-box: 0 0 30px rgba(6, 182, 212, 0.5); }
+        #map { height: 200px; width: 100%; display: none; border: 1px solid #0891b2; border-radius: 8px; margin-bottom: 1rem; }
+        .glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(6, 182, 212, 0.2); }
+        .custom-scroll::-webkit-scrollbar { width: 2px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #0891b2; }
+        #video-overlay { position: fixed; inset: 0; z-index: -1; object-fit: cover; opacity: 0; transition: opacity 1s; transform: scaleX(-1); }
+        .hud-scan { position: absolute; width: 100%; height: 2px; background: rgba(6, 182, 212, 0.3); animation: scan 3s infinite linear; display: none; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+    </style>
+</head>
+<body class="p-4 h-screen flex flex-col">
 
-// --- CONFIG & FIREBASE ---
-const firebaseConfig = JSON.parse(__firebase_config);
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-neural-os';
+    <!-- VIDEO BACKGROUND (ENGINEERING MODE) -->
+    <video id="video-overlay" autoplay playsinline muted></video>
+    <div id="scan-line" class="hud-scan"></div>
 
-export default function App() {
-  const [user, setUser] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [status, setStatus] = useState("SİSTEM UYKUDA");
-  const [isSystemActive, setIsSystemActive] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [knowledgeBase, setKnowledgeBase] = useState({});
-  const [showMap, setShowMap] = useState(false);
-  const [muhendisModu, setMuhendisModu] = useState(false);
-  const [arduinoConnected, setArduinoConnected] = useState(false);
-  
-  const chatEndRef = useRef(null);
-  const mapRef = useRef(null);
-  const videoRef = useRef(null);
-  const leafletMap = useRef(null);
-  const arduinoWriter = useRef(null);
-
-  // --- INITIAL KNOWLEDGE ---
-  const initialData = {
-    "ben kimim": "Siz benim yaratıcım Ahmet Tuncer'siniz.",
-    "ismin ne": "Ben Tuncer Zeka. Sizin için geliştirilmiş özel bir işletim sistemiyim.",
-    "merhaba": "Merhaba patron. Tüm sistemler emrinizde.",
-    "vizyonu aç": "Görüntü işleme motoru başlatılıyor. Mühendislik modu aktif.",
-    "mühendislik modunu aç": "Mühendislik modu aktif ediliyor. Vizyon çevrimiçi.",
-    "vizyonu kapat": "Normal arayüze dönülüyor.",
-    "ışıkları aç": "Donanım komutu gönderildi: Işıklar aktif.",
-    "sistemi kapat": "Sistem uyku moduna geçiyor. Görüşürüz patron."
-  };
-
-  // --- AUTH & CLOUD SYNC ---
-  useEffect(() => {
-    const initAuth = async () => { await signInAnonymously(auth); };
-    initAuth();
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (u) {
-        const docRef = doc(db, 'artifacts', appId, 'users', u.uid, 'intelligence', 'core_json');
-        onSnapshot(docRef, (snap) => {
-          if (snap.exists()) setKnowledgeBase({ ...initialData, ...snap.data().data });
-          else setKnowledgeBase(initialData);
-        });
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // --- CAMERA CONTROL ---
-  useEffect(() => {
-    if (muhendisModu) {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(stream => { if (videoRef.current) videoRef.current.srcObject = stream; })
-        .catch(err => console.error("Kamera hatası:", err));
-    } else {
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      }
-    }
-  }, [muhendisModu]);
-
-  const learn = async (q, a) => {
-    if (!user) return;
-    const cleanQ = q.toLowerCase().trim().replace(/[.,!?]/g, '');
-    const updated = { ...knowledgeBase, [cleanQ]: a };
-    await setDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'core_json'), { data: updated }, { merge: true });
-  };
-
-  // --- HARDWARE & ARDUINO ---
-  const connectArduino = async () => {
-    try {
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 9600 });
-      const encoder = new TextEncoderStream();
-      encoder.readable.pipeTo(port.writable);
-      arduinoWriter.current = encoder.writable.getWriter();
-      setArduinoConnected(true);
-      speak("Donanım bağlantısı sağlandı patron.");
-    } catch (e) { console.error("Arduino bağlantı hatası"); }
-  };
-
-  // --- NAVIGATION ---
-  const initMap = (lat, lng, targetName) => {
-    setShowMap(true);
-    setTimeout(() => {
-      if (!leafletMap.current) {
-        leafletMap.current = L.map(mapRef.current).setView([lat, lng], 13);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(leafletMap.current);
-      } else { leafletMap.current.setView([lat, lng], 13); }
-      L.marker([lat, lng]).addTo(leafletMap.current).bindPopup(targetName).openPopup();
-      speak(`${targetName} konumu haritaya işlendi.`);
-    }, 100);
-  };
-
-  const speak = (t) => {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(t);
-    u.lang = 'tr-TR'; u.pitch = 0.85; window.speechSynthesis.speak(u);
-  };
-
-  const getSimilarity = (s1, s2) => {
-    let longer = s1.length < s2.length ? s2 : s1;
-    let shorter = s1.length < s2.length ? s1 : s2;
-    if (longer.length === 0) return 1.0;
-    const editDistance = (s1, s2) => {
-      let costs = [];
-      for (let i = 0; i <= s1.length; i++) {
-        let lastValue = i;
-        for (let j = 0; j <= s2.length; j++) {
-          if (i === 0) costs[j] = j;
-          else if (j > 0) {
-            let newValue = costs[j - 1];
-            if (s1.charAt(i - 1) !== s2.charAt(j - 1))
-              newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
-            costs[j - 1] = lastValue;
-            lastValue = newValue;
-          }
-        }
-        if (i > 0) costs[s2.length] = lastValue;
-      }
-      return costs[s2.length];
-    };
-    return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
-  };
-
-  const handleInput = async (input) => {
-    const cmd = input.toLowerCase().trim();
-    setMessages(prev => [...prev, { role: 'user', content: input }]);
-
-    if (cmd.includes("uyan") || cmd.includes("başlat")) {
-      setIsSystemActive(true); setStatus("AKTİF");
-      speak("Tuncer Core Ahmet Bey için hazır."); return;
-    }
-
-    if (!isSystemActive) { speak("Sistem kilitli."); return; }
-
-    // Mühendislik Modu Kontrolü
-    if (cmd.includes("vizyonu aç") || cmd.includes("mühendislik modunu aç")) {
-      setMuhendisModu(true); speak("Mühendislik modu aktif."); return;
-    }
-    if (cmd.includes("vizyonu kapat") || cmd.includes("normal mod")) {
-      setMuhendisModu(false); speak("Normal arayüze geçiliyor."); return;
-    }
-
-    // Neural Check
-    const cleanQ = cmd.replace(/[.,!?]/g, '');
-    let bestMatch = null; let maxScore = 0;
-    for (let key in knowledgeBase) {
-      const score = getSimilarity(cleanQ, key);
-      if (score > 0.75 && score > maxScore) { maxScore = score; bestMatch = knowledgeBase[key]; }
-    }
-
-    if (bestMatch) {
-      setMessages(prev => [...prev, { role: 'assistant', content: bestMatch }]);
-      speak(bestMatch);
-    } else {
-      setStatus("ÖĞRENİLİYOR...");
-      try {
-        const res = await window.puter.ai.chat(input);
-        const aiResp = res.toString();
-        setMessages(prev => [...prev, { role: 'assistant', content: aiResp }]);
-        speak(aiResp);
-        await learn(input, aiResp);
-        setStatus("AKTİF");
-      } catch (e) { setStatus("HATA"); }
-    }
-  };
-
-  const listen = () => {
-    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Rec) return;
-    const r = new Rec(); r.lang = 'tr-TR';
-    r.onstart = () => { setIsListening(true); setStatus("DİNLENİYOR..."); };
-    r.onend = () => { setIsListening(false); setStatus(isSystemActive ? "AKTİF" : "UYKUDA"); };
-    r.onresult = (e) => handleInput(e.results[0][0].transcript);
-    r.start();
-  };
-
-  return (
-    <div className={`min-h-screen ${muhendisModu ? 'bg-transparent' : 'bg-[#050505]'} text-cyan-400 font-mono flex flex-col p-4 transition-colors duration-1000 overflow-hidden relative`}>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-      {/* VIZYON KATMANI */}
-      {muhendisModu && (
-        <div className="fixed inset-0 z-[-1] overflow-hidden">
-          <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-60 scale-x-[-1]" />
-          <div className="absolute inset-0 bg-cyan-900/10 pointer-events-none border-[2px] border-cyan-500/30 m-4 shadow-[inset_0_0_100px_rgba(6,182,212,0.2)]"></div>
-          {/* HUD ELEMENTS */}
-          <div className="absolute top-20 right-8 text-[8px] space-y-2 opacity-60 animate-pulse">
-            <div>GPS: 36.8841° N, 30.7056° E</div>
-            <div>ALT: 42m</div>
-            <div>SPD: 0.0 KM/H</div>
-          </div>
+    <!-- HEADER HUD -->
+    <div class="glass p-3 flex justify-between items-start mb-4 rounded-lg">
+        <div>
+            <div class="text-xs font-bold tracking-widest">TUNCER_CORE_V6.2</div>
+            <div class="text-[10px] text-cyan-600">AUTH: AHMET_TUNCER</div>
+            <div id="hw-status" class="text-[9px] text-yellow-600">HW_LINK: DISCONNECTED</div>
         </div>
-      )}
-
-      {/* TOP HUD */}
-      <div className={`flex justify-between border-b border-cyan-900 pb-2 mb-4 bg-black/40 p-2 backdrop-blur-sm`}>
-        <div className="text-[10px] tracking-widest">
-          TUNCER_CORE_V6.0 <br/>
-          USER: AHMET_TUNCER <br/>
-          MOD: {muhendisModu ? "ENGINEERING" : "NORMAL"}
+        <div class="text-right">
+            <div id="sys-status" class="text-[10px] text-red-500 font-bold uppercase">Sistem Uykuda</div>
+            <div class="text-[8px] opacity-40 uppercase">Memory_JSON: Active</div>
         </div>
-        <div className="text-right text-[10px]">
-          STATUS: <span className="text-white">{status}</span> <br/>
-          DB: NEURAL_CLOUD_JSON
-        </div>
-      </div>
-
-      {/* MAP */}
-      {showMap && (
-        <div className="w-full h-40 rounded-lg border border-cyan-500 mb-4 overflow-hidden relative shadow-lg">
-          <div ref={mapRef} className="w-full h-full" />
-        </div>
-      )}
-
-      {/* MESSAGES */}
-      <div className={`flex-1 overflow-y-auto space-y-4 p-2 ${muhendisModu ? 'max-w-[250px]' : 'max-w-2xl mx-auto w-full'}`}>
-        {messages.map((m, i) => (
-          <div key={i} className={`${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-            <p className={`inline-block px-3 py-2 rounded text-[11px] bg-black/60 border ${m.role === 'user' ? 'border-gray-700 text-gray-300' : 'border-cyan-900 text-cyan-400'}`}>
-              {m.content}
-            </p>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* CORE BUTTON */}
-      <div className="flex flex-col items-center gap-4 mt-4 z-10">
-        <button 
-          onClick={listen}
-          className={`w-24 h-24 rounded-full border-4 flex items-center justify-center transition-all duration-500 bg-black/20 ${isListening ? 'border-white shadow-[0_0_50px_white]' : 'border-cyan-500 shadow-[0_0_20px_#06b6d4]'}`}
-        >
-          <div className={`w-12 h-12 rounded-full bg-cyan-500 ${isListening ? 'animate-ping' : ''}`} />
-        </button>
-        {!arduinoConnected && (
-          <button onClick={connectArduino} className="text-[8px] border border-cyan-900 px-4 py-1 hover:bg-cyan-900/40">HW LINK</button>
-        )}
-      </div>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        body { margin: 0; padding: 0; background: black; }
-        ::-webkit-scrollbar { width: 2px; }
-        ::-webkit-scrollbar-thumb { background: #083344; }
-      `}} />
     </div>
-  );
-}
+
+    <!-- MAP CONTAINER -->
+    <div id="map"></div>
+
+    <!-- CHAT BOX -->
+    <div id="chat-box" class="flex-1 overflow-y-auto space-y-3 custom-scroll p-2 mb-4">
+        <!-- Mesajlar buraya gelecek -->
+    </div>
+
+    <!-- HUD DIAGNOSTICS (ONLY IN ENG MODE) -->
+    <div id="hud-diag" class="hidden absolute top-20 right-4 text-[8px] opacity-60 text-right space-y-1">
+        <div>LAT: 36.8841</div>
+        <div>LNG: 30.7056</div>
+        <div>CPU_LOAD: 12%</div>
+        <div>TEMP: 34°C</div>
+    </div>
+
+    <!-- FOOTER CONTROLS -->
+    <div class="flex flex-col items-center gap-6 pb-6">
+        <div class="flex gap-2">
+            <button onclick="connectArduino()" class="text-[9px] border border-cyan-900 px-3 py-1 hover:bg-cyan-950">Donanım Bağla</button>
+            <button onclick="toggleEngMode()" id="eng-btn" class="text-[9px] border border-cyan-900 px-3 py-1 hover:bg-cyan-950 uppercase">Mühendislik Modu</button>
+        </div>
+
+        <button id="mic-btn" onclick="startVoiceRecognition()" class="w-24 h-24 rounded-full border-4 border-cyan-500 flex items-center justify-center transition-all duration-500 shadow-[0_0_20px_#06b6d4]">
+            <div id="mic-core" class="w-12 h-12 rounded-full bg-cyan-500 transition-all duration-300"></div>
+        </button>
+        
+        <div class="text-[8px] opacity-20 tracking-[0.5em] uppercase">Vocal Command Only</div>
+    </div>
+
+    <!-- FIREBASE & LOGIC -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, getDoc } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-os';
+
+        let knowledgeBase = {};
+        let isSystemActive = false;
+        let muhendisModu = false;
+        let arduinoWriter = null;
+        let currentUser = null;
+        let map = null;
+
+        const initialData = {
+            "ben kimim": "Siz benim yaratıcım Ahmet Tuncer'siniz.",
+            "ismin ne": "Ben Tuncer Zeka. Sizin için geliştirilmiş özel bir işletim sistemiyim.",
+            "merhaba": "Merhaba patron. Tüm sistemler emrinizde.",
+            "vizyonu aç": "Görüntü işleme motoru başlatılıyor. Mühendislik modu aktif.",
+            "sistemi kapat": "Sistem uyku moduna geçiyor. Görüşürüz patron."
+        };
+
+        // --- AUTH & SYNC ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                const docRef = doc(db, 'artifacts', appId, 'users', user.uid, 'intelligence', 'core_json');
+                onSnapshot(docRef, (snap) => {
+                    if (snap.exists()) {
+                        knowledgeBase = { ...initialData, ...snap.data().data };
+                    } else {
+                        knowledgeBase = initialData;
+                    }
+                });
+            } else {
+                await signInAnonymously(auth);
+            }
+        });
+
+        const learn = async (q, a) => {
+            if (!currentUser) return;
+            const cleanQ = q.toLowerCase().trim().replace(/[.,!?]/g, '');
+            knowledgeBase[cleanQ] = a;
+            await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'intelligence', 'core_json'), { data: knowledgeBase }, { merge: true });
+        };
+
+        // --- SPEECH ---
+        window.speak = (text) => {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'tr-TR';
+            u.pitch = 0.85;
+            window.speechSynthesis.speak(u);
+        };
+
+        // --- ARDUINO ---
+        window.connectArduino = async () => {
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                const encoder = new TextEncoderStream();
+                encoder.readable.pipeTo(port.writable);
+                arduinoWriter = encoder.writable.getWriter();
+                document.getElementById('hw-status').innerText = "HW_LINK: STABLE";
+                document.getElementById('hw-status').className = "text-[9px] text-green-500";
+                speak("Donanım bağlantısı sağlandı patron.");
+            } catch (e) { console.error(e); }
+        };
+
+        // --- ENG MODE ---
+        window.toggleEngMode = () => {
+            muhendisModu = !muhendisModu;
+            const video = document.getElementById('video-overlay');
+            const scan = document.getElementById('scan-line');
+            const diag = document.getElementById('hud-diag');
+
+            if (muhendisModu) {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => { video.srcObject = stream; video.style.opacity = "0.6"; });
+                scan.style.display = "block";
+                diag.style.display = "block";
+                speak("Mühendislik modu aktif.");
+            } else {
+                if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+                video.style.opacity = "0";
+                scan.style.display = "none";
+                diag.style.display = "none";
+                speak("Normal arayüze dönülüyor.");
+            }
+        };
+
+        // --- NAVIGATION ---
+        const findLocation = async (loc) => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(loc)}`);
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    const lat = data[0].lat;
+                    const lon = data[0].lon;
+                    document.getElementById('map').style.display = "block";
+                    if (!map) {
+                        map = L.map('map').setView([lat, lon], 13);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+                    } else {
+                        map.setView([lat, lon], 13);
+                    }
+                    L.marker([lat, lon]).addTo(map).bindPopup(loc).openPopup();
+                    speak(`${loc} için rota hazırlandı.`);
+                    return true;
+                }
+            } catch (e) { return false; }
+            return false;
+        };
+
+        // --- FUZZY MATCH ---
+        const getSimilarity = (s1, s2) => {
+            let longer = s1.length < s2.length ? s2 : s1;
+            let shorter = s1.length < s2.length ? s1 : s2;
+            if (longer.length === 0) return 1.0;
+            const editDistance = (s1, s2) => {
+                let costs = [];
+                for (let i = 0; i <= s1.length; i++) {
+                    let lastValue = i;
+                    for (let j = 0; j <= s2.length; j++) {
+                        if (i === 0) costs[j] = j;
+                        else if (j > 0) {
+                            let newValue = costs[j - 1];
+                            if (s1.charAt(i - 1) !== s2.charAt(j - 1))
+                                newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                            costs[j - 1] = lastValue;
+                            lastValue = newValue;
+                        }
+                    }
+                    if (i > 0) costs[s2.length] = lastValue;
+                }
+                return costs[s2.length];
+            };
+            return (longer.length - editDistance(longer, shorter)) / parseFloat(longer.length);
+        };
+
+        // --- PROCESS ---
+        window.processCommand = async (input) => {
+            const cmd = input.toLowerCase().trim();
+            addMessage('user', input);
+
+            if (cmd.includes("uyan") || cmd.includes("başlat")) {
+                isSystemActive = true;
+                document.getElementById('sys-status').innerText = "Sistem Aktif";
+                document.getElementById('sys-status').className = "text-[10px] text-green-500 font-bold uppercase";
+                speak("Ahmet Bey, tüm sistemler emrinizde.");
+                return;
+            }
+
+            if (!isSystemActive) { speak("Sistem kilitli."); return; }
+
+            // Navigasyon
+            if (cmd.includes("götür") || cmd.includes("nerede")) {
+                const loc = cmd.replace("beni", "").replace("götür", "").replace("nerede", "").trim();
+                if (loc.length > 2) {
+                    const found = await findLocation(loc);
+                    if (found) return;
+                }
+            }
+
+            // Kütüphane Kontrol (Bulanık Mantık)
+            const cleanQ = cmd.replace(/[.,!?]/g, '');
+            let bestMatch = null; let maxScore = 0;
+            for (let key in knowledgeBase) {
+                const score = getSimilarity(cleanQ, key);
+                if (score > 0.75 && score > maxScore) { maxScore = score; bestMatch = knowledgeBase[key]; }
+            }
+
+            if (bestMatch) {
+                addMessage('assistant', bestMatch);
+                speak(bestMatch);
+            } else {
+                document.getElementById('sys-status').innerText = "Öğreniliyor...";
+                try {
+                    const res = await window.puter.ai.chat(input);
+                    const aiResp = res.toString();
+                    addMessage('assistant', aiResp);
+                    speak(aiResp);
+                    await learn(input, aiResp);
+                    document.getElementById('sys-status').innerText = "Sistem Aktif";
+                } catch (e) {
+                    addMessage('assistant', "Bağlantı hatası.");
+                }
+            }
+        };
+
+        window.startVoiceRecognition = () => {
+            const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Rec) return;
+            const r = new Rec(); r.lang = 'tr-TR';
+            r.onstart = () => { 
+                document.getElementById('mic-btn').style.boxShadow = "0 0 50px white";
+                document.getElementById('mic-core').style.transform = "scale(1.2)";
+            };
+            r.onend = () => {
+                document.getElementById('mic-btn').style.boxShadow = "0 0 20px #06b6d4";
+                document.getElementById('mic-core').style.transform = "scale(1)";
+            };
+            r.onresult = (e) => processCommand(e.results[0][0].transcript);
+            r.start();
+        };
+
+        const addMessage = (role, text) => {
+            const box = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.className = role === 'user' ? 'text-right' : 'text-left';
+            div.innerHTML = `<p class="inline-block px-3 py-1 text-xs border ${role === 'user' ? 'border-gray-800 text-gray-400' : 'border-cyan-900 text-cyan-400'} rounded bg-black/50">${text}</p>`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        };
+    </script>
+</body>
+</html>
 
