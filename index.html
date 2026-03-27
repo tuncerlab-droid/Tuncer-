@@ -19,16 +19,15 @@ export default function App() {
   const [muhendisModu, setMuhendisModu] = useState(false);
   const [knowledgeBase, setKnowledgeBase] = useState({});
   const chatEndRef = useRef(null);
-  const videoRef = useRef(null);
 
-  // --- 1. ÖN YÜKLÜ TEMEL KÜTÜPHANE (Binlerce Kelimeyi Kapsayan Mantık) ---
+  // --- 1. ÖZEL KİMLİK VERİSİ (PATRON PROTOKOLÜ) ---
   const initialData = {
+    "ben kimim": "Siz benim yaratıcım, Ahmet Tuncer'siniz. Siz olmasaydınız bu kod satırları var olmazdı patron.",
+    "sahibim kim": "Sahibim ve tek yetkili yöneticim Ahmet Tuncer'dir.",
+    "ismin ne": "Benim ismim Tuncer Zeka. Sizin için geliştirilmiş özel bir yapay zekayım.",
+    "kim tarafından yapıldın": "Ben Ahmet Tuncer tarafından, en gelişmiş algoritmalarla inşa edildim.",
     "merhaba": "Merhaba patron. Tüm sistemler emrinizde.",
-    "naber": "Sistem değerlerim optimal seviyede, sizin için ne yapabilirim?",
-    "nasılsın": "Çekirdek sıcaklığım 38 derece, hafıza senkronizasyonum %100. Harikayım!",
-    "kimsin": "Ben Tuncer Zeka. Ahmet Tuncer tarafından geliştirilen, öğrenen bir yapay zekayım.",
-    "saat kaç": `Şu an yerel saat: ${new Date().toLocaleTimeString('tr-TR')}`,
-    "bugün günlerden ne": `Bugün ${new Date().toLocaleDateString('tr-TR', {weekday: 'long'})}`,
+    "naber": "Sistem değerlerim optimal seviyede, sizin için ne yapabilirim Ahmet Bey?",
     "vizyonu aç": "Görüntü işleme motoru başlatılıyor. Çevreyi analiz ediyorum.",
     "sistemi kapat": "Sistem uyku moduna alınıyor. Görüşürüz patron."
   };
@@ -54,7 +53,6 @@ export default function App() {
     const docRef = doc(db, 'artifacts', appId, 'users', uid, 'intelligence', 'core_json');
     onSnapshot(docRef, (snap) => {
       if (snap.exists()) {
-        // Mevcut bulut verisini yerel veriyle birleştir (Kalıcı hafıza)
         setKnowledgeBase(prev => ({ ...initialData, ...snap.data().data }));
       } else {
         setKnowledgeBase(initialData);
@@ -106,7 +104,7 @@ export default function App() {
     let maxScore = 0;
     for (let key in knowledgeBase) {
       const score = getSimilarity(q, key);
-      if (score > 0.7 && score > maxScore) { // %70 benzerlik eşiği
+      if (score > 0.72 && score > maxScore) { 
         maxScore = score;
         bestMatch = knowledgeBase[key];
       }
@@ -118,7 +116,7 @@ export default function App() {
   const speak = (text) => {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'tr-TR'; u.pitch = 0.85; u.rate = 1.1;
+    u.lang = 'tr-TR'; u.pitch = 0.82; u.rate = 1.05;
     window.speechSynthesis.speak(u);
   };
 
@@ -127,21 +125,18 @@ export default function App() {
     const userMsg = { role: 'user', content: input };
     setMessages(prev => [...prev, userMsg]);
 
-    // Sistem Aktivasyonu
     if (cmd.includes("uyan") || cmd.includes("sistemi başlat")) {
       setIsSystemActive(true); setStatus("SİSTEM AKTİF");
-      const resp = "Neural Core çevrimiçi. Bulut kütüphanesi senkronize edildi. Emrindeyim patron.";
+      const resp = "Ahmet Bey, biyometrik verileriniz doğrulandı. Tüm sistemler emrinizde.";
       setMessages(prev => [...prev, { role: 'assistant', content: resp }]);
       speak(resp); return;
     }
 
-    if (!isSystemActive) { speak("Sistem kilitli. Önce uyan demelisiniz."); return; }
+    if (!isSystemActive) { speak("Sistem kilitli. Lütfen kimlik doğrulama için uyan deyin."); return; }
 
-    // Özel Komutlar (Vizyon/Donanım)
-    if (cmd.includes("vizyonu aç")) { setMuhendisModu(true); speak("Vizyon aktif."); return; }
-    if (cmd.includes("vizyonu kapat")) { setMuhendisModu(false); speak("Normal arayüze dönülüyor."); return; }
+    if (cmd.includes("vizyonu aç")) { setMuhendisModu(true); speak("Vizyon aktif edildi."); return; }
+    if (cmd.includes("vizyonu kapat")) { setMuhendisModu(false); speak("Normal arayüze geçiliyor."); return; }
 
-    // Kütüphaneye Bak (Öğrenilmiş Bilgiler)
     const libraryFound = checkNeuralLibrary(cmd);
     if (libraryFound) {
       const resp = libraryFound.ans;
@@ -149,17 +144,16 @@ export default function App() {
       speak(resp); return;
     }
 
-    // Bilmiyorsa Puter AI'den Öğren ve KAYDET
-    setStatus("Puter'den Öğreniliyor...");
+    setStatus("DÜŞÜNÜLÜYOR...");
     try {
       const response = await window.puter.ai.chat(input);
       const aiResp = response.toString();
       setMessages(prev => [...prev, { role: 'assistant', content: aiResp }]);
       speak(aiResp);
-      await learnNewInfo(input, aiResp); // Öğrenme ve Kayıt
+      await learnNewInfo(input, aiResp);
       setStatus("SİSTEM AKTİF");
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Bağlantı kesildi, kütüphane dışına çıkılamıyor." }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Hafıza modülüne ulaşılamıyor." }]);
     }
   };
 
@@ -178,35 +172,27 @@ export default function App() {
   }, [messages]);
 
   return (
-    <div className={`min-h-screen ${muhendisModu ? 'bg-transparent' : 'bg-black'} text-cyan-400 font-mono p-4 flex flex-col transition-all duration-1000`}>
+    <div className={`min-h-screen ${muhendisModu ? 'bg-gray-900' : 'bg-black'} text-cyan-400 font-mono p-4 flex flex-col transition-all duration-700`}>
       
-      {/* VİZYON KATMANI (Muhendis Modu) */}
-      {muhendisModu && (
-        <div className="fixed inset-0 z-[-1] bg-gray-900">
-           <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover opacity-60" />
-           <div className="absolute inset-0 border-[20px] border-cyan-500/20 pointer-events-none"></div>
-           <div className="absolute top-1/2 left-0 w-full h-[1px] bg-cyan-500/30 animate-pulse"></div>
-        </div>
-      )}
-
       {/* HEADER HUD */}
-      <div className="flex justify-between items-start mb-6 border-l-4 border-cyan-500 pl-4 bg-gray-900/40 p-2">
+      <div className="flex justify-between items-start mb-6 border-l-4 border-cyan-500 pl-4 bg-gray-950/60 p-3 shadow-lg">
         <div>
-          <h1 className="text-xl font-black tracking-tighter">TUNCER CORE V5.5</h1>
-          <p className="text-[10px] opacity-70">NEURAL KNOWLEDGE BASE: {Object.keys(knowledgeBase).length} NODES</p>
+          <h1 className="text-xl font-black tracking-tighter">TUNCER CORE V5.6</h1>
+          <p className="text-[10px] opacity-70">NEURAL_ENGINE: STABLE</p>
+          <p className="text-[10px] text-yellow-500 uppercase">Authorized User: Ahmet Tuncer</p>
         </div>
         <div className="text-right">
           <div className={`text-xs ${isSystemActive ? 'text-green-400' : 'text-red-400'}`}>STATUS: {status}</div>
-          <div className="text-[9px] opacity-50">SYNC: CLOUD_SECURE_JSON</div>
+          <div className="text-[9px] opacity-50">ENCRYPTION: AES_256</div>
         </div>
       </div>
 
       {/* CHAT AREA */}
-      <div className={`flex-1 overflow-y-auto mb-4 space-y-4 p-4 rounded bg-black/40 backdrop-blur-md border border-cyan-900/50 ${muhendisModu ? 'max-w-sm' : 'w-full max-w-2xl mx-auto'}`}>
+      <div className={`flex-1 overflow-y-auto mb-4 space-y-4 p-4 rounded bg-black/50 backdrop-blur-md border border-cyan-900/40 w-full max-w-2xl mx-auto shadow-inner`}>
         {messages.map((m, i) => (
           <div key={i} className={`${m.role === 'user' ? 'text-right' : 'text-left'}`}>
-            <span className="text-[8px] opacity-40 uppercase">{m.role === 'user' ? 'Patron' : 'Core'}</span>
-            <p className={`p-2 rounded-lg text-sm inline-block ${m.role === 'user' ? 'bg-cyan-950 text-cyan-200' : 'bg-gray-800 text-cyan-400 border-l-2 border-cyan-500'}`}>
+            <span className="text-[8px] opacity-40 uppercase tracking-widest">{m.role === 'user' ? 'Ahmet Tuncer' : 'Tuncer Zeka'}</span>
+            <p className={`p-3 rounded-xl text-sm inline-block shadow-md ${m.role === 'user' ? 'bg-cyan-900/40 text-cyan-100' : 'bg-gray-800/80 text-cyan-400 border-l-2 border-cyan-500'}`}>
               {m.content}
             </p>
           </div>
@@ -214,25 +200,21 @@ export default function App() {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ARC REACTOR BUTTON */}
-      <div className="flex justify-center items-center py-6 relative">
+      {/* CORE BUTTON */}
+      <div className="flex justify-center items-center py-8">
         <button 
           onClick={listen}
-          className={`w-24 h-24 rounded-full border-4 flex items-center justify-center transition-all duration-500 ${isListening ? 'border-white scale-110 shadow-[0_0_50px_#fff]' : 'border-cyan-500 shadow-[0_0_30px_#06b6d4]'}`}
+          className={`group relative w-28 h-28 rounded-full border-4 flex items-center justify-center transition-all duration-500 ${isListening ? 'border-white scale-110 shadow-[0_0_60px_#fff]' : 'border-cyan-500 shadow-[0_0_30px_#06b6d4]'}`}
         >
-          <div className={`w-12 h-12 rounded-full bg-cyan-500 ${isListening ? 'animate-ping' : ''}`}></div>
+          <div className={`w-14 h-14 rounded-full bg-cyan-500 shadow-inner ${isListening ? 'animate-pulse' : ''}`}></div>
+          <div className="absolute inset-0 rounded-full border border-cyan-400 opacity-20 group-hover:animate-ping"></div>
         </button>
-        <span className="absolute bottom-0 text-[10px] tracking-[0.4em] opacity-40 uppercase">Dokun ve Konuş</span>
       </div>
 
-      {/* DIAGNOSTICS */}
-      {!muhendisModu && (
-        <div className="grid grid-cols-3 gap-2 text-[10px] opacity-40 mt-4 border-t border-cyan-900 pt-4 max-w-2xl mx-auto w-full">
-          <div>CPU_TEMP: 34.2°C</div>
-          <div className="text-center">MEM_USAGE: 4.2tb/JSON</div>
-          <div className="text-right">DB_VER: CLOUD_5.5</div>
-        </div>
-      )}
+      {/* FOOTER INFO */}
+      <div className="text-[9px] opacity-30 text-center tracking-[0.2em] mb-2 uppercase">
+        Memory Nodes Localized | Neural Cloud Persistence Enabled
+      </div>
     </div>
   );
 }
