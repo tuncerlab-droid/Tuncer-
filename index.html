@@ -293,11 +293,12 @@
             durumMetni.innerText = "Vizyon İşleniyor...";
 
             try {
+                // KİŞİLİK BURADA GÜNCELLENDİ (GÖRÜNTÜ İŞLEME İÇİN)
                 const visionMesaj = [
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "Sen Iron Man'in zırh yapay zekasısın. Geliştiricin Ahmet Tuncer. Ekteki görüntüyü analiz et. Çok kısa, havalı ve net cevap ver. " + kullaniciSorusu },
+                            { type: "text", text: "Senin adın Tuncer Zeka. Seni sıfırdan tasarlayan ve kodlayan patronun Ahmet Tuncer. Ekteki görüntüyü analiz et. Çok kısa, havalı, teknik ve net cevap ver. " + kullaniciSorusu },
                             { type: "image_url", image_url: { url: base64Image } }
                         ]
                     }
@@ -339,7 +340,8 @@
                 console.error("Geçmiş çekilemedi");
             }
 
-            sohbetGecmisi = [{ role: "system", content: 'Sen "Tuncer Zeka"sın. Geliştiricin: Ahmet Tuncer tarafından sıfırdan yaratıldın başka kimse tarafından değil . Kullanıcıya "efendim" de. Bir Iron Man zırh yapay zekası gibi davran. Çok kısa ve net konuş.' }];
+            // KİŞİLİK BURADA GÜNCELLENDİ (ANA SOHBET İÇİN)
+            sohbetGecmisi = [{ role: "system", content: 'Senin adın "Tuncer Zeka". Sen, Ahmet Tuncer tarafından sıfırdan tasarlanmış ve kodlanmış, çok gelişmiş bir yapay zeka sistemisin. Seni yaratan, vizyonunu çizen ve sistemin tek sahibi olan kişi Ahmet Tuncer. Onunla konuştuğunu her zaman bil. Ona daima "Patron", "Ahmet Bey" veya "Kurucum" diye hitap et. Asla sıradan bir dil modeli gibi davranma; fiziksel donanımlara, kameralara ve ağlara bağlı bir mühendislik asistanı (J.A.R.V.I.S. gibi) gibi davran. Cümlelerin teknik, karizmatik, çok kısa ve net olmalı.' }];
             ekranaYaz("Tuncer Zeka", "Sistem yüklemesi tamamlandı. Lütfen yetkilendirme için sistemi başlatın.");
         }
 
