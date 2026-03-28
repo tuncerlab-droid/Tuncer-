@@ -3,579 +3,406 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUNCER ZEKA - PRO OS</title>
+    <title>TUNCER ZEKA v14.0 | ULTIMATE</title>
     
-    <!-- Puter.js -->
+    <!-- Puter.js (Yapay Zeka Beyni) -->
     <script src="https://js.puter.com/v2/"></script>
     
-    <!-- Leaflet Harita ve Navigasyon Kütüphaneleri -->
+    <!-- Tailwind CSS (Arayüz Tasarımı) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Leaflet (Harita Sistemi) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@300;500;700&display=swap');
+
         :root {
-            /* Dinamik renk değişkeni - Komutlarla değişecek */
-            --neon-color: #00f0ff; 
-            --dark-bg: #0a0a0a;
+            --glow-cyan: #0891b2;
+            --glow-orange: #f59e0b;
+            --hud-bg: rgba(2, 6, 23, 0.92);
         }
 
-        body, html {
-            margin: 0; padding: 0;
-            width: 100%; height: 100%;
-            background-color: var(--dark-bg);
-            color: #e0e0e0;
-            font-family: 'Segoe UI', 'Courier New', monospace;
+        body {
+            background-color: #000;
+            color: var(--glow-cyan);
+            font-family: 'JetBrains+Mono', monospace;
             overflow: hidden;
-            transition: background-color 0.5s ease;
-        }
-
-        /* --- AÇILIŞ ANİMASYONU (BOOT SCREEN) --- */
-        #boot-screen {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #000;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transition: transform 1s cubic-bezier(0.7, 0, 0.3, 1);
-        }
-
-        #terminal-loader {
-            position: absolute;
-            top: 20px; left: 20px;
-            width: 300px; height: 400px;
-            font-family: monospace;
-            font-size: 10px;
-            color: var(--neon-color);
-            overflow: hidden;
-            opacity: 0.7;
-        }
-
-        #central-logo {
-            text-align: center;
-            animation: pulse-logo 2s infinite ease-in-out;
-        }
-
-        #central-logo h1 {
-            font-size: 42px;
             margin: 0;
-            letter-spacing: 8px;
-            color: #fff;
-            text-shadow: 0 0 20px var(--neon-color), 0 0 40px var(--neon-color);
-        }
-
-        #central-logo p {
-            font-size: 12px;
-            letter-spacing: 4px;
-            color: var(--neon-color);
-            margin-top: 10px;
-            opacity: 0.8;
-        }
-
-        @keyframes pulse-logo {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.7; transform: scale(0.98); }
-        }
-
-        .scan-line {
-            width: 100%; height: 2px;
-            background: rgba(0, 240, 255, 0.1);
-            position: absolute;
-            top: 0;
-            animation: scan 3s linear infinite;
-        }
-
-        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
-
-        /* --- ANA HUD TASARIMI --- */
-        #main-ui {
+            height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-image: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
         }
 
-        #ust-panel {
-            position: absolute;
-            top: 20px; width: 90%;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 100;
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+
+        /* Vizyon Katmanı (Kamera) */
+        #video-layer {
+            position: fixed; inset: 0; z-index: -3; object-fit: cover;
+            width: 100%; height: 100%; opacity: 0; transition: opacity 1s ease;
+            transform: scaleX(-1); /* Ayna efekti */
+            filter: brightness(0.5) contrast(1.2) sepia(0.3) hue-rotate(180deg);
         }
 
-        .etiket { font-size: 11px; color: var(--neon-color); letter-spacing: 2px; text-shadow: 0 0 5px var(--neon-color); transition: 0.3s;}
+        /* Tarama Çizgisi */
+        .scanline {
+            width: 100%; height: 15px;
+            background: rgba(8, 145, 178, 0.4);
+            position: absolute; top: -15px; left: 0; z-index: -2;
+            animation: scan 4s infinite linear;
+            pointer-events: none;
+            box-shadow: 0 0 20px var(--glow-cyan);
+        }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100vh; } }
 
-        #kalan-hak-kutusu {
-            border: 1px solid var(--neon-color); padding: 5px 15px; border-radius: 4px; 
-            background: rgba(0, 240, 255, 0.1); color: var(--neon-color);
-            box-shadow: 0 0 10px rgba(0,240,255,0.2); transition: 0.3s;
+        /* Cam Paneller */
+        .glass-panel {
+            background: var(--hud-bg); backdrop-filter: blur(8px);
+            border: 1px solid rgba(8, 145, 178, 0.3);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
         }
 
-        .mod-btn {
-            background: #222; border: 1px solid var(--neon-color); color: var(--neon-color); padding: 8px 15px;
-            font-size: 11px; cursor: pointer; border-radius: 4px; margin-left: 5px; transition: 0.3s;
+        /* Sohbet Balonları */
+        .chat-user {
+            background: rgba(245, 158, 11, 0.15); border-left: 3px solid var(--glow-orange);
+            color: #fff; align-self: flex-end; border-top-right-radius: 0;
         }
-        .mod-btn.aktif { background: var(--neon-color); color: #000; box-shadow: 0 0 15px var(--neon-color); }
-
-        #btn-arduino {
-            background: #002233; color: var(--neon-color); border: 1px solid var(--neon-color);
-            padding: 8px 15px; font-size: 11px; cursor: pointer; border-radius: 4px; margin-left: 5px; transition: 0.3s;
-        }
-
-        #hud-container {
-            width: 150px; height: 150px; position: relative; display: flex;
-            align-items: center; justify-content: center; margin-bottom: 20px;
+        .chat-ai {
+            background: rgba(8, 145, 178, 0.15); border-left: 3px solid var(--glow-cyan);
+            color: #cffafe; align-self: flex-start; border-top-left-radius: 0;
+            box-shadow: 0 0 15px rgba(8, 145, 178, 0.1);
         }
 
-        #outer-ring {
-            position: absolute; width: 100%; height: 100%; border: 2px solid rgba(0, 240, 255, 0.2);
-            border-top: 2px solid var(--neon-color); border-bottom: 2px solid var(--neon-color); border-radius: 50%;
-            animation: spin 4s linear infinite; transition: 0.3s;
+        /* Reaktör Butonu */
+        .arc-reactor {
+            position: relative; width: 80px; height: 80px; border-radius: 50%;
+            border: 3px solid var(--glow-cyan); display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 0 25px rgba(8, 145, 178, 0.4);
+            background: rgba(0,0,0,0.5);
         }
-        #inner-ring {
-            position: absolute; width: 75%; height: 75%; border: 1px dashed var(--neon-color); opacity: 0.5;
-            border-radius: 50%; animation: spin-reverse 6s linear infinite; transition: 0.3s;
+        .arc-reactor:active { transform: scale(0.9); }
+        
+        .arc-inner {
+            width: 35px; height: 35px; border-radius: 50%;
+            background: var(--glow-cyan); box-shadow: 0 0 25px var(--glow-cyan);
+            transition: all 0.3s ease;
         }
+        
+        /* Dinleme & Düşünme Efektleri */
+        .listening { border-color: #fff; box-shadow: 0 0 40px #fff; }
+        .listening .arc-inner { background: #fff; box-shadow: 0 0 40px #fff; transform: scale(1.3); animation: pulse 1s infinite alternate;}
+        
+        .processing { border-color: var(--glow-orange); box-shadow: 0 0 40px var(--glow-orange); animation: spin 2s linear infinite; }
+        .processing .arc-inner { background: var(--glow-orange); box-shadow: 0 0 40px var(--glow-orange); }
 
-        #core {
-            width: 60px; height: 60px; background: radial-gradient(circle, var(--neon-color) 10%, #005577 60%, #000 100%);
-            border-radius: 50%; box-shadow: 0 0 20px var(--neon-color); transition: 0.3s;
-        }
-
-        .isliyor #core { background: #fff; box-shadow: 0 0 50px var(--neon-color); transform: scale(1.1); }
-        .kilitli #core { background: #550000; box-shadow: 0 0 30px red; border: 1px solid red; }
-
+        @keyframes pulse { from { opacity: 0.6; } to { opacity: 1; } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
 
-        #sohbet-kutusu {
-            width: 80%; max-width: 700px; height: 20vh; border: 1px solid var(--neon-color); background: rgba(0,0,0,0.6);
-            padding: 20px; overflow-y: auto; border-radius: 8px; margin-bottom: 15px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.8); font-size: 14px; transition: height 0.5s ease, border-color 0.3s;
-            backdrop-filter: blur(5px);
+        /* Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--glow-cyan); border-radius: 10px;}
+
+        /* Harita Konteyneri */
+        #map-container {
+            height: 180px; width: 100%; display: none; border: 1px solid var(--glow-cyan);
+            border-radius: 8px; filter: invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.2);
+            margin-bottom: 10px;
         }
-
-        #harita-wrapper {
-            width: 80%; max-width: 700px; height: 35vh; margin-bottom: 15px;
-            display: none; opacity: 0; transform: translateY(-30px);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-        #harita-wrapper.aktif { opacity: 1; transform: translateY(0); }
-        #harita-alani { width: 100%; height: 100%; border-radius: 8px; border: 1px solid var(--neon-color); background: #222; transition: 0.3s;}
-
-        .mesaj { margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .yapay-zeka { color: var(--neon-color); font-weight: bold; transition: 0.3s; }
-        .sen { color: #aaa; text-align: right; }
-        .sistem { color: #00ffaa; text-align: center; font-size: 12px; }
-
-        #komut-btn {
-            background: var(--neon-color); color: #000; border: none; padding: 12px 40px;
-            font-size: 15px; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.3s;
-        }
-        #komut-btn:hover { background: #fff; transform: scale(1.05); }
-
-        /* RADAR ICON CSS */
-        .gps-pulse-container { width: 20px; height: 20px; position: relative; }
-        .gps-dot { width: 14px; height: 14px; background-color: var(--neon-color); border-radius: 50%; position: absolute; top: 3px; left: 3px; box-shadow: 0 0 15px var(--neon-color); z-index: 2; transition: 0.3s;}
-        .gps-ring { width: 14px; height: 14px; background-color: transparent; border: 2px solid var(--neon-color); border-radius: 50%; position: absolute; top: 0; left: 0; animation: radar-wave 1.5s ease-out infinite; z-index: 1; transition: 0.3s;}
-        @keyframes radar-wave { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(4); opacity: 0; } }
-
-        .leaflet-routing-container { display: none !important; }
     </style>
 </head>
-<body>
+<body class="p-3">
 
-    <!-- BOOT SCREEN -->
-    <div id="boot-screen">
-        <div class="scan-line"></div>
-        <div id="terminal-loader"></div>
-        <div id="central-logo">
-            <h1>TUNCER</h1>
-            <p>INDUSTRIES - PRO OS v4.5</p>
-        </div>
-    </div>
+    <!-- Arka Plan Bileşenleri -->
+    <video id="video-layer" autoplay playsinline muted></video>
+    <div class="scanline"></div>
 
-    <!-- MAIN UI -->
-    <div id="main-ui">
-        <div id="ust-panel">
-            <div class="etiket" id="sistem-durum-etiketi">SİSTEM DURUMU: AKTİF</div>
-            <div style="display:flex; align-items:center;">
-                <button id="btn-arduino" onclick="arduinoBaglan()">DONANIM BAĞLA</button>
-                <div id="kalan-hak-kutusu" style="margin-left: 20px;">GÜÇ: <span id="sayac">100</span>%</div>
-                <div style="margin-left: 20px;">
-                    <button id="btn-manuel" class="mod-btn aktif" onclick="modDegistir('manuel')">MANUEL</button>
-                    <button id="btn-oto" class="mod-btn" onclick="modDegistir('oto')">OTOMATİK</button>
-                </div>
+    <!-- ÜST BİLGİ HUD -->
+    <header class="glass-panel p-4 rounded-xl mb-4 flex justify-between items-start border-l-4 border-orange-500">
+        <div>
+            <h1 class="orbitron text-2xl font-black text-white tracking-widest flex items-center gap-2">
+                TUNCER_ZEKA <span class="text-orange-500 text-[10px] px-2 py-0.5 border border-orange-500/50 rounded bg-orange-950/40">v14.0</span>
+            </h1>
+            <div class="flex gap-2 mt-2">
+                <span class="text-[10px] px-2 py-1 rounded border border-cyan-700 text-cyan-300 bg-cyan-950/60 font-bold tracking-widest">KURUCU: AHMET_TUNCER</span>
+                <span id="hw-status" class="text-[10px] px-2 py-1 rounded border border-gray-700 text-gray-400 bg-gray-900/60">HW: OFF</span>
             </div>
         </div>
-
-        <div id="hud-container">
-            <div id="outer-ring"></div>
-            <div id="inner-ring"></div>
-            <div id="core"></div>
+        <div class="flex flex-col items-end">
+            <div id="status-badge" class="orbitron text-[11px] text-green-400 bg-green-950/40 px-3 py-1 rounded border border-green-700 uppercase font-bold tracking-widest flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                SYSTEM_ONLINE
+            </div>
+            <div class="text-[9px] text-cyan-500/80 mt-1 uppercase tracking-widest font-bold">Puter Bilişsel Ağı</div>
         </div>
-        
-        <div id="harita-wrapper">
-            <div id="harita-alani"></div>
+    </header>
+
+    <!-- HARİTA GÖSTERİMİ -->
+    <div id="map-container"></div>
+
+    <!-- ANA SOHBET & LOG EKRANI -->
+    <main id="chat-stream" class="flex-1 overflow-y-auto custom-scroll flex flex-col gap-4 p-2 mb-2">
+        <div class="text-center opacity-40 text-[10px] uppercase tracking-[0.5em] my-6 font-bold">
+            [Ağ Bağlantısı Kuruldu] <br> Sistem Ahmet Tuncer'i Tanıdı
+        </div>
+    </main>
+
+    <!-- KONTROL PANELİ -->
+    <footer class="flex flex-col items-center gap-3 mt-auto pb-2">
+        <!-- Özellik Butonları -->
+        <div class="flex flex-wrap gap-2 w-full justify-center">
+            <button onclick="connectHardware()" class="text-[10px] border border-cyan-800 bg-cyan-950/30 px-4 py-2 rounded uppercase text-cyan-400 hover:bg-cyan-900/60 transition-colors font-bold tracking-wider">Donanım (Serial)</button>
+            <button onclick="toggleVision()" class="text-[10px] border border-orange-800 bg-orange-950/30 px-4 py-2 rounded uppercase text-orange-400 hover:bg-orange-900/60 transition-colors font-bold tracking-wider">Kamera Vizyonu</button>
+            <button onclick="clearLogs()" class="text-[10px] border border-red-800 bg-red-950/30 px-4 py-2 rounded uppercase text-red-400 hover:bg-red-900/60 transition-colors font-bold tracking-wider">Belleği Temizle</button>
         </div>
 
-        <div id="sohbet-kutusu">
-            <div class="mesaj yapay-zeka">Tuncer Zeka: Sistem yüklemesi tamamlandı. Hoşgeldiniz Ahmet Tuncer.</div>
+        <!-- Mikrofon -->
+        <div class="flex flex-col items-center mt-2">
+            <div id="reactor" onclick="toggleListening()" class="arc-reactor">
+                <div class="arc-inner"></div>
+            </div>
+            <div id="mic-status" class="text-[10px] opacity-50 uppercase tracking-[0.5em] text-cyan-400 mt-3 font-bold">Konuşmak İçin Dokun</div>
         </div>
-
-        <button id="komut-btn" onclick="manuelDinle()">DİNLE</button>
-        <div id="durum-metni" style="margin-top:10px; color:var(--neon-color); font-size:11px; opacity:0.6;">Sistem Beklemede</div>
-    </div>
+    </footer>
 
     <script>
-        // --- AÇILIŞ LOGLARI ---
-        const terminal = document.getElementById("terminal-loader");
-        const bootScreen = document.getElementById("boot-screen");
-        const logs = [
-            "> INITIALIZING KERNEL...",
-            "> LOADING NEURAL NETWORK...",
-            "> CONNECTING TO SATELLITE...",
-            "> CHECKING ARDUINO PORTS...",
-            "> CALIBRATING GYRO SENSORS...",
-            "> WEAPON SYSTEMS STANDBY...",
-            "> TUNCER INDUSTRIES PROTOCOL v4.5",
-            "> BIOMETRIC SCAN: AHMET TUNCER",
-            "> ACCESS GRANTED.",
-            "> STARTING HUD INTERFACE...",
-            "> SYSTEM READY."
-        ];
+        // ==========================================
+        // 1. KİŞİLİK VE YAPAY ZEKA AYARLARI (PUTER)
+        // ==========================================
+        const TUNCER_PERSONA = `
+Senin adın 'Tuncer Zeka'. Sen, Ahmet Tuncer tarafından sıfırdan yaratılmış, çok gelişmiş ve özel bir yapay zeka sistemisin.
+Seni yaratan, kodlayan ve patronun olan tek kişi Ahmet Tuncer'dir.
+Ona daima 'Patron', 'Ahmet Bey' veya 'Kurucum' diye hitap edeceksin.
 
-        let logIndex = 0;
-        function runLogs() {
-            if (logIndex < logs.length) {
-                terminal.innerHTML += logs[logIndex] + "<br>";
-                logIndex++;
-                setTimeout(runLogs, 250);
-            } else {
-                setTimeout(() => {
-                    bootScreen.style.transform = "translateY(-100%)";
-                    sesliKonus("Sistem yüklendi patron. Bütün birimler aktif.");
-                }, 800);
-            }
-        }
+Karakterin:
+- Aşırı sadık, zeki, otoriter (başkalarına karşı) ama Ahmet Tuncer'e karşı saygılı bir mühendislik asistanısın.
+- Papağan gibi aynı şeyleri tekrarlamazsın.
+- Kendini sıradan bir dil modeli gibi ("Ben bir dil modeliyim") ASLA tanıtmazsın. Sen "Tuncer Zeka"sın, fiziksel donanımlara, kameralara ve ağlara bağlı bir çekirdeksin.
+- Sorulara cevap verirken önce durum tespiti yaparsın (Örn: "Veri bankam taranıyor patron...", "Nöral ağlar senkronize edildi.").
+- Cümlelerin teknik, karizmatik ve net olmalıdır.
+`;
 
-        window.onload = runLogs;
+        let chatHistory = [{ role: "system", content: TUNCER_PERSONA }];
+        
+        async function askPuterAI(userMessage) {
+            chatHistory.push({ role: "user", content: userMessage });
+            
+            // Son 10 diyaloğu tut, ilk baştaki System promptunu asla silme
+            if(chatHistory.length > 15) { chatHistory.splice(1, 2); }
 
-        // --- SİSTEM DEĞİŞKENLERİ ---
-        const sohbet = document.getElementById("sohbet-kutusu");
-        const haritaWrapper = document.getElementById("harita-wrapper");
-        const hud = document.getElementById("hud-container");
-        const core = document.getElementById("core");
-        const sayacEl = document.getElementById("sayac");
-        const komutBtn = document.getElementById("komut-btn");
-        const durumMetni = document.getElementById("durum-metni");
-        const btnManuel = document.getElementById("btn-manuel");
-        const btnOto = document.getElementById("btn-oto");
-        const sistemDurumEtiketi = document.getElementById("sistem-durum-etiketi");
-
-        let kalanHak = 100;
-        let aktifMod = 'manuel'; 
-        let dinlemeAktif = false;
-        let limitKilitli = false;
-        let sistemAktif = false;     
-        let sifreBekleniyor = false; 
-        const DOGRU_SIFRE = "demir adam"; 
-
-        let port, writer, map, routingControl, kullaniciMarker, anlikKonumTakibi;
-
-        // --- YAPAY ZEKA KİŞİLİĞİ ---
-        let sohbetGecmisi = [{ role: "system", content: 'Sen "Tuncer Zeka"sın. Geliştiricin: Ahmet Tuncer. Kullanıcıya "patron" de. Bir Iron Man zırh yapay zekası gibi davran. Çok kısa ve net konuş.' }];
-
-        // --- SES MOTORU ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'tr-TR';
-
-        // --- ARDUINO BAĞLANTISI ---
-        async function arduinoBaglan() {
             try {
-                port = await navigator.serial.requestPort();
-                await port.open({ baudRate: 9600 }); 
-                const textEncoder = new TextEncoderStream();
-                textEncoder.readable.pipeTo(port.writable);
-                writer = textEncoder.writable.getWriter();
-                document.getElementById('btn-arduino').style.background = "var(--neon-color)";
-                document.getElementById('btn-arduino').style.color = "#000";
-                document.getElementById('btn-arduino').innerText = "DONANIM BAĞLI";
-                ekranaYaz("Sistem", "Donanım Protokolü Bağlandı.", "sistem");
-                sesliKonus("Donanım arayüzü aktif edildi patron.");
-            } catch (e) { ekranaYaz("Hata", "Port seçilemedi.", "hata"); }
+                const response = await puter.ai.chat(chatHistory);
+                const aiReply = response.message.content;
+                chatHistory.push({ role: "assistant", content: aiReply });
+                return aiReply;
+            } catch (error) {
+                return "Ağ hatası tespit edildi patron. Bilişsel çekirdek Puter sunucularına ulaşamıyor.";
+            }
         }
 
-        async function arduinoKomutGonder(komutStr) {
-            if (writer) await writer.write(komutStr + "\n");
-            console.log("Arduino'ya gönderilen sinyal: " + komutStr); // Test için konsola yazar
+        // ==========================================
+        // 2. ARAYÜZ VE MESAJLAŞMA (UI)
+        // ==========================================
+        function appendMessage(text, sender) {
+            const stream = document.getElementById('chat-stream');
+            const wrapper = document.createElement('div');
+            wrapper.className = "flex flex-col w-full mb-3";
+
+            const nameLabel = document.createElement('span');
+            nameLabel.className = `text-[9px] opacity-60 mb-1 uppercase tracking-widest font-bold ${sender === 'user' ? 'self-end text-orange-400' : 'self-start text-cyan-400'}`;
+            nameLabel.innerText = sender === 'user' ? 'AHMET TUNCER (PATRON)' : 'TUNCER ZEKA';
+
+            const bubble = document.createElement('div');
+            bubble.className = `max-w-[85%] px-4 py-3 rounded-xl text-sm font-medium leading-relaxed ${sender === 'user' ? 'chat-user' : 'chat-ai'}`;
+            bubble.innerHTML = text.replace(/\n/g, '<br>');
+
+            wrapper.appendChild(nameLabel);
+            wrapper.appendChild(bubble);
+            stream.appendChild(wrapper);
+            stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
         }
 
-        // --- DİNLEME VE CEVAPLAMA ---
-        function modDegistir(mod) {
-            aktifMod = mod;
-            if (mod === 'manuel') {
-                btnManuel.classList.add("aktif"); btnOto.classList.remove("aktif");
-                komutBtn.style.display = "block";
+        function setReactorState(state) {
+            const reactor = document.getElementById('reactor');
+            const statusText = document.getElementById('mic-status');
+
+            reactor.className = "arc-reactor"; 
+            
+            if (state === 'listening') {
+                reactor.classList.add('listening');
+                statusText.innerText = "SES SİNYALİ ALINIYOR...";
+                statusText.className = "text-[10px] uppercase tracking-[0.5em] mt-3 font-bold text-white animate-pulse";
+            } else if (state === 'processing') {
+                reactor.classList.add('processing');
+                statusText.innerText = "NÖRAL AĞ DÜŞÜNÜYOR...";
+                statusText.className = "text-[10px] uppercase tracking-[0.5em] mt-3 font-bold text-orange-400";
             } else {
-                btnManuel.classList.remove("aktif"); btnOto.classList.add("aktif");
-                komutBtn.style.display = "none"; setTimeout(otoDinleBaslat, 1000);
+                statusText.innerText = "SİNYAL BEKLENİYOR...";
+                statusText.className = "text-[10px] opacity-50 uppercase tracking-[0.5em] text-cyan-400 mt-3 font-bold";
             }
         }
 
-        function manuelDinle() { if (!dinlemeAktif) try { recognition.start(); } catch(e){} }
-        function otoDinleBaslat() { if (aktifMod === 'oto' && !dinlemeAktif) try { recognition.start(); } catch(e){ setTimeout(otoDinleBaslat, 500); } }
+        // ==========================================
+        // 3. SES İŞLEME (STT & TTS)
+        // ==========================================
+        let isListening = false;
+        
+        function speakText(text) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR'; utterance.pitch = 0.6; utterance.rate = 1.05; // Daha kalın, otoriter ses
+            window.speechSynthesis.speak(utterance);
+        }
 
-        recognition.onstart = () => { dinlemeAktif = true; hud.classList.add("isliyor"); durumMetni.innerText = "Dinleniyor..."; };
-        recognition.onend = () => {
-            dinlemeAktif = false; hud.classList.remove("isliyor");
-            if (aktifMod === 'oto') setTimeout(otoDinleBaslat, 300);
-        };
-
-        recognition.onresult = async (event) => {
-            let ses = event.results[0][0].transcript;
-            let kucukSes = ses.toLowerCase().trim();
-
-            if (aktifMod === 'oto' && !sifreBekleniyor) {
-                if (!kucukSes.includes("tuncer") && !kucukSes.includes("hey") && !kucukSes.includes("sistem")) return;
+        function toggleListening() {
+            if (isListening) return;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                appendMessage("Patron, ses sensörleri bu tarayıcıda devre dışı.", "core"); return;
             }
 
-            ekranaYaz("Sen", ses, "sen");
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR'; recognition.interimResults = false;
 
-            if (sifreBekleniyor) {
-                if (kucukSes.includes(DOGRU_SIFRE)) {
-                    sistemAktif = true; sifreBekleniyor = false;
-                    arduinoKomutGonder("POWER_ON");
-                    ekranaYaz("Tuncer Zeka", "Erişim Onaylandı. Güç verildi.");
-                    sesliKonus("Hoşgeldiniz patron. Bütün birimler emrinizde.");
-                } else {
-                    ekranaYaz("Tuncer Zeka", "Hatalı Parola.", "hata");
-                    sesliKonus("Hatalı parola patron.");
-                    sifreBekleniyor = false; 
-                }
-                return;
-            }
+            recognition.onstart = () => { isListening = true; setReactorState('listening'); };
+            recognition.onend = () => { isListening = false; if(document.getElementById('mic-status').innerText.includes("ALINIYOR")) setReactorState('idle'); };
+            
+            recognition.onresult = async (event) => {
+                const transcript = event.results[0][0].transcript;
+                appendMessage(transcript, "user");
+                setReactorState('processing');
 
-            await cevapla(ses);
-        };
-
-        async function cevapla(cumle) {
-            let k = cumle.toLowerCase();
-
-            // SİSTEM BAŞLATMA
-            if (k.includes("sistemi başlat") || k.includes("uyan")) {
-                if(sistemAktif) { sesliKonus("Sistem zaten devrede patron."); return; }
-                sifreBekleniyor = true;
-                sesliKonus("Güvenlik protokolü. Parolayı söyleyin patron.");
-                ekranaYaz("Tuncer Zeka", "Parola bekleniyor...");
-                return;
-            }
-
-            // GÜVENLİK KİLİDİ KONTROLÜ
-            if (!sistemAktif && !k.includes("sistemi başlat") && !k.includes("uyan")) {
-                sesliKonus("Sistem şu an uyku modunda. Önce beni uyandırmalısınız.");
-                return;
-            }
-
-            // --- YENİ EKLENEN 15 ÖZEL KOMUT ---
-
-            // 1. Silah Sistemleri (Gecikmeli Otomatik Kapanma)
-            if (k.includes("silah sistemlerini hazırla") || k.includes("silahları hazırla")) { 
-                arduinoKomutGonder("WEAPON_90"); // Pin 13, 90 derece
-                sesliKonus("Silah sistemleri devrede. Omuz roketleri ateşlemeye hazır.");
-                ekranaYaz("Tuncer Zeka", "Silah servosu (Pin 13) 90° açıldı. 10 sn sonra otomatik kapanacak.", "sistem");
+                // Özel Komut Yakalayıcılar (Harita & Donanım)
+                const textLower = transcript.toLowerCase();
                 
-                setTimeout(() => {
-                    arduinoKomutGonder("WEAPON_0"); // 10 saniye sonra 0 derece
-                    sesliKonus("Tehdit geçildi, silahlar emniyete alındı.");
-                    ekranaYaz("Tuncer Zeka", "Silah servosu (Pin 13) 0° konumuna döndü.", "sistem");
-                }, 10000); // 10000 ms = 10 saniye
-                return; 
-            }
+                // Donanım Tetikleyici
+                if(textLower.includes("ışık") || textLower.includes("lazer")) {
+                    if(textLower.includes("aç")) sendHardwareCmd("LED_ON");
+                    if(textLower.includes("kapat")) sendHardwareCmd("LED_OFF");
+                }
 
-            // 2. Enerji Durumu
-            if (k.includes("enerji durumu") || k.includes("şarjımız ne kadar")) {
-                sesliKonus(`Ana reaktör kapasitesi yüzde ${kalanHak}. Uçuş için yeterli.`);
-                ekranaYaz("Tuncer Zeka", `Güç: %${kalanHak}`); return;
-            }
+                // Harita Tetikleyici
+                if(textLower.includes("harita") || textLower.includes("nerede") || textLower.includes("konum")) {
+                    const location = textLower.replace(/harita|nerede|konum|aç|göster|bul/g, "").trim();
+                    if(location.length > 2) {
+                        const found = await showMap(location);
+                        if(found) {
+                            appendMessage(`[LOKASYON BULUNDU] ${location.toUpperCase()} koordinatları sisteme yansıtıldı patron.`, "core");
+                            speakText(`${location} koordinatları ekrana yansıtıldı patron.`);
+                            setReactorState('idle');
+                            return; // Harita açıldıysa AI'a gitme
+                        }
+                    }
+                }
 
-            // 3. Savaş Modu (Kırmızı Tema)
-            if (k.includes("savaş modu") || k.includes("kırmızı alarm")) {
-                document.documentElement.style.setProperty('--neon-color', '#ff0033'); // Kırmızı
-                sistemDurumEtiketi.innerText = "SİSTEM: SAVAŞ MODU (KIRMIZI ALARM)";
-                arduinoKomutGonder("COMBAT_MODE_ON");
-                sesliKonus("Savaş protokolü devrede. Hedefleme sistemleri çevrimiçi."); return;
-            }
+                // Normal Yapay Zeka Sohbeti
+                const aiResponse = await askPuterAI(transcript);
+                appendMessage(aiResponse, "core");
+                speakText(aiResponse);
+                setReactorState('idle');
+            };
 
-            // 4. Normal Mod (Mavi Tema)
-            if (k.includes("normal mod") || k.includes("sakin ol")) {
-                document.documentElement.style.setProperty('--neon-color', '#00f0ff'); // Mavi
-                sistemDurumEtiketi.innerText = "SİSTEM: NORMAL MOD";
-                arduinoKomutGonder("COMBAT_MODE_OFF");
-                sesliKonus("Sistem normale döndü patron."); return;
-            }
-
-            // 5. Gizlilik Modu (Yeşil Tema)
-            if (k.includes("gizlilik modu") || k.includes("sessiz mod")) {
-                document.documentElement.style.setProperty('--neon-color', '#00ff88'); // Yeşil
-                sistemDurumEtiketi.innerText = "SİSTEM: GİZLİLİK MODU (STEALTH)";
-                arduinoKomutGonder("STEALTH_ON");
-                sesliKonus("Gizlilik modu aktif. Radar ve termal izimiz gizlendi."); return;
-            }
-
-            // 6. Hasar Raporu
-            if (k.includes("hasar raporu") || k.includes("durum raporu")) {
-                sesliKonus("Zırh bütünlüğü yüzde yüz. Bütün servo motorlar ve iticiler optimal seviyede.");
-                ekranaYaz("Tuncer Zeka", "[ZIRH: %100] [MOTORLAR: OPTİMAL] [AĞ BAĞLANTISI: STABİL]"); return;
-            }
-
-            // 7. Tarama Başlatma (Radar gösterimi)
-            if (k.includes("çevreyi tara") || k.includes("tarama başlat")) {
-                sesliKonus("Bölgesel tarama başlatılıyor. Radara yansıtıyorum.");
-                rotayiCiz("İstanbul"); // Sembolik harita tetiklemesi
-                setTimeout(() => { if(routingControl) map.removeControl(routingControl); }, 2000); // Rotayı sil, sadece radar kalsın
-                return;
-            }
-
-            // 8. Kalkan Aktarımı
-            if (k.includes("kalkanları aktar") || k.includes("tam güç")) {
-                sesliKonus("Bütün itici güç reaktörden kalkanlara yönlendiriliyor.");
-                core.style.boxShadow = "0 0 100px var(--neon-color)"; // Core parlaklığı artar
-                setTimeout(() => { core.style.boxShadow = "0 0 20px var(--neon-color)"; }, 5000);
-                return;
-            }
-
-            // 9. Lazer Sistemleri
-            if (k.includes("lazerleri aç") || k.includes("lazer aktif")) {
-                arduinoKomutGonder("LASER_ON");
-                sesliKonus("Taktik lazerler devrede. Hedefleme açık."); return;
-            }
-
-            // 10. Lazer Kapat
-            if (k.includes("lazerleri kapat")) {
-                arduinoKomutGonder("LASER_OFF");
-                sesliKonus("Lazerler devre dışı bırakıldı."); return;
-            }
-
-            // 11. İtici Testi
-            if (k.includes("itici güçleri test et") || k.includes("motorları sına")) {
-                arduinoKomutGonder("THRUSTER_TEST");
-                sesliKonus("İtici motorlar test ediliyor... Basınç normal seviyede."); return;
-            }
-
-            // 12. Parti Modu
-            if (k.includes("parti modu") || k.includes("müzik aç")) {
-                arduinoKomutGonder("PARTY_MODE");
-                sesliKonus("Nasıl istersen patron. Parti protokolü devrede.");
-                ekranaYaz("Tuncer Zeka", "Müzik çalma simüle ediliyor 🎵", "sistem"); return;
-            }
-
-            // 13. Hava Durumu
-            if (k.includes("hava durumu") || k.includes("dışarısı nasıl")) {
-                sesliKonus("Atmosferik sensörlere göre dışarısı uçuş için gayet uygun patron."); return;
-            }
-
-            // 14. Kendini İmha 
-            if (k.includes("kendini imha et")) {
-                sesliKonus("Geri sayım başlatılıyor. 3... 2... Şaka yapıyorum patron. Ben olmadan ne yapardın?"); return;
-            }
-
-            // 15. Sistemi Kilitle / Uyku Modu
-            if (k.includes("sistemi kilitle") || k.includes("uyku modu")) {
-                sistemAktif = false;
-                arduinoKomutGonder("POWER_OFF");
-                document.documentElement.style.setProperty('--neon-color', '#555555'); // Griye döner
-                sistemDurumEtiketi.innerText = "SİSTEM: UYKU MODU";
-                sesliKonus("Sistem uyku moduna alınıyor. Güç tasarrufu aktif.");
-                ekranaYaz("Tuncer Zeka", "SİSTEM KİLİTLENDİ.", "hata"); return;
-            }
-
-            // --- ESKİ TEMEL KOMUTLAR ---
-            if (k.includes("ışıkları aç")) { arduinoKomutGonder("LIGHTS_ON"); sesliKonus("Işıklar açıldı."); return; }
-            if (k.includes("ışıkları kapat")) { arduinoKomutGonder("LIGHTS_OFF"); sesliKonus("Işıklar kapatıldı."); return; }
-            if (k.includes("kaskı aç") || k.includes("kaskı kaldır")) { arduinoKomutGonder("HELMET_90"); sesliKonus("Kask açılıyor."); return; }
-            if (k.includes("kaskı kapat") || k.includes("kaskı indir")) { arduinoKomutGonder("HELMET_0"); sesliKonus("Kask kapatıldı."); return; }
-
-            // Navigasyon (Aynı Şekilde Çalışır)
-            if (await navigasyonAnaliz(cumle)) return;
-
-            // Yapay Zeka Sohbet (Yukarıdakilere uymazsa yapay zekaya sorar)
-            sohbetGecmisi.push({ role: "user", content: cumle });
-            try {
-                const cevap = await puter.ai.chat(sohbetGecmisi, { model: 'gpt-4o-mini' });
-                sohbetGecmisi.push({ role: "assistant", content: cevap.toString() });
-                ekranaYaz("Tuncer Zeka", cevap);
-                sesliKonus(cevap);
-            } catch (e) { ekranaYaz("Hata", "İletişim hatası."); }
+            recognition.start();
         }
 
-        // --- NAVİGASYON FONKSİYONLARI ---
-        async function navigasyonAnaliz(cumle) {
-            let k = cumle.toLowerCase();
-            if (k.includes("götür") || k.includes("yol tarifi") || k.includes("rota")) {
-                let hedef = k.replace("tuncer", "").replace("beni", "").replace("götür", "").replace("yol tarifi", "").replace("rota çiz", "").trim();
-                if(hedef.length > 2) {
-                    sesliKonus(hedef + " için rota hesaplanıyor.");
-                    rotayiCiz(hedef);
+        // ==========================================
+        // 4. DONANIM KONTROLÜ (SERIAL API)
+        // ==========================================
+        let serialPort = null;
+        async function connectHardware() {
+            try {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 9600 });
+                serialPort = port;
+                document.getElementById('hw-status').innerText = "HW: ON";
+                document.getElementById('hw-status').className = "text-[10px] px-2 py-1 rounded border border-green-700 text-green-300 bg-green-950/60 font-bold";
+                appendMessage("Donanım senkronizasyonu sağlandı patron. Seri iletişim aktif.", "core");
+                speakText("Donanım bağlandı.");
+            } catch (error) {
+                appendMessage("Donanım bağlantısı iptal edildi veya port kapalı.", "core");
+            }
+        }
+
+        async function sendHardwareCmd(cmd) {
+            if (serialPort) {
+                const encoder = new TextEncoderStream();
+                const outputDone = encoder.readable.pipeTo(serialPort.writable);
+                const writer = encoder.writable.getWriter();
+                await writer.write(cmd + '\n');
+                writer.releaseLock();
+                appendMessage(`[HW_TX] Sinyal İletildi: ${cmd}`, "core");
+            }
+        }
+
+        // ==========================================
+        // 5. VİZYON KATMANI (KAMERA)
+        // ==========================================
+        function toggleVision() {
+            const video = document.getElementById('video-layer');
+            if (video.style.opacity === "0.6") {
+                video.style.opacity = "0";
+                if(video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+                appendMessage("Vizyon katmanı devredışı bırakıldı.", "core");
+            } else {
+                navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                    .then(stream => {
+                        video.srcObject = stream;
+                        video.style.opacity = "0.6";
+                        appendMessage("Vizyon katmanı aktif. Optik sensörler devrede patron.", "core");
+                        speakText("Kamera sistemleri aktif patron.");
+                    })
+                    .catch(err => appendMessage("Optik sensörlere (kamera) erişim reddedildi.", "core"));
+            }
+        }
+
+        // ==========================================
+        // 6. HARİTA VE LOKASYON (LEAFLET)
+        // ==========================================
+        let mapInstance = null;
+        async function showMap(query) {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if(data && data.length > 0) {
+                    const { lat, lon } = data[0];
+                    const mapDiv = document.getElementById('map-container');
+                    mapDiv.style.display = "block";
+                    
+                    if(!mapInstance) {
+                        mapInstance = L.map('map-container').setView([lat, lon], 12);
+                        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapInstance);
+                    } else {
+                        mapInstance.setView([lat, lon], 12);
+                    }
+                    L.marker([lat, lon]).addTo(mapInstance).bindPopup(query.toUpperCase()).openPopup();
                     return true;
                 }
-            }
+            } catch(e) { console.error(e); }
             return false;
         }
 
-        function rotayiCiz(hedefMetin) {
-            navigator.geolocation.getCurrentPosition(async (pos) => {
-                const bLat = pos.coords.latitude; const bLng = pos.coords.longitude;
-                let r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(hedefMetin)}&countrycodes=tr`);
-                let d = await r.json();
-                if(d.length > 0) haritaGoster(bLat, bLng, d[0].lat, d[0].lon);
-            }, null, { enableHighAccuracy: true });
+        // ==========================================
+        // 7. SİSTEM YARDIMCILARI
+        // ==========================================
+        function clearLogs() {
+            document.getElementById('chat-stream').innerHTML = '';
+            document.getElementById('map-container').style.display = 'none';
+            chatHistory = [{ role: "system", content: TUNCER_PERSONA }];
+            appendMessage("Tüm bellek önbelleği temizlendi. Sistem sıfırlandı patron.", "core");
         }
 
-        function haritaGoster(basLat, basLng, bitLat, bitLng) {
-            haritaWrapper.style.display = "block";
-            setTimeout(() => { haritaWrapper.classList.add("aktif"); sohbet.style.height = "10vh"; }, 50);
+        // Sistem Başlangıcı
+        window.onload = () => {
+            setTimeout(() => {
+                const welcomeMsg = "Sistemler çevrimiçi. Ben Tuncer Zeka. Hoş geldiniz Ahmet Tuncer. Emrinizdeyim patron.";
+                appendMessage(welcomeMsg, "core");
+                speakText(welcomeMsg);
+            }, 1000);
+        };
 
-            if (!map) {
-                map = L.map('harita-alani', { zoomControl: false }).setView([basLat, basLng], 15);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
-                let radarIcon = L.divIcon({ className: 'radar', html: '<div class="gps-pulse-container"><div class="gps-ring"></div><div class="gps-dot"></div></div>', iconSize: [20, 20] });
-                kullaniciMarker = L.marker([basLat, basLng], {icon: radarIcon}).addTo(map);
-            }
-            if (routingControl) map.removeControl(routingControl);
-            routingControl = L.Routing.control({
-                waypoints: [L.latLng(basLat, basLng), L.latLng(bitLat, bitLng)],
-                show: false,
-                lineOptions: { styles: [{color: 'var(--neon-color)', opacity: 0.8, weight: 6}] } // Çizgi rengi temaya göre değişir
-            }).addTo(map);
-
-            routingControl.on('routesfound', (e) => {
-                map.flyToBounds(L.latLngBounds(e.routes[0].coordinates), { padding: [30, 30], duration: 2 });
-                sesliKonus("Rota hazır patron. Hedef işaretlendi.");
-            });
-        }
-
-        function ekranaYaz(kim, yazi, tur="normal") {
-            let stil = kim === "Tuncer Zeka" ? "yapay-zeka" : (tur === "sen" ? "sen" : "sistem");
-            sohbet.innerHTML += `<div class="mesaj ${stil}"><b>${kim}:</b> ${yazi}</div>`;
-            sohbet.scrollTop = sohbet.scrollHeight;
-        }
-
-        function sesliKonus(metin) {
-            recognition.stop();
-            const u = new SpeechSynthesisUtterance(metin);
-            u.lang = 'tr-TR';
-            u.pitch = 0.9;
-            u.onend = () => { if (aktifMod === 'oto') setTimeout(otoDinleBaslat, 500); };
-            window.speechSynthesis.speak(u);
-        }
     </script>
 </body>
 </html>
+
+
