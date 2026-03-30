@@ -3,232 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka Arayüzü</title>
+    <title>Tuncer Zeka Satın Alım Mağazası</title>
     <style>
-        /* Modern, Glassmorphism Tasarım */
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            overflow: hidden;
-            background-color: #000;
-        }
-
-        /* Arka Plan Kamera Akışı */
-        #bg-video {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 0;
-        }
-
-        /* Cam Efektli (Glassmorphism) Paneller */
-        .glass-panel {
-            position: absolute;
-            background: rgba(20, 20, 20, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 20px;
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #1e1e2f; 
             color: #fff;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            z-index: 10;
-            transition: all 0.4s ease;
+            margin: 0; 
+            padding: 20px; 
+            display: flex;
+            justify-content: center;
         }
-
-        /* Panel Konumları */
-        .top-left { top: 30px; left: 30px; width: 250px; }
-        .top-right { top: 30px; right: 30px; width: 250px; text-align: right; }
-        .bottom-center { 
-            bottom: 30px; 
-            left: 50%; 
-            transform: translateX(-50%); 
-            width: 60%; 
-            text-align: center; 
+        .container { 
+            width: 100%;
+            max-width: 600px; 
+            background: #2a2a40; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3); 
         }
-
-        /* Animasyonlar ve Durumlar */
-        h2 { margin: 0 0 10px 0; font-size: 18px; color: #00ffcc; text-transform: uppercase; letter-spacing: 2px;}
-        p { margin: 0; font-size: 14px; opacity: 0.9; line-height: 1.5; }
-        
-        .listening-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            background-color: #ff3366;
-            border-radius: 50%;
-            margin-right: 10px;
-            animation: pulse 1.5s infinite;
+        h1, h2, h3 { color: #f0a500; text-align: center; }
+        .balance-box {
+            text-align: center;
+            font-size: 24px;
+            background: #1e1e2f;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #f0a500;
         }
-
-        @keyframes pulse {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 51, 102, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(255, 51, 102, 0); }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(255, 51, 102, 0); }
+        .product { 
+            background: #363654;
+            border: 1px solid #4a4a70; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            border-radius: 8px; 
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-
-        #init-btn {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 15px 30px;
-            background: rgba(0, 255, 204, 0.2);
-            color: #00ffcc;
-            border: 1px solid #00ffcc;
-            border-radius: 10px;
-            cursor: pointer;
-            z-index: 100;
-            font-size: 18px;
-            backdrop-filter: blur(5px);
+        .product-info p { margin: 5px 0; color: #ccc; }
+        .price { font-size: 18px; font-weight: bold; color: #4ade80; }
+        button { 
+            background-color: #f0a500; 
+            color: #1e1e2f; 
+            border: none; 
+            padding: 10px 20px; 
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer; 
+            border-radius: 6px; 
+            transition: background 0.3s;
+        }
+        button:hover { background-color: #d18d00; }
+        .admin-panel { 
+            margin-top: 40px; 
+            border-top: 2px dashed #4a4a70; 
+            padding-top: 20px; 
+        }
+        .hidden { display: none; }
+        .input-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        input { 
+            padding: 10px; 
+            border-radius: 6px; 
+            border: 1px solid #ccc; 
+            font-size: 16px;
+            outline: none;
         }
     </style>
 </head>
 <body>
 
-    <button id="init-btn">Sistemleri Başlat</button>
+    <div class="container">
+        <h1>Tuncer Zeka</h1>
+        
+        <div class="balance-box">
+            Mevcut Bakiye: <span id="balance">0</span> TL
+        </div>
 
-    <video id="bg-video" autoplay muted playsinline></video>
+        <div class="product">
+            <div class="product-info">
+                <h3>Tuncer Zeka Pro</h3>
+                <p class="price">1.666 TL</p>
+            </div>
+            <button onclick="buyProduct('Tuncer Zeka Pro', 1666, '175017')">Satın Al</button>
+        </div>
 
-    <div class="glass-panel top-left" id="status-panel" style="display:none;">
-        <h2><span class="listening-indicator" id="mic-status"></span>Tuncer Zeka</h2>
-        <p id="system-log">Sistem Aktif. "Hey Tuncer" komutu bekleniyor...</p>
-    </div>
+        <div class="product">
+            <div class="product-info">
+                <h3>Tuncer Zeka Holo</h3>
+                <p class="price">89.000 TL</p>
+            </div>
+            <button onclick="buyProduct('Tuncer Zeka Holo', 89000, 'LQHR01_NPoQ')">Satın Al</button>
+        </div>
 
-    <div class="glass-panel top-right" id="gps-panel" style="display:none;">
-        <h2>Navigasyon</h2>
-        <p id="gps-data">Konum taranıyor...</p>
-    </div>
+        <div class="admin-panel">
+            <h2>⚙️ Admin Paneli</h2>
+            
+            <div id="login-section" class="input-group">
+                <input type="password" id="admin-pass" placeholder="Admin Şifresi">
+                <button onclick="checkAdmin()">Giriş Yap</button>
+            </div>
 
-    <div class="glass-panel bottom-center" id="chat-panel" style="display:none;">
-        <h2 id="ai-name">Tuncer Zeka Asistanı</h2>
-        <p id="chat-text">Ahmet Tuncer, size nasıl yardımcı olabilirim?</p>
+            <div id="balance-section" class="input-group hidden">
+                <input type="number" id="add-amount" placeholder="Tutar Girin (TL)">
+                <button onclick="addBalance()">Bakiye Ekle</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        const initBtn = document.getElementById('init-btn');
-        const systemLog = document.getElementById('system-log');
-        const chatText = document.getElementById('chat-text');
-        const gpsData = document.getElementById('gps-data');
-        
-        let isAwake = false;
+        let balance = 0;
 
-        // 1. Sistem Başlatma (Kullanıcı etkileşimi şarttır)
-        initBtn.addEventListener('click', async () => {
-            initBtn.style.display = 'none';
-            document.querySelectorAll('.glass-panel').forEach(p => p.style.display = 'block');
-            
-            await baslatKamera();
-            baslatGPS();
-            baslatSesliAsistan();
-            konus("Sistemler çevrimiçi. Merhaba tasarımcım Ahmet Tuncer.");
-        });
-
-        // 2. Arka Kamera Bağlantısı
-        async function baslatKamera() {
-            try {
-                // Arka kamerayı (environment) seçmeye çalışır
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                });
-                document.getElementById('bg-video').srcObject = stream;
-            } catch (err) {
-                systemLog.innerText = "Kamera başlatılamadı: " + err.message;
-            }
+        function updateBalanceUI() {
+            // Bakiyeyi formatlı gösterir (Örn: 89.000)
+            document.getElementById('balance').innerText = balance.toLocaleString('tr-TR');
         }
 
-        // 3. GPS ve Navigasyon
-        function baslatGPS() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition((position) => {
-                    const lat = position.coords.latitude.toFixed(4);
-                    const lon = position.coords.longitude.toFixed(4);
-                    gpsData.innerText = `Enlem: ${lat}\nBoylam: ${lon}\nDurum: Kilitlendi`;
-                }, (error) => {
-                    gpsData.innerText = "Konum bulunamadı.";
-                }, { enableHighAccuracy: true });
+        function buyProduct(name, price, secretCode) {
+            if (balance >= price) {
+                balance -= price;
+                updateBalanceUI();
+                alert("✅ Satın alım başarılı! " + name + " aldınız.\n\nSİZE ÖZEL ŞİFRE: " + secretCode);
             } else {
-                gpsData.innerText = "GPS modülü yok.";
+                alert("❌ Bakiye yetersiz! Lütfen admin panelinden bakiye yükleyin.");
             }
         }
 
-        // 4. Konuşma Sentezi (Tuncer Zeka'nın Sesi)
-        function konus(metin) {
-            const synth = window.speechSynthesis;
-            const utterThis = new SpeechSynthesisUtterance(metin);
-            utterThis.lang = 'tr-TR';
-            utterThis.pitch = 0.9;
-            utterThis.rate = 1.0;
-            synth.speak(utterThis);
-        }
-
-        // 5. Ses Tanıma (Sürekli Dinleme ve Hey Tuncer)
-        function baslatSesliAsistan() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                systemLog.innerText = "Tarayıcı ses tanımayı desteklemiyor.";
-                return;
+        function checkAdmin() {
+            const pass = document.getElementById('admin-pass').value;
+            if (pass === "175017") {
+                document.getElementById('login-section').classList.add('hidden');
+                document.getElementById('balance-section').classList.remove('hidden');
+                alert("🔓 Admin girişi başarılı. Bakiye ekleme ekranı açıldı.");
+            } else {
+                alert("⛔ Hatalı şifre!");
             }
-
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = 'tr-TR';
-
-            recognition.onresult = async (event) => {
-                const sonKelimeIndex = event.results.length - 1;
-                const duyulan = event.results[sonKelimeIndex][0].transcript.trim().toLowerCase();
-                
-                systemLog.innerText = `Duyulan: "${duyulan}"`;
-
-                // Wake-word kontrolü
-                if (duyulan.includes("hey tuncer") || duyulan.includes("tuncer uyan")) {
-                    isAwake = true;
-                    document.getElementById('mic-status').style.backgroundColor = '#00ffcc'; // Aktif renk
-                    konus("Sizi dinliyorum.");
-                    chatText.innerText = "Dinleniyor...";
-                    return;
-                }
-
-                // Eğer sistem uyanıksa komutu işle
-                if (isAwake) {
-                    isAwake = false; // Komut aldıktan sonra tekrar uykuya döner
-                    document.getElementById('mic-status').style.backgroundColor = '#ff3366'; // Bekleme rengi
-                    chatText.innerText = "Düşünüyor...";
-                    await yapayZekayaSor(duyulan);
-                }
-            };
-
-            // Hata olursa veya durursa yeniden başlat (Sürekli dinleme döngüsü)
-            recognition.onend = () => { recognition.start(); };
-            recognition.start();
         }
 
-        // 6. Pollinations.ai Entegrasyonu
-        async function yapayZekayaSor(komut) {
-            try {
-                // Tuncer Zeka'nın sistem promtu
-                const sistemKimligi = "Senin adın Tuncer Zeka. Yaratıcın ve tasarımcın Ahmet Tuncer'dir. Bir yapay zeka asistanısın. Yanıtların kısa, net ve bilimsel olsun.";
-                
-                // Pollinations Text API'sine istek atıyoruz
-                const url = `https://text.pollinations.ai/${encodeURIComponent(sistemKimligi + " Kullanıcı sorusu: " + komut)}`;
-                
-                const response = await fetch(url);
-                const yanit = await response.text();
-                
-                chatText.innerText = yanit;
-                konus(yanit);
-
-            } catch (error) {
-                chatText.innerText = "Sunucu bağlantısı koptu.";
-                konus("Bağlantı hatası oluştu.");
+        function addBalance() {
+            const amount = parseFloat(document.getElementById('add-amount').value);
+            if (!isNaN(amount) && amount > 0) {
+                balance += amount;
+                updateBalanceUI();
+                alert("💰 " + amount.toLocaleString('tr-TR') + " TL bakiye başarıyla eklendi.");
+                document.getElementById('add-amount').value = ''; // Kutuyu temizle
+            } else {
+                alert("Lütfen geçerli bir tutar girin.");
             }
         }
     </script>
+
 </body>
 </html>
