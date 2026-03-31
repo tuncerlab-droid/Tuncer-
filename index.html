@@ -3,231 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka</title>
+    <title>Tuncer Zeka - AI Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Genel Ayarlar ve Renk Paleti */
-        :root {
-            --bg-color: #343541;
-            --sidebar-bg: #202123;
-            --message-bot-bg: #444654;
-            --text-color: #ececf1;
-            --input-bg: #40414f;
-            --border-color: rgba(255,255,255,0.1);
-            --hover-color: #2A2B32;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        :root {
+            --bg-dark: #0b0d11;
+            --sidebar-dark: #171717;
+            --accent-green: #10a37f;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --border-glass: rgba(255, 255, 255, 0.1);
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            height: 100vh;
-            display: flex;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #ececf1;
             overflow: hidden;
+            height: 100vh;
         }
 
-        /* Yan Menü (Sidebar) */
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 5px rgba(16, 163, 127, 0.2); }
+            50% { box-shadow: 0 0 15px rgba(16, 163, 127, 0.5); }
+            100% { box-shadow: 0 0 5px rgba(16, 163, 127, 0.2); }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 0.4s ease-out forwards;
+        }
+
+        /* Layout */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
         .sidebar {
             width: 260px;
-            background-color: var(--sidebar-bg);
-            padding: 10px;
+            background-color: var(--sidebar-dark);
+            border-right: 1px solid var(--border-glass);
             display: flex;
             flex-direction: column;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .new-chat-btn {
-            background-color: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            padding: 12px;
-            border-radius: 6px;
-            text-align: left;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 15px;
-            transition: all 0.2s ease;
-        }
-
-        .new-chat-btn:hover {
-            background-color: var(--hover-color);
-            transform: scale(1.02);
-        }
-
-        /* Ana Sohbet Alanı */
-        .chat-main {
+        .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: linear-gradient(180deg, #1e1e1e 0%, #0b0d11 100%);
             position: relative;
         }
 
-        .chat-messages {
+        /* Chat Area */
+        #chat-container {
             flex: 1;
             overflow-y: auto;
-            padding-bottom: 120px; /* Input alanı için boşluk */
-            scroll-behavior: smooth;
-        }
-
-        /* Mesaj Balonları ve Animasyonları */
-        .message {
-            padding: 24px;
+            padding: 2rem 0;
             display: flex;
-            gap: 20px;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message-row {
+            width: 100%;
+            padding: 1.5rem 1rem;
+            display: flex;
             justify-content: center;
-            border-bottom: 1px solid rgba(0,0,0,0.1);
-            animation: fadeIn 0.5s ease forwards;
-            opacity: 0;
-            transform: translateY(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
         }
 
-        @keyframes fadeIn {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .message-row.bot {
+            background-color: rgba(255, 255, 255, 0.02);
         }
 
-        .message.bot {
-            background-color: var(--message-bot-bg);
-        }
-
-        .message-content {
+        .message-wrapper {
             max-width: 800px;
             width: 100%;
             display: flex;
-            gap: 20px;
-            line-height: 1.6;
-            font-size: 16px;
+            gap: 1.25rem;
         }
 
         .avatar {
-            width: 30px;
-            height: 30px;
-            border-radius: 4px;
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
             flex-shrink: 0;
+            font-size: 1.2rem;
         }
 
-        .user .avatar {
-            background-color: #10a37f;
+        .user-avatar { background: #5436da; }
+        .bot-avatar { background: var(--accent-green); animation: pulseGlow 3s infinite; }
+
+        .message-text {
+            line-height: 1.6;
+            font-size: 1rem;
+            color: #d1d1d6;
+            word-break: break-word;
         }
 
-        .bot .avatar {
-            background-color: #19c37d; /* Tuncer Zeka ikon rengi */
-        }
-
-        /* Input (Giriş) Alanı */
-        .input-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            padding: 24px;
-            background: linear-gradient(180deg, rgba(53,55,64,0), var(--bg-color) 40%);
+        /* Input Area */
+        .input-area {
+            padding: 2rem;
+            background: linear-gradient(to top, var(--bg-dark) 60%, transparent);
             display: flex;
             justify-content: center;
+            position: relative;
         }
 
-        .input-box {
+        .input-wrapper {
             max-width: 800px;
             width: 100%;
             position: relative;
-            background-color: var(--input-bg);
+            background: #2d2d30;
+            border: 1px solid var(--border-glass);
             border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0,0,0,0.1);
-            border: 1px solid var(--border-color);
-            transition: box-shadow 0.3s ease;
+            transition: border-color 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .input-box:focus-within {
-            box-shadow: 0 0 20px rgba(0,0,0,0.3);
-            border-color: rgba(255,255,255,0.2);
+        .input-wrapper:focus-within {
+            border-color: var(--accent-green);
         }
 
-        .input-box input {
+        #chat-input {
             width: 100%;
             background: transparent;
             border: none;
-            color: white;
-            padding: 16px 50px 16px 16px;
-            font-size: 16px;
             outline: none;
-        }
-
-        .input-box input::placeholder {
-            color: rgba(255,255,255,0.5);
-        }
-
-        .send-btn {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: transparent;
-            border: none;
-            color: rgba(255,255,255,0.5);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-
-        .send-btn:hover {
             color: white;
-            background-color: var(--message-bot-bg);
+            padding: 14px 50px 14px 16px;
+            font-size: 1rem;
+            resize: none;
+            max-height: 200px;
         }
 
-        /* Responsive Tasarım */
-        @media (max-width: 768px) {
-            .sidebar {
-                display: none;
-            }
+        #send-button {
+            position: absolute;
+            right: 8px;
+            bottom: 8px;
+            padding: 6px 10px;
+            background: var(--accent-green);
+            color: white;
+            border-radius: 8px;
+            transition: transform 0.2s, background 0.2s;
+            cursor: pointer;
+        }
+
+        #send-button:hover {
+            background: #0e8c6d;
+            transform: scale(1.05);
+        }
+
+        #send-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Floating UI Elements */
+        .new-chat-btn {
+            margin: 10px;
+            border: 1px solid var(--border-glass);
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .new-chat-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .dot {
+            width: 4px;
+            height: 4px;
+            background: #aaa;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
         }
     </style>
 </head>
 <body>
 
-    <aside class="sidebar">
-        <button class="new-chat-btn">
-            <i class="fas fa-plus"></i> Yeni Sohbet
-        </button>
-    </aside>
-
-    <main class="chat-main">
-        <div class="chat-messages" id="chat-container">
-            
-            <div class="message bot">
-                <div class="message-content">
-                    <div class="avatar"><i class="fas fa-robot"></i></div>
-                    <div class="text">Merhaba! Ben Tuncer Zeka. Sana nasıl yardımcı olabilirim?</div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="flex-1 overflow-y-auto">
+                <div class="new-chat-btn">
+                    <i class="fas fa-plus"></i>
+                    <span class="text-sm font-medium">Yeni Sohbet</span>
+                </div>
+                
+                <div class="px-3 mt-8">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider px-2">Geçmiş</h3>
+                    <div class="mt-4 flex flex-col gap-1">
+                        <!-- History Items can be added here dynamically -->
+                        <div class="p-3 text-sm text-gray-400 hover:bg-white/5 rounded-md cursor-pointer flex items-center gap-3">
+                            <i class="far fa-message"></i>
+                            <span class="truncate">Tuncer Zeka Projesi...</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
+            <div class="p-4 border-t border-white/10">
+                <div class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center">
+                        <i class="fas fa-user text-xs"></i>
+                    </div>
+                    <span class="text-sm font-medium">Kullanıcı</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat -->
+        <main class="main-content">
+            <!-- Navbar (Mobile) -->
+            <div class="md:hidden p-4 border-b border-white/10 flex justify-between items-center">
+                <i class="fas fa-bars text-xl" onclick="toggleSidebar()"></i>
+                <span class="font-medium">Tuncer Zeka</span>
+                <i class="fas fa-plus"></i>
             </div>
 
-        <div class="input-container">
-            <div class="input-box">
-                <input type="text" id="chat-input" placeholder="Tuncer Zeka'ya mesaj gönder..." autocomplete="off">
-                <button class="send-btn" id="send-button">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+            <!-- Messages Container -->
+            <div id="chat-container">
+                <!-- Bot Welcome Message -->
+                <div class="message-row bot animate-fade-in">
+                    <div class="message-wrapper">
+                        <div class="avatar bot-avatar">
+                            <i class="fas fa-bolt text-sm"></i>
+                        </div>
+                        <div class="message-text">
+                            <h2 class="text-lg font-bold mb-2">Tuncer Zeka'ya Hoş Geldin!</h2>
+                            Sana nasıl yardımcı olabilirim? Bugün yeni bir şeyler öğrenmeye ne dersin?
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </main>
 
+            <!-- Input Form -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="chat-input" 
+                        rows="1" 
+                        placeholder="Tuncer Zeka'ya bir şeyler sor..."
+                        oninput="this.style.height = '';this.style.height = this.scrollHeight + 'px'"
+                    ></textarea>
+                    <button id="send-button">
+                        <i class="fas fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer Info -->
+            <div class="text-center pb-4 text-[10px] text-gray-500">
+                Tuncer Zeka hata yapabilir. Önemli bilgileri kontrol edin.
+            </div>
+        </main>
+    </div>
+
+    <!-- Script connection -->
     <script src="tuncer-zeka.js"></script>
+    
+    <script>
+        // UI Helpers
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        }
 
+        // Enter key to send
+        document.getElementById('chat-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('send-button').click();
+            }
+        });
+
+        // Function to smoothly add messages (Can be called from tuncer-zeka.js)
+        function appendMessage(role, text) {
+            const container = document.getElementById('chat-container');
+            const row = document.createElement('div');
+            row.className = `message-row ${role === 'bot' ? 'bot' : 'user'} animate-fade-in`;
+            
+            const icon = role === 'bot' ? 'fa-bolt' : 'fa-user';
+            const avatarClass = role === 'bot' ? 'bot-avatar' : 'user-avatar';
+            
+            row.innerHTML = `
+                <div class="message-wrapper">
+                    <div class="avatar ${avatarClass}">
+                        <i class="fas ${icon} text-sm"></i>
+                    </div>
+                    <div class="message-text">${text}</div>
+                </div>
+            `;
+            
+            container.appendChild(row);
+            container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+        }
+    </script>
 </body>
 </html>
+
