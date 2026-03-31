@@ -3,330 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka | Yapay Zeka Asistanı</title>
+    <title>Tuncer Zeka v1.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        :root { --accent: #10a37f; --dark-bg: #212121; }
+        body { font-family: 'Inter', sans-serif; background: #0b0d11; color: #ececf1; margin: 0; height: 100vh; overflow: hidden; }
+        
+        #login-screen { position: fixed; inset: 0; z-index: 100; background: #0b0d11; display: flex; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        .app-container { display: none; height: 100vh; width: 100vw; flex-direction: row; }
+        
+        .sidebar { width: 260px; background: #171717; border-right: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; }
+        .main-chat { flex: 1; display: flex; flex-direction: column; background: var(--dark-bg); position: relative; }
+        
+        #chat-flow { flex: 1; overflow-y: auto; padding-bottom: 100px; }
+        .msg-bubble { padding: 1.5rem 1rem; display: flex; justify-content: center; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        .msg-bubble.user { background: transparent; }
+        .msg-bubble.bot { background: rgba(255,255,255,0.03); }
+        .inner-msg { max-width: 768px; width: 100%; display: flex; gap: 1rem; }
+        
+        .avatar { width: 30px; height: 30px; border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .bot-img { background: var(--accent); }
+        .user-img { background: #5436da; }
 
-        :root {
-            --bg-dark: #0b0d11;
-            --sidebar-dark: #171717;
-            --accent-green: #10a37f;
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --border-glass: rgba(255, 255, 255, 0.1);
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: #ececf1;
-            margin: 0;
-            overflow: hidden;
-            height: 100vh;
-        }
-
-        /* Login Screen Styles */
-        #login-screen {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            background: linear-gradient(135deg, #0b0d11 0%, #1a1c22 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.6s ease, visibility 0.6s;
-        }
-
-        .login-card {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-glass);
-            padding: 2.5rem;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            animation: slideUp 0.8s ease-out;
-        }
-
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Chat Layout */
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-            opacity: 0;
-            transition: opacity 0.8s ease;
-        }
-
-        .sidebar {
-            width: 260px;
-            background-color: var(--sidebar-dark);
-            border-right: 1px solid var(--border-glass);
-            display: flex;
-            flex-direction: column;
-            z-index: 20;
-        }
-
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: #212121;
-            position: relative;
-        }
-
-        /* Message Styles */
-        #chat-container {
-            flex: 1;
-            overflow-y: auto;
-            scroll-behavior: smooth;
-        }
-
-        .message-row {
-            padding: 1.5rem 1rem;
-            display: flex;
-            justify-content: center;
-            opacity: 0;
-            transform: translateY(10px);
-            animation: fadeInMsg 0.4s ease forwards;
-        }
-
-        @keyframes fadeInMsg {
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message-row.bot { background-color: rgba(255, 255, 255, 0.02); }
-
-        .message-wrapper {
-            max-width: 800px;
-            width: 100%;
-            display: flex;
-            gap: 1.25rem;
-        }
-
-        .avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .user-avatar { background: #5436da; }
-        .bot-avatar { background: var(--accent-green); }
-
-        /* Typing Animation */
-        .typing-dot {
-            width: 4px;
-            height: 4px;
-            background: #888;
-            border-radius: 50%;
-            display: inline-block;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-
-        /* Inputs */
-        .input-box {
-            max-width: 800px;
-            width: 100%;
-            background: #2f2f2f;
-            border: 1px solid var(--border-glass);
-            border-radius: 12px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: flex-end;
-            margin: 0 auto;
-        }
-
-        #chat-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: white;
-            padding: 8px;
-            resize: none;
-            max-height: 200px;
-            font-size: 15px;
-        }
+        .input-area { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, var(--dark-bg) 50%); padding: 2rem; }
+        .input-wrapper { max-width: 768px; margin: 0 auto; background: #2f2f2f; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; padding: 10px; }
+        #user-input { flex: 1; background: transparent; border: none; color: white; outline: none; padding: 5px 10px; resize: none; max-height: 200px; }
     </style>
 </head>
 <body>
 
-    <!-- GİRİŞ EKRANI -->
-    <div id="login-screen">
-        <div class="login-card text-center">
-            <div class="mb-6">
-                <div class="w-16 h-16 bg-[#10a37f] rounded-2xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-[#10a37f]/20">
-                    <i class="fas fa-brain text-white text-3xl"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-white">Tuncer Zeka</h1>
-                <p class="text-gray-400 text-sm mt-2">Yapay Zeka Evrenine Hoş Geldiniz</p>
-            </div>
-            
-            <input type="text" id="username" placeholder="Kullanıcı Adı" class="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 mb-4 text-white outline-none focus:border-[#10a37f] transition-all">
-            <button onclick="handleLogin()" class="w-full bg-[#10a37f] hover:bg-[#0e8c6d] text-white font-semibold py-3 rounded-lg transition-all transform active:scale-95">
-                Giriş Yap
+<!-- GİRİŞ EKRANI -->
+<div id="login-screen">
+    <div class="bg-[#1a1c22] p-8 rounded-2xl border border-white/10 w-80 text-center shadow-2xl">
+        <div class="w-16 h-16 bg-[#10a37f] rounded-xl mx-auto flex items-center justify-center mb-4">
+            <i class="fas fa-brain text-white text-3xl"></i>
+        </div>
+        <h2 class="text-xl font-bold mb-4">Tuncer Zeka</h2>
+        <input type="text" id="login-name" placeholder="Adınız" class="w-full bg-black/20 border border-white/10 rounded-lg p-3 mb-4 outline-none focus:border-[#10a37f]">
+        <button onclick="startApp()" class="w-full bg-[#10a37f] p-3 rounded-lg font-bold hover:bg-[#0e8c6d] transition">Giriş Yap</button>
+    </div>
+</div>
+
+<!-- UYGULAMA ARAYÜZÜ -->
+<div class="app-container" id="app">
+    <div class="sidebar">
+        <div class="p-3">
+            <button onclick="resetChat()" class="w-full border border-white/20 p-3 rounded-md hover:bg-white/5 transition flex items-center gap-3">
+                <i class="fas fa-plus text-xs"></i> Yeni Sohbet
             </button>
-            <p class="text-xs text-gray-500 mt-6">Tuncer Zeka v1.0 • Türkçe NLP Motoru</p>
+        </div>
+        <div class="flex-1 px-3 text-sm text-gray-400 mt-4" id="chat-history-list">
+            <div class="px-2 mb-2 text-[10px] uppercase font-bold text-gray-500">Bugün</div>
+            <div class="p-2 hover:bg-white/5 rounded cursor-pointer overflow-hidden text-ellipsis whitespace-nowrap">Yeni Sohbet</div>
+        </div>
+        <div class="p-4 border-t border-white/10 flex items-center gap-3">
+            <div class="w-8 h-8 rounded bg-orange-500 flex items-center justify-center text-xs font-bold" id="user-icon">T</div>
+            <span id="user-display-name">Kullanıcı</span>
         </div>
     </div>
 
-    <!-- ANA UYGULAMA -->
-    <div class="app-container" id="app">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="p-3">
-                <button onclick="newChat()" class="w-full flex items-center gap-3 border border-white/10 rounded-md p-3 text-sm hover:bg-white/5 transition-all">
-                    <i class="fas fa-plus"></i>
-                    <span>Yeni Sohbet</span>
+    <div class="main-chat">
+        <div id="chat-flow">
+            <!-- Mesajlar buraya akacak -->
+        </div>
+
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="user-input" rows="1" placeholder="Mesajınızı buraya yazın..."></textarea>
+                <button onclick="handleSend()" class="p-2 text-gray-400 hover:text-white transition" id="send-btn">
+                    <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
-            <div class="flex-1 overflow-y-auto px-3" id="history">
-                <div class="text-[10px] font-bold text-gray-500 uppercase mt-4 mb-2 px-2">Geçmiş</div>
-                <!-- Dinamik geçmiş buraya gelecek -->
-            </div>
-            <div class="p-3 border-t border-white/10">
-                <div class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer">
-                    <div class="w-8 h-8 rounded bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-xs" id="user-initial">
-                        K
-                    </div>
-                    <span class="text-sm font-medium" id="display-name">Kullanıcı</span>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Sohbet Alanı -->
-        <main class="main-content">
-            <div id="chat-container">
-                <!-- Hoşgeldin Mesajı -->
-                <div class="message-row bot">
-                    <div class="message-wrapper">
-                        <div class="avatar bot-avatar"><i class="fas fa-robot text-xs"></i></div>
-                        <div class="message-text">
-                            <h3 class="font-bold text-white mb-1">Selam! Ben Tuncer Zeka.</h3>
-                            Sıfırdan yazılmış Türkçe NLP motorumla sana nasıl yardımcı olabilirim?
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input Form -->
-            <div class="p-4 md:p-8 w-full bg-gradient-to-t from-[#212121] to-transparent">
-                <div class="input-box">
-                    <textarea id="chat-input" rows="1" placeholder="Tuncer Zeka'ya mesaj gönder..." oninput="autoResize(this)"></textarea>
-                    <button id="send-button" class="bg-[#10a37f] text-white p-2 rounded-md hover:opacity-80 disabled:opacity-30 transition-all">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-                <p class="text-[10px] text-center text-gray-500 mt-3">Tuncer Zeka hata yapabilir. Bilgileri kontrol etmeyi unutmayın.</p>
-            </div>
-        </main>
+        </div>
     </div>
+</div>
 
-    <!-- Kütüphaneyi buraya ekliyoruz -->
-    <script src="tuncer-zeka.js"></script>
-    <script>
-        // TuncerZeka Botunu Başlat
-        const bot = new TuncerZeka.SohbetBotu({ isim: "Tuncer" });
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-button');
-        const chatContainer = document.getElementById('chat-container');
+<script>
+// ============================================================
+// 🧠 TUNCER ZEKA v1.0 (Kütüphane Gövdesi)
+// ============================================================
+const TuncerZeka = (() => {
+  const Matematik = {
+    rastgele: (min = -1, max = 1) => Math.random() * (max - min) + min,
+    sigmoid: x => 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, x)))),
+    sigmoidTurev: x => x * (1 - x),
+    tokenize: m => m.toLowerCase().replace(/[^\wığüşöçİĞÜŞÖÇ\s]/g, ' ').split(/\s+/).filter(t => t.length > 0)
+  };
 
-        // GİRİŞ SİSTEMİ
-        function handleLogin() {
-            const user = document.getElementById('username').value.trim();
-            if (!user) return alert("Lütfen bir isim girin.");
+  class TurkceNLP {
+    constructor() { this.turkceEkler = ['lar', 'ler', 'lık', 'lik', 'ıyor', 'acak', 'ecek']; }
+    tokenize(m) { return Matematik.tokenize(m); }
+    kokBul(k) { 
+        let kok = k.toLowerCase();
+        for (const ek of this.turkceEkler) { if (kok.endsWith(ek) && kok.length > 3) return kok.slice(0, -ek.length); }
+        return kok;
+    }
+  }
 
-            document.getElementById('display-name').innerText = user;
-            document.getElementById('user-initial').innerText = user[0].toUpperCase();
-            
-            // Animasyonla geçiş
-            const login = document.getElementById('login-screen');
-            const app = document.getElementById('app');
-            
-            login.style.opacity = '0';
-            setTimeout(() => {
-                login.style.visibility = 'hidden';
-                app.style.opacity = '1';
-            }, 600);
+  class SohbetBotu {
+    constructor(a = {}) {
+      this.nlp = new TurkceNLP();
+      this.isim = a.isim || 'Tuncer';
+      this.baglam = [];
+      this.niyetler = [
+        { k: ['merhaba', 'selam', 'hey', 'sa', 'mrb'], c: ['Merhaba! Ben Tuncer Zeka. Size nasıl yardımcı olabilirim? 😊', 'Selamlar, hoş geldiniz!'] },
+        { k: ['nasılsın', 'naber', 'nasıl gidiyor'], c: ['İyiyim, kodlarım tıkır tıkır çalışıyor! Siz nasılsınız?', 'Harikayım, yeni şeyler öğrenmeye hazırım.'] },
+        { k: ['kimsin', 'ismin ne', 'adın ne'], c: ['Ben Tuncer Zeka, tamamen yerli ve saf JavaScript ile yazılmış bir yapay zekayım.'] },
+        { k: ['şaka yap', 'espri', 'komik'], c: ['Bilgisayarlar neden meyve yemez? Çünkü Apple\'ları zaten var! 😄'] }
+      ];
+    }
+    cevapVer(m) {
+      const tokens = this.nlp.tokenize(m);
+      let cevap = "Anlayamadım, ama kendimi geliştirmeye devam ediyorum. Başka bir şey sormak ister misin?";
+      
+      for(const n of this.niyetler) {
+        if(n.k.some(anahtar => m.toLowerCase().includes(anahtar))) {
+            cevap = n.c[Math.floor(Math.random() * n.c.length)];
+            break;
         }
+      }
+      this.baglam.push({u: m, b: cevap});
+      return { cevap };
+    }
+    gecmisiTemizle() { this.baglam = []; }
+  }
 
-        // MESAJ GÖNDERME
-        function sendMessage() {
-            const text = chatInput.value.trim();
-            if (!text) return;
+  return { SohbetBotu };
+})();
 
-            // Kullanıcı mesajını ekle
-            appendMessage('user', text);
-            chatInput.value = '';
-            chatInput.style.height = 'auto';
+// ============================================================
+// 🚀 UYGULAMA MANTIĞI (Frontend Bridge)
+// ============================================================
+let bot;
+const inputEl = document.getElementById('user-input');
+const chatFlow = document.getElementById('chat-flow');
 
-            // Bot cevabı hazırlığı (typing animasyonu eklenebilir)
-            setTimeout(() => {
-                const response = bot.cevapVer(text);
-                appendMessage('bot', response.cevap);
-            }, 600);
-        }
+function startApp() {
+    const name = document.getElementById('login-name').value.trim();
+    if(!name) { alert("Lütfen adınızı girin!"); return; }
+    
+    document.getElementById('user-display-name').innerText = name;
+    document.getElementById('user-icon').innerText = name[0].toUpperCase();
+    document.getElementById('login-screen').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'flex';
+        bot = new TuncerZeka.SohbetBotu({ isim: "Tuncer" });
+        addMessage("bot", "Merhaba " + name + "! Ben Tuncer Zeka. Senin için ne yapabilirim?");
+    }, 500);
+}
 
-        function appendMessage(role, text) {
-            const div = document.createElement('div');
-            div.className = `message-row ${role}`;
-            
-            const icon = role === 'bot' ? 'fa-robot' : 'fa-user';
-            const avatarClass = role === 'bot' ? 'bot-avatar' : 'user-avatar';
-            
-            div.innerHTML = `
-                <div class="message-wrapper">
-                    <div class="avatar ${avatarClass}"><i class="fas ${icon} text-xs text-white"></i></div>
-                    <div class="message-text">${text.replace(/\n/g, '<br>')}</div>
-                </div>
-            `;
-            
-            chatContainer.appendChild(div);
-            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
-        }
+function addMessage(role, text) {
+    const div = document.createElement('div');
+    div.className = `msg-bubble ${role}`;
+    const icon = role === "bot" ? "fa-robot" : "fa-user";
+    const imgClass = role === "bot" ? "bot-img" : "user-img";
+    
+    div.innerHTML = `
+        <div class="inner-msg">
+            <div class="avatar ${imgClass}"><i class="fas ${icon} text-[10px]"></i></div>
+            <div class="text-sm leading-relaxed">${text}</div>
+        </div>
+    `;
+    chatFlow.appendChild(div);
+    chatFlow.scrollTop = chatFlow.scrollHeight;
+}
 
-        // YENİ SOHBET
-        function newChat() {
-            chatContainer.innerHTML = `
-                <div class="message-row bot">
-                    <div class="message-wrapper">
-                        <div class="avatar bot-avatar"><i class="fas fa-robot text-xs"></i></div>
-                        <div class="message-text">Yeni bir sohbet başlattık! Sana nasıl yardımcı olabilirim?</div>
-                    </div>
-                </div>
-            `;
-            bot.gecmisiTemizle();
-        }
+function handleSend() {
+    const val = inputEl.value.trim();
+    if(!val || !bot) return;
 
-        // YARDIMCI FONKSİYONLAR
-        function autoResize(el) {
-            el.style.height = 'auto';
-            el.style.height = (el.scrollHeight) + 'px';
-        }
+    addMessage("user", val);
+    inputEl.value = "";
+    inputEl.style.height = "auto";
 
-        // EVENT LISTENERS
-        sendBtn.addEventListener('click', sendMessage);
+    // Bot simülasyonu
+    setTimeout(() => {
+        const res = bot.cevapVer(val);
+        addMessage("bot", res.cevap);
+    }, 500);
+}
 
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-            }
-        });
-    </script>
+function resetChat() {
+    chatFlow.innerHTML = "";
+    if(bot) bot.gecmisiTemizle();
+    addMessage("bot", "Sohbet sıfırlandı. Yeni bir başlangıca ne dersin?");
+}
+
+// Input Otomatik Büyüme ve Enter Kontrolü
+inputEl.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+inputEl.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+    }
+});
+
+</script>
 </body>
 </html>
 
