@@ -3,305 +3,290 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Vision AI - Görsel Analiz</title>
+    <title>Tuncer AI - Görsel & Metin Analizi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
         
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: #030712;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #030712);
             color: #f3f4f6;
-            overflow-x: hidden;
+            min-height: 100vh;
         }
 
-        .glass-panel {
-            background: rgba(17, 24, 39, 0.7);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        .thinking-dot {
-            width: 8px;
-            height: 8px;
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Düşünme Animasyonu */
+        .dot-flashing {
+            position: relative;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
             background-color: #6366f1;
-            border-radius: 50%;
+            color: #6366f1;
+            animation: dot-flashing 1s infinite linear alternate;
+            animation-delay: 0.5s;
+        }
+        .dot-flashing::before, .dot-flashing::after {
+            content: "";
             display: inline-block;
-            animation: bounce 1.4s infinite ease-in-out both;
-        }
-
-        .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
-        .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
-
-        @keyframes bounce {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1.0); }
-        }
-
-        .chat-bubble::after {
-            content: '';
             position: absolute;
-            left: -8px;
-            top: 24px;
-            width: 0;
-            height: 0;
-            border-top: 8px solid transparent;
-            border-bottom: 8px solid transparent;
-            border-right: 8px solid rgba(17, 24, 39, 0.7);
+            top: 0;
+        }
+        .dot-flashing::before {
+            left: -15px;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #6366f1;
+            color: #6366f1;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 0s;
+        }
+        .dot-flashing::after {
+            left: 15px;
+            width: 10px;
+            height: 10px;
+            border-radius: 5px;
+            background-color: #6366f1;
+            color: #6366f1;
+            animation: dot-flashing 1s infinite alternate;
+            animation-delay: 1s;
         }
 
-        @media (max-width: 768px) {
-            .chat-bubble::after { display: none; }
+        @keyframes dot-flashing {
+            0% { background-color: #6366f1; }
+            50%, 100% { background-color: rgba(99, 102, 241, 0.2); }
         }
 
-        .custom-scroll::-webkit-scrollbar {
-            width: 6px;
+        .chat-tail {
+            position: absolute;
+            bottom: -10px;
+            left: 30px;
+            width: 20px;
+            height: 20px;
+            background: inherit;
+            clip-path: polygon(0 0, 100% 0, 50% 100%);
         }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background: #374151;
-            border-radius: 10px;
+
+        .image-container img {
+            mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="p-4 md:p-8">
 
-    <!-- Header -->
-    <header class="border-b border-white/5 bg-gray-950/50 sticky top-0 z-50 px-6 py-4">
-        <div class="max-w-7xl mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 rotate-3">
-                    <i class="fas fa-brain text-white text-xl"></i>
+    <div class="max-w-6xl mx-auto">
+        <!-- Logo & Header -->
+        <header class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-4">
+                <div class="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/40">
+                    <i class="fas fa-microchip text-white text-2xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Tuncer <span class="text-indigo-500">AI</span></h1>
-                    <p class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Vision Intelligence</p>
+                    <h1 class="text-2xl font-bold tracking-tight">Tuncer <span class="text-indigo-400">Zeka</span></h1>
+                    <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30">V2.5 VISION</span>
                 </div>
             </div>
-            <div class="hidden md:flex gap-4">
-                <div class="px-3 py-1 bg-white/5 rounded-full text-xs text-gray-400 border border-white/5 flex items-center gap-2">
-                    <i class="fas fa-desktop"></i> PC Optimized
-                </div>
-                <div class="px-3 py-1 bg-indigo-500/10 rounded-full text-xs text-indigo-400 border border-indigo-500/20 flex items-center gap-2">
-                    <i class="fas fa-mobile-alt"></i> Mobile Ready
-                </div>
+            <div class="flex gap-2">
+                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="text-xs text-gray-400 font-medium uppercase tracking-widest">Sistem Aktif</span>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-8">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- Sol Panel: Resim Yükleme -->
-            <section class="space-y-6">
-                <div id="drop-zone" class="relative h-[350px] md:h-[500px] w-full rounded-[2.5rem] border-2 border-dashed border-gray-800 bg-gray-900/20 hover:border-indigo-500/50 transition-all duration-500 flex flex-col items-center justify-center group overflow-hidden">
-                    <input type="file" id="file-input" class="hidden" accept="image/*">
+            <!-- Sol Panel: Giriş Alanı (Görsel + Soru) -->
+            <div class="lg:col-span-7 space-y-6">
+                <div id="drop-area" class="glass-card rounded-[2rem] p-4 min-h-[400px] flex flex-col items-center justify-center relative group transition-all hover:border-indigo-500/40 cursor-pointer overflow-hidden">
+                    <input type="file" id="image-upload" class="hidden" accept="image/*">
                     
-                    <div id="upload-prompt" class="text-center p-8 transition-opacity duration-300">
-                        <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
-                            <i class="fas fa-cloud-upload-alt text-3xl text-indigo-400"></i>
+                    <div id="placeholder" class="text-center space-y-4">
+                        <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto group-hover:scale-110 transition-transform">
+                            <i class="fas fa-camera-retro text-3xl text-indigo-400"></i>
                         </div>
-                        <h2 class="text-xl font-semibold text-white mb-2">Görseli Buraya Bırakın</h2>
-                        <p class="text-sm text-gray-500 max-w-[200px] mx-auto">Analiz etmek istediğiniz fotoğrafı yükleyin veya seçin</p>
-                        <button onclick="document.getElementById('file-input').click()" class="mt-6 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-bold transition-all shadow-xl shadow-indigo-950/20 active:scale-95">
-                            Dosya Seç
-                        </button>
+                        <div>
+                            <p class="text-lg font-semibold text-white">Görseli Yükle</p>
+                            <p class="text-sm text-gray-500">Tıkla veya sürükleyip bırak</p>
+                        </div>
                     </div>
 
-                    <div id="preview-container" class="hidden absolute inset-0 w-full h-full p-2">
-                        <img id="image-preview" class="w-full h-full object-contain rounded-[2rem]" src="" alt="Önizleme">
-                        <button onclick="clearImage()" class="absolute top-6 right-6 w-12 h-12 bg-red-500/80 hover:bg-red-500 backdrop-blur-md rounded-2xl flex items-center justify-center transition-all shadow-xl group/btn">
-                            <i class="fas fa-trash-alt text-white group-hover:scale-110"></i>
+                    <div id="preview-wrapper" class="hidden w-full h-full">
+                        <img id="image-preview" class="w-full max-h-[450px] object-contain rounded-xl" src="">
+                        <button onclick="resetUpload()" class="absolute top-4 right-4 bg-red-500/80 p-3 rounded-xl hover:bg-red-600 transition-colors">
+                            <i class="fas fa-times"></i>
                         </button>
                     </div>
                 </div>
 
-                <button id="analyze-btn" disabled class="hidden w-full py-5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-3xl font-bold text-lg items-center justify-center gap-3 shadow-2xl shadow-indigo-900/30 transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-sparkles"></i> Analiz Et
-                </button>
-            </section>
+                <!-- SORU GİRİŞ ALANI -->
+                <div class="glass-card rounded-[2rem] p-2 flex items-center gap-2 ai-glow">
+                    <div class="flex-grow pl-4">
+                        <input type="text" id="user-prompt" placeholder="Bu görsel hakkında ne bilmek istersin kanka?.." class="w-full bg-transparent border-none focus:ring-0 text-white placeholder-gray-500 py-4">
+                    </div>
+                    <button id="send-btn" class="bg-indigo-600 hover:bg-indigo-500 p-4 rounded-2xl transition-all disabled:opacity-30 disabled:grayscale" disabled>
+                        <i class="fas fa-paper-plane text-white"></i>
+                    </button>
+                </div>
+            </div>
 
-            <!-- Sağ Panel: AI Konuşma Kutusu -->
-            <section class="space-y-6">
-                <div class="flex items-center gap-3 px-2">
-                    <i class="fas fa-comment-dots text-indigo-400"></i>
-                    <h3 class="text-sm font-bold uppercase tracking-widest text-gray-500">Tuncer-Zeka Yanıtı</h3>
+            <!-- Sağ Panel: AI Yanıtı -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="flex items-center gap-2 text-gray-400 text-sm font-bold uppercase tracking-widest px-2">
+                    <i class="fas fa-robot"></i> Tuncer-Zeka Terminali
                 </div>
 
-                <div id="chat-container" class="relative">
-                    <div id="response-box" class="glass-panel chat-bubble min-h-[250px] p-8 rounded-[2.5rem] relative shadow-2xl overflow-hidden">
+                <!-- Konuşma Balonu -->
+                <div class="relative">
+                    <div id="chat-bubble" class="glass-card rounded-[2.5rem] p-8 min-h-[300px] relative transition-all duration-500">
                         
-                        <!-- Boş Durum -->
-                        <div id="empty-state" class="flex flex-col items-center justify-center h-full py-10 opacity-40 text-center">
-                            <i class="fas fa-image text-5xl mb-4"></i>
-                            <p class="text-sm">Henüz bir görsel analiz edilmedi.</p>
+                        <!-- Başlangıç Mesajı -->
+                        <div id="msg-idle" class="flex flex-col items-center justify-center h-full text-center py-12 text-gray-600">
+                            <i class="fas fa-brain text-4xl mb-4 opacity-20"></i>
+                            <p>Görselini yükle ve sorunu sor,<br>gerisini Tuncer-Zeka'ya bırak.</p>
                         </div>
 
                         <!-- Düşünme Animasyonu -->
-                        <div id="thinking-state" class="hidden flex flex-col items-center justify-center h-full py-16 space-y-4">
-                            <div class="flex gap-2">
-                                <span class="thinking-dot"></span>
-                                <span class="thinking-dot"></span>
-                                <span class="thinking-dot"></span>
-                            </div>
-                            <p class="text-indigo-400 text-sm font-medium animate-pulse tracking-wide">Tuncer-Zeka Düşünüyor...</p>
+                        <div id="msg-thinking" class="hidden flex flex-col items-center justify-center h-full py-16">
+                            <div class="dot-flashing"></div>
+                            <p class="mt-8 text-indigo-400 text-sm font-bold animate-pulse">VERİLER İŞLENİYOR...</p>
                         </div>
 
-                        <!-- Analiz Metni -->
-                        <div id="analysis-text" class="hidden text-gray-200 leading-relaxed text-lg font-medium italic animate-in fade-in slide-in-from-bottom-2 duration-500">
-                            <!-- Metin buraya dinamik gelecek -->
+                        <!-- Sonuç Metni -->
+                        <div id="msg-result" class="hidden text-gray-100 text-lg leading-relaxed font-medium italic">
+                            <!-- AI Cevabı -->
                         </div>
+
+                        <div class="chat-tail"></div>
                     </div>
                 </div>
 
-                <!-- Geçmiş -->
-                <div class="px-2">
-                    <h4 class="text-[10px] font-bold text-gray-600 uppercase mb-4 tracking-widest">Son Analizler</h4>
-                    <div id="history-grid" class="grid grid-cols-4 md:grid-cols-6 gap-3">
-                        <!-- Geçmiş öğeleri buraya eklenecek -->
+                <!-- İstatistikler / Bilgi -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="glass-card rounded-2xl p-4 border-l-4 border-indigo-500">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase">Hız</p>
+                        <p class="text-xl font-bold">0.4s</p>
+                    </div>
+                    <div class="glass-card rounded-2xl p-4 border-l-4 border-violet-500">
+                        <p class="text-[10px] text-gray-500 font-bold uppercase">Doğruluk</p>
+                        <p class="text-xl font-bold">%99.2</p>
                     </div>
                 </div>
-            </section>
+            </div>
         </div>
-    </main>
-
-    <!-- Mobile Floating Trigger -->
-    <div class="md:hidden fixed bottom-8 right-8">
-        <button onclick="document.getElementById('file-input').click()" class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 active:scale-90 transition-transform">
-            <i class="fas fa-camera text-2xl text-white"></i>
-        </button>
     </div>
 
     <script>
-        const fileInput = document.getElementById('file-input');
-        const previewContainer = document.getElementById('preview-container');
+        // API Ayarları
+        const apiKey = ""; // Sistemden beslenir
+        const uploadArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('image-upload');
+        const previewWrapper = document.getElementById('preview-wrapper');
         const imagePreview = document.getElementById('image-preview');
-        const uploadPrompt = document.getElementById('upload-prompt');
-        const analyzeBtn = document.getElementById('analyze-btn');
-        const responseBox = document.getElementById('response-box');
-        const emptyState = document.getElementById('empty-state');
-        const thinkingState = document.getElementById('thinking-state');
-        const analysisText = document.getElementById('analysis-text');
-        
-        const apiKey = ""; // API key otomatik olarak sistemden beslenir
+        const placeholder = document.getElementById('placeholder');
+        const sendBtn = document.getElementById('send-btn');
+        const userPrompt = document.getElementById('user-prompt');
 
-        let currentBase64 = null;
+        // UI Elementleri
+        const msgIdle = document.getElementById('msg-idle');
+        const msgThinking = document.getElementById('msg-thinking');
+        const msgResult = document.getElementById('msg-result');
 
-        fileInput.addEventListener('change', function(e) {
+        let base64Data = null;
+
+        // Tıklama ile Dosya Seçimi
+        uploadArea.onclick = () => !base64Data && fileInput.click();
+
+        fileInput.onchange = (e) => {
             const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    imagePreview.src = event.target.result;
-                    currentBase64 = event.target.result.split(',')[1];
-                    
-                    uploadPrompt.classList.add('hidden');
-                    previewContainer.classList.remove('hidden');
-                    analyzeBtn.classList.remove('hidden');
-                    analyzeBtn.classList.add('flex');
-                    analyzeBtn.disabled = false;
-                    
-                    // Otomatik scroll sağa/aşağı (mobilde kolaylık)
-                    if(window.innerWidth < 1024) {
-                        analyzeBtn.scrollIntoView({ behavior: 'smooth' });
-                    }
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+            if(file) handleFile(file);
+        };
 
-        function clearImage() {
-            fileInput.value = '';
-            imagePreview.src = '';
-            currentBase64 = null;
-            uploadPrompt.classList.remove('hidden');
-            previewContainer.classList.add('hidden');
-            analyzeBtn.classList.add('hidden');
-            analyzeBtn.disabled = true;
-            
-            analysisText.innerText = '';
-            analysisText.classList.add('hidden');
-            emptyState.classList.remove('hidden');
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                base64Data = e.target.result.split(',')[1];
+                imagePreview.src = e.target.result;
+                placeholder.classList.add('hidden');
+                previewWrapper.classList.remove('hidden');
+                checkStatus();
+            };
+            reader.readAsDataURL(file);
         }
 
-        analyzeBtn.addEventListener('click', async () => {
-            if (!currentBase64) return;
+        function resetUpload() {
+            base64Data = null;
+            fileInput.value = '';
+            placeholder.classList.remove('hidden');
+            previewWrapper.classList.add('hidden');
+            checkStatus();
+        }
 
-            // UI Durumu
-            analyzeBtn.disabled = true;
-            emptyState.classList.add('hidden');
-            analysisText.classList.add('hidden');
-            thinkingState.classList.remove('hidden');
+        function checkStatus() {
+            sendBtn.disabled = !base64Data;
+        }
 
-            const prompt = "Bu resimde ne gördüğünü detaylı ve sanatsal bir dille Türkçe olarak anlat. Nesneleri, renkleri ve duyguyu vurgula.";
+        // Analiz İşlemi (tuncer-zeka.js logic)
+        sendBtn.onclick = async () => {
+            const question = userPrompt.value.trim() || "Bu görseli detaylıca analiz et.";
+            
+            // UI Güncelleme
+            msgIdle.classList.add('hidden');
+            msgResult.classList.add('hidden');
+            msgThinking.classList.remove('hidden');
+            sendBtn.disabled = true;
 
             try {
-                // tuncer-zeka.js mantığı buraya entegre edilir
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{
                             parts: [
-                                { text: prompt },
-                                { inlineData: { mimeType: "image/png", data: currentBase64 } }
+                                { text: question },
+                                { inlineData: { mimeType: "image/png", data: base64Data } }
                             ]
                         }]
                     })
                 });
 
                 const data = await response.json();
-                const result = data.candidates?.[0]?.content?.parts?.[0]?.text || "Analiz yapılamadı.";
-                
-                // Sonucu Yazdır
-                thinkingState.classList.add('hidden');
-                analysisText.innerText = `"${result}"`;
-                analysisText.classList.remove('hidden');
-                
-                addToHistory(imagePreview.src);
+                const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Kanka vallahi bir şey anlayamadım, tekrar dene.";
 
-            } catch (error) {
-                console.error(error);
-                thinkingState.classList.add('hidden');
-                analysisText.innerText = "Hata oluştu: Tuncer-Zeka kütüphanesine ulaşılamıyor.";
-                analysisText.classList.remove('hidden');
+                // Sonucu Göster
+                msgThinking.classList.add('hidden');
+                msgResult.innerText = `"${aiText}"`;
+                msgResult.classList.remove('hidden');
+                
+            } catch (err) {
+                msgThinking.classList.add('hidden');
+                msgResult.innerText = "Hata: Tuncer-Zeka sunucularına bağlanılamadı.";
+                msgResult.classList.remove('hidden');
             } finally {
-                analyzeBtn.disabled = false;
+                sendBtn.disabled = false;
             }
-        });
+        };
 
-        function addToHistory(imgSrc) {
-            const grid = document.getElementById('history-grid');
-            const div = document.createElement('div');
-            div.className = "aspect-square rounded-xl overflow-hidden border border-white/10 cursor-pointer hover:border-indigo-500 transition-all transform hover:scale-105";
-            div.innerHTML = `<img src="${imgSrc}" class="w-full h-full object-cover">`;
-            div.onclick = () => {
-                imagePreview.src = imgSrc;
-                currentBase64 = imgSrc.split(',')[1];
-                // Tekrar seçim yapılmış gibi UI güncelle
-            };
-            grid.prepend(div);
-        }
-
-        // Sürükle Bırak Desteği
-        const dropZone = document.getElementById('drop-zone');
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-        });
-
-        dropZone.addEventListener('drop', e => {
-            const dt = e.dataTransfer;
-            const file = dt.files[0];
-            if (file) {
-                fileInput.files = dt.files;
-                const event = new Event('change');
-                fileInput.dispatchEvent(event);
-            }
-        });
-
+        // Sürükle Bırak
+        uploadArea.ondragover = (e) => { e.preventDefault(); uploadArea.style.borderColor = "#6366f1"; };
+        uploadArea.ondragleave = () => { uploadArea.style.borderColor = ""; };
+        uploadArea.ondrop = (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = "";
+            const file = e.dataTransfer.files[0];
+            if(file) handleFile(file);
+        };
     </script>
 </body>
 </html>
