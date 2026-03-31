@@ -3,383 +3,240 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka - Ahmet Tuncer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Harici tuncer-zeka.js dosyanı buradan çağırıyoruz -->
-    <script src="tuncer-zeka.js"></script>
+    <title>Tuncer Zeka - Görsel Analiz</title>
+    <!-- TensorFlow.js ve MobileNet Modelini Yüklüyoruz (API Anahtarı Gerektirmez) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
     <style>
-        /* Özelleştirilmiş Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        /* Ekran görüntüsündeki orijinal tasarımı koruyan CSS */
+        body {
+            background-color: #1e2533;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
         }
-        ::-webkit-scrollbar-track {
-            background: #1f2937; 
+
+        .chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563; 
-            border-radius: 4px;
+
+        .message {
+            margin-bottom: 20px;
+            max-width: 90%;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6b7280; 
+
+        .user-image-preview {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 8px;
+            margin-bottom: 10px;
         }
-        .typing-indicator span {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            background-color: #9ca3af;
+
+        .bot-response {
+            background-color: #2b3548;
+            padding: 15px;
+            border-radius: 12px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            background-color: #3b82f6;
             border-radius: 50%;
-            margin-right: 4px;
-            animation: typing 1s infinite;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            margin-right: 10px;
+            vertical-align: middle;
         }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; margin-right: 0; }
-        @keyframes typing {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-4px); }
+
+        .input-area {
+            background-color: #1e2533;
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-top: 1px solid #2b3548;
+        }
+
+        .input-wrapper {
+            background-color: #2b3548;
+            border-radius: 25px;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 5px 15px;
+        }
+
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 10px;
+            flex: 1;
+            outline: none;
+        }
+
+        .send-btn {
+            background-color: #3b82f6;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .upload-icon {
+            cursor: pointer;
+            opacity: 0.7;
+        }
+
+        .status-loading {
+            font-style: italic;
+            font-size: 0.9em;
+            color: #94a3b8;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans h-screen flex flex-col overflow-hidden">
+<body>
 
-    <!-- Üst Başlık (Header) -->
-    <header class="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between shadow-md z-10">
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                TZ
-            </div>
-            <div>
-                <h1 class="text-lg font-semibold text-white">Tuncer Zeka</h1>
-                <p class="text-xs text-gray-400">Tasarımcı: Ahmet Tuncer</p>
-            </div>
+    <div class="chat-container" id="chat">
+        <!-- Başlangıç mesajı veya geçmiş burada görünecek -->
+    </div>
+
+    <div class="input-area">
+        <label for="file-input" class="upload-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+        </label>
+        <input type="file" id="file-input" accept="image/*">
+        
+        <div class="input-wrapper">
+            <input type="text" id="user-input" placeholder="Tuncer Zeka'ya mesaj gönder veya görsel ekle">
         </div>
-        <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-            <span class="text-sm text-gray-400">Sistem Aktif</span>
-        </div>
-    </header>
 
-    <!-- Sohbet Ekranı (Chat Area) -->
-    <main id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth">
-        <!-- İlk Karşılama Mesajı -->
-        <div class="flex flex-col gap-2 max-w-3xl mx-auto items-start">
-            <div class="flex items-center gap-2 mb-1">
-                <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold shadow-md">TZ</div>
-                <span class="text-sm font-semibold text-gray-300">Tuncer Zeka</span>
-            </div>
-            <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm text-gray-200 leading-relaxed border border-gray-700">
-                Merhaba! Ben <strong>Tuncer Zeka</strong>. Geliştiricim ve tasarımcım olan <strong>Ahmet Tuncer</strong> tarafından kodlandım. Size her konuda yardımcı olabilirim. Ayrıca sol alttaki ataş ikonuna tıklayarak bana bir <strong>görsel gönderebilir</strong> ve o görsel hakkında sorular sorabilirsiniz! Başlayalım mı? 🚀
-            </div>
-        </div>
-    </main>
-
-    <!-- Alt Giriş Alanı (Input Area) -->
-    <footer class="bg-gray-800 border-t border-gray-700 p-4 w-full">
-        <div class="max-w-3xl mx-auto relative flex flex-col gap-2">
-            
-            <!-- Seçilen Görselin Önizlemesi -->
-            <div id="image-preview-container" class="hidden flex items-center gap-2 p-2 bg-gray-700 rounded-lg w-max mb-2 relative">
-                <img id="image-preview" src="" alt="Önizleme" class="w-16 h-16 object-cover rounded shadow">
-                <button id="remove-image-btn" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 shadow-lg text-sm transition">
-                    &times;
-                </button>
-            </div>
-
-            <div class="flex items-end gap-2 bg-gray-900 p-2 rounded-2xl border border-gray-700 shadow-inner">
-                <!-- Dosya Seçme Butonu -->
-                <button id="attach-btn" class="p-3 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-xl transition duration-200" title="Görsel Ekle">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
-                        <path stroke-linecap="round" stroke-linejoin="round" d="m15.354 15.354-6.708-6.708m0 0a4 4 0 0 1 5.657-5.657l6.708 6.708a4 4 0 0 1-5.657 5.657z" />
-                    </svg>
-                </button>
-                <input type="file" id="file-input" accept="image/*" class="hidden">
-
-                <!-- Metin Kutusu -->
-                <textarea id="chat-input" rows="1" class="w-full bg-transparent text-gray-100 placeholder-gray-500 p-3 focus:outline-none resize-none max-h-32" placeholder="Tuncer Zeka'ya mesaj gönder veya görsel ekle..."></textarea>
-                
-                <!-- Gönder Butonu -->
-                <button id="send-btn" class="p-3 text-white bg-blue-600 hover:bg-blue-500 rounded-xl transition duration-200 shadow-md mb-1 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 translate-x-px">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
-                    </svg>
-                </button>
-            </div>
-            <div class="text-center mt-1">
-                <span class="text-[10px] text-gray-500">Tuncer Zeka v1.0 yapay zeka sistemi hata yapabilir. Bilgileri doğrulayın.</span>
-            </div>
-        </div>
-    </footer>
+        <button class="send-btn" id="send-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+    </div>
 
     <script>
-        // ==========================================
-        // TUNCER ZEKA FALLBACK (Eğer dış dosya yüklenmezse)
-        // Kullanıcının verdiği orijinal kodun minifiye/sıkıştırılmış hali
-        // ==========================================
-        if (typeof TuncerZeka === 'undefined') {
-            console.warn("Harici tuncer-zeka.js bulunamadı. Dahili motor başlatılıyor...");
-            window.TuncerZeka=(()=>{const t={rastgele:(t=-1,e=1)=>Math.random()*(e-t)+t,sigmoid:t=>1/(1+Math.exp(-Math.max(-500,Math.min(500,t)))),sigmoidTurev:t=>t*(1-t),tanh:t=>Math.tanh(t),tanhTurev:t=>1-t*t,relu:t=>Math.max(0,t),reluTurev:t=>t>0?1:0,softmax(t){const e=Math.max(...t),a=t.map((t=>Math.exp(t-e))),r=a.reduce(((t,e)=>t+e),0);return a.map((t=>t/r))},noktaCarpim(t,e){let a=0;for(let r=0;r<t.length;r++)a+=t[r]*e[r];return a},oklid(t,e){let a=0;for(let r=0;r<t.length;r++)a+=(t[r]-e[r])**2;return Math.sqrt(a)},kosinusBenzerlik(t,e){const a=this.noktaCarpim(t,e),r=Math.sqrt(t.reduce(((t,e)=>t+e*e),0)),n=Math.sqrt(e.reduce(((t,e)=>t+e*e),0));return 0===r||0===n?0:a/(r*n)},matrisOlustur:(t,e,a=null)=>Array.from({length:t},(()=>Array.from({length:e},(()=>null!==a?a:Math.random()*(1- -1)+-1*Math.sqrt(2/(t+e)))))),vektorOlustur:(t,e=null)=>Array.from({length:t},(()=>null!==e?e:.01*(Math.random()*(1- -1)+-1))),karistir(t){const e=[...t];for(let t=e.length-1;t>0;t--){const a=Math.floor(Math.random()*(t+1));[e[t],e[a]]=[e[a],e[t]]}return e}};class e{constructor(){this.stopKelimeler=new Set(["bir","bu","şu","o","ve","ile","de","da","den","dan","için","gibi","kadar","sonra","önce","ama","fakat","ancak","ki","ne","hem","ya","veya","her","hiç","çok","az","en","daha","bile","mi","mı","mu","mü","değil","var","yok","ben","sen","biz","siz","onlar","olan","olarak","üzere","göre","rağmen","karşı","arasında","içinde","dışında","üzerinde","altında","ise","iken","oldu","olmuş","nasıl","neden","nerede","kim","kime","hangi","benim","senin","onun","bizim","sizin","onların","bana","sana","ona","bize","size","olur","olabilir","eder","etti","etmek","yapmak","yaptı","yapıyor"]),this.turkceEkler=["lar","ler","lık","lik","luk","lük","cı","ci","cu","cü","çı","çi","çu","çü","sız","siz","suz","süz","dan","den","tan","ten","da","de","ta","te","ın","in","un","ün","yor","ıyor","iyor","uyor","üyor","mış","miş","muş","müş","dı","di","du","dü","tı","ti","tu","tü","acak","ecek","arak","erek","mak","mek","ması","mesi","dık","dik","duk","dük","sa","se","ım","im","um","üm","sın","sin","sun","sün","ız","iz","uz","üz","nız","niz","nuz","nüz"],this.turkceEkler.sort(((t,e)=>e.length-t.length))}tokenize(t){return t.toLowerCase().replace(/[^\wığüşöçİĞÜŞÖÇ\s]/g," ").split(/\s+/).filter((t=>t.length>0))}stopKelimeleriTemizle(t){return t.filter((t=>!this.stopKelimeler.has(t)&&t.length>1))}kokBul(t){if(t.length<4)return t;let e=t.toLowerCase();for(const t of this.turkceEkler)if(e.endsWith(t)&&e.length-t.length>=2){e=e.slice(0,-t.length);break}return e}kelimeFrekans(t){const e={};for(const a of t)e[a]=(e[a]||0)+1;return e}cumleBol(t){return t.split(/[.!?]+/).map((t=>t.trim())).filter((t=>t.length>0))}}class a{constructor(){this.nlp=new e,this.pozitifKelimeler={"güzel":2,"harika":3,"muhteşem":3,"mükemmel":3,"süper":2,"iyi":1,"seviyorum":3,"sevdim":2,"beğendim":2,"başarılı":2,"mutlu":2,"sevinç":2,"keyifli":2,"olumlu":1,"pozitif":1,"umutlu":2,"huzurlu":2,"kaliteli":2,"lezzetli":2,"şahane":3,"harikulade":3,"efsane":3,"aşk":2,"sevgi":2,"teşekkür":2,"tebrikler":2},this.negatifKelimeler={"kötü":-2,"berbat":-3,"rezalet":-3,"korkunç":-3,"iğrenç":-3,"nefret":-3,"sinir":-2,"üzgün":-2,"mutsuz":-2,"acı":-2,"sıkıntı":-2,"başarısız":-2,"hata":-1,"yanlış":-1,"zararlı":-2,"kayıp":-2,"olumsuz":-1,"negatif":-1,"zor":-1,"imkansız":-2,"saçma":-2,"pahalı":-1,"düşman":-2,"kavga":-2,"şiddet":-2,"ölüm":-3,"kriz":-2,"endişe":-2,"korku":-2,"pişman":-2,"yalnız":-2},this.yoğunlastiricilar={"çok":1.5,"aşırı":2,"son derece":2,"oldukça":1.3,"fazla":1.3,"bayağı":1.3,"gerçekten":1.5,"inanılmaz":1.8,"biraz":.5,"az":.5,"hafif":.5},this.olumsuzluklar=new Set(["değil","yok","hiç","asla","olmaz","olmadı","yapma","etme"])}analizEt(t){const e=this.nlp.tokenize(t);let a=0,r=0,n=!1,i=1;const o={pozitif:[],negatif:[]};for(let t=0;t<e.length;t++){const l=e[t];if(this.olumsuzluklar.has(l)){n=!0;continue}if(this.yoğunlastiricilar[l]){i=this.yoğunlastiricilar[l];continue}if(this.pozitifKelimeler[l]){let t=this.pozitifKelimeler[l]*i;n?(t*=-.8,o.negatif.push("değil "+l)):o.pozitif.push(l),a+=t,r++}if(this.negatifKelimeler[l]){let t=this.negatifKelimeler[l]*i;n?(t*=-.8,o.pozitif.push("değil "+l)):o.negatif.push(l),a+=t,r++}n=!1,i=1}const l=(t.match(/!/g)||[]).length;a>0?a+=.3*l:a<0&&(a-=.3*l);const s=r>0?Math.max(-1,Math.min(1,a/(2*r))):0;let u,h;return s>.3?(u="pozitif",h="😊"):s>.1?(u="hafif pozitif",h="🙂"):s<-.3?(u="negatif",h="😞"):s<-.1?(u="hafif negatif",h="😐"):(u="nötr",h="😶"),{skor:Math.round(1e3*s)/1e3,duygu:u,emoji:h,guven:Math.round(100*Math.abs(s)),detay:{toplamSkor:a,kelimeSayisi:r,pozitifKelimeler:o.pozitif,negatifKelimeler:o.negatif}}}}class r{constructor(t={}){this.nlp=new e,this.isim=t.isim||"Tuncer",this.niyetler=new Map,this.baglamGecmisi=[],this.maksGecmis=t.maksGecmis||10,this.varsayilanCevaplar=["Anlayamadım, başka türlü söyleyebilir misiniz?","Bu konuda yardımcı olamıyorum, başka bir şey sorabilirsiniz.","Hmm, tam olarak ne demek istediğinizi anlayamadım.","Bunu biraz daha açıklayabilir misiniz?","İlginç bir soru! Ama henüz bu konuda bilgim yok."],this._varsayilanNiyetleriYukle()}_varsayilanNiyetleriYukle(){this.niyetEkle("selamlama",{kaliplar:["merhaba","selam","hey","günaydın","iyi günler","iyi akşamlar","naber","nasılsın"],cevaplar:[`Merhaba! Ben ${this.isim}. Size nasıl yardımcı olabilirim? 😊`,"Selam! Hoş geldiniz!"]}),this.niyetEkle("vedalaşma",{kaliplar:["hoşçakal","görüşürüz","bay bay","güle güle","iyi geceler","bb"],cevaplar:["Hoşça kalın! 👋","Görüşürüz! 🌟"]}),this.niyetEkle("tesekkur",{kaliplar:["teşekkürler","teşekkür ederim","sağol","eyvallah"],cevaplar:["Rica ederim! Başka sorunuz var mı? 😊","Ne demek, her zaman!"]}),this.niyetEkle("kimsin",{kaliplar:["kimsin","sen kimsin","adın ne","ismin ne","kendini tanıt","nesin sen"],cevaplar:[`Adım ${this.isim}. Türkçe yapay zeka asistanıyım! 🧠`,`Ben ${this.isim}, size yardım etmek için tasarlandım!`]}),this.niyetEkle("yardim",{kaliplar:["yardım","yardım et","help","neler yapabilirsin","özellikler"],cevaplar:[`Size duygu analizi, metin özetleme ve sohbet konularında yardım edebilirim.`]})}niyetEkle(t,{kaliplar:e,cevaplar:a}){this.niyetler.set(t,{kaliplar:e.map((t=>t.toLowerCase())),cevaplar:a})}_niyetTani(t){const e=this.nlp.tokenize(t),a=t.toLowerCase();let r=null,n=0;for(const[t,i]of this.niyetler){let o=0;for(const t of i.kaliplar){if(a===t){o=Math.max(o,1);continue}if(a.includes(t)){const e=t.length/a.length;o=Math.max(o,.5+.4*e);continue}const r=this.nlp.tokenize(t),n=r.filter((t=>e.some((e=>e===t||this.nlp.kokBul(e)===this.nlp.kokBul(t)))));r.length>0&&(o=Math.max(o,n.length/r.length*.7))}o>n&&(n=o,r=t)}return{niyet:r,skor:n}}cevapVer(t){const{niyet:e,skor:r}=this._niyetTani(t);this.baglamGecmisi.push({rol:"kullanici",metin:t,zaman:Date.now()}),this.baglamGecmisi.length>this.maksGecmis&&this.baglamGecmisi.shift();let n;if(e&&r>.3){const t=this.niyetler.get(e),a=t.cevaplar[Math.floor(Math.random()*t.cevaplar.length)];n="function"==typeof a?a():a}else{const e=new a().analizEt(t);if("negatif"===e.duygu||"hafif negatif"===e.duygu){const t=["Üzgünüm bunu duyduğuma. Size nasıl yardımcı olabilirim? 💙","Anlıyorum, zor bir durum gibi görünüyor. Yanınızdayım."];n=t[Math.floor(Math.random()*t.length)]}else if("pozitif"===e.duygu||"hafif pozitif"===e.duygu){const t=["Bunu duymak harika! 😊","Ne güzel! Sevindim! 🌟"];n=t[Math.floor(Math.random()*t.length)]}else n=this.varsayilanCevaplar[Math.floor(Math.random()*this.varsayilanCevaplar.length)]}return this.baglamGecmisi.push({rol:"bot",metin:n,zaman:Date.now()}),{cevap:n,niyet:e||"bilinmiyor",guven:Math.round(100*r),baglamBoyutu:this.baglamGecmisi.length}}}return{versiyon:"1.0.0",isim:"Tuncer Zeka",Matematik:t,TurkceNLP:e,DuyguAnalizi:a,SohbetBotu:r}})()
-        }
-
-        // ==========================================
-        // UYGULAMA MANTIĞI & ARAYÜZ ETKİLEŞİMİ
-        // ==========================================
-        const API_KEY = ""; // Gemini API anahtarı (Sistem tarafından sağlanır)
-        let bot;
-        let currentImageBase64 = null;
-        let currentMimeType = null;
-        let isWaitingForResponse = false;
-
-        // Arayüz Elementleri
-        const chatContainer = document.getElementById('chat-container');
-        const chatInput = document.getElementById('chat-input');
-        const sendBtn = document.getElementById('send-btn');
-        const attachBtn = document.getElementById('attach-btn');
+        let model = null;
+        const chat = document.getElementById('chat');
         const fileInput = document.getElementById('file-input');
-        const imagePreviewContainer = document.getElementById('image-preview-container');
-        const imagePreview = document.getElementById('image-preview');
-        const removeImageBtn = document.getElementById('remove-image-btn');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
 
-        // Sistemi Başlat
-        function initializeSystem() {
-            bot = new TuncerZeka.SohbetBotu({ isim: 'Tuncer Zeka' });
-            
-            // Ahmet Tuncer'i tanıması için özel niyetler ekleyelim
-            bot.niyetEkle('tasarimci', {
-                kaliplar: ['seni kim tasarladı', 'seni kim yaptı', 'yaratıcın kim', 'ahmet tuncer kim', 'geliştiricin kim', 'tasarımcın kim', 'sahibin kim', 'ahmet tuncer', 'kimin eserisin'],
-                cevaplar: [
-                    'Benim yaratıcım, tasarımcım ve geliştiricim Ahmet Tuncer\'dir! Kendisi harika bir yazılım geliştiricisidir. 👨‍💻',
-                    'Beni Ahmet Tuncer tasarladı. Gururla söyleyebilirim ki, yetenekli bir geliştiricinin eseriyim! 🚀',
-                    'Ahmet Tuncer benim her şeyim! Sistemimi o kodladı ve tasarladı. 😎'
-                ]
-            });
-
-            bot.niyetEkle('kimsin', {
-                kaliplar: ['kimsin', 'sen kimsin', 'adın ne', 'ismin ne', 'kendini tanıt', 'nesin sen'],
-                cevaplar: [
-                    'Ben Tuncer Zeka! Ahmet Tuncer tarafından tasarlanmış, Türkçe dil işleme yeteneklerine sahip bir yapay zeka asistanıyım. Ayrıca bana gönderdiğin görselleri de analiz edebilirim! 🧠'
-                ]
-            });
-            
-            chatInput.focus();
-        }
-
-        // Mesajı Ekrana Ekle
-        function appendMessage(sender, text, imageSrc = null) {
-            const isUser = sender === 'user';
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `flex flex-col gap-1 max-w-3xl mx-auto w-full ${isUser ? 'items-end' : 'items-start'}`;
-
-            const headerHTML = isUser ? `
-                <div class="flex items-center gap-2 mb-1">
-                    <span class="text-sm font-semibold text-gray-300">Sen</span>
-                    <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-xs font-bold shadow-md">SN</div>
-                </div>
-            ` : `
-                <div class="flex items-center gap-2 mb-1">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold shadow-md">TZ</div>
-                    <span class="text-sm font-semibold text-gray-300">Tuncer Zeka</span>
-                </div>
-            `;
-
-            let contentHTML = '';
-            if (imageSrc) {
-                contentHTML += `<img src="${imageSrc}" class="rounded-lg max-w-xs mb-2 shadow-sm border border-gray-700">`;
-            }
-            if (text) {
-                // Basit Markdown Desteği (kalınlaştırma)
-                const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-                contentHTML += `<div class="text-gray-200 leading-relaxed">${formattedText}</div>`;
-            }
-
-            const bubbleClass = isUser 
-                ? 'bg-gray-700 p-4 rounded-2xl rounded-tr-none shadow-sm border border-gray-600' 
-                : 'bg-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-700';
-
-            msgDiv.innerHTML = `
-                ${headerHTML}
-                <div class="${bubbleClass}">
-                    ${contentHTML}
-                </div>
-            `;
-
-            chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function showLoading() {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.id = 'loading-indicator';
-            loadingDiv.className = 'flex flex-col gap-1 max-w-3xl mx-auto w-full items-start';
-            loadingDiv.innerHTML = `
-                <div class="flex items-center gap-2 mb-1">
-                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold shadow-md">TZ</div>
-                    <span class="text-sm font-semibold text-gray-300">Tuncer Zeka</span>
-                </div>
-                <div class="bg-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-700 typing-indicator">
-                    <span></span><span></span><span></span>
-                </div>
-            `;
-            chatContainer.appendChild(loadingDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
-
-        function hideLoading() {
-            const loadingDiv = document.getElementById('loading-indicator');
-            if (loadingDiv) loadingDiv.remove();
-        }
-
-        // Görsel Analizi (Gemini API Entegrasyonu)
-        async function analyzeImageWithGemini(promptText, base64Data, mimeType) {
-            // Data URL başlığını temizle
-            const cleanBase64 = base64Data.split(',')[1];
-            
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
-            
-            const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [
-                        { text: promptText || "Lütfen bu görseli Ahmet Tuncer tarafından tasarlanmış Tuncer Zeka yapay zekası kimliğiyle detaylı ve samimi bir Türkçe ile analiz et." },
-                        { inlineData: { mimeType: mimeType, data: cleanBase64 } }
-                    ]
-                }],
-                systemInstruction: {
-                    parts: [{ text: "Sen Ahmet Tuncer tarafından tasarlanan 'Tuncer Zeka' adında yerli ve yenilikçi bir yapay zekasın. Senin geliştiricin Ahmet Tuncer'dir. Sana gönderilen görselleri dikkatlice analiz edip eğlenceli, samimi ve Türkçe olarak cevapla." }]
-                }
-            };
-
-            const delays = [1000, 2000, 4000, 8000, 16000];
-            
-            for (let i = 0; i <= 5; i++) {
-                try {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify(payload)
-                    });
-                    
-                    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
-                    
-                    const data = await response.json();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Görselden bir anlam çıkaramadım maalesef.";
-                } catch (err) {
-                    console.error("API Hatası:", err);
-                    if (i === 5) return "Ahmet Tuncer'in sağladığı görsel analiz sisteminde şu an kısa bir bağlantı sorunu var. Lütfen daha sonra tekrar deneyin.";
-                    await new Promise(r => setTimeout(r, delays[i]));
-                }
-            }
-        }
-
-        // Mesaj Gönderme İşlemi
-        async function handleSend() {
-            if (isWaitingForResponse) return;
-            
-            const text = chatInput.value.trim();
-            if (!text && !currentImageBase64) return;
-
-            // Kullanıcı arayüzünü kilitle
-            isWaitingForResponse = true;
-            chatInput.value = '';
-            chatInput.style.height = 'auto'; // Reset textarea height
-            sendBtn.disabled = true;
-
-            // Kullanıcı mesajını ekle
-            appendMessage('user', text, currentImageBase64);
-            
-            // Mevcut resmi kaydet ve arayüzü temizle
-            const imageToSend = currentImageBase64;
-            const mimeToSend = currentMimeType;
-            clearImageSelection();
-
-            showLoading();
-
+        // Modeli sayfa açıldığında arka planda yüklüyoruz
+        async function loadModel() {
             try {
-                if (imageToSend) {
-                    // Görsel varsa Gemini Vision API Kullan (Tasarımcı: Ahmet Tuncer kimliğiyle)
-                    const response = await analyzeImageWithGemini(text, imageToSend, mimeToSend);
-                    hideLoading();
-                    appendMessage('bot', response);
-                } else {
-                    // Sadece metin ise Yerel Tuncer Zeka'yı kullan
-                    // Gerçekçilik için minik bir gecikme ekleyelim
-                    setTimeout(() => {
-                        const botResponse = bot.cevapVer(text);
-                        hideLoading();
-                        appendMessage('bot', botResponse.cevap);
-                        isWaitingForResponse = false;
-                        sendBtn.disabled = false;
-                        chatInput.focus();
-                    }, 600);
-                    return; // setTimeout içinden çıkacak
-                }
-            } catch (error) {
-                hideLoading();
-                appendMessage('bot', "Sistemimde beklenmedik bir hata oluştu.");
+                model = await mobilenet.load();
+                console.log("Analiz motoru hazır.");
+            } catch (e) {
+                console.error("Model yüklenemedi", e);
             }
-
-            isWaitingForResponse = false;
-            sendBtn.disabled = false;
-            chatInput.focus();
         }
+        loadModel();
 
-        // Etkileşimler (Events)
-        sendBtn.addEventListener('click', handleSend);
+        async function handleInteraction() {
+            const file = fileInput.files[0];
+            const text = userInput.value;
 
-        chatInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-            }
-        });
+            if (!file && !text) return;
 
-        // Textarea otomatik boyutlandırma
-        chatInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight < 128 ? this.scrollHeight : 128) + 'px';
-            
-            if(this.value.trim() !== '' || currentImageBase64) {
-                sendBtn.classList.add('bg-blue-500');
-                sendBtn.classList.remove('bg-gray-700');
-            } else {
-                sendBtn.classList.add('bg-gray-700');
-                sendBtn.classList.remove('bg-blue-500');
-            }
-        });
-
-        attachBtn.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
+            // Kullanıcı mesajını/görselini ekrana bas
             if (file) {
                 const reader = new FileReader();
-                reader.onload = function(evt) {
-                    currentImageBase64 = evt.target.result;
-                    currentMimeType = file.type;
-                    imagePreview.src = currentImageBase64;
-                    imagePreviewContainer.classList.remove('hidden');
-                    chatInput.focus();
-                };
+                reader.onload = function(e) {
+                    appendUserMessage(text, e.target.result);
+                    processImage(file);
+                }
                 reader.readAsDataURL(file);
+            } else {
+                appendUserMessage(text);
+                setTimeout(() => appendBotResponse("Sadece metin mesajlarını şu an için işleyemiyorum, lütfen bir görsel ekleyin."), 500);
             }
-        });
 
-        removeImageBtn.addEventListener('click', clearImageSelection);
-
-        function clearImageSelection() {
-            currentImageBase64 = null;
-            currentMimeType = null;
-            fileInput.value = '';
-            imagePreview.src = '';
-            imagePreviewContainer.classList.add('hidden');
+            // Temizlik
+            userInput.value = "";
+            fileInput.value = "";
         }
 
-        // Başlat
-        window.onload = () => {
-            initializeSystem();
-        };
+        function appendUserMessage(text, imgSrc = null) {
+            let html = `<div class="message">`;
+            if (imgSrc) html += `<img src="${imgSrc}" class="user-image-preview">`;
+            if (text) html += `<div style="padding: 10px;">${text}</div>`;
+            html += `</div>`;
+            chat.innerHTML += html;
+            chat.scrollTop = chat.scrollHeight;
+        }
 
+        function appendBotResponse(response) {
+            const html = `
+                <div class="message">
+                    <div class="avatar">TZ</div>
+                    <span style="font-weight:bold; margin-left:5px;">Tuncer Zeka</span>
+                    <div class="bot-response">${response}</div>
+                </div>`;
+            chat.innerHTML += html;
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        async function processImage(file) {
+            if (!model) {
+                appendBotResponse("Sistem hala hazırlanıyor, lütfen birkaç saniye sonra tekrar deneyin.");
+                return;
+            }
+
+            // Analiz ediliyor mesajı
+            const loadingId = "loading-" + Date.now();
+            chat.innerHTML += `<div id="${loadingId}" class="status-loading" style="margin-left: 50px;">Görsel analiz ediliyor...</div>`;
+
+            try {
+                // Görseli görünmez bir elemente yükleyip analiz ediyoruz
+                const img = new Image();
+                img.src = URL.createObjectURL(file);
+                await img.decode();
+
+                const predictions = await model.classify(img);
+                document.getElementById(loadingId).remove();
+
+                if (predictions && predictions.length > 0) {
+                    // Tahminleri Türkçe ve anlaşılır bir cümleye çeviriyoruz
+                    const enIyiTahmin = predictions[0].className;
+                    const olasilik = Math.round(predictions[0].probability * 100);
+                    
+                    let turkceSonuc = `Bu görselde büyük ihtimalle bir **${enIyiTahmin}** görüyorum (Doğruluk: %${olasilik}).`;
+                    
+                    // Basit bir çeviri/yorumlama mantığı eklenebilir
+                    appendBotResponse(turkceSonuc);
+                } else {
+                    appendBotResponse("Görseli inceledim ama ne olduğunu tam olarak anlayamadım.");
+                }
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                appendBotResponse("Görsel işlenirken teknik bir hata oluştu.");
+            }
+        }
+
+        sendBtn.addEventListener('click', handleInteraction);
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleInteraction(); });
     </script>
 </body>
 </html>
