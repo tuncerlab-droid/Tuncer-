@@ -3,646 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer AI - Sohbet</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title>Tuncer Zeka</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Özelleştirilmiş Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
+        /* Genel Ayarlar ve Renk Paleti */
+        :root {
+            --bg-color: #343541;
+            --sidebar-bg: #202123;
+            --message-bot-bg: #444654;
+            --text-color: #ececf1;
+            --input-bg: #40414f;
+            --border-color: rgba(255,255,255,0.1);
+            --hover-color: #2A2B32;
         }
-        ::-webkit-scrollbar-track {
-            background: transparent;
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #4B5563;
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Yan Menü (Sidebar) */
+        .sidebar {
+            width: 260px;
+            background-color: var(--sidebar-bg);
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+        }
+
+        .new-chat-btn {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .new-chat-btn:hover {
+            background-color: var(--hover-color);
+            transform: scale(1.02);
+        }
+
+        /* Ana Sohbet Alanı */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 120px; /* Input alanı için boşluk */
+            scroll-behavior: smooth;
+        }
+
+        /* Mesaj Balonları ve Animasyonları */
+        .message {
+            padding: 24px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease forwards;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.bot {
+            background-color: var(--message-bot-bg);
+        }
+
+        .message-content {
+            max-width: 800px;
+            width: 100%;
+            display: flex;
+            gap: 20px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .avatar {
+            width: 30px;
+            height: 30px;
             border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #6B7280;
-        }
-        
-        .typing-dot {
-            animation: typing 1.4s infinite ease-in-out both;
-        }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
-            40% { transform: scale(1); opacity: 1; }
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .message-enter {
-            animation: slideUp 0.3s ease-out forwards;
+        .user .avatar {
+            background-color: #10a37f;
         }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .bot .avatar {
+            background-color: #19c37d; /* Tuncer Zeka ikon rengi */
+        }
+
+        /* Input (Giriş) Alanı */
+        .input-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 24px;
+            background: linear-gradient(180deg, rgba(53,55,64,0), var(--bg-color) 40%);
+            display: flex;
+            justify-content: center;
+        }
+
+        .input-box {
+            max-width: 800px;
+            width: 100%;
+            position: relative;
+            background-color: var(--input-bg);
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .input-box:focus-within {
+            box-shadow: 0 0 20px rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .input-box input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            padding: 16px 50px 16px 16px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .input-box input::placeholder {
+            color: rgba(255,255,255,0.5);
+        }
+
+        .send-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .send-btn:hover {
+            color: white;
+            background-color: var(--message-bot-bg);
+        }
+
+        /* Responsive Tasarım */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
         }
     </style>
 </head>
-<body class="bg-[#343541] text-gray-100 h-screen flex overflow-hidden font-sans selection:bg-blue-500 selection:text-white">
+<body>
 
-    <!-- Yan Menü (Sidebar) -->
-    <div class="hidden md:flex w-64 bg-[#202123] flex-col justify-between p-2 border-r border-gray-700">
-        <div>
-            <button onclick="yeniSohbet()" class="flex items-center gap-3 w-full p-3 rounded-md border border-gray-600 hover:bg-gray-700 transition-colors mb-4">
-                <i class="fa-solid fa-plus"></i>
-                Yeni Sohbet
-            </button>
-            <div class="text-xs text-gray-500 font-semibold mb-3 px-3 uppercase">Geçmiş Sohbetler</div>
-            <div id="chatHistory" class="space-y-1 overflow-y-auto max-h-[60vh]">
-                <!-- Geçmiş sohbet öğeleri buraya gelecek -->
-                <button class="flex items-center gap-3 w-full p-3 rounded-md hover:bg-gray-800 transition-colors text-left text-sm text-gray-300">
-                    <i class="fa-regular fa-message"></i>
-                    <span class="truncate">Tuncer Zeka ile Tanışma</span>
+    <aside class="sidebar">
+        <button class="new-chat-btn">
+            <i class="fas fa-plus"></i> Yeni Sohbet
+        </button>
+    </aside>
+
+    <main class="chat-main">
+        <div class="chat-messages" id="chat-container">
+            
+            <div class="message bot">
+                <div class="message-content">
+                    <div class="avatar"><i class="fas fa-robot"></i></div>
+                    <div class="text">Merhaba! Ben Tuncer Zeka. Sana nasıl yardımcı olabilirim?</div>
+                </div>
+            </div>
+
+            </div>
+
+        <div class="input-container">
+            <div class="input-box">
+                <input type="text" id="chat-input" placeholder="Tuncer Zeka'ya mesaj gönder..." autocomplete="off">
+                <button class="send-btn" id="send-button">
+                    <i class="fas fa-paper-plane"></i>
                 </button>
             </div>
         </div>
-        
-        <div class="border-t border-gray-700 pt-3">
-            <button onclick="kutuphaneBilgisi()" class="flex items-center gap-3 w-full p-3 rounded-md hover:bg-gray-800 transition-colors text-sm">
-                <i class="fa-solid fa-circle-info"></i>
-                Tuncer Zeka Hakkında
-            </button>
-        </div>
-    </div>
+    </main>
 
-    <!-- Ana Sohbet Alanı -->
-    <div class="flex-1 flex flex-col h-full bg-[#343541]">
-        <!-- Mobil Üst Bar -->
-        <div class="md:hidden flex items-center justify-between p-4 border-b border-gray-700 bg-[#343541] shadow-sm z-10">
-            <div class="font-semibold text-lg flex items-center gap-2">
-                <i class="fa-solid fa-robot text-blue-400"></i> Tuncer AI
-            </div>
-            <button onclick="yeniSohbet()" class="p-2 hover:bg-gray-700 rounded-md">
-                <i class="fa-solid fa-plus"></i>
-            </button>
-        </div>
+    <script src="tuncer-zeka.js"></script>
 
-        <!-- Sohbet Akışı -->
-        <div id="chatBox" class="flex-1 overflow-y-auto w-full pb-32">
-            <!-- Karşılama Mesajı -->
-            <div class="flex items-start gap-4 p-6 md:px-24 border-b border-gray-700 bg-[#444654]">
-                <div class="w-8 h-8 rounded-sm bg-[#10a37f] flex items-center justify-center flex-shrink-0">
-                    <i class="fa-solid fa-robot text-white text-sm"></i>
-                </div>
-                <div class="flex-1 text-gray-200">
-                    <p>Merhaba! Ben <strong>Tuncer Zeka</strong>. Tamamen Türkçe doğal dil işleme kütüphanesi üzerine inşa edilmiş yapay zeka asistanıyım.</p>
-                    <p class="mt-2 text-sm text-gray-400">Benimle sohbet edebilir, metin analizi yaptırabilir veya aşağıdaki butondan görsel yükleyerek tarama özelliğini test edebilirsiniz.</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Girdi Alanı (Input Area) -->
-        <div class="absolute bottom-0 w-full md:w-[calc(100%-16rem)] bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-6 pb-4 px-4 md:px-24">
-            <div class="relative max-w-4xl mx-auto flex items-end gap-2 bg-[#40414f] border border-gray-600 rounded-xl shadow-lg p-2 focus-within:ring-1 focus-within:ring-gray-500 focus-within:border-gray-500">
-                
-                <!-- Görsel Yükleme Butonu -->
-                <button onclick="document.getElementById('imageInput').click()" class="p-2 md:p-3 text-gray-400 hover:text-white rounded-lg hover:bg-gray-600 transition-colors flex-shrink-0" title="Görsel Tara">
-                    <i class="fa-solid fa-image"></i>
-                </button>
-                <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="gorselSecildi(this)">
-
-                <!-- Metin Kutusu -->
-                <textarea id="messageInput" rows="1" class="w-full bg-transparent text-white outline-none resize-none py-3 px-2 max-h-48 text-sm md:text-base" placeholder="Tuncer AI'a bir mesaj gönder..." oninput="autoResize(this)" onkeydown="handleEnter(event)"></textarea>
-                
-                <!-- Gönder Butonu -->
-                <button onclick="mesajGonder()" id="sendBtn" class="p-2 md:p-3 text-gray-400 hover:text-white rounded-lg hover:bg-[#10a37f] hover:text-white transition-colors flex-shrink-0 disabled:opacity-50 disabled:hover:bg-transparent disabled:hover:text-gray-400">
-                    <i class="fa-solid fa-paper-plane"></i>
-                </button>
-            </div>
-            <div class="text-xs text-center text-gray-500 mt-2">
-                Tuncer Zeka v1.0 altyapısı kullanılmaktadır. Yüzde yüz yerli ve bağımlılıksız.
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- TUNCER ZEKA KÜTÜPHANESİ KODLARI (BURAYA EKLENDİ) -->
-    <!-- ========================================== -->
-    <script>
-        const TuncerZeka = (() => {
-
-        const Matematik = {
-            rastgele(min = -1, max = 1) { return Math.random() * (max - min) + min; },
-            sigmoid(x) { return 1 / (1 + Math.exp(-Math.max(-500, Math.min(500, x)))); },
-            sigmoidTurev(x) { return x * (1 - x); },
-            tanh(x) { return Math.tanh(x); },
-            tanhTurev(x) { return 1 - x * x; },
-            relu(x) { return Math.max(0, x); },
-            reluTurev(x) { return x > 0 ? 1 : 0; },
-            softmax(dizi) {
-            const maks = Math.max(...dizi);
-            const ustler = dizi.map(x => Math.exp(x - maks));
-            const toplam = ustler.reduce((a, b) => a + b, 0);
-            return ustler.map(x => x / toplam);
-            },
-            noktaCarpim(a, b) {
-            let toplam = 0;
-            for (let i = 0; i < a.length; i++) { toplam += a[i] * b[i]; }
-            return toplam;
-            },
-            oklid(a, b) {
-            let toplam = 0;
-            for (let i = 0; i < a.length; i++) { toplam += (a[i] - b[i]) ** 2; }
-            return Math.sqrt(toplam);
-            },
-            kosinusBenzerlik(a, b) {
-            const nokta = this.noktaCarpim(a, b);
-            const buyuklukA = Math.sqrt(a.reduce((t, v) => t + v * v, 0));
-            const buyuklukB = Math.sqrt(b.reduce((t, v) => t + v * v, 0));
-            if (buyuklukA === 0 || buyuklukB === 0) return 0;
-            return nokta / (buyuklukA * buyuklukB);
-            },
-            matrisOlustur(satir, sutun, deger = null) {
-            return Array.from({ length: satir }, () =>
-                Array.from({ length: sutun }, () =>
-                deger !== null ? deger : this.rastgele() * Math.sqrt(2 / (satir + sutun))
-                )
-            );
-            },
-            vektorOlustur(boyut, deger = null) {
-            return Array.from({ length: boyut }, () =>
-                deger !== null ? deger : this.rastgele() * 0.01
-            );
-            },
-            karistir(dizi) {
-            const kopya = [...dizi];
-            for (let i = kopya.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [kopya[i], kopya[j]] = [kopya[j], kopya[i]];
-            }
-            return kopya;
-            }
-        };
-
-        class SinirAgi {
-            constructor(katmanlar, ayarlar = {}) {
-            this.katmanlar = katmanlar;
-            this.ogrenmeOrani = ayarlar.ogrenmeOrani || 0.1;
-            this.aktivasyon = ayarlar.aktivasyon || 'sigmoid';
-            this.momentum = ayarlar.momentum || 0.9;
-            this.donemSayisi = ayarlar.donemSayisi || 1000;
-            this.hataEsigi = ayarlar.hataEsigi || 0.001;
-            this.sessiz = ayarlar.sessiz || false;
-            this.agirliklar = [];
-            this.biaslar = [];
-            this.momentumAgirliklari = [];
-            this.momentumBiaslari = [];
-
-            for (let i = 0; i < katmanlar.length - 1; i++) {
-                this.agirliklar.push(Matematik.matrisOlustur(katmanlar[i], katmanlar[i + 1]));
-                this.biaslar.push(Matematik.vektorOlustur(katmanlar[i + 1], 0));
-                this.momentumAgirliklari.push(Matematik.matrisOlustur(katmanlar[i], katmanlar[i + 1], 0));
-                this.momentumBiaslari.push(Matematik.vektorOlustur(katmanlar[i + 1], 0));
-            }
-            this.egitimGecmisi = [];
-            }
-            _aktivasyonFonksiyonu(x) {
-            switch (this.aktivasyon) {
-                case 'sigmoid': return Matematik.sigmoid(x);
-                case 'tanh': return Matematik.tanh(x);
-                case 'relu': return Matematik.relu(x);
-                default: return Matematik.sigmoid(x);
-            }
-            }
-            _aktivasyonTurev(x) {
-            switch (this.aktivasyon) {
-                case 'sigmoid': return Matematik.sigmoidTurev(x);
-                case 'tanh': return Matematik.tanhTurev(x);
-                case 'relu': return Matematik.reluTurev(x);
-                default: return Matematik.sigmoidTurev(x);
-            }
-            }
-            ileriBesleme(giris) {
-            let katmanCikislari = [giris];
-            let mevcut = giris;
-            for (let k = 0; k < this.agirliklar.length; k++) {
-                const yeniKatman = [];
-                for (let j = 0; j < this.agirliklar[k][0].length; j++) {
-                let toplam = this.biaslar[k][j];
-                for (let i = 0; i < mevcut.length; i++) {
-                    toplam += mevcut[i] * this.agirliklar[k][i][j];
-                }
-                yeniKatman.push(this._aktivasyonFonksiyonu(toplam));
-                }
-                katmanCikislari.push(yeniKatman);
-                mevcut = yeniKatman;
-            }
-            return katmanCikislari;
-            }
-            tahminEt(giris) {
-            const katmanlar = this.ileriBesleme(giris);
-            return katmanlar[katmanlar.length - 1];
-            }
-            geriYayilim(katmanCikislari, hedef) {
-            const katmanSayisi = this.agirliklar.length;
-            const hatalar = [];
-            const cikis = katmanCikislari[katmanCikislari.length - 1];
-            const cikisHatasi = [];
-            for (let i = 0; i < cikis.length; i++) {
-                const hata = hedef[i] - cikis[i];
-                cikisHatasi.push(hata * this._aktivasyonTurev(cikis[i]));
-            }
-            hatalar.unshift(cikisHatasi);
-            for (let k = katmanSayisi - 1; k > 0; k--) {
-                const katmanHatasi = [];
-                for (let i = 0; i < this.agirliklar[k].length; i++) {
-                let hata = 0;
-                for (let j = 0; j < hatalar[0].length; j++) {
-                    hata += hatalar[0][j] * this.agirliklar[k][i][j];
-                }
-                katmanHatasi.push(hata * this._aktivasyonTurev(katmanCikislari[k][i]));
-                }
-                hatalar.unshift(katmanHatasi);
-            }
-            for (let k = 0; k < katmanSayisi; k++) {
-                for (let i = 0; i < this.agirliklar[k].length; i++) {
-                for (let j = 0; j < this.agirliklar[k][i].length; j++) {
-                    const delta = this.ogrenmeOrani * hatalar[k][j] * katmanCikislari[k][i];
-                    this.momentumAgirliklari[k][i][j] = this.momentum * this.momentumAgirliklari[k][i][j] + delta;
-                    this.agirliklar[k][i][j] += this.momentumAgirliklari[k][i][j];
-                }
-                }
-                for (let j = 0; j < this.biaslar[k].length; j++) {
-                const delta = this.ogrenmeOrani * hatalar[k][j];
-                this.momentumBiaslari[k][j] = this.momentum * this.momentumBiaslari[k][j] + delta;
-                this.biaslar[k][j] += this.momentumBiaslari[k][j];
-                }
-            }
-            }
-            egit(egitimVerisi) {
-            this.egitimGecmisi = [];
-            for (let donem = 0; donem < this.donemSayisi; donem++) {
-                let toplamHata = 0;
-                const karisik = Matematik.karistir(egitimVerisi);
-                for (const veri of karisik) {
-                const katmanCikislari = this.ileriBesleme(veri.giris);
-                const cikis = katmanCikislari[katmanCikislari.length - 1];
-                for (let i = 0; i < veri.cikis.length; i++) {
-                    toplamHata += (veri.cikis[i] - cikis[i]) ** 2;
-                }
-                this.geriYayilim(katmanCikislari, veri.cikis);
-                }
-                const ortalamaHata = toplamHata / egitimVerisi.length;
-                this.egitimGecmisi.push(ortalamaHata);
-                if (ortalamaHata < this.hataEsigi) break;
-            }
-            return this.egitimGecmisi;
-            }
-        }
-
-        class TurkceNLP {
-            constructor() {
-            this.stopKelimeler = new Set(['bir', 'bu', 'şu', 'o', 've', 'ile', 'de', 'da', 'den', 'dan', 'için', 'gibi', 'kadar', 'sonra', 'önce', 'ama', 'fakat', 'ancak', 'ki', 'ne', 'hem', 'ya', 'veya', 'her', 'hiç', 'çok', 'az', 'en', 'daha', 'bile', 'mi', 'mı', 'mu', 'mü', 'değil', 'var', 'yok', 'ben', 'sen', 'biz', 'siz', 'onlar', 'olan', 'olarak', 'üzere', 'göre', 'rağmen', 'karşı', 'arasında', 'içinde', 'dışında', 'üzerinde', 'altında', 'ise', 'iken', 'oldu', 'olmuş', 'olan', 'olan', 'nasıl', 'neden', 'nerede', 'kim', 'kime', 'hangi', 'benim', 'senin', 'onun', 'bizim', 'sizin', 'onların', 'bana', 'sana', 'ona', 'bize', 'size', 'olur', 'olabilir', 'eder', 'etti', 'etmek', 'yapmak', 'yaptı', 'yapıyor']);
-            this.turkceEkler = ['lar', 'ler', 'lık', 'lik', 'luk', 'lük', 'cı', 'ci', 'cu', 'cü', 'çı', 'çi', 'çu', 'çü', 'sız', 'siz', 'suz', 'süz', 'dan', 'den', 'tan', 'ten', 'da', 'de', 'ta', 'te', 'ın', 'in', 'un', 'ün', 'yor', 'iyor', 'ıyor', 'uyor', 'üyor', 'mış', 'miş', 'muş', 'müş', 'dı', 'di', 'du', 'dü', 'tı', 'ti', 'tu', 'tü', 'acak', 'ecek', 'arak', 'erek', 'mak', 'mek', 'ması', 'mesi', 'dık', 'dik', 'duk', 'dük', 'sa', 'se', 'ım', 'im', 'um', 'üm', 'sın', 'sin', 'sun', 'sün', 'ız', 'iz', 'uz', 'üz', 'nız', 'niz', 'nuz', 'nüz'];
-            this.turkceEkler.sort((a, b) => b.length - a.length);
-            }
-            tokenize(metin) { return metin.toLowerCase().replace(/[^\wığüşöçİĞÜŞÖÇ\s]/g, ' ').split(/\s+/).filter(t => t.length > 0); }
-            stopKelimeleriTemizle(tokenlar) { return tokenlar.filter(t => !this.stopKelimeler.has(t) && t.length > 1); }
-            kokBul(kelime) {
-            if (kelime.length < 4) return kelime;
-            let kok = kelime.toLowerCase();
-            for (const ek of this.turkceEkler) {
-                if (kok.endsWith(ek) && kok.length - ek.length >= 2) {
-                kok = kok.slice(0, -ek.length); break;
-                }
-            }
-            return kok;
-            }
-            kelimeFrekans(tokenlar) {
-            const frekans = {};
-            for (const token of tokenlar) frekans[token] = (frekans[token] || 0) + 1;
-            return frekans;
-            }
-            cumleBol(metin) { return metin.split(/[.!?]+/).map(c => c.trim()).filter(c => c.length > 0); }
-        }
-
-        class DuyguAnalizi {
-            constructor() {
-            this.nlp = new TurkceNLP();
-            this.pozitifKelimeler = {'güzel': 2, 'harika': 3, 'muhteşem': 3, 'mükemmel': 3, 'süper': 2, 'iyi': 1, 'seviyorum': 3, 'sevdim': 2, 'beğendim': 2, 'başarılı': 2, 'mutlu': 2, 'sevinç': 2, 'keyifli': 2, 'eğlenceli': 2, 'olumlu': 1, 'umut': 2, 'huzur': 2, 'rahat': 1, 'kolay': 1, 'kaliteli': 2, 'lezzetli': 2, 'şahane': 3, 'nefis': 2, 'hoş': 1, 'gülümse': 2, 'aşk': 2, 'sevgi': 2, 'dostluk': 2, 'teşekkür': 2, 'bravo': 2, 'tebrikler': 2, 'müthiş': 3, 'memnun': 2, 'heyecanlı': 2, 'zarif': 2, 'zeki': 2, 'zafer': 2 };
-            this.negatifKelimeler = {'kötü': -2, 'berbat': -3, 'rezalet': -3, 'korkunç': -3, 'iğrenç': -3, 'nefret': -3, 'sinir': -2, 'kızgın': -2, 'üzgün': -2, 'mutsuz': -2, 'acı': -2, 'sıkıntı': -2, 'başarısız': -2, 'hata': -1, 'yanlış': -1, 'sorun': -1, 'tehlike': -2, 'zararlı': -2, 'kayıp': -2, 'olumsuz': -1, 'karanlık': -1, 'umutsuz': -2, 'çaresiz': -2, 'zor': -1, 'kalitesiz': -2, 'saçma': -2, 'aptal': -2, 'gereksiz': -1, 'pahalı': -1, 'yavaş': -1, 'hayal kırıklığı': -3, 'düşman': -2, 'kavga': -2, 'şiddet': -2, 'ölüm': -3, 'kriz': -2, 'bıktım': -2, 'yoruldum': -1, 'bunalım': -3, 'endişe': -2, 'korku': -2, 'pişman': -2, 'utanç': -2, 'yalnız': -2, 'terk': -2, 'ağlıyorum': -2 };
-            this.yoğunlastiricilar = {'çok': 1.5, 'aşırı': 2, 'son derece': 2, 'oldukça': 1.3, 'fazla': 1.3, 'gerçekten': 1.5, 'inanılmaz': 1.8, 'tamamen': 1.8, 'kesinlikle': 1.8, 'biraz': 0.5, 'az': 0.5, 'hafif': 0.5 };
-            this.olumsuzluklar = new Set(['değil', 'yok', 'hiç', 'asla', 'olmaz', 'olmadı', 'yapma', 'istemiyorum', 'sevmiyorum', 'beğenmedim']);
-            }
-            analizEt(metin) {
-            const tokenlar = this.nlp.tokenize(metin);
-            let toplamSkor = 0; let kelimeSayisi = 0; let olumsuzlukAktif = false; let yogunlastirici = 1;
-            
-            for (let i = 0; i < tokenlar.length; i++) {
-                const token = tokenlar[i];
-                if (this.olumsuzluklar.has(token)) { olumsuzlukAktif = true; continue; }
-                if (this.yoğunlastiricilar[token]) { yogunlastirici = this.yoğunlastiricilar[token]; continue; }
-                
-                let islendi = false;
-                if (this.pozitifKelimeler[token]) {
-                let skor = this.pozitifKelimeler[token] * yogunlastirici;
-                if (olumsuzlukAktif) skor *= -0.8;
-                toplamSkor += skor; kelimeSayisi++; islendi = true;
-                } else if (this.negatifKelimeler[token]) {
-                let skor = this.negatifKelimeler[token] * yogunlastirici;
-                if (olumsuzlukAktif) skor *= -0.8;
-                toplamSkor += skor; kelimeSayisi++; islendi = true;
-                }
-
-                if (!islendi) {
-                const kok = this.nlp.kokBul(token);
-                if (this.pozitifKelimeler[kok]) {
-                    let skor = this.pozitifKelimeler[kok] * yogunlastirici * 0.8;
-                    if (olumsuzlukAktif) skor *= -0.8;
-                    toplamSkor += skor; kelimeSayisi++;
-                } else if (this.negatifKelimeler[kok]) {
-                    let skor = this.negatifKelimeler[kok] * yogunlastirici * 0.8;
-                    if (olumsuzlukAktif) skor *= -0.8;
-                    toplamSkor += skor; kelimeSayisi++;
-                }
-                }
-                olumsuzlukAktif = false; yogunlastirici = 1;
-            }
-            const normalSkor = kelimeSayisi > 0 ? Math.max(-1, Math.min(1, toplamSkor / (kelimeSayisi * 2))) : 0;
-            let duygu, emoji;
-            if (normalSkor > 0.3) { duygu = 'pozitif'; emoji = '😊'; }
-            else if (normalSkor > 0.1) { duygu = 'hafif pozitif'; emoji = '🙂'; }
-            else if (normalSkor < -0.3) { duygu = 'negatif'; emoji = '😞'; }
-            else if (normalSkor < -0.1) { duygu = 'hafif negatif'; emoji = '😐'; }
-            else { duygu = 'nötr'; emoji = '😶'; }
-            return { skor: Math.round(normalSkor * 1000) / 1000, duygu, emoji, guven: Math.round(Math.abs(normalSkor) * 100) };
-            }
-        }
-
-        class SohbetBotu {
-            constructor(ayarlar = {}) {
-            this.nlp = new TurkceNLP();
-            this.isim = ayarlar.isim || 'Tuncer';
-            this.niyetler = new Map();
-            this.baglamGecmisi = [];
-            this.maksGecmis = ayarlar.maksGecmis || 10;
-            this.varsayilanCevaplar = [
-                'Anlayamadım, başka türlü söyleyebilir misiniz?',
-                'Hmm, tam olarak ne demek istediğinizi anlayamadım.',
-                'Bunu biraz daha açıklayabilir misiniz?'
-            ];
-            this._varsayilanNiyetleriYukle();
-            }
-            _varsayilanNiyetleriYukle() {
-            this.niyetEkle('selamlama', {
-                kaliplar: ['merhaba', 'selam', 'hey', 'günaydın', 'iyi günler', 'iyi akşamlar', 'naber', 'nasılsın', 'sa', 'slm'],
-                cevaplar: [`Merhaba! Ben ${this.isim}. Size nasıl yardımcı olabilirim? 😊`, `Selam! Hoş geldiniz! Ne yapabilirim sizin için?`]
-            });
-            this.niyetEkle('vedalaşma', {
-                kaliplar: ['hoşçakal', 'görüşürüz', 'bay bay', 'bye', 'güle güle', 'iyi geceler', 'bb', 'eyvallah'],
-                cevaplar: ['Hoşça kalın! Tekrar görüşmek üzere! 👋', 'Görüşürüz! Kendinize iyi bakın! 🌟']
-            });
-            this.niyetEkle('tesekkur', {
-                kaliplar: ['teşekkürler', 'teşekkür ederim', 'sağol', 'eyvallah', 'çok teşekkürler', 'tşk'],
-                cevaplar: ['Rica ederim! Başka bir sorunuz var mı? 😊', 'Ne demek, her zaman!']
-            });
-            this.niyetEkle('kimsin', {
-                kaliplar: ['kimsin', 'sen kimsin', 'adın ne', 'ismin ne', 'kendini tanıt', 'neler yapabilirsin'],
-                cevaplar: [`Ben ${this.isim} Zeka! Türkçe yapay zeka asistanıyım. Duygu analizi, metin işleme ve sohbet edebilirim! 🧠`]
-            });
-            this.niyetEkle('sakaYap', {
-                kaliplar: ['şaka yap', 'fıkra anlat', 'espri yap', 'güldür beni', 'komik'],
-                cevaplar: ['Yapay zeka neden terapiye gitti? Çünkü çok fazla "katmanı" vardı! 😄', 'Bir programcı neden gözlük takar? Çünkü C# yapamıyor! 😂']
-            });
-            this.niyetEkle('gorsel_soru', {
-                kaliplar: ['bu görselde ne var', 'resimde ne görüyorsun', 'görseli analiz et', 'fotoğraf nasıl'],
-                cevaplar: ['Görseli inceledim! İçeriğinde ilginç detaylar var ancak yeteneklerim metin odaklı olduğu için pikselleri detaylı ayrıştıramıyorum. Ancak ana hatlarıyla başarılı bir görsel diyebilirim! 🖼️']
-            });
-            }
-            niyetEkle(niyetAdi, { kaliplar, cevaplar }) {
-            this.niyetler.set(niyetAdi, { kaliplar: kaliplar.map(k => k.toLowerCase()), cevaplar });
-            }
-            _niyetTani(metin) {
-            const tokenlar = this.nlp.tokenize(metin);
-            const metinLower = metin.toLowerCase();
-            let enIyiNiyet = null; let enIyiSkor = 0;
-            for (const [niyetAdi, niyetVeri] of this.niyetler) {
-                let skor = 0;
-                for (const kalip of niyetVeri.kaliplar) {
-                if (metinLower === kalip) { skor = Math.max(skor, 1.0); continue; }
-                if (metinLower.includes(kalip)) {
-                    const oranliSkor = kalip.length / metinLower.length;
-                    skor = Math.max(skor, 0.5 + oranliSkor * 0.4); continue;
-                }
-                const kalipTokenlari = this.nlp.tokenize(kalip);
-                const ortakTokenlar = kalipTokenlari.filter(kt => tokenlar.some(t => t === kt || this.nlp.kokBul(t) === this.nlp.kokBul(kt)));
-                if (kalipTokenlari.length > 0) {
-                    const tokenSkor = ortakTokenlar.length / kalipTokenlari.length;
-                    skor = Math.max(skor, tokenSkor * 0.7);
-                }
-                }
-                if (skor > enIyiSkor) { enIyiSkor = skor; enIyiNiyet = niyetAdi; }
-            }
-            return { niyet: enIyiNiyet, skor: enIyiSkor };
-            }
-            cevapVer(metin) {
-            const { niyet, skor } = this._niyetTani(metin);
-            this.baglamGecmisi.push({ rol: 'kullanici', metin, zaman: Date.now() });
-            let cevap;
-            if (niyet && skor > 0.3) {
-                const niyetVeri = this.niyetler.get(niyet);
-                const secilen = niyetVeri.cevaplar[Math.floor(Math.random() * niyetVeri.cevaplar.length)];
-                cevap = typeof secilen === 'function' ? secilen() : secilen;
-            } else {
-                const duyguAnalizi = new DuyguAnalizi();
-                const duygu = duyguAnalizi.analizEt(metin);
-                if (duygu.duygu === 'negatif' || duygu.duygu === 'hafif negatif') {
-                const olumsuzCevaplar = ['Üzgünüm bunu duyduğuma. Size nasıl yardımcı olabilirim? 💙', 'Anlıyorum, zor bir durum gibi görünüyor. Yanınızdayım.'];
-                cevap = olumsuzCevaplar[Math.floor(Math.random() * olumsuzCevaplar.length)];
-                } else if (duygu.duygu === 'pozitif' || duygu.duygu === 'hafif pozitif') {
-                const olumluCevaplar = ['Bunu duymak harika! 😊', 'Ne güzel! Sevindim! 🌟'];
-                cevap = olumluCevaplar[Math.floor(Math.random() * olumluCevaplar.length)];
-                } else {
-                cevap = this.varsayilanCevaplar[Math.floor(Math.random() * this.varsayilanCevaplar.length)];
-                }
-            }
-            this.baglamGecmisi.push({ rol: 'bot', metin: cevap, zaman: Date.now() });
-            return { cevap, niyet: niyet || 'bilinmiyor', guven: Math.round(skor * 100) };
-            }
-        }
-
-        return { versiyon: '1.0.0', isim: 'Tuncer Zeka', SohbetBotu, DuyguAnalizi, TurkceNLP };
-        })();
-    </script>
-
-    <!-- ========================================== -->
-    <!-- ARAYÜZ MANTIĞI VE UYGULAMA (UI LOGIC)      -->
-    <!-- ========================================== -->
-    <script>
-        // Tuncer Zeka Botunu Başlat
-        const bot = new TuncerZeka.SohbetBotu({ isim: 'Tuncer AI' });
-        const duyguAnalisti = new TuncerZeka.DuyguAnalizi();
-
-        const chatBox = document.getElementById('chatBox');
-        const messageInput = document.getElementById('messageInput');
-        const sendBtn = document.getElementById('sendBtn');
-
-        // Otomatik boyutlanan textarea
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px';
-            sendBtn.disabled = textarea.value.trim().length === 0;
-        }
-
-        function handleEnter(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                mesajGonder();
-            }
-        }
-
-        // Kullanıcı ve Bot mesajlarını ekrana çizme fonksiyonu
-        function mesajiEkranaEkle(rol, metin, ekIcerik = null, duygu = null) {
-            const div = document.createElement('div');
-            const isBot = rol === 'bot';
-            
-            div.className = `message-enter flex items-start gap-4 p-6 md:px-24 border-b border-gray-700 ${isBot ? 'bg-[#444654]' : 'bg-[#343541]'}`;
-            
-            let html = `
-                <div class="w-8 h-8 rounded-sm ${isBot ? 'bg-[#10a37f]' : 'bg-blue-600'} flex items-center justify-center flex-shrink-0 mt-1">
-                    <i class="fa-solid ${isBot ? 'fa-robot' : 'fa-user'} text-white text-sm"></i>
-                </div>
-                <div class="flex-1 text-gray-200 overflow-hidden">
-                    <div class="prose prose-invert max-w-none whitespace-pre-wrap">${metin}</div>
-                    ${ekIcerik ? `<div class="mt-3">${ekIcerik}</div>` : ''}
-                </div>
-            `;
-
-            // Eğer kullanıcı mesajıysa ve duygu tespiti yapılmışsa ufak bir rozet ekle
-            if (!isBot && duygu && duygu.duygu !== 'nötr') {
-                let renkClass = duygu.skor > 0 ? 'text-green-400 bg-green-400/10 border-green-400/20' : 'text-red-400 bg-red-400/10 border-red-400/20';
-                html += `
-                <div class="ml-4 flex-shrink-0 text-xs px-2 py-1 rounded border ${renkClass} flex items-center gap-1" title="Tuncer Zeka Duygu Analizi">
-                    <span>${duygu.emoji}</span>
-                    <span class="hidden md:inline">${duygu.duygu}</span>
-                </div>`;
-            }
-
-            div.innerHTML = html;
-            chatBox.appendChild(div);
-            scrollBottom();
-        }
-
-        // "Yazıyor..." animasyonu ekle/kaldır
-        function yukleniyorGoster() {
-            const div = document.createElement('div');
-            div.id = 'typingIndicator';
-            div.className = 'flex items-start gap-4 p-6 md:px-24 border-b border-gray-700 bg-[#444654]';
-            div.innerHTML = `
-                <div class="w-8 h-8 rounded-sm bg-[#10a37f] flex items-center justify-center flex-shrink-0 mt-1">
-                    <i class="fa-solid fa-robot text-white text-sm"></i>
-                </div>
-                <div class="flex-1 flex items-center h-8 gap-1">
-                    <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                    <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                    <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                </div>
-            `;
-            chatBox.appendChild(div);
-            scrollBottom();
-        }
-
-        function yukleniyorGizle() {
-            const ind = document.getElementById('typingIndicator');
-            if (ind) ind.remove();
-        }
-
-        function scrollBottom() {
-            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-        }
-
-        // Ana mesaj gönderme fonksiyonu
-        function mesajGonder() {
-            const metin = messageInput.value.trim();
-            if (!metin) return;
-
-            // Inputu temizle
-            messageInput.value = '';
-            messageInput.style.height = 'auto';
-            sendBtn.disabled = true;
-
-            // Duygu analizi yap
-            const duygu = duyguAnalisti.analizEt(metin);
-
-            // Kullanıcı mesajını ekle
-            mesajiEkranaEkle('kullanici', metin, null, duygu);
-
-            // Botun düşünmesini simüle et (yapay zeka hızı)
-            yukleniyorGoster();
-            
-            setTimeout(() => {
-                yukleniyorGizle();
-                // Tuncer Zeka'dan cevap al
-                const yanit = bot.cevapVer(metin);
-                mesajiEkranaEkle('bot', yanit.cevap);
-            }, 600 + Math.random() * 800);
-        }
-
-        // Görsel Seçme ve Tarama Simülasyonu
-        function gorselSecildi(input) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    const imgHtml = `<img src="${e.target.result}" class="max-w-sm w-full rounded-lg border border-gray-600 mt-2" alt="Yüklenen Görsel">`;
-                    
-                    // Görseli kullanıcı mesajı olarak ekle
-                    mesajiEkranaEkle('kullanici', `📸 *Görsel Yüklendi: ${file.name}*`, imgHtml);
-                    
-                    // Bot taraması
-                    yukleniyorGoster();
-
-                    setTimeout(() => {
-                        yukleniyorGizle();
-                        
-                        // Tuncer Zeka görsel yeteneğine sahip olmadığı için bunu simüle ederek akıllıca bir cevap veriyoruz.
-                        const gorselCevaplari = [
-                            "Görseli başarıyla taradım! Modellerim tamamen metin işleme üzerine eğitildiği için içindeki piksellerin anlamını tam çıkaramasam da, başarıyla işlendiğini söyleyebilirim. Bu görselle ilgili bana metin tabanlı sorular sorabilirsin! 🖼️",
-                            "Harika bir kare! 🤖 Tuncer Zeka altyapısı görseli teslim aldı. Renklerin dağılımı ilgi çekici görünüyor. Görsel hakkında ne konuşmak istersin?",
-                            "Görsel veri işleme modülüm (simülasyon) bunu taradı. Görünüşe göre oldukça güzel bir fotoğraf. Bunun bağlamı veya hikayesi hakkında konuşalım mı?"
-                        ];
-                        
-                        const secilenCevap = gorselCevaplari[Math.floor(Math.random() * gorselCevaplari.length)];
-                        
-                        mesajiEkranaEkle('bot', secilenCevap);
-                        
-                    }, 1500); // Tarama süresi (1.5sn)
-                };
-                
-                reader.readAsDataURL(file);
-            }
-            // Inputu sıfırla ki aynı görseli tekrar seçebilsin
-            input.value = "";
-        }
-
-        // Yeni sohbet butonu
-        function yeniSohbet() {
-            bot.baglamGecmisi = []; // Geçmişi temizle
-            chatBox.innerHTML = `
-                <div class="flex items-start gap-4 p-6 md:px-24 border-b border-gray-700 bg-[#444654] message-enter">
-                    <div class="w-8 h-8 rounded-sm bg-[#10a37f] flex items-center justify-center flex-shrink-0">
-                        <i class="fa-solid fa-robot text-white text-sm"></i>
-                    </div>
-                    <div class="flex-1 text-gray-200">
-                        <p>Sohbet geçmişi temizlendi. Yepyeni bir konuya başlayabiliriz!</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        function kutuphaneBilgisi() {
-            const metin = "Bana kütüphane altyapın hakkında bilgi verir misin?";
-            messageInput.value = metin;
-            mesajGonder();
-        }
-
-    </script>
 </body>
 </html>
-
