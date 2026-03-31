@@ -1,6 +1,6 @@
 // ============================================================
-// 🧠 TUNCER ZEKA v1.1 (Geliştirilmiş Sürüm)
-// Türkçe Yapay Zeka Kütüphanesi + Gemini Entegrasyonu
+// 🧠 TUNCER ZEKA v1.0
+// Türkçe Yapay Zeka Kütüphanesi
 // Tamamen sıfırdan, bağımlılık olmadan yazılmıştır.
 // ============================================================
 
@@ -153,6 +153,9 @@ const TuncerZeka = (() => {
       }
     }
 
+    /**
+     * İleri besleme (forward pass)
+     */
     ileriBesleme(giris) {
       let katmanCikislari = [giris];
       let mevcut = giris;
@@ -173,15 +176,22 @@ const TuncerZeka = (() => {
       return katmanCikislari;
     }
 
+    /**
+     * Tahmin yap
+     */
     tahminEt(giris) {
       const katmanlar = this.ileriBesleme(giris);
       return katmanlar[katmanlar.length - 1];
     }
 
+    /**
+     * Geri yayılım (backpropagation)
+     */
     geriYayilim(katmanCikislari, hedef) {
       const katmanSayisi = this.agirliklar.length;
       const hatalar = [];
 
+      // Çıkış katmanı hatası
       const cikis = katmanCikislari[katmanCikislari.length - 1];
       const cikisHatasi = [];
       for (let i = 0; i < cikis.length; i++) {
@@ -190,6 +200,7 @@ const TuncerZeka = (() => {
       }
       hatalar.unshift(cikisHatasi);
 
+      // Gizli katman hataları
       for (let k = katmanSayisi - 1; k > 0; k--) {
         const katmanHatasi = [];
         for (let i = 0; i < this.agirliklar[k].length; i++) {
@@ -202,6 +213,7 @@ const TuncerZeka = (() => {
         hatalar.unshift(katmanHatasi);
       }
 
+      // Ağırlıkları güncelle
       for (let k = 0; k < katmanSayisi; k++) {
         for (let i = 0; i < this.agirliklar[k].length; i++) {
           for (let j = 0; j < this.agirliklar[k][i].length; j++) {
@@ -220,26 +232,49 @@ const TuncerZeka = (() => {
       }
     }
 
+    /**
+     * Eğitim
+     * @param {Array} egitimVerisi - [{giris: [...], cikis: [...]}]
+     */
     egit(egitimVerisi) {
       this.egitimGecmisi = [];
+
       for (let donem = 0; donem < this.donemSayisi; donem++) {
         let toplamHata = 0;
         const karisik = Matematik.karistir(egitimVerisi);
+
         for (const veri of karisik) {
           const katmanCikislari = this.ileriBesleme(veri.giris);
           const cikis = katmanCikislari[katmanCikislari.length - 1];
+
           for (let i = 0; i < veri.cikis.length; i++) {
             toplamHata += (veri.cikis[i] - cikis[i]) ** 2;
           }
+
           this.geriYayilim(katmanCikislari, veri.cikis);
         }
+
         const ortalamaHata = toplamHata / egitimVerisi.length;
         this.egitimGecmisi.push(ortalamaHata);
-        if (ortalamaHata < this.hataEsigi) break;
+
+        if (!this.sessiz && donem % Math.ceil(this.donemSayisi / 10) === 0) {
+          console.log(`📊 Dönem ${donem}/${this.donemSayisi} - Hata: ${ortalamaHata.toFixed(6)}`);
+        }
+
+        if (ortalamaHata < this.hataEsigi) {
+          if (!this.sessiz) {
+            console.log(`✅ Eğitim tamamlandı! Dönem: ${donem}, Hata: ${ortalamaHata.toFixed(6)}`);
+          }
+          break;
+        }
       }
+
       return this.egitimGecmisi;
     }
 
+    /**
+     * Modeli dışa aktar
+     */
     disaAktar() {
       return JSON.stringify({
         katmanlar: this.katmanlar,
@@ -250,6 +285,9 @@ const TuncerZeka = (() => {
       });
     }
 
+    /**
+     * Modeli içe aktar
+     */
     static iceAktar(json) {
       const veri = JSON.parse(json);
       const ag = new SinirAgi(veri.katmanlar, {
@@ -306,9 +344,13 @@ const TuncerZeka = (() => {
         'nız', 'niz', 'nuz', 'nüz'
       ];
 
+      // Uzunluğa göre sırala (uzun ekler önce)
       this.turkceEkler.sort((a, b) => b.length - a.length);
     }
 
+    /**
+     * Metni tokenlara ayır
+     */
     tokenize(metin) {
       return metin
         .toLowerCase()
@@ -317,22 +359,34 @@ const TuncerZeka = (() => {
         .filter(t => t.length > 0);
     }
 
+    /**
+     * Stop kelimeleri temizle
+     */
     stopKelimeleriTemizle(tokenlar) {
       return tokenlar.filter(t => !this.stopKelimeler.has(t) && t.length > 1);
     }
 
+    /**
+     * Basit Türkçe kök bulma (stemming)
+     */
     kokBul(kelime) {
       if (kelime.length < 4) return kelime;
+
       let kok = kelime.toLowerCase();
+
       for (const ek of this.turkceEkler) {
         if (kok.endsWith(ek) && kok.length - ek.length >= 2) {
           kok = kok.slice(0, -ek.length);
           break;
         }
       }
+
       return kok;
     }
 
+    /**
+     * N-gram oluştur
+     */
     nGram(tokenlar, n = 2) {
       const gramlar = [];
       for (let i = 0; i <= tokenlar.length - n; i++) {
@@ -341,6 +395,9 @@ const TuncerZeka = (() => {
       return gramlar;
     }
 
+    /**
+     * Kelime frekansı hesapla
+     */
     kelimeFrekans(tokenlar) {
       const frekans = {};
       for (const token of tokenlar) {
@@ -349,13 +406,18 @@ const TuncerZeka = (() => {
       return frekans;
     }
 
+    /**
+     * TF-IDF hesapla
+     */
     tfIdf(belgeler) {
       const belgeTokenlari = belgeler.map(b => this.tokenize(b));
       const tümKelimeler = new Set(belgeTokenlari.flat());
       const sonuc = [];
+
       for (const tokenlar of belgeTokenlari) {
         const tf = this.kelimeFrekans(tokenlar);
         const tfidf = {};
+
         for (const kelime of tümKelimeler) {
           const termFrekans = (tf[kelime] || 0) / tokenlar.length;
           const belgeFrekansi = belgeTokenlari.filter(bt =>
@@ -364,24 +426,39 @@ const TuncerZeka = (() => {
           const idf = Math.log(belgeler.length / (belgeFrekansi + 1)) + 1;
           tfidf[kelime] = termFrekans * idf;
         }
+
         sonuc.push(tfidf);
       }
+
       return { skorlar: sonuc, kelimeler: [...tümKelimeler] };
     }
 
+    /**
+     * Metni vektöre çevir (Bag of Words)
+     */
     metindenVektor(metin, sozluk) {
       const tokenlar = this.stopKelimeleriTemizle(this.tokenize(metin));
       const vektor = new Array(sozluk.length).fill(0);
+
       for (const token of tokenlar) {
         const kok = this.kokBul(token);
         const idx = sozluk.indexOf(kok);
-        if (idx !== -1) vektor[idx]++;
+        if (idx !== -1) {
+          vektor[idx]++;
+        }
+        // Tam kelimeyi de kontrol et
         const idx2 = sozluk.indexOf(token);
-        if (idx2 !== -1) vektor[idx2]++;
+        if (idx2 !== -1) {
+          vektor[idx2]++;
+        }
       }
+
       return vektor;
     }
 
+    /**
+     * Sözlük oluştur
+     */
     sozlukOlustur(metinler, maksKelime = 500) {
       const tumTokenlar = [];
       for (const metin of metinler) {
@@ -391,40 +468,66 @@ const TuncerZeka = (() => {
           tumTokenlar.push(t);
         }
       }
+
       const frekans = this.kelimeFrekans(tumTokenlar);
       const sirali = Object.entries(frekans)
         .sort((a, b) => b[1] - a[1])
         .slice(0, maksKelime)
         .map(([kelime]) => kelime);
+
       return [...new Set(sirali)];
     }
 
+    /**
+     * İki metin arasındaki benzerlik (0-1)
+     */
     metinBenzerligi(metin1, metin2) {
       const tokenlar1 = new Set(this.stopKelimeleriTemizle(this.tokenize(metin1)).map(t => this.kokBul(t)));
       const tokenlar2 = new Set(this.stopKelimeleriTemizle(this.tokenize(metin2)).map(t => this.kokBul(t)));
+
       const kesisim = new Set([...tokenlar1].filter(x => tokenlar2.has(x)));
       const birlesim = new Set([...tokenlar1, ...tokenlar2]);
+
       if (birlesim.size === 0) return 0;
-      return kesisim.size / birlesim.size;
+      return kesisim.size / birlesim.size; // Jaccard benzerliği
     }
 
+    /**
+     * Cümle bölme
+     */
     cumleBol(metin) {
-      return metin.split(/[.!?]+/).map(c => c.trim()).filter(c => c.length > 0);
+      return metin
+        .split(/[.!?]+/)
+        .map(c => c.trim())
+        .filter(c => c.length > 0);
     }
 
+    /**
+     * Metin istatistikleri
+     */
     metinIstatistik(metin) {
       const tokenlar = this.tokenize(metin);
       const cumleler = this.cumleBol(metin);
       const temizTokenlar = this.stopKelimeleriTemizle(tokenlar);
       const frekans = this.kelimeFrekans(temizTokenlar);
       const sirali = Object.entries(frekans).sort((a, b) => b[1] - a[1]);
+
       return {
         toplamKelime: tokenlar.length,
         benzersizKelime: new Set(tokenlar).size,
         cumleSayisi: cumleler.length,
         ortalamaKelimeUzunlugu: tokenlar.reduce((t, k) => t + k.length, 0) / tokenlar.length || 0,
-        enSikKelimeler: sirali.slice(0, 10)
+        enSikKelimeler: sirali.slice(0, 10),
+        okunabilirlikSkoru: this._okunabilirlik(tokenlar, cumleler)
       };
+    }
+
+    _okunabilirlik(tokenlar, cumleler) {
+      if (cumleler.length === 0) return 0;
+      const ortCumleUzunlugu = tokenlar.length / cumleler.length;
+      const ortKelimeUzunlugu = tokenlar.reduce((t, k) => t + k.length, 0) / tokenlar.length || 0;
+      // Basit okunabilirlik skoru (0-100, düşük = kolay)
+      return Math.min(100, Math.round(ortCumleUzunlugu * 2 + ortKelimeUzunlugu * 5));
     }
   }
 
@@ -435,203 +538,507 @@ const TuncerZeka = (() => {
   class DuyguAnalizi {
     constructor() {
       this.nlp = new TurkceNLP();
+
       this.pozitifKelimeler = {
         'güzel': 2, 'harika': 3, 'muhteşem': 3, 'mükemmel': 3,
         'süper': 2, 'iyi': 1, 'seviyorum': 3, 'sevdim': 2,
-        'beğendim': 2, 'başarılı': 2, 'mutlu': 2, 'teşekkür': 2
+        'beğendim': 2, 'beğen': 1, 'başarılı': 2, 'başarı': 2,
+        'mutlu': 2, 'mutluluk': 3, 'sevinç': 2, 'sevinçli': 2,
+        'keyifli': 2, 'keyif': 1, 'eğlenceli': 2, 'eğlence': 1,
+        'olumlu': 1, 'pozitif': 1, 'parlak': 1, 'aydınlık': 1,
+        'umut': 2, 'umutlu': 2, 'huzur': 2, 'huzurlu': 2,
+        'rahat': 1, 'kolay': 1, 'pratik': 1, 'kaliteli': 2,
+        'lezzetli': 2, 'tatlı': 1, 'şahane': 3, 'fevkalade': 3,
+        'olağanüstü': 3, 'enfes': 3, 'nefis': 2, 'hoş': 1,
+        'güler': 1, 'gülümse': 2, 'aşk': 2, 'sevgi': 2,
+        'dostluk': 2, 'dost': 1, 'arkadaş': 1, 'destek': 1,
+        'teşekkür': 2, 'teşekkürler': 2, 'sağol': 1, 'bravo': 2,
+        'aferin': 2, 'helal': 2, 'tebrikler': 2, 'tebrik': 2,
+        'müthiş': 3, 'fantastik': 3, 'efsane': 2, 'ideal': 2,
+        'memnun': 2, 'memnuniyet': 2, 'tatmin': 1, 'heyecan': 2,
+        'heyecanlı': 2, 'ilham': 2, 'ilham verici': 3, 'etkileyici': 2,
+        'çekici': 1, 'zarif': 2, 'şık': 1, 'modern': 1,
+        'yenilikçi': 2, 'yaratıcı': 2, 'zeki': 2, 'akıllı': 2,
+        'yetenekli': 2, 'başarılı': 2, 'kazanç': 1, 'kazandım': 2,
+        'ödül': 2, 'zafer': 2, 'galibiyet': 2, 'şampiyon': 2
       };
+
       this.negatifKelimeler = {
         'kötü': -2, 'berbat': -3, 'rezalet': -3, 'korkunç': -3,
-        'iğrenç': -3, 'nefret': -3, 'sinir': -2, 'üzgün': -2
+        'iğrenç': -3, 'nefret': -3, 'sinir': -2, 'kızgın': -2,
+        'üzgün': -2, 'üzücü': -2, 'mutsuz': -2, 'mutsuzluk': -3,
+        'acı': -2, 'ağrı': -1, 'sıkıntı': -2, 'sıkıcı': -2,
+        'can sıkıcı': -2, 'başarısız': -2, 'başarısızlık': -3,
+        'hata': -1, 'yanlış': -1, 'sorun': -1, 'problem': -1,
+        'tehlike': -2, 'tehlikeli': -2, 'zararlı': -2, 'zarar': -2,
+        'kayıp': -2, 'kaybettim': -2, 'kaybetmek': -2,
+        'olumsuz': -1, 'negatif': -1, 'karanlık': -1, 'kasvetli': -2,
+        'umutsuz': -2, 'umutsuzluk': -3, 'çaresiz': -2,
+        'zor': -1, 'imkansız': -2, 'kalitesiz': -2, 'kötüydü': -2,
+        'boktan': -3, 'saçma': -2, 'saçmalık': -2, 'aptal': -2,
+        'ahmak': -2, 'salak': -2, 'gereksiz': -1, 'işe yaramaz': -2,
+        'pahalı': -1, 'yavaş': -1, 'geç': -1, 'gecikme': -1,
+        'hayal kırıklığı': -3, 'düşman': -2, 'kavga': -2,
+        'savaş': -2, 'şiddet': -2, 'ölüm': -3, 'felaket': -3,
+        'afet': -2, 'kriz': -2, 'bıktım': -2, 'yoruldum': -1,
+        'bezgin': -2, 'bunalım': -3, 'depresyon': -3,
+        'endişe': -2, 'endişeli': -2, 'korku': -2, 'korkuyorum': -2,
+        'pişman': -2, 'pişmanlık': -2, 'utanç': -2, 'utanıyorum': -2,
+        'yalnız': -2, 'yalnızlık': -2, 'terk': -2, 'ayrılık': -2,
+        'ağlıyorum': -2, 'ağladım': -2, 'gözyaşı': -2
       };
-      this.yoğunlastiricilar = { 'çok': 1.5, 'aşırı': 2, 'gerçekten': 1.5 };
-      this.olumsuzluklar = new Set(['değil', 'yok', 'hiç', 'asla']);
+
+      this.yoğunlastiricilar = {
+        'çok': 1.5, 'aşırı': 2, 'son derece': 2, 'oldukça': 1.3,
+        'fazla': 1.3, 'gayet': 1.2, 'epey': 1.3, 'bayağı': 1.3,
+        'gerçekten': 1.5, 'harbiden': 1.5, 'cidden': 1.5,
+        'inanılmaz': 1.8, 'müthiş': 1.5, 'aşırı': 2,
+        'biraz': 0.5, 'az': 0.5, 'hafif': 0.5, 'azıcık': 0.3,
+        'pek': 0.7, 'tam': 1.5, 'tamamen': 1.8, 'kesinlikle': 1.8
+      };
+
+      this.olumsuzluklar = new Set([
+        'değil', 'yok', 'hiç', 'asla', 'olmaz', 'olmadı',
+        'yapma', 'etme', 'istemiyorum', 'sevmiyorum', 'beğenmedim',
+        'olmayan', 'yapmayan', 'bilmeyen', 'görmeyen'
+      ]);
     }
 
+    /**
+     * Duygu analizi yap
+     * @returns {{ skor: number, duygu: string, güven: number, detay: object }}
+     */
     analizEt(metin) {
       const tokenlar = this.nlp.tokenize(metin);
       let toplamSkor = 0;
       let kelimeSayisi = 0;
       let olumsuzlukAktif = false;
       let yogunlastirici = 1;
+      const bulunanDuygular = { pozitif: [], negatif: [] };
 
       for (let i = 0; i < tokenlar.length; i++) {
         const token = tokenlar[i];
-        if (this.olumsuzluklar.has(token)) { olumsuzlukAktif = true; continue; }
-        if (this.yoğunlastiricilar[token]) { yogunlastirici = this.yoğunlastiricilar[token]; continue; }
 
-        let skor = 0;
-        if (this.pozitifKelimeler[token]) skor = this.pozitifKelimeler[token] * yogunlastirici;
-        else if (this.negatifKelimeler[token]) skor = this.negatifKelimeler[token] * yogunlastirici;
+        // Olumsuzluk kontrolü
+        if (this.olumsuzluklar.has(token)) {
+          olumsuzlukAktif = true;
+          continue;
+        }
 
-        if (skor !== 0) {
-          if (olumsuzlukAktif) skor *= -0.8;
+        // Yoğunlaştırıcı kontrolü
+        if (this.yoğunlastiricilar[token]) {
+          yogunlastirici = this.yoğunlastiricilar[token];
+          continue;
+        }
+
+        // Bigram kontrolü
+        if (i < tokenlar.length - 1) {
+          const bigram = token + ' ' + tokenlar[i + 1];
+          if (this.pozitifKelimeler[bigram]) {
+            let skor = this.pozitifKelimeler[bigram] * yogunlastirici;
+            if (olumsuzlukAktif) skor *= -1;
+            toplamSkor += skor;
+            bulunanDuygular[skor > 0 ? 'pozitif' : 'negatif'].push(bigram);
+            kelimeSayisi++;
+            olumsuzlukAktif = false;
+            yogunlastirici = 1;
+            i++;
+            continue;
+          }
+          if (this.negatifKelimeler[bigram]) {
+            let skor = this.negatifKelimeler[bigram] * yogunlastirici;
+            if (olumsuzlukAktif) skor *= -1;
+            toplamSkor += skor;
+            bulunanDuygular[skor > 0 ? 'pozitif' : 'negatif'].push(bigram);
+            kelimeSayisi++;
+            olumsuzlukAktif = false;
+            yogunlastirici = 1;
+            i++;
+            continue;
+          }
+        }
+
+        // Pozitif kelime kontrolü
+        if (this.pozitifKelimeler[token]) {
+          let skor = this.pozitifKelimeler[token] * yogunlastirici;
+          if (olumsuzlukAktif) {
+            skor *= -0.8;
+            bulunanDuygular.negatif.push(`değil ${token}`);
+          } else {
+            bulunanDuygular.pozitif.push(token);
+          }
           toplamSkor += skor;
           kelimeSayisi++;
         }
+
+        // Negatif kelime kontrolü
+        if (this.negatifKelimeler[token]) {
+          let skor = this.negatifKelimeler[token] * yogunlastirici;
+          if (olumsuzlukAktif) {
+            skor *= -0.8;
+            bulunanDuygular.pozitif.push(`değil ${token}`);
+          } else {
+            bulunanDuygular.negatif.push(token);
+          }
+          toplamSkor += skor;
+          kelimeSayisi++;
+        }
+
+        // Kök üzerinden kontrol
+        const kok = this.nlp.kokBul(token);
+        if (kok !== token) {
+          if (this.pozitifKelimeler[kok]) {
+            let skor = this.pozitifKelimeler[kok] * yogunlastirici * 0.8;
+            if (olumsuzlukAktif) skor *= -0.8;
+            toplamSkor += skor;
+            kelimeSayisi++;
+          }
+          if (this.negatifKelimeler[kok]) {
+            let skor = this.negatifKelimeler[kok] * yogunlastirici * 0.8;
+            if (olumsuzlukAktif) skor *= -0.8;
+            toplamSkor += skor;
+            kelimeSayisi++;
+          }
+        }
+
         olumsuzlukAktif = false;
         yogunlastirici = 1;
       }
 
-      const normalSkor = kelimeSayisi > 0 ? Math.max(-1, Math.min(1, toplamSkor / (kelimeSayisi * 2))) : 0;
-      return { skor: normalSkor, duygu: normalSkor > 0.1 ? 'pozitif' : normalSkor < -0.1 ? 'negatif' : 'nötr' };
-    }
-  }
+      // Ünlem ve emoji etkisi
+      const unlemSayisi = (metin.match(/!/g) || []).length;
+      if (toplamSkor > 0) toplamSkor += unlemSayisi * 0.3;
+      if (toplamSkor < 0) toplamSkor -= unlemSayisi * 0.3;
 
-  // ============================================================
-  // 🌐 GEMINI ENTEGRASYONU (Yeni Eklenen)
-  // ============================================================
-  class GeminiEntegrasyonu {
-    constructor(apiKey = "") {
-      this.apiKey = apiKey;
-      this.textModel = "gemini-2.5-flash-preview-09-2025";
-      this.imageModel = "imagen-4.0-generate-001";
-      this.editModel = "gemini-2.5-flash-image-preview";
-    }
-
-    /**
-     * Üstel geri çekilme ile API çağrısı
-     */
-    async _fetchWithRetry(url, options, retries = 5) {
-      for (let i = 0; i < retries; i++) {
-        try {
-          const response = await fetch(url, options);
-          if (response.ok) return await response.json();
-          if (response.status === 429) { // Hız sınırı
-             await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
-             continue;
-          }
-          throw new Error(`API Hatası: ${response.status}`);
-        } catch (err) {
-          if (i === retries - 1) throw err;
-          await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000));
-        }
+      // Büyük harf etkisi (BAĞIRMA)
+      const buyukHarfOrani = (metin.match(/[A-ZİĞÜŞÖÇ]/g) || []).length / metin.length;
+      if (buyukHarfOrani > 0.5 && metin.length > 5) {
+        toplamSkor *= 1.3;
       }
+
+      // Normalize et (-1 ile 1 arası)
+      const normalSkor = kelimeSayisi > 0
+        ? Math.max(-1, Math.min(1, toplamSkor / (kelimeSayisi * 2)))
+        : 0;
+
+      // Duygu belirle
+      let duygu, emoji;
+      if (normalSkor > 0.3) { duygu = 'pozitif'; emoji = '😊'; }
+      else if (normalSkor > 0.1) { duygu = 'hafif pozitif'; emoji = '🙂'; }
+      else if (normalSkor < -0.3) { duygu = 'negatif'; emoji = '😞'; }
+      else if (normalSkor < -0.1) { duygu = 'hafif negatif'; emoji = '😐'; }
+      else { duygu = 'nötr'; emoji = '😶'; }
+
+      return {
+        skor: Math.round(normalSkor * 1000) / 1000,
+        duygu,
+        emoji,
+        guven: Math.round(Math.abs(normalSkor) * 100),
+        detay: {
+          toplamSkor,
+          kelimeSayisi,
+          pozitifKelimeler: bulunanDuygular.pozitif,
+          negatifKelimeler: bulunanDuygular.negatif
+        }
+      };
     }
 
     /**
-     * İnternet taramalı metin üretimi
+     * Birden fazla metni karşılaştır
      */
-    async uret(prompt, sistemMesaji = "Sen Tuncer Zeka asistanısın.") {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.textModel}:generateContent?key=${this.apiKey}`;
-      const payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        systemInstruction: { parts: [{ text: sistemMesaji }] },
-        tools: [{ "google_search": {} }]
-      };
-      
-      const result = await this._fetchWithRetry(url, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      const sources = result.candidates?.[0]?.groundingMetadata?.groundingAttributions?.map(a => ({
-        uri: a.web?.uri,
-        title: a.web?.title
-      })) || [];
-
-      return { cevap: text, kaynaklar: sources };
-    }
-
-    /**
-     * Görsel Analizi (Image Understanding)
-     */
-    async gorselAnaliz(prompt, base64Image) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.textModel}:generateContent?key=${this.apiKey}`;
-      const payload = {
-        contents: [{
-          role: "user",
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: "image/png", data: base64Image } }
-          ]
-        }]
-      };
-      const result = await this._fetchWithRetry(url, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      return result.candidates?.[0]?.content?.parts?.[0]?.text;
-    }
-
-    /**
-     * Görsel Oluşturma (Imagen 4.0)
-     */
-    async gorselOlustur(promptText) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.imageModel}:predict?key=${this.apiKey}`;
-      const payload = {
-        instances: { prompt: promptText },
-        parameters: { sampleCount: 1 }
-      };
-      const result = await this._fetchWithRetry(url, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+    karsilastir(metinler) {
+      return metinler.map((metin, i) => ({
+        metin: metin.substring(0, 50) + (metin.length > 50 ? '...' : ''),
+        ...this.analizEt(metin)
+      }));
     }
   }
 
+
   // ============================================================
-  // 🤖 SOHBET BOTU (Geliştirilmiş)
+  // 🤖 SOHBET BOTU (Chatbot)
   // ============================================================
   class SohbetBotu {
     constructor(ayarlar = {}) {
       this.nlp = new TurkceNLP();
       this.isim = ayarlar.isim || 'Tuncer';
-      this.gemini = ayarlar.apiKey ? new GeminiEntegrasyonu(ayarlar.apiKey) : null;
       this.niyetler = new Map();
       this.baglamGecmisi = [];
       this.maksGecmis = ayarlar.maksGecmis || 10;
+      this.varsayilanCevaplar = [
+        'Anlayamadım, başka türlü söyleyebilir misiniz?',
+        'Bu konuda yardımcı olamıyorum, başka bir şey sorabilirsiniz.',
+        'Hmm, tam olarak ne demek istediğinizi anlayamadım.',
+        'Bunu biraz daha açıklayabilir misiniz?',
+        'İlginç bir soru! Ama henüz bu konuda bilgim yok.'
+      ];
+
       this._varsayilanNiyetleriYukle();
     }
 
     _varsayilanNiyetleriYukle() {
       this.niyetEkle('selamlama', {
-        kaliplar: ['merhaba', 'selam', 'hey', 'naber'],
-        cevaplar: [`Merhaba! Ben ${this.isim}. Size nasıl yardımcı olabilirim? 😊`]
+        kaliplar: [
+          'merhaba', 'selam', 'hey', 'günaydın', 'iyi günler',
+          'iyi akşamlar', 'iyi geceler', 'naber', 'nasılsın',
+          'ne haber', 'selamlar', 'sa', 'slm', 'mrb', 'nbr',
+          'hayırlı günler', 'hoş geldin', 'hg'
+        ],
+        cevaplar: [
+          `Merhaba! Ben ${this.isim}. Size nasıl yardımcı olabilirim? 😊`,
+          `Selam! Hoş geldiniz! Ne yapabilirim sizin için?`,
+          `Hey! Ben ${this.isim}, buyurun nasıl yardımcı olayım?`,
+          `Merhaba! Bugün size nasıl yardımcı olabilirim?`
+        ]
       });
-      // Diğer niyetler aynen korunur...
+
+      this.niyetEkle('vedalaşma', {
+        kaliplar: [
+          'hoşçakal', 'görüşürüz', 'bay bay', 'bye', 'güle güle',
+          'iyi geceler', 'kendine iyi bak', 'hoşça kal',
+          'bb', 'kal sağlıcakla', 'eyvallah'
+        ],
+        cevaplar: [
+          'Hoşça kalın! Tekrar görüşmek üzere! 👋',
+          'Güle güle! İyi günler dilerim! 😊',
+          'Görüşürüz! Kendinize iyi bakın! 🌟',
+          'Bay bay! Her zaman buradayım, tekrar beklerim! 👋'
+        ]
+      });
+
+      this.niyetEkle('tesekkur', {
+        kaliplar: [
+          'teşekkürler', 'teşekkür ederim', 'sağol', 'sağ ol',
+          'eyvallah', 'çok teşekkürler', 'minnettarım', 'tşk',
+          'eyv', 'saol', 'teşekkür'
+        ],
+        cevaplar: [
+          'Rica ederim! Başka bir sorunuz var mı? 😊',
+          'Ne demek, her zaman! Yardımcı olabildiysem ne mutlu!',
+          'Rica ederim! Başka bir konuda yardımcı olabilir miyim?',
+          'Önemli değil! Sormak istediğiniz başka bir şey var mı?'
+        ]
+      });
+
+      this.niyetEkle('kimsin', {
+        kaliplar: [
+          'kimsin', 'sen kimsin', 'adın ne', 'ismin ne',
+          'kendini tanıt', 'nesin sen', 'ne yapıyorsun',
+          'sen ne yaparsın', 'görevin ne', 'neler yapabilirsin'
+        ],
+        cevaplar: [
+          `Ben ${this.isim} Zeka! Türkçe yapay zeka asistanıyım. Duygu analizi, metin işleme ve sohbet edebilirim! 🧠`,
+          `Adım ${this.isim}. JavaScript ile yazılmış bir Türkçe yapay zeka kütüphanesiyim!`,
+          `Ben ${this.isim}, Türkçe doğal dil işleme yapabilen bir yapay zeka botuyum! 🤖`
+        ]
+      });
+
+      this.niyetEkle('yardim', {
+        kaliplar: [
+          'yardım', 'yardım et', 'help', 'nasıl kullanılır',
+          'ne yapabilirim', 'özellikler', 'komutlar', 'yardım eder misin'
+        ],
+        cevaplar: [
+          `İşte yapabileceklerim:\n` +
+          `🔹 Duygu analizi - Metinlerin duygusal tonunu analiz ederim\n` +
+          `🔹 Metin işleme - Tokenize, kök bulma, TF-IDF\n` +
+          `🔹 Sohbet - Sizinle Türkçe sohbet ederim\n` +
+          `🔹 Sınıflandırma - Metinleri kategorilere ayırırım\n` +
+          `🔹 Sinir ağı - Öğrenme ve tahmin yaparım`
+        ]
+      });
+
+      this.niyetEkle('sakaYap', {
+        kaliplar: [
+          'şaka yap', 'fıkra anlat', 'espri yap', 'güldür beni',
+          'komik bir şey söyle', 'şaka', 'fıkra', 'eğlendir'
+        ],
+        cevaplar: [
+          'Yapay zeka neden terapiye gitti? Çünkü çok fazla "katmanı" vardı! 😄',
+          'Bir programcı neden gözlük takar? Çünkü C# yapamıyor! 😂',
+          'JavaScript\'e güvenilir mi? undefined! 😄',
+          'Bir bug\'ı düzeltirsin, 99 tane daha çıkar. Yazılımcı hayatı! 🐛'
+        ]
+      });
+
+      this.niyetEkle('havaDurumu', {
+        kaliplar: [
+          'hava nasıl', 'hava durumu', 'bugün hava', 'yağmur yağacak mı',
+          'sıcaklık kaç', 'hava sıcak mı', 'hava soğuk mu'
+        ],
+        cevaplar: [
+          'Maalesef gerçek zamanlı hava durumu verilerine erişimim yok, ama umarım güneşlidir! ☀️',
+          'Hava durumu bilgisine erişemiyorum ama size başka konularda yardımcı olabilirim! 🌤️'
+        ]
+      });
+
+      this.niyetEkle('tarih', {
+        kaliplar: [
+          'bugün günlerden ne', 'tarih ne', 'saat kaç', 'bugün ne günü',
+          'hangi gün', 'bugünün tarihi'
+        ],
+        cevaplar: [
+          () => `Bugünün tarihi: ${new Date().toLocaleDateString('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} ⏰`
+        ]
+      });
+
+      this.niyetEkle('duyguDurumu', {
+        kaliplar: [
+          'nasıl hissediyorsun', 'mutlu musun', 'üzgün müsün',
+          'iyi misin', 'keyifli misin', 'ruh halin nasıl'
+        ],
+        cevaplar: [
+          'Ben bir yapay zeka olarak duyguları hissedemem ama sizinle sohbet etmek beni "mutlu" ediyor! 😊',
+          'Dijital bir varlık olarak duygularım yok ama size yardımcı olmak benim "amacım"! 🤖',
+          'Her zaman iyiyim! Çünkü hata yapmadığım sürece crash olmam 😄'
+        ]
+      });
     }
 
+    /**
+     * Yeni niyet ekle
+     */
     niyetEkle(niyetAdi, { kaliplar, cevaplar }) {
-      this.niyetler.set(niyetAdi, { kaliplar: kaliplar.map(k => k.toLowerCase()), cevaplar });
+      this.niyetler.set(niyetAdi, {
+        kaliplar: kaliplar.map(k => k.toLowerCase()),
+        cevaplar
+      });
     }
 
-    async cevapVer(metin) {
-      // Önce kural tabanlı niyetleri kontrol et (Hızlı cevap için)
+    /**
+     * Niyeti tanı
+     */
+    _niyetTani(metin) {
       const tokenlar = this.nlp.tokenize(metin);
-      let bulunanNiyet = null;
-      for (const [ad, veri] of this.niyetler) {
-        if (veri.kaliplar.some(k => metin.toLowerCase().includes(k))) {
-          bulunanNiyet = ad;
-          break;
+      const metinLower = metin.toLowerCase();
+      let enIyiNiyet = null;
+      let enIyiSkor = 0;
+
+      for (const [niyetAdi, niyetVeri] of this.niyetler) {
+        let skor = 0;
+
+        for (const kalip of niyetVeri.kaliplar) {
+          // Tam eşleşme
+          if (metinLower === kalip) {
+            skor = Math.max(skor, 1.0);
+            continue;
+          }
+
+          // İçerme kontrolü
+          if (metinLower.includes(kalip)) {
+            const oranliSkor = kalip.length / metinLower.length;
+            skor = Math.max(skor, 0.5 + oranliSkor * 0.4);
+            continue;
+          }
+
+          // Token bazlı benzerlik
+          const kalipTokenlari = this.nlp.tokenize(kalip);
+          const ortakTokenlar = kalipTokenlari.filter(kt =>
+            tokenlar.some(t => t === kt || this.nlp.kokBul(t) === this.nlp.kokBul(kt))
+          );
+
+          if (kalipTokenlari.length > 0) {
+            const tokenSkor = ortakTokenlar.length / kalipTokenlari.length;
+            skor = Math.max(skor, tokenSkor * 0.7);
+          }
+        }
+
+        if (skor > enIyiSkor) {
+          enIyiSkor = skor;
+          enIyiNiyet = niyetAdi;
         }
       }
 
-      if (bulunanNiyet) {
-        const niyetVeri = this.niyetler.get(bulunanNiyet);
-        const cevap = niyetVeri.cevaplar[Math.floor(Math.random() * niyetVeri.cevaplar.length)];
-        return { cevap, tip: 'kural_tabanli' };
+      return { niyet: enIyiNiyet, skor: enIyiSkor };
+    }
+
+    /**
+     * Cevap üret
+     */
+    cevapVer(metin) {
+      const { niyet, skor } = this._niyetTani(metin);
+
+      // Bağlam geçmişine ekle
+      this.baglamGecmisi.push({
+        rol: 'kullanici',
+        metin,
+        zaman: Date.now()
+      });
+
+      if (this.baglamGecmisi.length > this.maksGecmis) {
+        this.baglamGecmisi.shift();
       }
 
-      // Eğer API Key varsa ve kural bulunamadıysa Gemini'ye sor (İnternet tarama dahil)
-      if (this.gemini) {
-        try {
-          const res = await this.gemini.uret(metin);
-          return { cevap: res.cevap, kaynaklar: res.kaynaklar, tip: 'gemini_ai' };
-        } catch (err) {
-          return { cevap: "Üzgünüm, şu an bağlantı kuramıyorum.", tip: 'hata' };
+      let cevap;
+
+      if (niyet && skor > 0.3) {
+        const niyetVeri = this.niyetler.get(niyet);
+        const secilen = niyetVeri.cevaplar[
+          Math.floor(Math.random() * niyetVeri.cevaplar.length)
+        ];
+        cevap = typeof secilen === 'function' ? secilen() : secilen;
+      } else {
+        // Duygu analizine göre cevap
+        const duyguAnalizi = new DuyguAnalizi();
+        const duygu = duyguAnalizi.analizEt(metin);
+
+        if (duygu.duygu === 'negatif' || duygu.duygu === 'hafif negatif') {
+          const olumsuzCevaplar = [
+            'Üzgünüm bunu duyduğuma. Size nasıl yardımcı olabilirim? 💙',
+            'Anlıyorum, zor bir durum gibi görünüyor. Yanınızdayım.',
+            'Bu durumu anlayabiliyorum. Bir şey yapabilir miyim?'
+          ];
+          cevap = olumsuzCevaplar[Math.floor(Math.random() * olumsuzCevaplar.length)];
+        } else if (duygu.duygu === 'pozitif' || duygu.duygu === 'hafif pozitif') {
+          const olumluCevaplar = [
+            'Bunu duymak harika! 😊',
+            'Ne güzel! Sevindim! 🌟',
+            'Harika bir enerji! Devam edin! ✨'
+          ];
+          cevap = olumluCevaplar[Math.floor(Math.random() * olumluCevaplar.length)];
+        } else {
+          cevap = this.varsayilanCevaplar[
+            Math.floor(Math.random() * this.varsayilanCevaplar.length)
+          ];
         }
       }
 
-      return { cevap: "Bunu henüz öğrenmedim.", tip: 'bilinmiyor' };
+      // Bağlam geçmişine ekle
+      this.baglamGecmisi.push({
+        rol: 'bot',
+        metin: cevap,
+        zaman: Date.now()
+      });
+
+      return {
+        cevap,
+        niyet: niyet || 'bilinmiyor',
+        guven: Math.round(skor * 100),
+        baglamBoyutu: this.baglamGecmisi.length
+      };
+    }
+
+    /**
+     * Sohbet geçmişini getir
+     */
+    gecmisGetir() {
+      return this.baglamGecmisi.map(g => ({
+        ...g,
+        zamanMetin: new Date(g.zaman).toLocaleTimeString('tr-TR')
+      }));
+    }
+
+    /**
+     * Geçmişi temizle
+     */
+    gecmisiTemizle() {
+      this.baglamGecmisi = [];
     }
   }
 
 
   // ============================================================
-  // 📊 DİĞER MODÜLLER (Aynen Korunur)
+  // 📊 METİN SINIFLANDIRICI (Naive Bayes)
   // ============================================================
   class MetinSiniflandirici {
     constructor() {
@@ -644,75 +1051,398 @@ const TuncerZeka = (() => {
       this.egitildi = false;
     }
 
+    /**
+     * Eğitim verisi ekle
+     */
     egitimVerisiEkle(metin, kategori) {
       if (!this.kategoriler[kategori]) {
         this.kategoriler[kategori] = [];
         this.kelimeSayilari[kategori] = {};
         this.kategoriSayilari[kategori] = 0;
       }
-      const tokenlar = this.nlp.stopKelimeleriTemizle(this.nlp.tokenize(metin)).map(t => this.nlp.kokBul(t));
+
+      const tokenlar = this.nlp.stopKelimeleriTemizle(
+        this.nlp.tokenize(metin)
+      ).map(t => this.nlp.kokBul(t));
+
       this.kategoriler[kategori].push(tokenlar);
       this.kategoriSayilari[kategori]++;
       this.toplamBelge++;
+
       for (const token of tokenlar) {
         this.sozluk.add(token);
-        this.kelimeSayilari[kategori][token] = (this.kelimeSayilari[kategori][token] || 0) + 1;
+        this.kelimeSayilari[kategori][token] =
+          (this.kelimeSayilari[kategori][token] || 0) + 1;
       }
     }
 
+    /**
+     * Toplu eğitim
+     * @param {Array} veriSeti - [{metin: "...", kategori: "..."}]
+     */
     egit(veriSeti) {
-      for (const veri of veriSeti) this.egitimVerisiEkle(veri.metin, veri.kategori);
+      for (const veri of veriSeti) {
+        this.egitimVerisiEkle(veri.metin, veri.kategori);
+      }
       this.egitildi = true;
+      console.log(`✅ Sınıflandırıcı eğitildi! ${this.toplamBelge} belge, ${Object.keys(this.kategoriler).length} kategori, ${this.sozluk.size} kelime`);
     }
 
+    /**
+     * Sınıflandır (Naive Bayes)
+     */
     siniflandir(metin) {
-      if (!this.egitildi) throw new Error('Eğitilmedi!');
-      const tokenlar = this.nlp.stopKelimeleriTemizle(this.nlp.tokenize(metin)).map(t => this.nlp.kokBul(t));
+      if (!this.egitildi) {
+        throw new Error('Sınıflandırıcı henüz eğitilmedi! Önce egit() metodunu çağırın.');
+      }
+
+      const tokenlar = this.nlp.stopKelimeleriTemizle(
+        this.nlp.tokenize(metin)
+      ).map(t => this.nlp.kokBul(t));
+
       const skorlar = {};
+      const sozlukBoyutu = this.sozluk.size;
+
       for (const kategori of Object.keys(this.kategoriler)) {
-        let logOlasilik = Math.log(this.kategoriSayilari[kategori] / this.toplamBelge);
-        const kategoriToplamKelime = Object.values(this.kelimeSayilari[kategori]).reduce((a, b) => a + b, 0);
+        // P(kategori) - önsel olasılık (log)
+        let logOlasilik = Math.log(
+          this.kategoriSayilari[kategori] / this.toplamBelge
+        );
+
+        // Kategorideki toplam kelime sayısı
+        const kategoriToplamKelime = Object.values(
+          this.kelimeSayilari[kategori]
+        ).reduce((a, b) => a + b, 0);
+
+        // Her kelime için P(kelime|kategori) - Laplace düzeltmesi ile
         for (const token of tokenlar) {
           const kelimeSayisi = this.kelimeSayilari[kategori][token] || 0;
-          logOlasilik += Math.log((kelimeSayisi + 1) / (kategoriToplamKelime + this.sozluk.size));
+          logOlasilik += Math.log(
+            (kelimeSayisi + 1) / (kategoriToplamKelime + sozlukBoyutu)
+          );
         }
+
         skorlar[kategori] = logOlasilik;
       }
-      const sirali = Object.entries(skorlar).sort((a, b) => b[1] - a[1]);
-      return { kategori: sirali[0][0] };
+
+      // En yüksek skorlu kategoriyi bul
+      const sirali = Object.entries(skorlar)
+        .sort((a, b) => b[1] - a[1]);
+
+      // Olasılıkları normalize et (softmax benzeri)
+      const maksLog = sirali[0][1];
+      const expSkorlar = {};
+      let toplamExp = 0;
+
+      for (const [kat, skor] of sirali) {
+        const expSkor = Math.exp(skor - maksLog);
+        expSkorlar[kat] = expSkor;
+        toplamExp += expSkor;
+      }
+
+      const olasiliklar = {};
+      for (const [kat, expSkor] of Object.entries(expSkorlar)) {
+        olasiliklar[kat] = Math.round((expSkor / toplamExp) * 10000) / 100;
+      }
+
+      return {
+        kategori: sirali[0][0],
+        guven: olasiliklar[sirali[0][0]],
+        tumOlasiliklar: olasiliklar
+      };
+    }
+
+    /**
+     * Doğruluk testi
+     */
+    test(testVerisi) {
+      let dogru = 0;
+      const sonuclar = [];
+
+      for (const veri of testVerisi) {
+        const tahmin = this.siniflandir(veri.metin);
+        const dogruMu = tahmin.kategori === veri.kategori;
+        if (dogruMu) dogru++;
+
+        sonuclar.push({
+          metin: veri.metin.substring(0, 40) + '...',
+          beklenen: veri.kategori,
+          tahmin: tahmin.kategori,
+          guven: tahmin.guven,
+          dogru: dogruMu ? '✅' : '❌'
+        });
+      }
+
+      return {
+        dogruluk: Math.round((dogru / testVerisi.length) * 10000) / 100,
+        toplamTest: testVerisi.length,
+        dogruSayisi: dogru,
+        detaylar: sonuclar
+      };
     }
   }
 
+
+  // ============================================================
+  // 🔤 KELİME VEKTÖRÜ (Basit Word2Vec benzeri)
+  // ============================================================
   class KelimeVektoru {
     constructor(boyut = 50) {
       this.boyut = boyut;
       this.vektorler = {};
       this.nlp = new TurkceNLP();
     }
-    ogren(metinler) {
-      // Basit öğrenme mantığı...
-      console.log("Öğreniliyor...");
+
+    /**
+     * Metinlerden kelime vektörleri öğren (Skip-gram benzeri basit yaklaşım)
+     */
+    ogren(metinler, pencereBoyutu = 2) {
+      const tumTokenlar = [];
+      for (const metin of metinler) {
+        tumTokenlar.push(...this.nlp.tokenize(metin));
+      }
+
+      // Her kelime için rastgele vektör başlat
+      const benzersizKelimeler = [...new Set(tumTokenlar)];
+      for (const kelime of benzersizKelimeler) {
+        this.vektorler[kelime] = Matematik.vektorOlustur(this.boyut).map(
+          () => Matematik.rastgele(-0.5, 0.5)
+        );
+      }
+
+      // Bağlam penceresi ile vektörleri güncelle
+      const ogrenmeOrani = 0.025;
+      const donemSayisi = 5;
+
+      for (let donem = 0; donem < donemSayisi; donem++) {
+        for (let i = 0; i < tumTokenlar.length; i++) {
+          const hedefKelime = tumTokenlar[i];
+
+          for (let j = Math.max(0, i - pencereBoyutu);
+               j <= Math.min(tumTokenlar.length - 1, i + pencereBoyutu); j++) {
+            if (i === j) continue;
+
+            const baglamKelime = tumTokenlar[j];
+            const hedefVektor = this.vektorler[hedefKelime];
+            const baglamVektor = this.vektorler[baglamKelime];
+
+            // Basit güncelleme: vektörleri birbirine yaklaştır
+            for (let k = 0; k < this.boyut; k++) {
+              const fark = baglamVektor[k] - hedefVektor[k];
+              hedefVektor[k] += ogrenmeOrani * fark;
+              baglamVektor[k] -= ogrenmeOrani * fark * 0.1;
+            }
+          }
+        }
+      }
+
+      console.log(`✅ ${benzersizKelimeler.length} kelime için ${this.boyut} boyutlu vektörler öğrenildi.`);
     }
-    vektorGetir(kelime) { return this.vektorler[kelime.toLowerCase()] || null; }
+
+    /**
+     * Kelime vektörünü getir
+     */
+    vektorGetir(kelime) {
+      return this.vektorler[kelime.toLowerCase()] || null;
+    }
+
+    /**
+     * En benzer kelimeleri bul
+     */
+    enBenzerler(kelime, n = 5) {
+      const hedefVektor = this.vektorGetir(kelime);
+      if (!hedefVektor) return [];
+
+      const benzerlikler = [];
+      for (const [k, v] of Object.entries(this.vektorler)) {
+        if (k === kelime.toLowerCase()) continue;
+        benzerlikler.push({
+          kelime: k,
+          benzerlik: Matematik.kosinusBenzerlik(hedefVektor, v)
+        });
+      }
+
+      return benzerlikler
+        .sort((a, b) => b.benzerlik - a.benzerlik)
+        .slice(0, n)
+        .map(b => ({
+          kelime: b.kelime,
+          benzerlik: Math.round(b.benzerlik * 1000) / 1000
+        }));
+    }
+
+    /**
+     * İki kelime arasındaki benzerlik
+     */
+    benzerlik(kelime1, kelime2) {
+      const v1 = this.vektorGetir(kelime1);
+      const v2 = this.vektorGetir(kelime2);
+      if (!v1 || !v2) return null;
+      return Math.round(Matematik.kosinusBenzerlik(v1, v2) * 1000) / 1000;
+    }
+
+    /**
+     * Kelime analojisi: kral - erkek + kadın = kraliçe
+     */
+    analoji(pozitif1, negatif, pozitif2, n = 5) {
+      const v1 = this.vektorGetir(pozitif1);
+      const v2 = this.vektorGetir(negatif);
+      const v3 = this.vektorGetir(pozitif2);
+
+      if (!v1 || !v2 || !v3) return [];
+
+      const sonucVektor = [];
+      for (let i = 0; i < this.boyut; i++) {
+        sonucVektor.push(v1[i] - v2[i] + v3[i]);
+      }
+
+      const haricKelimeler = new Set([
+        pozitif1.toLowerCase(),
+        negatif.toLowerCase(),
+        pozitif2.toLowerCase()
+      ]);
+
+      const benzerlikler = [];
+      for (const [k, v] of Object.entries(this.vektorler)) {
+        if (haricKelimeler.has(k)) continue;
+        benzerlikler.push({
+          kelime: k,
+          benzerlik: Matematik.kosinusBenzerlik(sonucVektor, v)
+        });
+      }
+
+      return benzerlikler
+        .sort((a, b) => b.benzerlik - a.benzerlik)
+        .slice(0, n);
+    }
   }
 
+
+  // ============================================================
+  // 📋 METİN ÖZETLEYİCİ
+  // ============================================================
   class MetinOzetleyici {
-    constructor() { this.nlp = new TurkceNLP(); }
+    constructor() {
+      this.nlp = new TurkceNLP();
+    }
+
+    /**
+     * Metni özetle (extractive summarization)
+     */
     ozetle(metin, cumleSayisi = 3) {
       const cumleler = this.nlp.cumleBol(metin);
-      return cumleler.slice(0, cumleSayisi).join('. ') + '.';
+
+      if (cumleler.length <= cumleSayisi) {
+        return cumleler.join('. ') + '.';
+      }
+
+      // Her cümlenin önem skorunu hesapla
+      const kelimeFrekans = this.nlp.kelimeFrekans(
+        this.nlp.stopKelimeleriTemizle(this.nlp.tokenize(metin))
+      );
+
+      const cumleSkorlari = cumleler.map((cumle, index) => {
+        const tokenlar = this.nlp.stopKelimeleriTemizle(
+          this.nlp.tokenize(cumle)
+        );
+
+        let skor = 0;
+
+        // Kelime frekansı skoru
+        for (const token of tokenlar) {
+          skor += kelimeFrekans[token] || 0;
+        }
+
+        // Normalize et
+        if (tokenlar.length > 0) {
+          skor /= tokenlar.length;
+        }
+
+        // Pozisyon bonusu (ilk ve son cümleler daha önemli)
+        if (index === 0) skor *= 1.5;
+        if (index === cumleler.length - 1) skor *= 1.2;
+
+        // Uzunluk bonusu (çok kısa veya çok uzun cümleleri cezalandır)
+        if (tokenlar.length < 3) skor *= 0.5;
+        if (tokenlar.length > 30) skor *= 0.8;
+
+        return { cumle, skor, index };
+      });
+
+      // En yüksek skorlu cümleleri seç (orijinal sırayı koru)
+      const secilen = cumleSkorlari
+        .sort((a, b) => b.skor - a.skor)
+        .slice(0, cumleSayisi)
+        .sort((a, b) => a.index - b.index);
+
+      return secilen.map(s => s.cumle).join('. ') + '.';
+    }
+
+    /**
+     * Anahtar kelimeleri çıkar
+     */
+    anahtarKelimeler(metin, n = 10) {
+      const { skorlar, kelimeler } = this.nlp.tfIdf([metin]);
+      const tfidfSkorlari = skorlar[0];
+
+      return Object.entries(tfidfSkorlari)
+        .filter(([kelime]) => kelime.length > 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, n)
+        .map(([kelime, skor]) => ({
+          kelime,
+          skor: Math.round(skor * 1000) / 1000
+        }));
     }
   }
 
+
+  // ============================================================
+  // 🧮 K-EN YAKIN KOMŞU (KNN) SINIFLANDIRICI
+  // ============================================================
   class KNN {
-    constructor(k = 3) { this.k = k; this.egitimVerisi = []; }
-    egit(veriSeti) { this.egitimVerisi = veriSeti; }
-    tahminEt(ozellikler) {
-      const mesafeler = this.egitimVerisi.map(v => ({
-        mesafe: Matematik.oklid(ozellikler, v.ozellikler),
+    constructor(k = 3) {
+      this.k = k;
+      this.egitimVerisi = [];
+    }
+
+    /**
+     * Eğitim verisi ekle
+     */
+    egit(veriSeti) {
+      this.egitimVerisi = veriSeti.map(v => ({
+        ozellikler: v.ozellikler,
         etiket: v.etiket
-      })).sort((a, b) => a.mesafe - b.mesafe);
-      return { etiket: mesafeler[0].etiket };
+      }));
+      console.log(`✅ KNN eğitildi! ${this.egitimVerisi.length} veri noktası, k=${this.k}`);
+    }
+
+    /**
+     * Tahmin yap
+     */
+    tahminEt(ozellikler) {
+      const mesafeler = this.egitimVerisi.map(veri => ({
+        mesafe: Matematik.oklid(ozellikler, veri.ozellikler),
+        etiket: veri.etiket
+      }));
+
+      mesafeler.sort((a, b) => a.mesafe - b.mesafe);
+      const enYakinlar = mesafeler.slice(0, this.k);
+
+      // Oylama
+      const oylar = {};
+      for (const komsu of enYakinlar) {
+        oylar[komsu.etiket] = (oylar[komsu.etiket] || 0) + 1;
+      }
+
+      const kazanan = Object.entries(oylar)
+        .sort((a, b) => b[1] - a[1])[0];
+
+      return {
+        etiket: kazanan[0],
+        guven: Math.round((kazanan[1] / this.k) * 100),
+        enYakinlar
+      };
     }
   }
 
@@ -721,9 +1451,10 @@ const TuncerZeka = (() => {
   // 🏗️ ANA MODÜL - TUNCER ZEKA
   // ============================================================
   const API = {
-    versiyon: '1.1.0',
+    versiyon: '1.0.0',
     isim: 'Tuncer Zeka',
 
+    // Sınıflar
     SinirAgi,
     TurkceNLP,
     DuyguAnalizi,
@@ -733,10 +1464,89 @@ const TuncerZeka = (() => {
     MetinOzetleyici,
     KNN,
     Matematik,
-    GeminiEntegrasyonu, // Yeni API eklendi
 
+    // Kısayol fonksiyonları
+    /**
+     * Hızlı duygu analizi
+     */
+    duyguAnaliziYap(metin) {
+      const analiz = new DuyguAnalizi();
+      return analiz.analizEt(metin);
+    },
+
+    /**
+     * Hızlı metin benzerliği
+     */
+    metinBenzerligi(metin1, metin2) {
+      const nlp = new TurkceNLP();
+      return nlp.metinBenzerligi(metin1, metin2);
+    },
+
+    /**
+     * Hızlı metin istatistikleri
+     */
+    metinIstatistik(metin) {
+      const nlp = new TurkceNLP();
+      return nlp.metinIstatistik(metin);
+    },
+
+    /**
+     * Hızlı özetleme
+     */
+    ozetle(metin, cumleSayisi = 3) {
+      const ozetleyici = new MetinOzetleyici();
+      return ozetleyici.ozetle(metin, cumleSayisi);
+    },
+
+    /**
+     * Hızlı anahtar kelime çıkarma
+     */
+    anahtarKelimeler(metin, n = 10) {
+      const ozetleyici = new MetinOzetleyici();
+      return ozetleyici.anahtarKelimeler(metin, n);
+    },
+
+    /**
+     * Hızlı tokenize
+     */
+    tokenize(metin) {
+      const nlp = new TurkceNLP();
+      return nlp.tokenize(metin);
+    },
+
+    /**
+     * Hızlı kök bulma
+     */
+    kokBul(kelime) {
+      const nlp = new TurkceNLP();
+      return nlp.kokBul(kelime);
+    },
+
+    /**
+     * Kütüphane bilgisi
+     */
     hakkinda() {
-      return `Tuncer Zeka v${this.versiyon} - Şimdi Gemini ve İnternet Tarama desteğiyle!`;
+      return `
+╔══════════════════════════════════════════╗
+║         🧠 TUNCER ZEKA v${API.versiyon}            ║
+║    Türkçe Yapay Zeka Kütüphanesi        ║
+╠══════════════════════════════════════════╣
+║                                          ║
+║  📦 Modüller:                            ║
+║    • SinirAgi     - Yapay Sinir Ağı      ║
+║    • TurkceNLP    - Doğal Dil İşleme     ║
+║    • DuyguAnalizi - Duygu Analizi         ║
+║    • SohbetBotu   - Chatbot              ║
+║    • MetinSiniflandirici - Naive Bayes   ║
+║    • KelimeVektoru - Word Embeddings     ║
+║    • MetinOzetleyici - Özetleme          ║
+║    • KNN          - K-En Yakın Komşu     ║
+║                                          ║
+║  🇹🇷 Tamamen Türkçe                      ║
+║  📝 Sıfır bağımlılık                     ║
+║  ⚡ Saf JavaScript                       ║
+║                                          ║
+╚══════════════════════════════════════════╝`;
     }
   };
 
@@ -744,6 +1554,10 @@ const TuncerZeka = (() => {
 
 })();
 
+
+// ============================================================
+// Node.js modül desteği
+// ============================================================
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = TuncerZeka;
 }
