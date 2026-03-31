@@ -1,267 +1,308 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, addDoc, onSnapshot, query, limit } from 'firebase/firestore';
-import { Camera, Upload, Sparkles, Monitor, Smartphone, Trash2, Brain, MessageSquare, ChevronRight } from 'lucide-react';
-
-// Firebase Yapılandırması
-const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-ai-vision';
-const apiKey = ""; // Çevresel anahtar
-
-const App = () => {
-  const [image, setImage] = useState(null);
-  const [base64Image, setBase64Image] = useState(null);
-  const [analysis, setAnalysis] = useState("");
-  const [isThinking, setIsThinking] = useState(false);
-  const [user, setUser] = useState(null);
-  const [history, setHistory] = useState([]);
-  
-  const fileInputRef = useRef(null);
-
-  // 1. Firebase Auth & Firestore Setup
-  useEffect(() => {
-    if (Object.keys(firebaseConfig).length === 0) return;
-    
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const initAuth = async () => {
-      if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-        await signInAnonymously(auth);
-      } else {
-        await signInAnonymously(auth);
-      }
-    };
-    initAuth();
-
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // 2. Geçmiş Verileri Firestore'dan Çek
-  useEffect(() => {
-    if (!user) return;
-    const db = getFirestore();
-    const q = collection(db, 'artifacts', appId, 'users', user.uid, 'analysis_history');
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setHistory(docs);
-    }, (err) => console.error("Firestore error:", err));
-
-    return () => unsubscribe();
-  }, [user]);
-
-  // Görsel Seçme
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImage(reader.result);
-        setBase64Image(reader.result.split(',')[1]);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Yapay Zeka Analizi (tuncer-zeka.js mantığı simülasyonu)
-  const runTuncerAI = async () => {
-    if (!base64Image) return;
-    setIsThinking(true);
-    setAnalysis("");
-
-    const prompt = "Bu görseli analiz et ve bana bir hikaye anlatır gibi yorumla.";
-    
-    try {
-      // Not: tuncer-zeka.js üzerinden gelen istekleri simüle ediyoruz
-      // Gerçek implementasyonda: import Tuncer from 'tuncer-zeka' kullanılabilir
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType: "image/png", data: base64Image } }
-            ]
-          }]
-        })
-      });
-
-      const data = await response.json();
-      const result = data.candidates?.[0]?.content?.parts?.[0]?.text || "Tuncer Zeka şu an yanıt veremiyor.";
-      
-      setAnalysis(result);
-
-      if (user) {
-        const db = getFirestore();
-        await addDoc(collection(db, 'artifacts', appId, 'users', user.uid, 'analysis_history'), {
-          timestamp: new Date().toISOString(),
-          analysis: result,
-          preview: image
-        });
-      }
-    } catch (error) {
-      setAnalysis("Hata: Tuncer-Zeka kütüphanesi bağlantısında sorun oluştu.");
-    } finally {
-      setIsThinking(false);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#0a0c10] text-slate-200 font-sans p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-8">
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuncer Vision AI - Görsel Analiz</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         
-        {/* Header Section */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-6">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 rotate-3">
-              <Brain className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-white">Tuncer Vision <span className="text-indigo-400">AI</span></h1>
-              <p className="text-sm text-slate-500">Gelişmiş Görsel Yorumlama Sistemi</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 bg-slate-900/50 p-1 rounded-full border border-white/5 w-fit">
-            <div className="px-3 py-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
-              <Monitor className="w-3.5 h-3.5" /> Masaüstü
-            </div>
-            <div className="bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full flex items-center gap-1.5 text-xs font-medium">
-              <Smartphone className="w-3.5 h-3.5" /> Mobil Uyumlu
-            </div>
-          </div>
-        </header>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            overflow-x: hidden;
+        }
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-          
-          {/* Sol Panel: Resim Yükleme Alanı */}
-          <section className="space-y-4">
-            <div 
-              className={`relative h-[300px] md:h-[450px] w-full rounded-3xl overflow-hidden border-2 border-dashed transition-all duration-500 group
-                ${!image ? 'border-slate-800 bg-slate-900/20 hover:border-indigo-500/50' : 'border-indigo-500 bg-black'}`}
-            >
-              {!image ? (
-                <div 
-                  className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
-                  onClick={() => fileInputRef.current.click()}
-                >
-                  <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <Upload className="w-10 h-10 text-indigo-400" />
-                  </div>
-                  <p className="text-lg font-medium text-slate-300">Görseli Yükle veya Bırak</p>
-                  <p className="text-sm text-slate-500 mt-1">PNG, JPG, WEBP desteklenir</p>
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .thinking-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #6366f1;
+            border-radius: 50%;
+            display: inline-block;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .thinking-dot:nth-child(1) { animation-delay: -0.32s; }
+        .thinking-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+
+        .chat-bubble::after {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 24px;
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-right: 8px solid rgba(17, 24, 39, 0.7);
+        }
+
+        @media (max-width: 768px) {
+            .chat-bubble::after { display: none; }
+        }
+
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="border-b border-white/5 bg-gray-950/50 sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 rotate-3">
+                    <i class="fas fa-brain text-white text-xl"></i>
                 </div>
-              ) : (
-                <>
-                  <img src={image} alt="Target" className="w-full h-full object-contain" />
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <button 
-                      onClick={() => {setImage(null); setAnalysis("");}}
-                      className="p-3 bg-red-500/80 hover:bg-red-500 rounded-2xl backdrop-blur-md transition-all shadow-xl"
-                    >
-                      <Trash2 className="w-5 h-5 text-white" />
-                    </button>
-                  </div>
-                </>
-              )}
-              <input type="file" className="hidden" ref={fileInputRef} onChange={handleImageChange} accept="image/*" />
-            </div>
-
-            {image && !isThinking && !analysis && (
-              <button 
-                onClick={runTuncerAI}
-                className="w-full py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-indigo-600/20 transition-all transform active:scale-95"
-              >
-                <Sparkles className="w-5 h-5" /> Analizi Başlat
-              </button>
-            )}
-          </section>
-
-          {/* Sağ Panel: Konuşma Balonu ve Analiz */}
-          <section className="space-y-6">
-            <div className="relative">
-              <div className="flex items-center gap-2 mb-4">
-                <MessageSquare className="w-5 h-5 text-indigo-400" />
-                <h2 className="text-sm font-bold uppercase tracking-widest text-slate-500">AI Yanıtı</h2>
-              </div>
-
-              {/* Düşünme Animasyonu & Konuşma Kutusu */}
-              <div className="relative group">
-                <div className={`
-                  min-h-[160px] p-6 rounded-3xl bg-slate-900/50 border border-white/5 shadow-2xl relative
-                  ${isThinking ? 'animate-pulse ring-2 ring-indigo-500/20' : ''}
-                `}>
-                  {/* Konuşma Balonu Oku (Sadece PC Layout'ta anlamlıdır ama estetiktir) */}
-                  <div className="absolute -left-2 top-8 w-4 h-4 bg-slate-900 border-l border-b border-white/5 rotate-45 hidden lg:block"></div>
-                  
-                  {!isThinking && !analysis && (
-                    <div className="text-slate-600 italic text-center py-10">
-                      Görseli analiz etmek için sol taraftan bir dosya seçin...
-                    </div>
-                  )}
-
-                  {isThinking && (
-                    <div className="flex flex-col items-center justify-center h-full py-8 space-y-4">
-                      <div className="flex gap-1.5">
-                        <span className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                        <span className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                        <span className="w-3 h-3 bg-indigo-500 rounded-full animate-bounce"></span>
-                      </div>
-                      <p className="text-indigo-400 text-sm font-medium animate-pulse">Tuncer-Zeka Düşünüyor...</p>
-                    </div>
-                  )}
-
-                  {analysis && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-700">
-                      <div className="text-slate-300 leading-relaxed text-lg italic font-serif">
-                        "{analysis}"
-                      </div>
-                    </div>
-                  )}
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white leading-tight">Tuncer <span class="text-indigo-500">AI</span></h1>
+                    <p class="text-[10px] text-gray-500 uppercase tracking-widest font-semibold">Vision Intelligence</p>
                 </div>
-              </div>
             </div>
-
-            {/* Geçmiş Kayıtları (Küçük Önizlemeler) */}
-            {history.length > 0 && (
-              <div className="pt-4">
-                <h3 className="text-xs font-semibold text-slate-600 uppercase mb-3">Analiz Geçmişi</h3>
-                <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide">
-                  {history.slice(-8).reverse().map((item) => (
-                    <div 
-                      key={item.id} 
-                      className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-white/10 hover:border-indigo-500 cursor-pointer transition-all hover:scale-105 active:scale-95"
-                      onClick={() => {setImage(item.preview); setAnalysis(item.analysis);}}
-                    >
-                      <img src={item.preview} className="w-full h-full object-cover" alt="History" />
-                    </div>
-                  ))}
+            <div class="hidden md:flex gap-4">
+                <div class="px-3 py-1 bg-white/5 rounded-full text-xs text-gray-400 border border-white/5 flex items-center gap-2">
+                    <i class="fas fa-desktop"></i> PC Optimized
                 </div>
-              </div>
-            )}
-          </section>
+                <div class="px-3 py-1 bg-indigo-500/10 rounded-full text-xs text-indigo-400 border border-indigo-500/20 flex items-center gap-2">
+                    <i class="fas fa-mobile-alt"></i> Mobile Ready
+                </div>
+            </div>
         </div>
-      </div>
+    </header>
 
-      {/* Floating Action for Mobile */}
-      <div className="lg:hidden fixed bottom-6 right-6">
-        <button 
-          onClick={() => fileInputRef.current.click()}
-          className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-2xl shadow-indigo-600/50 hover:bg-indigo-500 active:scale-90 transition-all"
-        >
-          <Camera className="w-8 h-8" />
+    <main class="flex-grow max-w-7xl mx-auto w-full p-4 md:p-8">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            
+            <!-- Sol Panel: Resim Yükleme -->
+            <section class="space-y-6">
+                <div id="drop-zone" class="relative h-[350px] md:h-[500px] w-full rounded-[2.5rem] border-2 border-dashed border-gray-800 bg-gray-900/20 hover:border-indigo-500/50 transition-all duration-500 flex flex-col items-center justify-center group overflow-hidden">
+                    <input type="file" id="file-input" class="hidden" accept="image/*">
+                    
+                    <div id="upload-prompt" class="text-center p-8 transition-opacity duration-300">
+                        <div class="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform">
+                            <i class="fas fa-cloud-upload-alt text-3xl text-indigo-400"></i>
+                        </div>
+                        <h2 class="text-xl font-semibold text-white mb-2">Görseli Buraya Bırakın</h2>
+                        <p class="text-sm text-gray-500 max-w-[200px] mx-auto">Analiz etmek istediğiniz fotoğrafı yükleyin veya seçin</p>
+                        <button onclick="document.getElementById('file-input').click()" class="mt-6 px-8 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-2xl font-bold transition-all shadow-xl shadow-indigo-950/20 active:scale-95">
+                            Dosya Seç
+                        </button>
+                    </div>
+
+                    <div id="preview-container" class="hidden absolute inset-0 w-full h-full p-2">
+                        <img id="image-preview" class="w-full h-full object-contain rounded-[2rem]" src="" alt="Önizleme">
+                        <button onclick="clearImage()" class="absolute top-6 right-6 w-12 h-12 bg-red-500/80 hover:bg-red-500 backdrop-blur-md rounded-2xl flex items-center justify-center transition-all shadow-xl group/btn">
+                            <i class="fas fa-trash-alt text-white group-hover:scale-110"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="analyze-btn" disabled class="hidden w-full py-5 bg-gradient-to-r from-indigo-600 to-violet-600 text-white rounded-3xl font-bold text-lg items-center justify-center gap-3 shadow-2xl shadow-indigo-900/30 transition-all hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-sparkles"></i> Analiz Et
+                </button>
+            </section>
+
+            <!-- Sağ Panel: AI Konuşma Kutusu -->
+            <section class="space-y-6">
+                <div class="flex items-center gap-3 px-2">
+                    <i class="fas fa-comment-dots text-indigo-400"></i>
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-gray-500">Tuncer-Zeka Yanıtı</h3>
+                </div>
+
+                <div id="chat-container" class="relative">
+                    <div id="response-box" class="glass-panel chat-bubble min-h-[250px] p-8 rounded-[2.5rem] relative shadow-2xl overflow-hidden">
+                        
+                        <!-- Boş Durum -->
+                        <div id="empty-state" class="flex flex-col items-center justify-center h-full py-10 opacity-40 text-center">
+                            <i class="fas fa-image text-5xl mb-4"></i>
+                            <p class="text-sm">Henüz bir görsel analiz edilmedi.</p>
+                        </div>
+
+                        <!-- Düşünme Animasyonu -->
+                        <div id="thinking-state" class="hidden flex flex-col items-center justify-center h-full py-16 space-y-4">
+                            <div class="flex gap-2">
+                                <span class="thinking-dot"></span>
+                                <span class="thinking-dot"></span>
+                                <span class="thinking-dot"></span>
+                            </div>
+                            <p class="text-indigo-400 text-sm font-medium animate-pulse tracking-wide">Tuncer-Zeka Düşünüyor...</p>
+                        </div>
+
+                        <!-- Analiz Metni -->
+                        <div id="analysis-text" class="hidden text-gray-200 leading-relaxed text-lg font-medium italic animate-in fade-in slide-in-from-bottom-2 duration-500">
+                            <!-- Metin buraya dinamik gelecek -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Geçmiş -->
+                <div class="px-2">
+                    <h4 class="text-[10px] font-bold text-gray-600 uppercase mb-4 tracking-widest">Son Analizler</h4>
+                    <div id="history-grid" class="grid grid-cols-4 md:grid-cols-6 gap-3">
+                        <!-- Geçmiş öğeleri buraya eklenecek -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Mobile Floating Trigger -->
+    <div class="md:hidden fixed bottom-8 right-8">
+        <button onclick="document.getElementById('file-input').click()" class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-2xl shadow-indigo-500/50 active:scale-90 transition-transform">
+            <i class="fas fa-camera text-2xl text-white"></i>
         </button>
-      </div>
     </div>
-  );
-};
 
-export default App;
+    <script>
+        const fileInput = document.getElementById('file-input');
+        const previewContainer = document.getElementById('preview-container');
+        const imagePreview = document.getElementById('image-preview');
+        const uploadPrompt = document.getElementById('upload-prompt');
+        const analyzeBtn = document.getElementById('analyze-btn');
+        const responseBox = document.getElementById('response-box');
+        const emptyState = document.getElementById('empty-state');
+        const thinkingState = document.getElementById('thinking-state');
+        const analysisText = document.getElementById('analysis-text');
+        
+        const apiKey = ""; // API key otomatik olarak sistemden beslenir
+
+        let currentBase64 = null;
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    imagePreview.src = event.target.result;
+                    currentBase64 = event.target.result.split(',')[1];
+                    
+                    uploadPrompt.classList.add('hidden');
+                    previewContainer.classList.remove('hidden');
+                    analyzeBtn.classList.remove('hidden');
+                    analyzeBtn.classList.add('flex');
+                    analyzeBtn.disabled = false;
+                    
+                    // Otomatik scroll sağa/aşağı (mobilde kolaylık)
+                    if(window.innerWidth < 1024) {
+                        analyzeBtn.scrollIntoView({ behavior: 'smooth' });
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function clearImage() {
+            fileInput.value = '';
+            imagePreview.src = '';
+            currentBase64 = null;
+            uploadPrompt.classList.remove('hidden');
+            previewContainer.classList.add('hidden');
+            analyzeBtn.classList.add('hidden');
+            analyzeBtn.disabled = true;
+            
+            analysisText.innerText = '';
+            analysisText.classList.add('hidden');
+            emptyState.classList.remove('hidden');
+        }
+
+        analyzeBtn.addEventListener('click', async () => {
+            if (!currentBase64) return;
+
+            // UI Durumu
+            analyzeBtn.disabled = true;
+            emptyState.classList.add('hidden');
+            analysisText.classList.add('hidden');
+            thinkingState.classList.remove('hidden');
+
+            const prompt = "Bu resimde ne gördüğünü detaylı ve sanatsal bir dille Türkçe olarak anlat. Nesneleri, renkleri ve duyguyu vurgula.";
+
+            try {
+                // tuncer-zeka.js mantığı buraya entegre edilir
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: "image/png", data: currentBase64 } }
+                            ]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const result = data.candidates?.[0]?.content?.parts?.[0]?.text || "Analiz yapılamadı.";
+                
+                // Sonucu Yazdır
+                thinkingState.classList.add('hidden');
+                analysisText.innerText = `"${result}"`;
+                analysisText.classList.remove('hidden');
+                
+                addToHistory(imagePreview.src);
+
+            } catch (error) {
+                console.error(error);
+                thinkingState.classList.add('hidden');
+                analysisText.innerText = "Hata oluştu: Tuncer-Zeka kütüphanesine ulaşılamıyor.";
+                analysisText.classList.remove('hidden');
+            } finally {
+                analyzeBtn.disabled = false;
+            }
+        });
+
+        function addToHistory(imgSrc) {
+            const grid = document.getElementById('history-grid');
+            const div = document.createElement('div');
+            div.className = "aspect-square rounded-xl overflow-hidden border border-white/10 cursor-pointer hover:border-indigo-500 transition-all transform hover:scale-105";
+            div.innerHTML = `<img src="${imgSrc}" class="w-full h-full object-cover">`;
+            div.onclick = () => {
+                imagePreview.src = imgSrc;
+                currentBase64 = imgSrc.split(',')[1];
+                // Tekrar seçim yapılmış gibi UI güncelle
+            };
+            grid.prepend(div);
+        }
+
+        // Sürükle Bırak Desteği
+        const dropZone = document.getElementById('drop-zone');
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        dropZone.addEventListener('drop', e => {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            if (file) {
+                fileInput.files = dt.files;
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        });
+
+    </script>
+</body>
+</html>
 
