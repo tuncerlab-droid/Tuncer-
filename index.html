@@ -3,145 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer Zeka - Gelişmiş Kontrol Paneli</title>
-    <!-- Tailwind CSS for Responsive Design -->
+    <title>Tuncer Zeka | Sohbet</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        /* Custom Scrollbar for a premium look */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #4b5563;
-            border-radius: 10px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
         
-        /* Glassmorphism effects */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
         }
 
-        /* Mobile specific touch adjustments */
+        .glass-sidebar {
+            background: rgba(15, 23, 42, 0.95);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chat-bubble-user {
+            background: #1e293b;
+            border-radius: 18px 18px 2px 18px;
+            animation: fadeInRight 0.4s ease;
+        }
+
+        .chat-bubble-ai {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            border-radius: 18px 18px 18px 2px;
+            animation: fadeInLeft 0.4s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 10px;
+        }
+
+        /* Mobil Alt Bar Sabitleme */
         @media (max-width: 768px) {
-            .touch-target {
-                min-height: 48px;
-            }
-            .gui-container {
-                padding-bottom: 80px; /* Space for mobile nav if needed */
-            }
+            .mobile-hide { display: none; }
+            .sidebar-open { transform: translateX(0) !important; }
+        }
+
+        .loader {
+            border-top-color: #3498db;
+            animation: spinner 1.5s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen overflow-x-hidden font-sans">
+<body class="overflow-hidden">
 
-    <!-- Ana Konteyner -->
-    <div id="app" class="flex flex-col md:flex-row h-screen">
+    <div class="flex h-screen w-full relative">
         
-        <!-- Sol Panel / Masaüstü Sidebar - Mobilde Üst Bar -->
-        <aside id="sidebar" class="w-full md:w-64 lg:w-72 glass-panel p-4 flex flex-col space-y-6 md:h-full z-20">
-            <div class="flex items-center justify-between md:justify-center">
-                <h1 class="text-xl font-bold tracking-wider text-blue-400">TUNCER ZEKA</h1>
-                <button id="mobile-toggle" class="md:hidden p-2 bg-gray-800 rounded-lg">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+        <!-- SIDEBAR (Sohbetler ve Hesap) -->
+        <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-72 glass-sidebar transform -translate-x-full md:relative md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+            <div class="p-4">
+                <button onclick="newChat()" class="w-full flex items-center justify-center gap-2 border border-white/20 hover:bg-white/5 transition p-3 rounded-lg font-semibold animate__animated animate__fadeIn">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" stroke-width="2" stroke-linecap="round"/></svg>
+                    Yeni Sohbet
                 </button>
             </div>
 
-            <nav class="hidden md:block space-y-2 overflow-y-auto">
-                <div class="p-3 bg-blue-600/20 rounded-xl cursor-pointer border border-blue-500/30">Kontrol Paneli</div>
-                <div class="p-3 hover:bg-white/5 rounded-xl cursor-pointer transition">Analizler</div>
-                <div class="p-3 hover:bg-white/5 rounded-xl cursor-pointer transition">Ayarlar</div>
-            </nav>
+            <!-- Geçmiş Sohbetler -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar px-4 space-y-2">
+                <p class="text-xs text-gray-500 font-bold uppercase mt-4 mb-2">Sohbet Geçmişi</p>
+                <div class="p-3 hover:bg-white/5 rounded-md cursor-pointer text-sm truncate border-l-2 border-blue-500 bg-blue-500/10">Tuncer Zeka Analiz Girişi</div>
+                <div class="p-3 hover:bg-white/5 rounded-md cursor-pointer text-sm truncate text-gray-400">Veri Seti Hazırlığı</div>
+                <div class="p-3 hover:bg-white/5 rounded-md cursor-pointer text-sm truncate text-gray-400">GUI Tasarımı Revizyonu</div>
+            </div>
+
+            <!-- Hesap Bölümü -->
+            <div class="p-4 border-t border-white/10">
+                <div class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg cursor-pointer transition">
+                    <div class="w-10 h-10 bg-gradient-to-tr from-blue-500 to-purple-600 rounded-full flex items-center justify-center font-bold">T</div>
+                    <div class="flex-1 overflow-hidden">
+                        <p class="text-sm font-semibold truncate">Tuncer Kullanıcı</p>
+                        <p class="text-xs text-gray-500">Pro Plan</p>
+                    </div>
+                    <svg class="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"></path></svg>
+                </div>
+            </div>
         </aside>
 
-        <!-- Ana İçerik Alanı -->
-        <main class="flex-1 relative overflow-y-auto p-4 md:p-8 gui-container">
-            <header class="mb-8">
-                <h2 class="text-2xl md:text-4th font-semibold">Sistem Durumu</h2>
-                <p class="text-gray-400 text-sm md:text-base">Kütüphane Durumu: <span id="lib-status" class="text-yellow-500 animate-pulse font-mono">Bekleniyor...</span></p>
+        <!-- ANA SOHBET ALANI -->
+        <main class="flex-1 flex flex-col relative bg-slate-900">
+            
+            <!-- Üst Bar (Mobil İçin) -->
+            <header class="md:hidden flex items-center justify-between p-4 border-b border-white/5">
+                <button id="menu-btn" class="p-2 text-white"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-width="2"/></svg></button>
+                <span class="font-bold text-blue-400 tracking-tighter">TUNCER ZEKA</span>
+                <div class="w-6"></div>
             </header>
 
-            <!-- GUI Elemanları Grid Yapısı -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Kart 1 -->
-                <div class="glass-panel p-6 rounded-2xl hover:scale-[1.02] transition-transform duration-300">
-                    <h3 class="text-lg font-medium mb-4 text-blue-300">İşlem Kapasitesi</h3>
-                    <div id="gauge-container" class="h-32 flex items-center justify-center border-b border-white/10 mb-4">
-                        <!-- Canvas/SVG for Tuncer-Zeka charts could go here -->
-                        <span class="text-4xl font-bold">85%</span>
-                    </div>
-                    <button class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl touch-target transition font-semibold">Optimize Et</button>
-                </div>
-
-                <!-- Kart 2 -->
-                <div class="glass-panel p-6 rounded-2xl">
-                    <h3 class="text-lg font-medium mb-4 text-purple-300">Hızlı Komutlar</h3>
-                    <div class="space-y-3">
-                        <label class="block text-xs text-gray-500 uppercase">Hassasiyet</label>
-                        <input type="range" class="w-full accent-purple-500 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer">
-                        <div class="flex justify-between mt-6">
-                            <button class="px-4 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm border border-red-500/50">Durdur</button>
-                            <button class="px-4 py-2 bg-green-500/20 text-green-400 rounded-lg text-sm border border-green-500/50">Başlat</button>
+            <!-- Mesajlar -->
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 custom-scrollbar pb-32">
+                <!-- AI Karşılama -->
+                <div class="flex justify-start">
+                    <div class="chat-bubble-ai max-w-[85%] p-4 shadow-xl">
+                        Merhaba! Ben Tuncer Zeka. Bugün size nasıl yardımcı olabilirim? 
+                        <div id="lib-status" class="mt-2 text-[10px] opacity-70 flex items-center gap-1">
+                            <div class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                            Kütüphane taranıyor...
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Kart 3 -->
-                <div class="glass-panel p-6 rounded-2xl sm:col-span-2 lg:col-span-1">
-                    <h3 class="text-lg font-medium mb-4 text-emerald-300">Terminal Log</h3>
-                    <div id="log-output" class="bg-black/40 p-4 rounded-lg h-40 font-mono text-xs overflow-y-auto text-emerald-500/80">
-                        > Sistem başlatılıyor...<br>
-                        > Modüller kontrol ediliyor...<br>
-                        > Tuncer-Zeka kütüphanesi aranıyor...
-                    </div>
+            <!-- Input Alanı -->
+            <div class="absolute bottom-0 left-0 w-full p-4 md:p-8 bg-gradient-to-t from-slate-900 via-slate-900 to-transparent">
+                <div class="max-w-3xl mx-auto relative">
+                    <input type="text" id="user-input" placeholder="Tuncer Zeka'ya bir mesaj gönder..." 
+                           class="w-full bg-slate-800 border border-white/10 rounded-2xl p-4 pr-16 focus:outline-none focus:border-blue-500 shadow-2xl transition-all">
+                    <button id="send-btn" class="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-blue-600 rounded-xl hover:bg-blue-500 transition">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
                 </div>
+                <p class="text-center text-[10px] text-gray-500 mt-2">Tuncer Zeka hata yapabilir. Önemli bilgileri kontrol edin.</p>
             </div>
         </main>
     </div>
 
-    <!-- Kütüphane Yükleme ve Hata Yönetimi -->
+    <!-- SCRIPT VE KÜTÜPHANE YÖNETİMİ -->
     <script>
-        // Kütüphane dosyasını yüklemeyi dene
-        const script = document.createElement('script');
-        script.src = 'tuncer-zeka.js';
-        script.async = true;
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendBtn = document.getElementById('send-btn');
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
 
-        script.onload = function() {
-            const status = document.getElementById('lib-status');
-            const log = document.getElementById('log-output');
-            
-            status.innerText = "Bağlandı";
-            status.classList.remove('text-yellow-500');
-            status.classList.add('text-green-500');
-            
-            log.innerHTML += "<br>> [BAŞARILI] tuncer-zeka.js yüklendi.";
-            
-            // Eğer kütüphane bir init fonksiyonuna sahipse burada çağırabilirsin
-            if (window.TuncerZeka) {
-                console.log("Kütüphane Hazır:", window.TuncerZeka);
-                // TuncerZeka.init();
-            }
-        };
-
-        script.onerror = function() {
-            const status = document.getElementById('lib-status');
-            const log = document.getElementById('log-output');
-            
-            status.innerText = "Bulunamadı";
-            status.classList.remove('text-yellow-500', 'animate-pulse');
-            status.classList.add('text-red-500');
-            
-            log.innerHTML += "<br><span class='text-red-500'>> [HATA] tuncer-zeka.js dosyası taranamıyor. Dosya yolunu kontrol edin!</span>";
-        };
-
-        document.head.appendChild(script);
-
-        // Mobil Menü Toggle
-        document.getElementById('mobile-toggle').addEventListener('click', () => {
-            const nav = document.querySelector('nav');
-            nav.classList.toggle('hidden');
+        // Mobil Menü Kontrolü
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('-translate-x-full');
         });
+
+        // Mesaj Gönder Fonksiyonu
+        function sendMessage() {
+            const text = userInput.value.trim();
+            if (!text) return;
+
+            // Kullanıcı Baloncuğu
+            const userDiv = document.createElement('div');
+            userDiv.className = "flex justify-end";
+            userDiv.innerHTML = `<div class="chat-bubble-user max-w-[85%] p-4 shadow-lg">${text}</div>`;
+            chatContainer.appendChild(userDiv);
+            
+            userInput.value = '';
+            chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+
+            // AI Yanıt Simülasyonu (Veya TuncerZeka fonksiyonu)
+            setTimeout(() => {
+                const aiDiv = document.createElement('div');
+                aiDiv.className = "flex justify-start";
+                aiDiv.innerHTML = `<div class="chat-bubble-ai max-w-[85%] p-4 shadow-xl">İsteğinizi işliyorum...</div>`;
+                chatContainer.appendChild(aiDiv);
+                chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: 'smooth' });
+            }, 600);
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendMessage(); });
+
+        // TUNCER-ZEKA.JS YÜKLEME VE HATA YÖNETİMİ
+        const loadLibrary = () => {
+            const statusEl = document.getElementById('lib-status');
+            const script = document.createElement('script');
+            script.src = 'tuncer-zeka.js';
+            script.async = true;
+
+            script.onload = () => {
+                statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> Kütüphane aktif (V1.0)`;
+                console.log("Tuncer-Zeka kütüphanesi başarıyla entegre edildi.");
+            };
+
+            script.onerror = () => {
+                statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-red-500"></div> Kütüphane taranamadı! (Dosya eksik)`;
+                statusEl.classList.add('text-red-400');
+            };
+
+            document.body.appendChild(script);
+        }
+
+        window.onload = loadLibrary;
+
+        function newChat() {
+            location.reload(); // Basitçe sıfırla
+        }
     </script>
 </body>
 </html>
