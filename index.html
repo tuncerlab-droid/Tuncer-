@@ -1,123 +1,311 @@
-/**
- * Tuncer Zeka - Doğal Dil İşleme (NLP) ve Öğrenme Kütüphanesi
- */
-class TuncerZeka {
-    constructor() {
-        // Tuncer'in beyni burası. Öğrendiği her şeyi burada tutacak.
-        this.hafiza = [];
-        console.log("🧠 Tuncer Zeka uyandı ve öğrenmeye hazır!");
-    }
-
-    /**
-     * Harfleri ve kelimeleri daha iyi anlaması için metni parçalara böler (N-gram mantığı).
-     * Bu sayede papağan gibi birebir kelime beklemez, harf benzerliklerini de anlar.
-     */
-    _analizEt(metin) {
-        let parcalar = [];
-        metin = metin.toLowerCase().trim();
-        
-        // 1. Önce tam kelimeleri hafızaya al
-        let kelimeler = metin.split(/\s+/);
-        kelimeler.forEach(k => parcalar.push(k));
-
-        // 2. Sonra kelimeleri harf ikililerine (bigram) böl. 
-        // Böylece harfleri de anlamlandırmaya başlar.
-        for (let i = 0; i < metin.length - 1; i++) {
-            let harfIkili = metin.substring(i, i + 2);
-            // Sadece boşluk olmayan harf ikililerini al
-            if (harfIkili.trim().length === 2) {
-                parcalar.push(harfIkili);
-            }
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuncer Zeka - Yapay Zeka Arayüzü</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        return parcalar;
-    }
-
-    /**
-     * Tuncer Zeka'ya yeni bir şeyler öğretmek için kullanılır.
-     * @param {string} soru - Kullanıcının söyleyebileceği şey
-     * @param {string} cevap - Tuncer Zeka'nın vermesi gereken cevap
-     */
-    ogren(soru, cevap) {
-        this.hafiza.push({
-            orijinal: soru,
-            ozellikler: this._analizEt(soru), // Harf ve kelime haritası
-            verilecekCevap: cevap
-        });
-        console.log(`[+] Öğrendim: "${soru}" dendiğinde "${cevap}" diyeceğim.`);
-    }
-
-    /**
-     * Tuncer Zeka'nın kendisine söylenen şeyi düşünüp en mantıklı cevabı bulması.
-     * @param {string} mesaj - Kullanıcının mesajı
-     */
-    dusun(mesaj) {
-        if (this.hafiza.length === 0) {
-            return "Daha hiçbir şey bilmiyorum kanka, önce bana '.ogren()' ile bir şeyler öğret!";
+        body {
+            background-color: #1e1e2f;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+            height: 90vh;
+        }
+        /* Sohbet Ekranı */
+        .chat-box {
+            flex: 2;
+            background: #2a2a40;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .chat-header {
+            background: #ff4757;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .message {
+            max-width: 75%;
+            padding: 12px 18px;
+            border-radius: 20px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+        .message.bot {
+            background: #3d3d5c;
+            align-self: flex-start;
+            border-bottom-left-radius: 5px;
+        }
+        .message.user {
+            background: #ff4757;
+            align-self: flex-end;
+            border-bottom-right-radius: 5px;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 15px;
+            background: #232336;
+            gap: 10px;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 25px;
+            background: #1e1e2f;
+            color: #fff;
+            outline: none;
+            padding-left: 20px;
+            font-size: 1rem;
+        }
+        .chat-input-area button {
+            background: #ff4757;
+            color: white;
+            border: none;
+            padding: 0 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .chat-input-area button:hover {
+            background: #ff6b81;
         }
 
-        let mesajOzellikleri = this._analizEt(mesaj);
-        let enIyiSkor = 0;
-        let enIyiCevap = "Bu harfleri ve kelimeleri henüz tam çözemedim. Bunun ne demek olduğunu bana öğretir misin?";
+        /* Öğretme Paneli */
+        .teach-box {
+            flex: 1;
+            background: #2a2a40;
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .teach-box h3 {
+            color: #2ed573;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .teach-box input {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #1e1e2f;
+            color: #fff;
+            outline: none;
+        }
+        .teach-box button {
+            background: #2ed573;
+            color: #1e1e2f;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .teach-box button:hover {
+            background: #7bed9f;
+        }
+        .log-area {
+            flex: 1;
+            background: #1e1e2f;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.8rem;
+            color: #a4b0be;
+            overflow-y: auto;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
 
-        // Hafızasındaki tüm verileri tarar ve en çok benzeyeni bulur
-        for (let bilgi of this.hafiza) {
-            let kesisim = 0;
+    <div class="container">
+        <div class="chat-box">
+            <div class="chat-header">🤖 Tuncer Zeka</div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot">Selam kanka! Ben Tuncer Zeka. Bana sağdaki panelden yeni şeyler öğretebilir veya doğrudan sohbet edebilirsin. Harfleri yanlış yazsan bile anlamaya çalışırım!</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="userInput" placeholder="Bir şeyler yaz..." onkeypress="handleEnter(event)">
+                <button onclick="sendMessage()">Gönder</button>
+            </div>
+        </div>
+
+        <div class="teach-box">
+            <h3>🧠 Tuncer'e Öğret</h3>
+            <input type="text" id="teachSoru" placeholder="Kullanıcı ne derse? (Örn: naber)">
+            <input type="text" id="teachCevap" placeholder="Tuncer ne desin? (Örn: İyidir senden?)">
+            <button onclick="teachTuncer()">Hafızaya Ekle</button>
             
-            for (let ozellik of mesajOzellikleri) {
-                if (bilgi.ozellikler.includes(ozellik)) {
-                    kesisim++;
+            <div style="margin-top: 15px; font-weight: bold; font-size: 0.9rem;">Sistem Kayıtları:</div>
+            <div class="log-area" id="logArea">
+                > Tuncer Zeka başlatıldı...<br>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- TUNCER ZEKA KÜTÜPHANESİ (Önceki kodun aynısı) ---
+        class TuncerZeka {
+            constructor() {
+                this.hafiza = [];
+            }
+
+            _analizEt(metin) {
+                let parcalar = [];
+                metin = metin.toLowerCase().trim();
+                let kelimeler = metin.split(/\s+/);
+                kelimeler.forEach(k => parcalar.push(k));
+
+                for (let i = 0; i < metin.length - 1; i++) {
+                    let harfIkili = metin.substring(i, i + 2);
+                    if (harfIkili.trim().length === 2) {
+                        parcalar.push(harfIkili);
+                    }
+                }
+                return parcalar;
+            }
+
+            ogren(soru, cevap) {
+                this.hafiza.push({
+                    orijinal: soru,
+                    ozellikler: this._analizEt(soru),
+                    verilecekCevap: cevap
+                });
+            }
+
+            dusun(mesaj) {
+                if (this.hafiza.length === 0) {
+                    return "Daha hiçbir şey bilmiyorum, sağdaki panelden bana bir şeyler öğret!";
+                }
+
+                let mesajOzellikleri = this._analizEt(mesaj);
+                let enIyiSkor = 0;
+                let enIyiCevap = "Bu harfleri ve kelimeleri henüz tam çözemedim. Bunun ne demek olduğunu bana öğretir misin?";
+
+                for (let bilgi of this.hafiza) {
+                    let kesisim = 0;
+                    for (let ozellik of mesajOzellikleri) {
+                        if (bilgi.ozellikler.includes(ozellik)) {
+                            kesisim++;
+                        }
+                    }
+                    let birlesim = new Set([...mesajOzellikleri, ...bilgi.ozellikler]).size;
+                    let benzerlikSkoru = kesisim / birlesim;
+
+                    if (benzerlikSkoru > enIyiSkor) {
+                        enIyiSkor = benzerlikSkoru;
+                        enIyiCevap = bilgi.verilecekCevap;
+                    }
+                }
+
+                if (enIyiSkor > 0.25) {
+                    return enIyiCevap;
+                } else {
+                    return "Bunu daha önce hiç duymadım. Ne cevap vermem gerektiğini bana sağdan öğret!";
                 }
             }
+        }
 
-            // Jaccard Benzerlik Oranı hesaplaması (Kesişim / Birleşim)
-            let birlesim = new Set([...mesajOzellikleri, ...bilgi.ozellikler]).size;
-            let benzerlikSkoru = kesisim / birlesim;
+        // --- ARAYÜZ BAĞLANTILARI ---
+        const tuncer = new TuncerZeka();
+        const chatMessages = document.getElementById("chatMessages");
+        const logArea = document.getElementById("logArea");
 
-            if (benzerlikSkoru > enIyiSkor) {
-                enIyiSkor = benzerlikSkoru;
-                enIyiCevap = bilgi.verilecekCevap;
+        // Başlangıçta Tuncer'e birkaç temel şey öğretiyoruz ki boş kalmasın
+        tuncer.ogren("merhaba", "Merhaba kanka, nasılsın?");
+        tuncer.ogren("nasılsın", "Sistemlerim tıkır tıkır çalışıyor, sen nasılsın?");
+        tuncer.ogren("adın ne", "Benim adım Tuncer Zeka!");
+        logEkle("> Temel bilgiler hafızaya yüklendi.");
+
+        function addMessage(text, sender) {
+            const msgDiv = document.createElement("div");
+            msgDiv.classList.add("message", sender);
+            msgDiv.textContent = text;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; // Otomatik aşağı kaydır
+        }
+
+        function logEkle(text) {
+            logArea.innerHTML += text + "<br>";
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function sendMessage() {
+            const input = document.getElementById("userInput");
+            const mesaj = input.value.trim();
+            
+            if (mesaj === "") return;
+
+            // Kullanıcı mesajını ekle
+            addMessage(mesaj, "user");
+            input.value = "";
+
+            // Tuncer'in düşünme efekti için çok kısa bir gecikme ekliyoruz
+            setTimeout(() => {
+                const cevap = tuncer.dusun(mesaj);
+                addMessage(cevap, "bot");
+            }, 400);
+        }
+
+        function teachTuncer() {
+            const soruInput = document.getElementById("teachSoru");
+            const cevapInput = document.getElementById("teachCevap");
+            
+            const soru = soruInput.value.trim();
+            const cevap = cevapInput.value.trim();
+
+            if (soru === "" || cevap === "") {
+                alert("Lütfen hem soruyu hem de cevabı doldur!");
+                return;
+            }
+
+            tuncer.ogren(soru, cevap);
+            logEkle(`[+] Yeni Öğrenildi: "${soru}"`);
+            
+            soruInput.value = "";
+            cevapInput.value = "";
+            soruInput.focus();
+        }
+
+        function handleEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
             }
         }
-
-        // Eğer benzerlik %25'ten fazlaysa tahminde bulunur. 
-        // Yoksa rastgele bir şey sallamaz, bilmediğini itiraf eder.
-        if (enIyiSkor > 0.25) {
-            return enIyiCevap;
-        } else {
-            return "Bunu daha önce hiç duymadım. Ne cevap vermem gerektiğini bana öğret!";
-        }
-    }
-}
-
-// ==========================================
-// TUNCER ZEKA KULLANIM TESTİ (ÖRNEK)
-// ==========================================
-
-// 1. Kütüphaneyi başlatıyoruz
-const tuncer = new TuncerZeka();
-
-// 2. Tuncer'e bir şeyler öğretiyoruz (Eğitim aşaması)
-tuncer.ogren("Merhaba, nasılsın?", "İyiyim, sen nasılsın?");
-tuncer.ogren("Adın ne senin?", "Benim adım Tuncer Zeka, senin için kodlandım!");
-tuncer.ogren("Hava bugün çok güzel", "Evet, dışarı çıkmak için harika bir gün.");
-tuncer.ogren("Matematik sever misin?", "Sayılarla aram fena değildir.");
-
-console.log("\n--- SOHBET BAŞLIYOR ---");
-
-// 3. Tuncer'i test ediyoruz (Birebir aynı yazmıyoruz, harf hatası yapıyoruz)
-
-// Örnek 1: Birebir doğru yazım
-console.log("Sen: Merhaba, nasılsın?");
-console.log("Tuncer Zeka:", tuncer.dusun("Merhaba, nasılsın?"));
-
-// Örnek 2: Eksik ve hatalı harfler (Sadece harfleri analiz ederek anlamaya çalışır)
-console.log("\nSen: adn n senn?"); // "Adın ne senin?" demek istedik
-console.log("Tuncer Zeka:", tuncer.dusun("adn n senn?"));
-
-// Örnek 3: Tamamen farklı kelime yapısı ama benzer harfler
-console.log("\nSen: hava çok güzl bugün"); 
-console.log("Tuncer Zeka:", tuncer.dusun("hava çok güzl bugün"));
-
-// Örnek 4: Hiç bilmediği bir şey sorarsak
-console.log("\nSen: Uzaylılar var mı?");
-console.log("Tuncer Zeka:", tuncer.dusun("Uzaylılar var mı?"));
+    </script>
+</body>
+</html>
