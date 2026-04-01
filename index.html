@@ -3,235 +3,238 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka v2026 - Gelişmiş AI Asistan</title>
+    <title>Tuncer Zeka v2026 | Yapay Zeka Arayüzü</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-color: #0a0f1d;
+            --glass-bg: rgba(16, 22, 37, 0.7);
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, #1e293b 0%, #0a0f1d 100%);
+            color: #e2e8f0;
+            height: 100vh;
             overflow: hidden;
         }
 
-        /* Animasyonlar ve Glassmorphism */
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        .glass { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glass-light { background: rgba(51, 65, 85, 0.3); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.15); }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.3); border-radius: 10px; }
-        
-        .message { animation: fadeInUp 0.4s ease-out; }
-        .message-user { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); }
-        .message-ai { background: rgba(51, 65, 85, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
 
-        .typing-indicator span { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; margin: 0 2px; animation: typing 1.4s infinite; }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.7; } 30% { transform: translateY(-10px); opacity: 1; } }
+        .chat-container::-webkit-scrollbar { width: 5px; }
+        .chat-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-        .btn-primary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4); }
-        .gradient-text { background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        
-        .sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        @media (max-width: 1024px) { .sidebar { transform: translateX(-100%); } .sidebar.active { transform: translateX(0); } }
-        .status-online { background: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-        .status-offline { background: #ef4444; box-shadow: 0 0 10px rgba(239, 68, 68, 0.5); }
+        .message-anim { animation: fadeInUp 0.3s ease-out forwards; }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .typing-dot {
+            width: 8px; height: 8px; background: #94a3b8; border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        code { font-family: 'Fira Code', monospace; background: #1e293b; padding: 2px 4px; border-radius: 4px; }
+        pre { background: #0f172a; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #334155; }
     </style>
 </head>
-<body class="flex h-screen text-slate-200">
+<body class="flex flex-col md:flex-row">
 
-    <aside id="sidebar" class="sidebar w-80 glass flex flex-col fixed lg:static inset-y-0 left-0 z-50 shadow-2xl">
-        <div class="p-6 border-b border-white/10">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+    <aside class="w-full md:w-80 glass p-6 flex flex-col border-r border-white/10 z-20">
+        <div class="mb-8">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                TUNCER ZEKA
+            </h1>
+            <p class="text-xs text-slate-500 font-mono">v2026.1.0 // SİSTEM AKTİF</p>
+        </div>
+
+        <div class="flex-1 space-y-6">
+            <div>
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Sistem Durumu</h3>
+                <div id="stats" class="space-y-2 text-sm">
+                    <div class="flex justify-between"><span>Hafıza:</span> <span id="stat-memory" class="text-blue-400">0</span></div>
+                    <div class="flex justify-between"><span>Konuşma:</span> <span id="stat-chat" class="text-blue-400">0</span></div>
+                    <div class="flex justify-between"><span>Öğrenilen:</span> <span id="stat-learn" class="text-blue-400">0</span></div>
                 </div>
-                <div>
-                    <h1 class="text-xl font-bold gradient-text">Tuncer Zeka</h1>
-                    <p class="text-xs text-slate-400">v2026 • AI Asistan</p>
+            </div>
+
+            <div>
+                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Hızlı Komutlar</h3>
+                <div class="grid grid-cols-1 gap-2">
+                    <button onclick="quickAction('hesapla: (15 * 4) + 100')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-blue-500/20 transition">Matematik Motoru</button>
+                    <button onclick="quickAction('kod yaz: JavaScript ile saat yap')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-purple-500/20 transition">Kod Yazma</button>
+                    <button onclick="quickAction('wikipedia: Kuantum Fiziği')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-green-500/20 transition">Bilgi Bankası</button>
+                    <button onclick="quickAction('özetle: ')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-yellow-500/20 transition">Metin Özetleme</button>
                 </div>
             </div>
         </div>
 
-        <div class="p-4">
-            <button onclick="startNewChat()" class="w-full btn-primary text-white py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"></path></svg>
-                Yeni Sohbet
+        <div class="mt-auto pt-6 border-t border-white/10">
+            <button onclick="resetSystem()" class="w-full p-2 text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition">
+                SİSTEMİ SIFIRLA
             </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
-            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">Özellikler</h3>
-            <div class="space-y-2">
-                <div class="glass-light p-3 rounded-lg cursor-pointer hover:bg-white/10 transition" onclick="sendQuickCommand('Neler yapabilirsin?')">
-                    <div class="text-sm font-medium text-white">Yetenekler</div>
-                    <div class="text-xs text-slate-400">Becerileri listele</div>
-                </div>
-                <div class="glass-light p-3 rounded-lg cursor-pointer hover:bg-white/10 transition" onclick="sendQuickCommand('Bana bir kod örneği yaz')">
-                    <div class="text-sm font-medium text-white">Kod Yazma</div>
-                    <div class="text-xs text-slate-400">Yazılım desteği</div>
-                </div>
-            </div>
-            <div class="mt-6">
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">Son Sohbetler</h3>
-                <div id="chat-history" class="space-y-1 text-sm text-slate-400 px-2 italic">Henüz geçmiş yok.</div>
-            </div>
-        </div>
-
-        <div class="p-4 border-t border-white/10">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-2">
-                    <div id="status-indicator" class="w-2 h-2 rounded-full status-offline"></div>
-                    <span id="status-text" class="text-xs text-slate-400">Sistem Çevrimdışı</span>
-                </div>
-            </div>
-            <div class="text-xs text-slate-500">© 2026 Tuncer Zeka</div>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col min-w-0 relative">
-        <header class="glass h-16 flex items-center justify-between px-6 border-b border-white/10 z-10">
-            <div class="flex items-center gap-4">
-                <button onclick="toggleSidebar()" class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
-                </button>
-                <h2 id="chat-title" class="text-lg font-semibold text-white">Yeni Sohbet</h2>
-            </div>
-            <button onclick="clearChat()" class="p-2 rounded-lg hover:bg-white/10 transition text-slate-400" title="Temizle">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </header>
-
-        <div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
-            <div class="message flex items-start gap-4 max-w-4xl mx-auto">
-                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+    <main class="flex-1 flex flex-col h-full relative">
+        <div id="chat-box" class="flex-1 overflow-y-auto p-6 space-y-6 chat-container">
+            <div class="flex items-start gap-4 message-anim">
+                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <span class="font-bold">TZ</span>
                 </div>
-                <div class="message-ai rounded-2xl rounded-tl-none px-5 py-4">
-                    Merhaba! Ben Tuncer Zeka. Bugün size nasıl yardımcı olabilirim?
+                <div class="max-w-[80%] glass p-4 rounded-2xl rounded-tl-none">
+                    <p class="text-sm leading-relaxed">Sistem başlatıldı. Ben Tuncer Zeka v2026. Ahmet Tuncer tarafından geliştirilen gelişmiş algoritmalarım aktif. Size nasıl yardımcı olabilirim?</p>
                 </div>
             </div>
         </div>
 
         <div class="p-6 glass border-t border-white/10">
-            <div class="max-w-4xl mx-auto relative">
-                <div class="flex items-end gap-3 glass-light rounded-2xl p-2 border border-white/5">
-                    <textarea id="message-input" rows="1" placeholder="Mesajınızı yazın..." class="flex-1 bg-transparent px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none max-h-32 custom-scrollbar" onkeydown="handleKeyPress(event)"></textarea>
-                    <button id="send-button" onclick="sendMessage()" class="btn-primary p-3 rounded-xl text-white shadow-lg">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                    </button>
+            <div class="max-w-4xl mx-auto flex gap-4 items-end">
+                <div class="flex-1 relative">
+                    <textarea id="user-input" rows="1" 
+                        class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition resize-none text-sm"
+                        placeholder="Bir şey sorun veya komut verin (Örn: hesapla: 25*4)..."
+                        onkeydown="checkEnter(event)"></textarea>
                 </div>
+                <button id="send-btn" onclick="processInput()" 
+                    class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl transition shadow-lg shadow-blue-500/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                </button>
             </div>
         </div>
     </main>
 
-    <div id="overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden" onclick="toggleSidebar()"></div>
+    <script src="tuncer2026.js"></script>
 
     <script>
-        const messageInput = document.getElementById('message-input');
-        const chatMessages = document.getElementById('chat-messages');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        const statusInd = document.getElementById('status-indicator');
-        const statusText = document.getElementById('status-text');
-
-        // Sayfa yüklendiğinde AI hazırla
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                statusInd.classList.replace('status-offline', 'status-online');
-                statusText.innerText = "Sistem Aktif";
-            }, 1000);
+        // Kütüphaneyi Başlat
+        const tuncer = new TuncerZeka({
+            detayliLog: true,
+            hafizaKapasitesi: 5000
         });
 
-        function toggleSidebar() {
-            sidebar.classList.toggle('active');
-            overlay.classList.toggle('hidden');
-        }
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
 
-        function handleKeyPress(e) {
+        // Enter tuşu kontrolü
+        function checkEnter(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage();
+                processInput();
             }
-            adjustTextareaHeight();
         }
 
-        function adjustTextareaHeight() {
-            messageInput.style.height = 'auto';
-            messageInput.style.height = (messageInput.scrollHeight) + 'px';
+        function quickAction(cmd) {
+            userInput.value = cmd;
+            userInput.focus();
         }
 
-        function sendQuickCommand(text) {
-            messageInput.value = text;
-            sendMessage();
+        async function processInput() {
+            const input = userInput.value.trim();
+            if (!input) return;
+
+            // Kullanıcı mesajını ekle
+            appendMessage('user', input);
+            userInput.value = '';
+            
+            // Yazıyor efekti
+            const typingId = showTyping();
+
+            try {
+                // KÜTÜPHANEYİ ÇALIŞTIR
+                const sonuc = await tuncer.konus(input);
+                
+                // Efekti kaldır ve cevabı yaz
+                removeTyping(typingId);
+                appendMessage('ai', sonuc.cevap, sonuc);
+                
+                // İstatistikleri güncelle
+                updateStats();
+            } catch (err) {
+                removeTyping(typingId);
+                appendMessage('ai', "Sistem hatası oluştu: " + err.message);
+            }
         }
 
-        function startNewChat() {
-            clearChat();
-            if(window.innerWidth < 1024) toggleSidebar();
-        }
-
-        function clearChat() {
-            chatMessages.innerHTML = '';
-            appendMessage('ai', 'Yeni bir sayfa açtım. Size nasıl yardımcı olabilirim?');
-        }
-
-        function appendMessage(sender, text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message flex items-start gap-4 max-w-4xl mx-auto ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+        function appendMessage(sender, text, data = null) {
+            const div = document.createElement('div');
+            div.className = `flex items-start gap-4 message-anim ${sender === 'user' ? 'flex-row-reverse' : ''}`;
             
             const avatar = sender === 'ai' 
-                ? '<div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg"><svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg></div>'
-                : '<div class="w-10 h-10 rounded-xl bg-slate-700 flex items-center justify-center flex-shrink-0 shadow-lg font-bold text-xs">SEN</div>';
+                ? `<div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg"><span class="font-bold">TZ</span></div>`
+                : `<div class="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center shadow-lg"><span class="font-bold">Siz</span></div>`;
 
-            msgDiv.innerHTML = `
+            const bubbleClass = sender === 'ai' 
+                ? 'glass rounded-tl-none border-blue-500/20' 
+                : 'bg-blue-600/20 rounded-tr-none border-blue-500/40 border';
+
+            // Markdown benzeri basit kod bloklarını render et
+            let formattedText = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            div.innerHTML = `
                 ${avatar}
-                <div class="${sender === 'ai' ? 'message-ai rounded-tl-none' : 'message-user rounded-tr-none'} rounded-2xl px-5 py-4 max-w-[80%]">
-                    ${text}
+                <div class="max-w-[85%] p-4 rounded-2xl ${bubbleClass}">
+                    <div class="text-sm leading-relaxed whitespace-pre-wrap">${formattedText}</div>
+                    ${data ? `<div class="mt-2 text-[10px] text-slate-500 font-mono">Niyet: ${data.niyet} | Süre: ${data.sure}</div>` : ''}
                 </div>
             `;
-            chatMessages.appendChild(msgDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        async function sendMessage() {
-            const text = messageInput.value.trim();
-            if (!text) return;
-
-            appendMessage('user', text);
-            messageInput.value = '';
-            adjustTextareaHeight();
-
-            // Typing Indicator
-            const typingId = 'typing-' + Date.now();
-            const typingDiv = document.createElement('div');
-            typingDiv.id = typingId;
-            typingDiv.className = 'message flex items-start gap-4 max-w-4xl mx-auto';
-            typingDiv.innerHTML = `
-                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">...</div>
-                <div class="message-ai rounded-2xl rounded-tl-none px-5 py-4 typing-indicator">
-                    <span></span><span></span><span></span>
+        function showTyping() {
+            const id = 'typing-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'flex items-start gap-4 message-anim';
+            div.innerHTML = `
+                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg">TZ</div>
+                <div class="glass p-4 rounded-2xl rounded-tl-none flex gap-1">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot" style="animation-delay: 0.2s"></div>
+                    <div class="typing-dot" style="animation-delay: 0.4s"></div>
                 </div>
             `;
-            chatMessages.appendChild(typingDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            // Yapay Zeka Yanıtı Simülasyonu
-            setTimeout(() => {
-                document.getElementById(typingId).remove();
-                let response = "Anladım. '" + text + "' konusuyla ilgili neler yapabileceğimizi araştırıyorum. Ben bir arayüz prototipiyim, gerçek AI entegrasyonu için API anahtarı gereklidir.";
-                
-                if(text.toLowerCase().includes("neler yapabilirsin")) {
-                    response = "Ben Tuncer Zeka v2026. Kod yazabilir, matematik problemleri çözebilir, veri analizi yapabilir ve yaratıcı metinler oluşturabilirim!";
-                }
-                
-                appendMessage('ai', response);
-            }, 1500);
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return id;
         }
+
+        function removeTyping(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        function updateStats() {
+            const durum = tuncer.durum();
+            document.getElementById('stat-memory').innerText = durum.hafizaKullanilanSlot;
+            document.getElementById('stat-chat').innerText = durum.konusmaAdedi;
+            document.getElementById('stat-learn').innerText = durum.ogrenilenBilgiSayisi;
+        }
+
+        function resetSystem() {
+            if(confirm("Tüm hafıza ve konuşma geçmişi silinecek. Emin misiniz?")) {
+                tuncer.sifirla();
+                chatBox.innerHTML = '';
+                appendMessage('ai', 'Sistem başarıyla sıfırlandı. Hafıza temizlendi.');
+                updateStats();
+            }
+        }
+
+        // Başlangıç istatistikleri
+        updateStats();
     </script>
 </body>
 </html>
