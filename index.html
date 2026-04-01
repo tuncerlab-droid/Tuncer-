@@ -15,250 +15,158 @@
             margin: 0;
             overflow: hidden;
         }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #565869; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #acacbe; }
         .chat-container { height: calc(100vh - 140px); scroll-behavior: smooth; }
-        .message-entry { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        .message-entry { animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .typing-dot { animation: typing 1.4s infinite ease-in-out both; }
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing {
-            0%, 80%, 100% { transform: scale(0); }
-            40% { transform: scale(1); }
-        }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
     </style>
 
-    <!-- DOSYA HATA YAKALAYICI -->
+    <!-- Hata Yakalama -->
     <script>
-        window.HataLoglari = [];
-        function dosyaBulunamadi(dosyaAdi) {
-            window.HataLoglari.push(dosyaAdi);
-            console.error("HATA: " + dosyaAdi + " bulunamadı!");
-        }
+        window.EksikDosyalar = [];
+        function dosyaHatasi(ad) { window.EksikDosyalar.push(ad); }
     </script>
 
-    <!-- YAPAY ZEKA KÜTÜPHANELERİ (Dosya isimlerini boşluksuz yaptık) -->
-    <script src="tuncer2026.js" onerror="dosyaBulunamadi('tuncer2026.js')"></script>
-    <script src="tuncer2023.js" onerror="dosyaBulunamadi('tuncer2023.js')"></script>
+    <!-- JS Dosyalarını Yükle -->
+    <script src="tuncer2026.js" onerror="dosyaHatasi('tuncer2026.js')"></script>
+    <script src="tuncer2023.js" onerror="dosyaHatasi('tuncer2023.js')"></script>
 </head>
 <body class="flex h-screen w-full">
 
-    <!-- SOL MENÜ -->
-    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#202123] transition-transform duration-300 -translate-x-full md:translate-x-0 flex flex-col md:relative h-full">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#202123] transition-transform duration-300 -translate-x-full md:translate-x-0 flex flex-col md:relative h-full border-r border-white/5">
         <div class="p-3">
-            <button onclick="yeniSohbet()" class="flex items-center gap-3 w-full border border-white/20 rounded-md p-3 text-sm hover:bg-white/5 transition-colors">
+            <button onclick="location.reload()" class="flex items-center gap-3 w-full border border-white/20 rounded-md p-3 text-sm hover:bg-white/5 transition-colors">
                 <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                 Yeni Sohbet
             </button>
         </div>
-        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
-            <div class="text-xs text-gray-500 font-medium px-2 pb-2">Geçmiş</div>
-            <button class="w-full text-left px-3 py-3 text-sm bg-[#343541] rounded-md truncate">Mevcut Oturum</button>
-        </div>
-        <div class="p-4 border-t border-white/10 text-sm flex items-center gap-3 text-gray-300">
-            <div class="w-8 h-8 rounded-sm bg-blue-600 flex items-center justify-center font-bold text-white">AT</div>
+        <div class="flex-1 px-3 py-2 text-xs text-gray-500 font-medium">Sohbet Geçmişi Temiz</div>
+        <div class="p-4 border-t border-white/10 text-sm text-gray-300 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center font-bold text-white text-xs">AT</div>
             Ahmet Tuncer
         </div>
     </aside>
 
-    <!-- ANA EKRAN -->
     <main class="flex-1 flex flex-col h-full relative">
-        
-        <!-- Hata Bildirim Çubuğu (Varsayılan olarak gizli) -->
-        <div id="error-banner" class="hidden bg-red-600 text-white text-sm px-4 py-2 text-center shadow-md z-50 flex justify-center items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-            <span id="error-text">Bazı JS dosyaları yüklenemedi! Lütfen dosya isimlerini kontrol edin.</span>
-        </div>
+        <!-- Hata Uyarısı -->
+        <div id="error-box" class="hidden bg-orange-600/90 text-white p-2 text-center text-xs z-50"></div>
 
-        <header class="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-[#343541] z-40">
-            <button id="toggle-sidebar" class="md:hidden p-2 -ml-2 text-gray-400 hover:text-white">
+        <header class="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-[#343541]">
+            <button id="menu-btn" class="md:hidden p-2 text-gray-400">
                 <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="w-6 h-6"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
             </button>
-            <div class="flex-1 flex justify-center md:justify-start md:ml-4">
-                <select id="model-selector" class="bg-[#202123] text-white border border-gray-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none cursor-pointer">
-                    <option value="2026">Tuncer Zeka v2026</option>
-                    <option value="2023">Tuncer Core 2023</option>
-                </select>
-            </div>
+            <select id="model-select" class="bg-[#202123] text-white border border-gray-600 text-xs rounded p-2 outline-none">
+                <option value="2026">Tuncer 2026 (Global)</option>
+                <option value="2023">Tuncer 2023 (Global)</option>
+            </select>
+            <div class="w-6 md:hidden"></div>
         </header>
 
         <div id="chat-viewport" class="chat-container overflow-y-auto w-full pb-32">
-            <!-- Başlangıç Mesajı -->
             <div class="w-full border-b border-black/10 bg-[#444654] message-entry">
-                <div class="max-w-3xl mx-auto flex gap-4 p-6 text-base md:text-md">
-                    <div class="w-8 h-8 rounded-sm bg-emerald-600 flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm">AI</div>
-                    <div class="flex-1 space-y-2 prose prose-invert">
-                        <p>Merhaba! Yukarıdan 2026 veya 2023 modelini seçebilirsin. Ben hazırım.</p>
-                    </div>
+                <div class="max-w-3xl mx-auto flex gap-4 p-6">
+                    <div class="w-8 h-8 rounded-sm bg-emerald-600 flex-shrink-0 flex items-center justify-center font-bold text-white text-xs">AI</div>
+                    <p class="text-gray-200">Merhaba, class gereksinimi kaldırıldı. JS dosyalarındaki global fonksiyonları kullanabilirim.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Yazma Alanı -->
-        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-6">
-            <div class="max-w-3xl mx-auto px-4 pb-6">
-                <div class="relative flex items-end w-full p-1 bg-[#40414F] border border-gray-600 rounded-xl shadow-lg focus-within:ring-1 focus-within:ring-gray-400">
-                    <textarea id="chat-input" rows="1" placeholder="Mesajınızı yazın..." 
-                        class="w-full max-h-48 py-3 pl-4 pr-12 bg-transparent text-white border-0 outline-none resize-none overflow-y-auto m-0"></textarea>
-                    <button id="btn-send" class="absolute bottom-2 right-2 p-2 rounded-md text-gray-400 hover:bg-[#202123] hover:text-white transition">
-                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="w-5 h-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                    </button>
-                </div>
+        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] pt-6 px-4 pb-6">
+            <div class="max-w-3xl mx-auto relative flex items-center bg-[#40414F] border border-gray-600 rounded-xl shadow-xl">
+                <textarea id="chat-input" rows="1" placeholder="Mesaj yazın..." class="w-full py-4 pl-4 pr-12 bg-transparent text-white border-0 outline-none resize-none overflow-y-auto"></textarea>
+                <button id="send-btn" class="absolute right-3 p-2 text-gray-400 hover:text-white transition">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" class="w-5 h-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                </button>
             </div>
         </div>
     </main>
 
-    <!-- Mobil Karartma -->
-    <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden"></div>
 
     <script>
         const input = document.getElementById('chat-input');
-        const btnSend = document.getElementById('btn-send');
+        const sendBtn = document.getElementById('send-btn');
         const viewport = document.getElementById('chat-viewport');
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('overlay');
-        const toggleBtn = document.getElementById('toggle-sidebar');
-        const modelSelector = document.getElementById('model-selector');
+        const modelSelect = document.getElementById('model-select');
+        const errorBox = document.getElementById('error-box');
 
-        let tuncer2026Instance = null;
-        let tuncer2023Instance = null;
-
-        // Sayfa açıldığında hata kontrolü yap
-        window.addEventListener('DOMContentLoaded', () => {
-            if (window.HataLoglari.length > 0) {
-                const errorBanner = document.getElementById('error-banner');
-                const errorText = document.getElementById('error-text');
-                errorText.innerText = `Klasörde şu dosyalar eksik veya ismi yanlış: ${window.HataLoglari.join(', ')}`;
-                errorBanner.classList.remove('hidden');
+        // Sayfa yüklenince dosya kontrolü
+        window.onload = () => {
+            if (window.EksikDosyalar.length > 0) {
+                errorBox.innerText = "Bulunamayan dosyalar: " + window.EksikDosyalar.join(', ');
+                errorBox.classList.remove('hidden');
             }
+        };
 
-            input.addEventListener('input', function() {
-                this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-            });
-        });
-
-        function toggleMenu() {
-            sidebar.classList.toggle('-translate-x-full');
-            overlay.classList.toggle('hidden');
-        }
-        toggleBtn.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', toggleMenu);
-
-        function yeniSohbet() {
-            const messages = viewport.querySelectorAll('.message-entry');
-            for(let i = 1; i < messages.length; i++) messages[i].remove();
-            if(window.innerWidth < 768) toggleMenu();
-        }
-
-        function appendMessage(role, text) {
+        function addMessage(role, text) {
             const isAI = role === 'ai';
             const div = document.createElement('div');
             div.className = `w-full border-b border-black/10 message-entry ${isAI ? 'bg-[#444654]' : ''}`;
-            const formattedText = text.replace(/\n/g, '<br>');
-
             div.innerHTML = `
-                <div class="max-w-3xl mx-auto flex gap-4 p-6 text-base md:text-md">
-                    <div class="w-8 h-8 rounded-sm ${isAI ? 'bg-emerald-600' : 'bg-[#5436DA]'} flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm">
+                <div class="max-w-3xl mx-auto flex gap-4 p-6">
+                    <div class="w-8 h-8 rounded-sm ${isAI ? 'bg-emerald-600' : 'bg-indigo-600'} flex-shrink-0 flex items-center justify-center font-bold text-white text-xs">
                         ${isAI ? 'AI' : 'U'}
                     </div>
-                    <div class="flex-1 space-y-2 prose prose-invert overflow-x-auto">
-                        <p class="whitespace-pre-wrap font-sans text-gray-200 leading-relaxed">${formattedText}</p>
-                    </div>
+                    <div class="flex-1 text-gray-200 whitespace-pre-wrap">${text}</div>
                 </div>
             `;
             viewport.appendChild(div);
-            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+            viewport.scrollTo(0, viewport.scrollHeight);
         }
 
-        function toggleTyping(show) {
-            if (show) {
-                const div = document.createElement('div');
-                div.id = 'typing-indicator';
-                div.className = `w-full border-b border-black/10 bg-[#444654] message-entry`;
-                div.innerHTML = `
-                    <div class="max-w-3xl mx-auto flex gap-4 p-6">
-                        <div class="w-8 h-8 rounded-sm bg-emerald-600 flex-shrink-0 flex items-center justify-center font-bold text-white">AI</div>
-                        <div class="flex-1 flex items-center space-x-1 h-8">
-                            <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                            <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                            <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
-                        </div>
-                    </div>
-                `;
-                viewport.appendChild(div);
-                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
-            } else {
-                const indicator = document.getElementById('typing-indicator');
-                if (indicator) indicator.remove();
-            }
-        }
+        async function onSend() {
+            const msg = input.value.trim();
+            if (!msg) return;
 
-        async function handleChat() {
-            const query = input.value.trim();
-            if (!query) return;
-
-            appendMessage('user', query);
+            addMessage('user', msg);
             input.value = '';
             input.style.height = 'auto';
-            toggleTyping(true);
 
-            const selectedModel = modelSelector.value;
-            let responseText = "";
+            const model = modelSelect.value;
+            let response = "Hata oluştu.";
 
             try {
-                // TUNCER ZEKA 2026 
-                if (selectedModel === "2026") {
-                    if (window.HataLoglari.includes('tuncer2026.js')) {
-                        responseText = "⚠️ HATA: tuncer2026.js dosyası klasörde yok. Model çalışamıyor.";
-                    } else if (typeof TuncerZeka !== 'undefined') {
-                        if (!tuncer2026Instance) tuncer2026Instance = new TuncerZeka();
-                        
-                        const result = await tuncer2026Instance.konus(query);
-                        responseText = (result && result.cevap) ? result.cevap : result;
+                if (model === "2026") {
+                    // tuncer2026.js içindeki 'konus' veya benzeri fonksiyonu çağırıyoruz
+                    // Eğer dosya içindeki fonksiyonun adı farklıysa (örn: cevapVer), burayı ona göre güncelle.
+                    if (typeof window.konus === 'function') {
+                        response = await window.konus(msg);
+                    } else if (typeof window.tuncerKonus === 'function') {
+                        response = await window.tuncerKonus(msg);
                     } else {
-                        responseText = "⚠️ HATA: Dosya bulundu ama içinde 'TuncerZeka' sınıfı (class) bulunamadı. JS kodunun en altında 'class TuncerZeka' yazdığından emin olun.";
+                        response = "HATA: tuncer2026.js yüklendi ama içinde 'konus' fonksiyonu bulunamadı.";
                     }
-                } 
-                // TUNCER CORE 2023
-                else if (selectedModel === "2023") {
-                    if (window.HataLoglari.includes('tuncer2023.js')) {
-                        responseText = "⚠️ HATA: tuncer2023.js dosyası klasörde yok. Model çalışamıyor.";
-                    } else if (typeof TuncerCore !== 'undefined') {
-                         if (!tuncer2023Instance) tuncer2023Instance = new TuncerCore(); 
-                         const result = await tuncer2023Instance.konus(query);
-                         responseText = (result && result.cevap) ? result.cevap : result;
-                    } else if (typeof TuncerZeka2023 !== 'undefined') {
-                         if (!tuncer2023Instance) tuncer2023Instance = new TuncerZeka2023(); 
-                         const result = await tuncer2023Instance.konus(query);
-                         responseText = (result && result.cevap) ? result.cevap : result;
+                } else {
+                    // tuncer2023.js için de benzer mantık
+                    if (typeof window.konus2023 === 'function') {
+                        response = await window.konus2023(msg);
                     } else {
-                        responseText = "⚠️ HATA: Dosya bulundu ancak içindeki 2023 sınıfının adı (TuncerCore) eşleşmedi. JS içindeki 'class' adını kontrol edin.";
+                        response = "HATA: tuncer2023.js içinde 'konus2023' fonksiyonu bulunamadı.";
                     }
                 }
-            } catch (error) {
-                responseText = "JS dosyasının çalışması sırasında hata oluştu:\n\n" + error.message;
+            } catch (err) {
+                response = "İşlem hatası: " + err.message;
             }
 
-            toggleTyping(false);
-            appendMessage('ai', responseText || "Yanıt alınamadı.");
+            addMessage('ai', response);
         }
 
-        input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleChat();
-            }
-        });
-        btnSend.addEventListener('click', handleChat);
+        sendBtn.onclick = onSend;
+        input.onkeydown = (e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } };
+        
+        // Mobil Menü
+        document.getElementById('menu-btn').onclick = () => {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('overlay').classList.toggle('hidden');
+        };
+        document.getElementById('overlay').onclick = () => {
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('overlay').classList.add('hidden');
+        };
     </script>
 </body>
 </html>
-
 
