@@ -7,7 +7,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+
     <style>
         * {
             margin: 0;
@@ -19,6 +21,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             overflow: hidden;
+            color: #f8fafc;
         }
 
         /* Animasyonlar */
@@ -47,11 +50,6 @@
             50% { opacity: 0.5; }
         }
 
-        @keyframes shimmer {
-            0% { background-position: -1000px 0; }
-            100% { background-position: 1000px 0; }
-        }
-
         .animate-fadeInUp {
             animation: fadeInUp 0.5s ease-out forwards;
         }
@@ -66,16 +64,16 @@
 
         /* Glassmorphism */
         .glass {
-            background: rgba(30, 41, 59, 0.4);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .glass-light {
-            background: rgba(51, 65, 85, 0.3);
+            background: rgba(51, 65, 85, 0.4);
             backdrop-filter: blur(8px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         /* Scrollbar */
@@ -98,79 +96,88 @@
 
         /* Mesaj Kutuları */
         .message {
-            animation: fadeInUp 0.4s ease-out;
+            animation: fadeInUp 0.4s ease-out forwards;
+            opacity: 0;
         }
 
         .message-user {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            border-bottom-right-radius: 0;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
         }
 
         .message-ai {
             background: rgba(51, 65, 85, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top-left-radius: 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         /* Typing Indicator */
         .typing-indicator span {
             display: inline-block;
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             background: #94a3b8;
             margin: 0 2px;
             animation: typing 1.4s infinite;
         }
 
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
 
         @keyframes typing {
-            0%, 60%, 100% {
-                transform: translateY(0);
-                opacity: 0.7;
-            }
-            30% {
-                transform: translateY(-10px);
-                opacity: 1;
-            }
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+            30% { transform: translateY(-4px); opacity: 1; }
         }
 
         /* Buton Hover Efektleri */
         .btn-primary {
             background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.2s ease;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            filter: brightness(1.1);
         }
 
         .btn-primary:active {
-            transform: translateY(0);
+            transform: translateY(1px);
+            box-shadow: none;
         }
 
         /* Gradient Text */
         .gradient-text {
-            background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899);
+            background: linear-gradient(135deg, #60a5fa, #c084fc, #f472b6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
         /* Code Block */
-        .code-block {
-            background: #1e293b;
+        pre {
+            background: #0f172a !important;
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
+            padding: 1rem;
             overflow-x: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
+            margin: 1rem 0;
+        }
+        
+        code {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9em;
+            color: #e2e8f0;
+        }
+
+        p > code {
+            background: rgba(255,255,255,0.1);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            color: #93c5fd;
         }
 
         /* Sidebar Transition */
@@ -178,34 +185,21 @@
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        /* Shimmer Effect */
-        .shimmer {
-            background: linear-gradient(
-                90deg,
-                rgba(255, 255, 255, 0) 0%,
-                rgba(255, 255, 255, 0.1) 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
-            background-size: 1000px 100%;
-            animation: shimmer 2s infinite;
-        }
-
         /* Feature Card Hover */
         .feature-card {
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
         }
 
         .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255,255,255,0.05);
+            transform: translateX(4px);
         }
 
         /* Mobile Optimizations */
-        @media (max-width: 768px) {
+        @media (max-width: 1024px) {
             .sidebar {
                 transform: translateX(-100%);
             }
-
             .sidebar.active {
                 transform: translateX(0);
             }
@@ -214,266 +208,181 @@
         /* Status Indicators */
         .status-online {
             background: #10b981;
-            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
         }
 
         .status-offline {
             background: #ef4444;
-            box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.6);
+        }
+        
+        .status-generating {
+            background: #3b82f6;
+            box-shadow: 0 0 8px rgba(59, 130, 246, 0.6);
+            animation: pulse 1s infinite;
         }
 
-        /* Markdown Styling */
-        .markdown-content h1,
-        .markdown-content h2,
-        .markdown-content h3 {
-            color: #f1f5f9;
-            margin-top: 1em;
-            margin-bottom: 0.5em;
-            font-weight: 600;
+        /* Markdown Formatting Overrides */
+        .markdown-content h1 { font-size: 1.5em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; color: #fff;}
+        .markdown-content h2 { font-size: 1.25em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; color: #fff;}
+        .markdown-content h3 { font-size: 1.1em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; color: #e2e8f0;}
+        .markdown-content ul { list-style-type: disc; margin-left: 1.5em; margin-bottom: 1em; }
+        .markdown-content ol { list-style-type: decimal; margin-left: 1.5em; margin-bottom: 1em; }
+        .markdown-content p { margin-bottom: 0.75em; line-height: 1.6;}
+        .markdown-content a { color: #60a5fa; text-decoration: underline; }
+        
+        /* Loading Overlay for API Key Input */
+        #api-key-modal {
+            backdrop-filter: blur(10px);
         }
 
-        .markdown-content ul,
-        .markdown-content ol {
-            margin-left: 1.5em;
-            margin-bottom: 1em;
-        }
-
-        .markdown-content code {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.9em;
-        }
-
-        .markdown-content pre {
-            margin: 1em 0;
-        }
     </style>
 </head>
-<body class="flex h-screen">
+<body class="flex h-screen text-slate-200 text-sm md:text-base">
+
+    <!-- API Key Modal (Initially Hidden if key exists) -->
+    <div id="api-key-modal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 hidden">
+        <div class="glass-light p-8 rounded-2xl max-w-md w-full mx-4 shadow-2xl border border-white/10">
+            <h2 class="text-2xl font-bold text-white mb-2">Hoş Geldiniz</h2>
+            <p class="text-slate-400 mb-6 text-sm">Devam etmek için lütfen Gemini API anahtarınızı girin. (Bu bilgi sadece tarayıcınızda tutulur).</p>
+            <input type="password" id="api-key-input" placeholder="AIzaSy..." class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 mb-4">
+            <button onclick="saveApiKey()" class="w-full btn-primary py-3 rounded-xl font-semibold text-white">Sistemi Başlat</button>
+            <p class="text-xs text-slate-500 mt-4 text-center">Anahtarınız yoksa <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue-400 hover:underline">Google AI Studio</a>'dan alabilirsiniz.</p>
+        </div>
+    </div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="sidebar w-80 glass flex flex-col fixed lg:static inset-y-0 left-0 z-50 shadow-2xl">
+    <aside id="sidebar" class="sidebar w-72 md:w-80 glass flex flex-col fixed lg:static inset-y-0 left-0 z-50">
         <!-- Logo & Title -->
-        <div class="p-6 border-b border-white/10">
+        <div class="p-6 border-b border-white/5">
             <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                    <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold gradient-text">Tuncer Zeka</h1>
-                    <p class="text-xs text-slate-400">v2026 • AI Asistan</p>
+                    <h1 class="text-lg font-bold gradient-text tracking-wide">Tuncer Zeka</h1>
+                    <p class="text-[10px] text-slate-400 font-medium uppercase tracking-widest">v2026 Core</p>
                 </div>
             </div>
         </div>
 
         <!-- Yeni Sohbet Butonu -->
         <div class="p-4">
-            <button onclick="startNewChat()" class="w-full btn-primary text-white py-3 px-4 rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <button onclick="startNewChat()" class="w-full btn-primary text-white py-2.5 px-4 rounded-xl font-medium flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M12 4v16m8-8H4"></path>
                 </svg>
                 Yeni Sohbet
             </button>
         </div>
 
-        <!-- Özellikler -->
+        <!-- Özellikler / Geçmiş -->
         <div class="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
-            <div class="mb-4">
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Özellikler</h3>
-                <div class="space-y-2">
-                    <div class="feature-card glass-light p-3 rounded-lg cursor-pointer" onclick="sendQuickCommand('Merhaba, bana özelliklerini anlat')">
+            
+            <div id="quick-actions" class="mb-6">
+                <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">Hızlı Eylemler</h3>
+                <div class="space-y-1">
+                    <div class="feature-card glass-light p-2.5 rounded-lg cursor-pointer" onclick="sendQuickCommand('Bana bugünün önemli haber başlıklarından bahset.')">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"></path>
-                                </svg>
+                            <div class="w-7 h-7 rounded-md bg-blue-500/20 flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"></path></svg>
                             </div>
-                            <div>
-                                <div class="text-sm font-medium text-white">Sohbet</div>
-                                <div class="text-xs text-slate-400">Doğal konuşma</div>
-                            </div>
+                            <div><div class="text-xs font-medium text-slate-200">Günlük Özet</div></div>
                         </div>
                     </div>
 
-                    <div class="feature-card glass-light p-3 rounded-lg cursor-pointer" onclick="sendQuickCommand('wikipedia: JavaScript')">
+                    <div class="feature-card glass-light p-2.5 rounded-lg cursor-pointer" onclick="sendQuickCommand('Basit bir HTML/CSS giriş sayfası kodu yaz.')">
                         <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"></path>
-                                </svg>
+                            <div class="w-7 h-7 rounded-md bg-purple-500/20 flex items-center justify-center">
+                                <svg class="w-3.5 h-3.5 text-purple-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                             </div>
-                            <div>
-                                <div class="text-sm font-medium text-white">Wikipedia</div>
-                                <div class="text-xs text-slate-400">Bilgi arama</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="feature-card glass-light p-3 rounded-lg cursor-pointer" onclick="sendQuickCommand('kod yaz: hesap makinesi')">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-purple-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-white">Kod Yazma</div>
-                                <div class="text-xs text-slate-400">Otomatik kod</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="feature-card glass-light p-3 rounded-lg cursor-pointer" onclick="sendQuickCommand('hesapla: 15 * 23 + 100')">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-orange-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm1 2a1 1 0 000 2h6a1 1 0 100-2H7zm6 7a1 1 0 011 1v3a1 1 0 11-2 0v-3a1 1 0 011-1zm-3 3a1 1 0 100 2h.01a1 1 0 100-2H10zm-4 1a1 1 0 011-1h.01a1 1 0 110 2H7a1 1 0 01-1-1zm1-4a1 1 0 100 2h.01a1 1 0 100-2H7zm2 1a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm4-4a1 1 0 100 2h.01a1 1 0 100-2H13zM9 9a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zM7 8a1 1 0 000 2h.01a1 1 0 000-2H7z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-white">Matematik</div>
-                                <div class="text-xs text-slate-400">Hesaplama</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="feature-card glass-light p-3 rounded-lg cursor-pointer" onclick="sendQuickCommand('görsel oluştur: gün doğumu manzarası')">
-                        <div class="flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-pink-500/20 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-pink-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
-                                </svg>
-                            </div>
-                            <div>
-                                <div class="text-sm font-medium text-white">Görsel</div>
-                                <div class="text-xs text-slate-400">Canvas üretimi</div>
-                            </div>
+                            <div><div class="text-xs font-medium text-slate-200">Kod Üret</div></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Geçmiş Sohbetler -->
-            <div class="mt-6">
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Son Sohbetler</h3>
-                <div id="chat-history" class="space-y-1">
-                    <!-- Dinamik olarak eklenecek -->
+            <div class="mt-4">
+                <div class="flex items-center justify-between px-1 mb-2">
+                    <h3 class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Geçmiş</h3>
+                    <button onclick="clearHistory()" class="text-[10px] text-slate-500 hover:text-red-400 transition" title="Geçmişi Temizle">Temizle</button>
+                </div>
+                <div id="history-list" class="space-y-1">
+                    <!-- Dinamik geçmiş elemanları -->
+                    <div class="text-xs text-slate-500 italic p-2 text-center" id="empty-history-msg">Henüz sohbet yok.</div>
                 </div>
             </div>
         </div>
 
-        <!-- Durum & Ayarlar -->
-        <div class="p-4 border-t border-white/10">
-            <div class="flex items-center justify-between mb-3">
+        <!-- Durum & Alt Bilgi -->
+        <div class="p-4 border-t border-white/5 bg-slate-900/30">
+            <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <div id="status-indicator" class="w-2 h-2 rounded-full status-offline"></div>
-                    <span id="status-text" class="text-xs text-slate-400">Kütüphane Yükleniyor...</span>
+                    <span id="status-text" class="text-xs font-medium text-slate-400">Bağlantı Bekleniyor</span>
                 </div>
-                <button onclick="toggleSettings()" class="p-2 rounded-lg hover:bg-white/5 transition">
-                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
+                <button onclick="openApiKeyModal()" class="text-slate-500 hover:text-white transition" title="API Anahtarını Değiştir">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
             </div>
-            <div class="text-xs text-slate-500">
-                <div>© 2026 Tuncer Zeka</div>
-                <div>Tasarımcı: Ahmet Tuncer</div>
+            <div class="text-[10px] text-slate-500 flex justify-between">
+                <span>© 2026 Tuncer Labs</span>
             </div>
         </div>
     </aside>
 
     <!-- MAIN CONTENT -->
-    <main class="flex-1 flex flex-col min-w-0">
+    <main class="flex-1 flex flex-col min-w-0 bg-[#0f172a] relative">
         <!-- Header -->
-        <header class="glass h-16 flex items-center justify-between px-6 border-b border-white/10 backdrop-blur-xl">
-            <div class="flex items-center gap-4">
-                <button id="sidebar-toggle" class="lg:hidden p-2 rounded-lg hover:bg-white/10 transition">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <header class="glass h-14 flex items-center justify-between px-4 lg:px-8 border-b border-white/5 z-40">
+            <div class="flex items-center gap-3">
+                <button id="sidebar-toggle" class="lg:hidden p-1.5 rounded-md hover:bg-white/10 transition" onclick="toggleSidebar()">
+                    <svg class="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
-                <div>
-                    <h2 class="text-lg font-semibold text-white">Yeni Sohbet</h2>
-                    <p id="chat-title" class="text-xs text-slate-400">Sorularınızı sormaya başlayın</p>
+                <div class="hidden sm:block">
+                    <h2 id="current-chat-title" class="text-sm font-semibold text-slate-200">Yeni Sohbet</h2>
                 </div>
             </div>
-            <div class="flex items-center gap-3">
-                <button onclick="exportChat()" class="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition text-sm text-slate-300">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                    </svg>
-                    Dışa Aktar
-                </button>
-                <button onclick="clearChat()" class="px-3 py-2 rounded-lg hover:bg-white/10 transition text-sm text-slate-300">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                </button>
+            
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] px-2 py-1 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20">Gemini 2.5 Flash</span>
             </div>
         </header>
 
-        <!-- Chat Messages -->
-        <div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar p-6">
-            <div class="max-w-4xl mx-auto space-y-6">
-                <!-- Karşılama Mesajı -->
-                <div class="message flex items-start gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                        </svg>
+        <!-- Chat Messages Area -->
+        <div id="chat-messages" class="flex-1 overflow-y-auto custom-scrollbar p-4 lg:p-8 scroll-smooth">
+            <div class="max-w-3xl mx-auto space-y-6 pb-4" id="message-container">
+                <!-- Hoşgeldin Mesajı (Sadece Yeni Sohbette) -->
+                <div class="flex flex-col items-center justify-center h-[50vh] text-center" id="welcome-screen">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg mb-6 animate-pulse">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                     </div>
-                    <div class="flex-1">
-                        <div class="flex items-center gap-2 mb-1">
-                            <span class="font-semibold text-white">Tuncer Zeka</span>
-                            <span class="text-xs text-slate-400">şimdi</span>
-                        </div>
-                        <div class="message-ai rounded-2xl rounded-tl-none px-5 py-4">
-                            <p class="text-slate-200 leading-relaxed">
-                                Merhaba! 👋 Ben Tuncer Zeka, gelişmiş yapay zeka asistanınız. 
-                                Size matematik, kodlama, bilgi arama, görsel üretimi ve daha fazlasında yardımcı olabilirim.
-                            </p>
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                <button onclick="sendQuickCommand('Neler yapabilirsin?')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs text-white transition">
-                                    Yeteneklerini göster
-                                </button>
-                                <button onclick="sendQuickCommand('hesapla: 25 * 4')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs text-white transition">
-                                    Matematik örneği
-                                </button>
-                                <button onclick="sendQuickCommand('kod yaz: JavaScript fonksiyon')" class="px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg text-xs text-white transition">
-                                    Kod örneği
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                    <h2 class="text-2xl font-bold text-white mb-2">Nasıl yardımcı olabilirim?</h2>
+                    <p class="text-slate-400 text-sm max-w-md">Kod yazabilir, metin özetleyebilir, matematik problemlerini çözebilir veya yaratıcı fikirler üretebilirim.</p>
                 </div>
             </div>
         </div>
 
         <!-- Input Area -->
-        <div class="glass border-t border-white/10 p-6 backdrop-blur-xl">
-            <div class="max-w-4xl mx-auto">
-                <div class="relative">
-                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-2xl blur-xl"></div>
-                    <div class="relative flex items-end gap-3 glass-light rounded-2xl p-2">
+        <div class="p-4 lg:p-6 bg-gradient-to-t from-[#0f172a] via-[#0f172a] to-transparent shrink-0">
+            <div class="max-w-3xl mx-auto">
+                <div class="relative glass-light rounded-2xl p-1.5 border border-white/10 shadow-2xl transition-all duration-300 focus-within:border-blue-500/50 focus-within:bg-slate-800/80">
+                    <div class="flex items-end gap-2">
                         <textarea 
                             id="message-input" 
                             rows="1"
-                            placeholder="Bir şey sorun veya yazın..."
-                            class="flex-1 bg-transparent px-4 py-3 text-white placeholder-slate-400 resize-none focus:outline-none max-h-32 custom-scrollbar"
+                            placeholder="Mesajınızı yazın..."
+                            class="flex-1 bg-transparent px-3 py-2.5 text-slate-100 placeholder-slate-500 resize-none focus:outline-none max-h-40 custom-scrollbar text-sm md:text-base leading-relaxed"
+                            oninput="adjustTextareaHeight(this)"
                             onkeydown="handleKeyPress(event)"
                         ></textarea>
-                        <div class="flex gap-2">
-                            <button onclick="attachFile()" class="p-3 rounded-xl hover:bg-white/10 transition text-slate-400 hover:text-white">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
-                                </svg>
-                            </button>
-                            <button id="send-button" onclick="sendMessage()" class="btn-primary px-6 py-3 rounded-xl text-white font-medium flex items-center gap-2 shadow-lg">
-                                <span>Gönder</span>
+                        
+                        <div class="flex gap-1 pb-1 pr-1">
+                            <button id="send-button" onclick="sendMessage()" class="p-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                 </svg>
@@ -481,37 +390,441 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center justify-between mt-3 text-xs text-slate-500">
-                    <div class="flex items-center gap-4">
-                        <span>Tuncer Zeka hata yapabilir. Önemli bilgileri doğrulayın.</span>
-                    </div>
-                    <div id="char-counter" class="hidden">0 / 4000</div>
+                <div class="text-center mt-2">
+                    <span class="text-[10px] text-slate-500">Tuncer Zeka yapay zeka destekli bir sistemdir, doğruluğunu teyit ediniz.</span>
                 </div>
             </div>
         </div>
     </main>
 
     <!-- Overlay (Mobile) -->
-    <div id="overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+    <div id="overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden lg:hidden transition-opacity" onclick="toggleSidebar()"></div>
 
-    <!-- SCRIPTS -->
-    <script src="tuncer2026.js"></script>
-    <script src="tuncer2023.js"></script>
-    
     <script>
-        // Global Variables
-        let tuncerAI = null;
-        let chatHistory = [];
-        let currentChatId = Date.now();
+        // --- Konfigürasyon ve Durum ---
+        const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent";
+        let apiKey = localStorage.getItem('tuncer_gemini_api_key') || "";
+        let chatHistory = []; // Şu anki sohbetin mesaj geçmişi
+        let savedChats = JSON.parse(localStorage.getItem('tuncer_saved_chats')) || [];
+        let currentChatId = null;
+        let isGenerating = false;
 
-        // Initialize
+        // --- DOM Elementleri ---
+        const els = {
+            apiKeyModal: document.getElementById('api-key-modal'),
+            apiKeyInput: document.getElementById('api-key-input'),
+            messageInput: document.getElementById('message-input'),
+            messageContainer: document.getElementById('message-container'),
+            welcomeScreen: document.getElementById('welcome-screen'),
+            sendButton: document.getElementById('send-button'),
+            statusIndicator: document.getElementById('status-indicator'),
+            statusText: document.getElementById('status-text'),
+            sidebar: document.getElementById('sidebar'),
+            overlay: document.getElementById('overlay'),
+            historyList: document.getElementById('history-list'),
+            emptyHistoryMsg: document.getElementById('empty-history-msg'),
+            currentChatTitle: document.getElementById('current-chat-title')
+        };
+
+        // --- Başlangıç Ayarları ---
         window.addEventListener('load', () => {
-            initializeAI();
-            adjustTextareaHeight();
-            loadChatHistory();
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+
+            if (!apiKey) {
+                openApiKeyModal();
+            } else {
+                setStatus('online', 'Sistem Hazır');
+                renderHistoryList();
+            }
         });
 
-        // AI Initialization
-        async function initializeAI() {
+        // --- API Anahtarı Yönetimi ---
+        function openApiKeyModal() {
+            els.apiKeyModal.classList.remove('hidden');
+            if(apiKey) els.apiKeyInput.value = apiKey;
+            els.apiKeyInput.focus();
+        }
+
+        function saveApiKey() {
+            const key = els.apiKeyInput.value.trim();
+            if (key) {
+                apiKey = key;
+                localStorage.setItem('tuncer_gemini_api_key', apiKey);
+                els.apiKeyModal.classList.add('hidden');
+                setStatus('online', 'Sistem Hazır');
+                
+                // Eğer sayfa ilk yüklendiğinde modal çıktıysa ve boş bir ekran varsa
+                if(chatHistory.length === 0 && !currentChatId) {
+                    startNewChat();
+                }
+            } else {
+                alert("Lütfen geçerli bir API anahtarı girin.");
+            }
+        }
+
+        function setStatus(status, text) {
+            els.statusIndicator.className = 'w-2 h-2 rounded-full';
+            if (status === 'online') els.statusIndicator.classList.add('status-online');
+            else if (status === 'offline') els.statusIndicator.classList.add('status-offline');
+            else if (status === 'generating') els.statusIndicator.classList.add('status-generating');
+            
+            els.statusText.textContent = text;
+        }
+
+        // --- UI Etkileşimleri ---
+        function toggleSidebar() {
+            const isActive = els.sidebar.classList.contains('translate-x-0');
+            if (isActive) {
+                els.sidebar.classList.remove('translate-x-0');
+                els.sidebar.classList.add('-translate-x-full');
+                els.overlay.classList.add('hidden');
+            } else {
+                els.sidebar.classList.remove('-translate-x-full');
+                els.sidebar.classList.add('translate-x-0');
+                els.overlay.classList.remove('hidden');
+            }
+        }
+
+        function adjustTextareaHeight(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 160) + 'px'; // Max yükseklik ~4-5 satır
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function sendQuickCommand(text) {
+            if(isGenerating) return;
+            if(window.innerWidth < 1024) toggleSidebar(); // Mobilde menüyü kapat
+            els.messageInput.value = text;
+            adjustTextareaHeight(els.messageInput);
+            sendMessage();
+        }
+
+        // --- Sohbet Yönetimi ---
+        function startNewChat() {
+            if (isGenerating) return;
+            
+            // Mevcut sohbeti kaydet (eğer içi boş değilse)
+            saveCurrentChat();
+
+            currentChatId = Date.now().toString();
+            chatHistory = [];
+            els.messageContainer.innerHTML = '';
+            els.messageContainer.appendChild(els.welcomeScreen);
+            els.welcomeScreen.classList.remove('hidden');
+            els.currentChatTitle.textContent = "Yeni Sohbet";
+            
+            els.messageInput.value = '';
+            adjustTextareaHeight(els.messageInput);
+            els.messageInput.focus();
+            
+            if(window.innerWidth < 1024 && !els.sidebar.classList.contains('-translate-x-full')) {
+                toggleSidebar();
+            }
+        }
+
+        function loadChat(id) {
+            if (isGenerating) return;
+            saveCurrentChat(); // Açık olanı kaydet
+
+            const chat = savedChats.find(c => c.id === id);
+            if (!chat) return;
+
+            currentChatId = chat.id;
+            chatHistory = [...chat.messages]; // Derin kopya yerine yüzeysel yeterli, yapı basit
+            els.currentChatTitle.textContent = chat.title;
+
+            els.messageContainer.innerHTML = '';
+            els.welcomeScreen.classList.add('hidden');
+
+            chatHistory.forEach(msg => {
+                appendMessageToUI(msg.role, msg.parts[0].text, false); // Animasyonsuz ekle
+            });
+
+            scrollToBottom();
+            if(window.innerWidth < 1024) toggleSidebar();
+        }
+
+        function saveCurrentChat() {
+            if (chatHistory.length === 0 || !currentChatId) return;
+
+            // İlk kullanıcı mesajını başlık olarak alalım (ilk 30 karakter)
+            let title = "Yeni Sohbet";
+            const firstUserMsg = chatHistory.find(m => m.role === 'user');
+            if (firstUserMsg) {
+                title = firstUserMsg.parts[0].text.substring(0, 30) + (firstUserMsg.parts[0].text.length > 30 ? "..." : "");
+            }
+
+            const existingIndex = savedChats.findIndex(c => c.id === currentChatId);
+            const chatData = { id: currentChatId, title: title, messages: chatHistory, timestamp: Date.now() };
+
+            if (existingIndex > -1) {
+                savedChats[existingIndex] = chatData;
+            } else {
+                savedChats.unshift(chatData); // En başa ekle
+            }
+
+            localStorage.setItem('tuncer_saved_chats', JSON.stringify(savedChats));
+            renderHistoryList();
+        }
+
+        function clearHistory() {
+            if(confirm("Tüm sohbet geçmişi silinecek. Onaylıyor musunuz?")) {
+                savedChats = [];
+                localStorage.removeItem('tuncer_saved_chats');
+                renderHistoryList();
+                startNewChat();
+            }
+        }
+
+        function renderHistoryList() {
+            els.historyList.innerHTML = '';
+            if (savedChats.length === 0) {
+                els.emptyHistoryMsg.style.display = 'block';
+                return;
+            }
+            
+            els.emptyHistoryMsg.style.display = 'none';
+            savedChats.forEach(chat => {
+                const div = document.createElement('div');
+                div.className = 'p-2 rounded-lg cursor-pointer hover:bg-white/5 transition flex items-center justify-between group';
+                
+                const date = new Date(chat.timestamp).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+                
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0" onclick="loadChat('${chat.id}')">
+                        <div class="text-xs text-slate-300 truncate">${chat.title}</div>
+                        <div class="text-[10px] text-slate-500">${date}</div>
+                    </div>
+                    <button onclick="deleteChat(event, '${chat.id}')" class="opacity-0 group-hover:opacity-100 p-1 text-slate-500 hover:text-red-400 transition">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                els.historyList.appendChild(div);
+            });
+        }
+
+        function deleteChat(e, id) {
+            e.stopPropagation(); // Satıra tıklamayı engelle
+            savedChats = savedChats.filter(c => c.id !== id);
+            localStorage.setItem('tuncer_saved_chats', JSON.stringify(savedChats));
+            renderHistoryList();
+            if(currentChatId === id) {
+                startNewChat();
+            }
+        }
+
+        // --- Mesajlaşma Mantığı ---
+        async function sendMessage() {
+            if (!apiKey) {
+                openApiKeyModal();
+                return;
+            }
+
+            const text = els.messageInput.value.trim();
+            if (!text || isGenerating) return;
+
+            // Eğer mevcut bir sohbet ID'si yoksa oluştur (Sayfa yenilendikten sonra ilk mesajda)
+            if(!currentChatId) currentChatId = Date.now().toString();
+
+            // Matematiksel işlem kontrolü (Basit hesaplamalar için math.js kullanımı - Yerel)
+            if (text.toLowerCase().startsWith('hesapla:')) {
+                const expr = text.substring(8).trim();
+                handleLocalMath(expr, text);
+                return;
+            }
+
+            // Normal mesaj akışı
+            els.messageInput.value = '';
+            els.messageInput.style.height = 'auto'; // Reset height
+            els.welcomeScreen.classList.add('hidden');
+            
+            appendMessageToUI('user', text);
+            chatHistory.push({ role: 'user', parts: [{ text: text }] });
+
+            setGeneratingState(true);
+            const typingIndicator = createTypingIndicator();
+            els.messageContainer.appendChild(typingIndicator);
+            scrollToBottom();
+
             try {
-                // tuncer2026.js'den ana sın
+                // API Çağrısı (Exponential Backoff ile Retry)
+                const responseText = await fetchWithRetry(text);
+                
+                typingIndicator.remove();
+                appendMessageToUI('model', responseText);
+                chatHistory.push({ role: 'model', parts: [{ text: responseText }] });
+                
+                saveCurrentChat(); // Her mesajdan sonra kaydet
+
+            } catch (error) {
+                typingIndicator.remove();
+                appendMessageToUI('model', `**Sistem Hatası:** ${error.message}\nLütfen API anahtarınızı kontrol edin veya internet bağlantınızdan emin olun.`);
+            } finally {
+                setGeneratingState(false);
+            }
+        }
+
+        function handleLocalMath(expr, originalText) {
+             els.messageInput.value = '';
+             els.messageInput.style.height = 'auto';
+             els.welcomeScreen.classList.add('hidden');
+             
+             appendMessageToUI('user', originalText);
+             chatHistory.push({ role: 'user', parts: [{ text: originalText }] });
+
+             try {
+                const result = math.evaluate(expr);
+                const reply = `Hesaplama Sonucu:\n\`\`\`\n${expr} = ${result}\n\`\`\``;
+                appendMessageToUI('model', reply);
+                chatHistory.push({ role: 'model', parts: [{ text: reply }] });
+                saveCurrentChat();
+             } catch(err) {
+                 appendMessageToUI('model', `Geçersiz bir matematiksel ifade girdiniz: \`${expr}\``);
+             }
+        }
+
+        // --- API İletişimi (Retry Mekanizması) ---
+        async function fetchWithRetry(newText, retries = 5) {
+            const systemInstruction = "Sen Tuncer Zeka'sın. 2026 yılında Ahmet Tuncer tarafından geliştirilmiş, gelişmiş bir yapay zeka asistanısın. Türkçe, net, açıklayıcı ve yardımsever bir dil kullan. Gerektiğinde Markdown formatını (kalın, kod blokları vb.) düzgün kullan.";
+            
+            // Gemini API için içerik formatını hazırla. Sadece son birkaç mesajı göndererek token tasarrufu sağlayabiliriz ama şimdilik tümünü gönderiyoruz.
+            const contents = chatHistory.map(msg => ({
+                role: msg.role === 'user' ? 'user' : 'model',
+                parts: [{ text: msg.parts[0].text }]
+            }));
+
+            const payload = {
+                contents: contents,
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            const url = `${API_URL}?key=${apiKey}`;
+
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        const errData = await response.json().catch(() => ({}));
+                        throw new Error(`API Hatası (${response.status}): ${errData.error?.message || 'Bilinmeyen hata'}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates.length > 0) {
+                         return data.candidates[0].content.parts[0].text;
+                    } else {
+                        throw new Error("Beklenmeyen API yanıt formatı.");
+                    }
+
+                } catch (error) {
+                    if (i === retries - 1) throw error; // Son denemeyse fırlat
+                    // Üstel bekleme (1s, 2s, 4s, 8s, 16s)
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        // --- UI Yardımcı Fonksiyonları ---
+        function setGeneratingState(isGen) {
+            isGenerating = isGen;
+            els.sendButton.disabled = isGen;
+            els.messageInput.disabled = isGen;
+            if(isGen) {
+                setStatus('generating', 'Düşünüyor...');
+            } else {
+                setStatus('online', 'Sistem Hazır');
+                els.messageInput.focus();
+            }
+        }
+
+        function createTypingIndicator() {
+            const div = document.createElement('div');
+            div.className = 'message flex items-start gap-3 w-full';
+            div.innerHTML = `
+                <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center border border-white/10 flex-shrink-0">
+                    <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                </div>
+                <div class="message-ai rounded-2xl rounded-tl-none px-4 py-3 flex items-center h-[46px]">
+                    <div class="typing-indicator flex gap-1">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            return div;
+        }
+
+        function appendMessageToUI(role, text, animate = true) {
+            const div = document.createElement('div');
+            div.className = `message flex items-start gap-3 w-full ${animate ? 'animate-fadeInUp' : ''} ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            if(!animate) div.style.opacity = 1;
+
+            const isUser = role === 'user';
+            
+            // Avatar
+            const avatarHtml = isUser 
+                ? `<div class="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                     <span class="text-white text-xs font-bold">U</span>
+                   </div>`
+                : `<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
+                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                   </div>`;
+
+            // İçerik (Markdown Parse for AI, Plain for User)
+            const contentHtml = isUser
+                ? `<div class="text-white whitespace-pre-wrap">${escapeHTML(text)}</div>`
+                : `<div class="markdown-content text-slate-200">${marked.parse(text)}</div>`;
+
+            const messageClass = isUser ? 'message-user' : 'message-ai';
+            const radiusClass = isUser ? 'rounded-tr-none' : 'rounded-tl-none';
+
+            div.innerHTML = `
+                ${avatarHtml}
+                <div class="${messageClass} rounded-2xl ${radiusClass} px-4 py-3 max-w-[85%] lg:max-w-[75%]">
+                    ${contentHtml}
+                </div>
+            `;
+
+            els.messageContainer.appendChild(div);
+            scrollToBottom();
+            
+            // highlight.js veya benzeri bir kütüphane eklenirse burada tetiklenebilir
+        }
+
+        function scrollToBottom() {
+            // Biraz gecikmeli scroll, DOM güncellemelerini yakalamak için
+            setTimeout(() => {
+                els.messageContainer.parentElement.scrollTop = els.messageContainer.parentElement.scrollHeight;
+            }, 50);
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+    </script>
+</body>
+</html>
+
