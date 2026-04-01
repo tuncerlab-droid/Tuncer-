@@ -2,70 +2,43 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka v2.0 - Ahmet Tuncer</title>
-    <!-- Gelişmiş Görsel Analizi için Hafif ve Ücretsiz Model (MobileNet + Custom Logic) -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tuncer AI - Sohbet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg-color: #0f172a;
-            --chat-bg: #1e293b;
-            --user-bubble: #3b82f6;
-            --bot-bubble: #334155;
-            --accent: #60a5fa;
-            --text-main: #f8fafc;
-            --text-dim: #94a3b8;
-        }
-
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            font-family: 'Inter', -apple-system, sans-serif;
+            font-family: 'Inter', sans-serif;
+            background-color: #343541; /* ChatGPT Koyu Arkaplan */
+            color: #ececf1;
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
             overflow: hidden;
         }
 
-        /* Header / Tanıtım Alanı */
-        .header {
-            padding: 12px 20px;
-            background-color: var(--chat-bg);
-            border-bottom: 1px solid #2d3748;
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        /* Özel Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        .header-info h1 {
-            font-size: 16px;
-            margin: 0;
-            color: var(--accent);
+        ::-webkit-scrollbar-track {
+            background: transparent;
         }
-
-        .header-info p {
-            font-size: 11px;
-            margin: 0;
-            color: var(--text-dim);
+        ::-webkit-scrollbar-thumb {
+            background: #565869;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #acacbe;
         }
 
         .chat-container {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            height: calc(100vh - 140px); /* Header ve Input alanı boşluğu */
             scroll-behavior: smooth;
         }
 
-        .message {
-            display: flex;
-            flex-direction: column;
-            max-width: 85%;
-            animation: fadeIn 0.3s ease;
+        /* Mesaj Animasyonu */
+        .message-entry {
+            animation: fadeIn 0.3s ease-in-out;
         }
 
         @keyframes fadeIn {
@@ -73,281 +46,281 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .user-message { align-self: flex-end; }
-        .bot-message { align-self: flex-start; }
-
-        .avatar-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 4px;
+        .sidebar-transition {
+            transition: transform 0.3s ease;
         }
 
-        .avatar {
-            width: 28px;
-            height: 28px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
+        /* Yazıyor animasyonu */
+        .typing-dot {
+            animation: typing 1.4s infinite ease-in-out both;
         }
-
-        .bot-avatar { background-color: var(--user-bubble); color: white; }
-        .user-name { font-size: 13px; font-weight: 600; color: var(--text-dim); }
-
-        .bubble {
-            padding: 12px 16px;
-            border-radius: 18px;
-            line-height: 1.6;
-            font-size: 15px;
-            position: relative;
-        }
-
-        .user-bubble {
-            background-color: var(--user-bubble);
-            color: white;
-            border-top-right-radius: 4px;
-        }
-
-        .bot-bubble {
-            background-color: var(--bot-bubble);
-            color: var(--text-main);
-            border-top-left-radius: 4px;
-        }
-
-        .img-content {
-            max-width: 100%;
-            border-radius: 12px;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        /* Input Alanı */
-        .input-area {
-            padding: 16px;
-            background-color: var(--bg-color);
-            border-top: 1px solid #2d3748;
-        }
-
-        .input-wrapper {
-            background-color: var(--chat-bg);
-            border-radius: 24px;
-            padding: 6px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border: 1px solid transparent;
-            transition: border 0.3s;
-        }
-
-        .input-wrapper:focus-within {
-            border-color: var(--user-bubble);
-        }
-
-        #user-input {
-            background: transparent;
-            border: none;
-            color: white;
-            flex: 1;
-            padding: 10px 0;
-            outline: none;
-            font-size: 15px;
-        }
-
-        .action-btn {
-            background: none;
-            border: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 50%;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn:hover { background-color: #2d3748; color: white; }
-
-        .send-btn {
-            background-color: var(--user-bubble);
-            color: white;
-        }
-
-        #file-input { display: none; }
-
-        .typing {
-            font-size: 12px;
-            color: var(--text-dim);
-            padding: 0 20px 10px;
-            display: none;
-        }
-
-        .preview-thumb {
-            width: 50px;
-            height: 50px;
-            border-radius: 8px;
-            object-fit: cover;
-            border: 2px solid var(--accent);
-            display: none;
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
         }
     </style>
+
+    <!-- YAPAY ZEKA KÜTÜPHANELERİNİ BURAYA DAHİL EDİYORUZ -->
+    <!-- Dosya isimlerini bilgisayarındaki tam isme göre güncelleyebilirsin -->
+    <script src="tuncer corr.js"></script>
+    <script src="tuncercore2023.js"></script>
 </head>
-<body>
+<body class="flex h-screen w-full">
 
-    <div class="header">
-        <div class="avatar bot-avatar">TZ</div>
-        <div class="header-info">
-            <h1>Tuncer Zeka v2.0</h1>
-            <p>Geliştirici: Ahmet Tuncer (Lab Droid)</p>
-        </div>
-    </div>
-
-    <div class="chat-container" id="chat-box">
-        <!-- İlk Karşılama -->
-        <div class="message bot-message">
-            <div class="avatar-row">
-                <div class="avatar bot-avatar">TZ</div>
-                <span class="user-name">Tuncer Zeka</span>
-            </div>
-            <div class="bubble bot-bubble">
-                Selam! Ben Tuncer Zeka. <b>Ahmet Tuncer</b> tarafından geliştirilen, görsel analiz yapabilen ve her konuda sohbet edebilen akıllı asistanınım. Bugün sana nasıl yardımcı olabilirim?
-            </div>
-        </div>
-    </div>
-
-    <div id="typing" class="typing">Tuncer Zeka analiz ediyor...</div>
-
-    <div class="input-area">
-        <div class="input-wrapper">
-            <label for="file-input" class="action-btn">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-            </label>
-            <input type="file" id="file-input" accept="image/*">
-            <img id="preview-image" class="preview-thumb">
-            
-            <input type="text" id="user-input" placeholder="Ahmet Tuncer'e veya TZ'ye bir şeyler sor..." autocomplete="off">
-            
-            <button class="action-btn send-btn" id="send-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+    <!-- SOL MENÜ (SIDEBAR) -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-[#202123] sidebar-transition -translate-x-full md:translate-x-0 flex flex-col md:relative h-full">
+        <div class="p-3">
+            <button onclick="yeniSohbet()" class="flex items-center gap-3 w-full border border-white/20 rounded-md p-3 text-sm hover:bg-white/5 transition-colors">
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Yeni Sohbet
             </button>
         </div>
-    </div>
+
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+            <div class="text-xs text-gray-500 font-medium px-2 pb-2">Bugün</div>
+            <button class="w-full text-left px-3 py-3 text-sm bg-[#343541] rounded-md truncate">
+                Mevcut Sohbet
+            </button>
+        </div>
+
+        <div class="p-4 border-t border-white/10 text-sm flex items-center gap-3 text-gray-300">
+            <div class="w-8 h-8 rounded-sm bg-blue-600 flex items-center justify-center font-bold text-white">AT</div>
+            Ahmet Tuncer
+        </div>
+    </aside>
+
+    <!-- ANA SOHBET ALANI -->
+    <main class="flex-1 flex flex-col h-full relative">
+        
+        <!-- Mobil Menü Butonu & Model Seçici -->
+        <header class="h-14 flex items-center justify-between px-4 border-b border-white/10 bg-[#343541] z-40 text-gray-200">
+            <button id="toggle-sidebar" class="md:hidden p-2 -ml-2 text-gray-400 hover:text-white">
+                <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+            </button>
+            
+            <!-- MODEL SEÇİCİ -->
+            <div class="flex-1 flex justify-center md:justify-start md:ml-4">
+                <select id="model-selector" class="bg-[#202123] text-white border border-gray-600 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2 outline-none cursor-pointer hover:bg-[#2a2b32] transition">
+                    <option value="2026">Tuncer Zeka v2026</option>
+                    <option value="2023">Tuncer Core 2023</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Sohbet Akışı -->
+        <div id="chat-viewport" class="chat-container overflow-y-auto w-full">
+            <!-- Karşılama Mesajı (Yapay Zeka Tarafından) -->
+            <div class="w-full border-b border-black/10 bg-[#444654] message-entry">
+                <div class="max-w-3xl mx-auto flex gap-4 p-6 text-base md:text-md">
+                    <div class="w-8 h-8 rounded-sm bg-emerald-600 flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <div class="flex-1 space-y-2 prose prose-invert">
+                        <p>Merhaba! Ben Tuncer Zeka. Yukarıdan modelimi seçip sohbete başlayabilirsin. Sana nasıl yardımcı olabilirim?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mesaj Yazma Alanı -->
+        <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-[#343541] via-[#343541] to-transparent pt-6">
+            <div class="max-w-3xl mx-auto px-4 pb-6">
+                <div class="relative flex items-end w-full p-1 bg-[#40414F] border border-gray-600 rounded-xl shadow-lg focus-within:ring-1 focus-within:ring-gray-400">
+                    <textarea id="chat-input" rows="1" placeholder="Tuncer Zeka'ya bir mesaj gönder..." 
+                        class="w-full max-h-48 py-3 pl-4 pr-12 bg-transparent text-white border-0 outline-none resize-none overflow-y-auto m-0 text-md"></textarea>
+                    
+                    <button id="btn-send" class="absolute bottom-2 right-2 p-2 rounded-md text-gray-400 hover:bg-[#202123] hover:text-white transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    </button>
+                </div>
+                <div class="text-xs text-center text-gray-400 mt-3">
+                    Tuncer Zeka hata yapabilir. Lütfen önemli bilgileri kontrol edin. Tasarımcı: Ahmet Tuncer
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobil Arkaplan Karartma -->
+    <div id="overlay" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden"></div>
 
     <script>
-        let visionModel = null;
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
-        const sendBtn = document.getElementById('send-btn');
-        const fileInput = document.getElementById('file-input');
-        const previewImage = document.getElementById('preview-image');
-        const typing = document.getElementById('typing');
+        // DOM Elementleri
+        const input = document.getElementById('chat-input');
+        const btnSend = document.getElementById('btn-send');
+        const viewport = document.getElementById('chat-viewport');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('overlay');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        const modelSelector = document.getElementById('model-selector');
 
-        let currentFile = null;
+        // Yapay Zeka Örnekleri (Instance)
+        let tuncer2026Instance = null;
+        let tuncer2023Instance = null;
 
-        // Modeli Yükle
-        async function init() {
-            visionModel = await mobilenet.load();
-            console.log("Model Hazır.");
+        // Sayfa Yüklendiğinde Modelleri Başlat
+        window.addEventListener('DOMContentLoaded', () => {
+            // Textarea otomatik boyutlandırma
+            input.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                if(this.value.trim() === '') btnSend.classList.add('text-gray-400');
+                else btnSend.classList.remove('text-gray-400');
+            });
+        });
+
+        // Sol Menü Aç/Kapat (Mobil)
+        function toggleMenu() {
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
         }
-        init();
+        toggleBtn.addEventListener('click', toggleMenu);
+        overlay.addEventListener('click', toggleMenu);
 
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                currentFile = file;
-                const reader = new FileReader();
-                reader.onload = (ev) => {
-                    previewImage.src = ev.target.result;
-                    previewImage.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
+        // Yeni Sohbet Temizleme
+        function yeniSohbet() {
+            // Sadece karşılama mesajını bırak, diğerlerini sil
+            const messages = viewport.querySelectorAll('.message-entry');
+            for(let i = 1; i < messages.length; i++) {
+                messages[i].remove();
+            }
+            if(window.innerWidth < 768) toggleMenu();
+        }
+
+        // Ekrana Mesaj Ekleme
+        function appendMessage(role, text) {
+            const isAI = role === 'ai';
+            const div = document.createElement('div');
+            
+            // ChatGPT benzeri arkaplan renkleri (Kullanıcı şeffaf, AI koyu gri)
+            div.className = `w-full border-b border-black/10 message-entry ${isAI ? 'bg-[#444654]' : ''}`;
+            
+            // Formatlama (basit line break desteği)
+            const formattedText = text.replace(/\n/g, '<br>');
+
+            div.innerHTML = `
+                <div class="max-w-3xl mx-auto flex gap-4 p-6 text-base md:text-md">
+                    <div class="w-8 h-8 rounded-sm ${isAI ? 'bg-emerald-600' : 'bg-[#5436DA]'} flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm">
+                        ${isAI ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>' : 'U'}
+                    </div>
+                    <div class="flex-1 space-y-2 prose prose-invert overflow-x-auto">
+                        <p class="whitespace-pre-wrap font-sans text-gray-200 leading-relaxed">${formattedText}</p>
+                    </div>
+                </div>
+            `;
+            
+            viewport.appendChild(div);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+        }
+
+        // Yazıyor Animasyonu Ekle/Kaldır
+        function toggleTyping(show) {
+            if (show) {
+                const div = document.createElement('div');
+                div.id = 'typing-indicator';
+                div.className = `w-full border-b border-black/10 bg-[#444654] message-entry`;
+                div.innerHTML = `
+                    <div class="max-w-3xl mx-auto flex gap-4 p-6 text-base md:text-md">
+                        <div class="w-8 h-8 rounded-sm bg-emerald-600 flex-shrink-0 flex items-center justify-center font-bold text-white shadow-sm">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                        <div class="flex-1 flex items-center space-x-1 h-8">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full typing-dot"></div>
+                        </div>
+                    </div>
+                `;
+                viewport.appendChild(div);
+                scrollToBottom();
+            } else {
+                const indicator = document.getElementById('typing-indicator');
+                if (indicator) indicator.remove();
+            }
+        }
+
+        // SOHBET İŞLEME VE KÜTÜPHANELERLE İLETİŞİM
+        async function handleChat() {
+            const query = input.value.trim();
+            if (!query) return;
+
+            // Kullanıcı Mesajı
+            appendMessage('user', query);
+            
+            // Input sıfırlama
+            input.value = '';
+            input.style.height = 'auto';
+            
+            toggleTyping(true);
+
+            // Seçilen Modeli Al
+            const selectedModel = modelSelector.value;
+            let responseText = "";
+
+            try {
+                // MODEL 1: TUNCER ZEKA 2026 (tuncer corr.js içindeki kod)
+                if (selectedModel === "2026") {
+                    // Eğer sınıf yüklendiyse (tuncer corr.js bulunduysa)
+                    if (typeof TuncerZeka !== 'undefined') {
+                        if (!tuncer2026Instance) {
+                            tuncer2026Instance = new TuncerZeka(); // Sınıfı başlat
+                        }
+                        
+                        // .konus() metodu bir obje döndürüyordu {cevap: "...", sure: "..."}
+                        const result = await tuncer2026Instance.konus(query);
+                        responseText = result.cevap ? result.cevap : result;
+                    } else {
+                        responseText = "⚠️ Hata: 'tuncer corr.js' dosyası yüklenemedi veya içinde TuncerZeka sınıfı bulunamadı. Lütfen dosyanın index.html ile aynı klasörde olduğundan emin olun.";
+                    }
+                } 
+                // MODEL 2: TUNCER CORE 2023 (tuncercore2023.js içindeki kod)
+                else if (selectedModel === "2023") {
+                    // Not: 2023 dosyasının içindeki sınıf/fonksiyon adını tam bilmediğim için "TuncerCore" olarak varsaydım.
+                    // Eğer tuncercore2023.js içindeki sınıfın adı farklıysa aşağıdaki 'TuncerCore' ismini ona göre değiştirmelisin.
+                    if (typeof TuncerCore !== 'undefined') {
+                         if (!tuncer2023Instance) {
+                             tuncer2023Instance = new TuncerCore(); 
+                         }
+                         const result = await tuncer2023Instance.konus(query);
+                         responseText = result.cevap ? result.cevap : result;
+                    } 
+                    // Eğer "TuncerZeka" sınıfı 2023'te de aynı isimle kullanıldıysa:
+                    else if (typeof TuncerZeka2023 !== 'undefined') {
+                         if (!tuncer2023Instance) tuncer2023Instance = new TuncerZeka2023(); 
+                         const result = await tuncer2023Instance.konus(query);
+                         responseText = result.cevap ? result.cevap : result;
+                    }
+                    else {
+                        responseText = "⚠️ Hata: 'tuncercore2023.js' dosyası bulunamadı veya içindeki tetikleme fonksiyonu anlaşılamadı. (JS dosyasındaki Ana Sınıf adının doğru çağrıldığından emin ol).";
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+                responseText = "Beklenmeyen bir hata oluştu: " + error.message;
+            }
+
+            // Yapay Zeka Cevabı
+            toggleTyping(false);
+            appendMessage('ai', responseText);
+        }
+
+        // Enter tuşu ile gönderme (Shift+Enter alt satıra geçer)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleChat();
             }
         });
 
-        async function handleSend() {
-            const text = userInput.value.trim();
-            if (!text && !currentFile) return;
+        // Butona tıklama
+        btnSend.addEventListener('click', handleChat);
 
-            // Kullanıcı Mesajı
-            const userMsgDiv = document.createElement('div');
-            userMsgDiv.className = 'message user-message';
-            let content = `<div class="bubble user-bubble">`;
-            if (currentFile) {
-                content += `<img src="${previewImage.src}" class="img-content">`;
-            }
-            content += text || "Bu görseli analiz et.";
-            content += `</div>`;
-            userMsgDiv.innerHTML = content;
-            chatBox.appendChild(userMsgDiv);
-
-            // Temizlik
-            const tempFile = currentFile;
-            const tempText = text;
-            userInput.value = "";
-            currentFile = null;
-            previewImage.style.display = 'none';
-            chatBox.scrollTop = chatBox.scrollHeight;
-            typing.style.display = 'block';
-
-            // Yapay Zeka Yanıtı
-            setTimeout(async () => {
-                let response = "";
-
-                // Ahmet Tuncer'i Tanıma Mantığı
-                const lowerText = tempText.toLowerCase();
-                if (lowerText.includes("ahmet tuncer kim") || lowerText.includes("seni kim yaptı") || lowerText.includes("yapımcın")) {
-                    response = "<b>Ahmet Tuncer</b>, Tuncer Lab ve Droid projelerinin vizyoner kurucusudur. Beni sıfırdan tasarlayan, görsel zekamı geliştiren ve bu interaktif dünyayı kuran kişi odur. O benim mimarım!";
-                } 
-                else if (tempFile) {
-                    // Görsel Analizi
-                    const img = new Image();
-                    img.src = URL.createObjectURL(tempFile);
-                    await img.decode();
-                    const results = await visionModel.classify(img);
-                    
-                    if (results && results.length > 0) {
-                        const label = results[0].className;
-                        // Basit Çeviri Mantığı (Örnekler)
-                        let trLabel = label;
-                        if(label.includes("cat")) trLabel = "tatlı bir kedi";
-                        if(label.includes("dog")) trLabel = "sadık bir köpek";
-                        if(label.includes("laptop")) trLabel = "bir bilgisayar";
-                        
-                        response = `Görseli Ahmet Tuncer'in geliştirdiği algoritmalarla inceledim. Burada bir <b>${trLabel}</b> gördüğümden %${Math.round(results[0].probability * 100)} eminim.`;
-                    } else {
-                        response = "Görseli inceledim ama net bir şey seçemedim. Ahmet Tuncer'e daha net bir fotoğraf göndermemi söyleyebilirsin!";
-                    }
-                } else {
-                    // Genel Sohbet
-                    if(lowerText.includes("selam")) response = "Selam! Ahmet Tuncer'in dünyasına hoş geldin. Senin için ne yapabilirim?";
-                    else if(lowerText.includes("kod yaz")) response = "Tabii! Ahmet Tuncer bana kod yazmayı da öğretti. Hangi dilde bir örnek istersin?";
-                    else response = "Mesajını aldım. Seninle sohbet etmek harika! Bana daha fazla detay ver ki sana Tuncer Zeka farkıyla yardımcı olayım.";
-                }
-
-                typing.style.display = 'none';
-                appendBotMsg(response);
-            }, 1000);
-        }
-
-        function appendBotMsg(text) {
-            const botMsgDiv = document.createElement('div');
-            botMsgDiv.className = 'message bot-message';
-            botMsgDiv.innerHTML = `
-                <div class="avatar-row">
-                    <div class="avatar bot-avatar">TZ</div>
-                    <span class="user-name">Tuncer Zeka</span>
-                </div>
-                <div class="bubble bot-bubble">${text}</div>
-            `;
-            chatBox.appendChild(botMsgDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
-
-        sendBtn.addEventListener('click', handleSend);
-        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSend(); });
     </script>
 </body>
 </html>
