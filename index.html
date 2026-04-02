@@ -3,250 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer AI - Global Core</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>Tuncer AI - Direct Access</title>
     <style>
-        :root {
-            --bg: #0a0a0f;
-            --surface: #12121a;
-            --accent: #00d4ff;
-            --text: #e2e8f0;
-            --err: #ff4d4d;
-            --ok: #00ffa3;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background: var(--bg); 
-            color: var(--text); 
-            font-family: 'Inter', sans-serif; 
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        header {
-            padding: 20px;
-            background: var(--surface);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .brand { font-family: 'Fira Code'; font-weight: 700; color: var(--accent); font-size: 1.2rem; }
-        
-        .badge {
-            background: #1a1a24;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            border: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .indicator { width: 10px; height: 10px; border-radius: 50%; background: #333; }
-        .indicator.active { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
-        .indicator.loading { background: #ffcc00; animation: pulse 1s infinite; }
-        .indicator.error { background: var(--err); }
-
-        main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 15px; max-width: 800px; margin: 0 auto; width: 100%; }
-
-        #chat {
-            flex: 1;
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .msg { padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; max-width: 85%; }
-        .msg.user { align-self: flex-end; background: var(--accent); color: #000; font-weight: 600; }
-        .msg.ai { align-self: flex-start; background: #1c1c28; border: 1px solid rgba(255,255,255,0.05); }
-
-        .terminal {
-            background: #000;
-            padding: 12px;
-            border-radius: 8px;
-            font-family: 'Fira Code', monospace;
-            font-size: 10px;
-            color: #71717a;
-            max-height: 100px;
-            overflow-y: auto;
-            border: 1px solid #1a1a24;
-        }
-
-        .input-box {
-            display: flex;
-            gap: 10px;
-            background: var(--surface);
-            padding: 12px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        input { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 15px; }
-        button { background: var(--accent); border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; }
-        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-
-        .ver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 5px; }
-        .ver-btn { background: #1c1c28; color: #52525b; border: 1px solid #27273a; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
-        .ver-btn.active { border-color: var(--accent); color: var(--accent); }
-
-        @keyframes pulse { 50% { opacity: 0.4; } }
+        body { background: #000; color: #0f0; font-family: monospace; padding: 20px; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        #chat { flex: 1; overflow-y: auto; margin-bottom: 20px; white-space: pre-wrap; }
+        .input-line { display: flex; gap: 10px; border-top: 1px solid #333; padding-top: 10px; }
+        input { background: transparent; border: none; color: #0f0; outline: none; flex: 1; font-family: monospace; font-size: 1.1rem; }
+        .ver-select { margin-bottom: 10px; }
+        button { background: #111; color: #0f0; border: 1px solid #0f0; padding: 5px 10px; cursor: pointer; }
+        button.active { background: #0f0; color: #000; }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="brand">TUNCER CORE</div>
-    <div class="badge">
-        <div id="ind" class="indicator"></div>
-        <span id="st">BEKLENİYOR...</span>
-    </div>
-</header>
-
-<main>
-    <div class="ver-grid">
-        <button class="ver-btn" onclick="forceBoot('2023')">MODEL_2023</button>
-        <button class="ver-btn active" onclick="forceBoot('2026')">MODEL_2026</button>
+    <div class="ver-select">
+        <button id="v23" onclick="switchVer('2023')">v2023</button>
+        <button id="v26" onclick="switchVer('2026')" class="active">v2026</button>
     </div>
 
-    <div id="chat">
-        <div class="msg ai">Sistem v6.0 hazır. Çekirdek yazılım enjeksiyonu başlatılıyor...</div>
+    <div id="chat">--- TUNCER AI SİSTEMİNE HOŞGELDİNİZ ---</div>
+
+    <div class="input-line">
+        <span>></span>
+        <input type="text" id="ui" autofocus autocomplete="off">
     </div>
 
-    <div class="terminal" id="term">> System ready.</div>
+    <!-- Scriptleri buraya peş peşe diziyoruz, kontrol falan yok -->
+    <script id="s2023" src="tuncer2023.js"></script>
+    <script id="s2026" src="tuncer2026.js"></script>
 
-    <div class="input-box">
-        <input type="text" id="ui" placeholder="Mesaj gönder..." autocomplete="off">
-        <button onclick="send()">GÖNDER</button>
-    </div>
-</main>
+    <script>
+        let currentVer = '2026';
+        let ai = null;
 
-<script>
-    let ai = null;
-    const term = document.getElementById('term');
-    const ind = document.getElementById('ind');
-    const st = document.getElementById('st');
-    const chat = document.getElementById('chat');
-
-    function log(m, err = false) {
-        const d = document.createElement('div');
-        d.style.color = err ? "#ff4d4d" : "#71717a";
-        d.innerText = `[${new Date().toLocaleTimeString()}] ${m}`;
-        term.appendChild(d);
-        term.scrollTop = term.scrollHeight;
-    }
-
-    async function forceBoot(v) {
-        ai = null;
-        ind.className = 'indicator loading';
-        st.innerText = `YÜKLENİYOR v${v}`;
-        document.querySelectorAll('.ver-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(v)));
-        
-        try {
-            log(`v${v} dosyası çekiliyor...`);
-            const r = await fetch(`tuncer${v}.js?v=${Date.now()}`);
-            if(!r.ok) throw new Error("Dosya bulunamadı.");
-            
-            let rawCode = await r.text();
-            log(`Dosya boyutu: ${rawCode.length} bytes.`);
-
-            // --- MANİPÜLASYON BAŞLIYOR ---
-            // Koddaki exportları temizle ve her şeyi window'a zorla
-            let processedCode = rawCode
-                .replace(/export default/g, "")
-                .replace(/export /g, "");
-
-            // Kodun sonuna sınıfı dışarı sızdırma komutu ekle
-            processedCode += `\n
-            if(typeof TuncerZeka !== 'undefined') { window.__CORE_READY = TuncerZeka; }
-            else if(typeof tuncerZeka !== 'undefined') { window.__CORE_READY = tuncerZeka; }
-            else { 
-                // Eğer isim farklıysa bulmaya çalış
-                const found = Object.keys(window).find(k => k.toLowerCase().includes('tuncer') && typeof window[k] === 'function');
-                if(found) window.__CORE_READY = window[found];
-            }`;
-
-            // Eski scripti sil ve yenisini enjekte et
-            const old = document.getElementById('core-script');
-            if(old) old.remove();
-
-            const sc = document.createElement('script');
-            sc.id = 'core-script';
-            sc.textContent = processedCode;
-            document.body.appendChild(sc);
-
-            // Sınıfın hazır olmasını bekle
-            setTimeout(() => {
-                const CoreClass = window.__CORE_READY;
-                if(CoreClass) {
-                    ai = new CoreClass();
-                    ind.className = 'indicator active';
-                    st.innerText = `AKTİF v${v}`;
-                    log("BAŞARILI: Çekirdek hafızaya alındı.");
-                } else {
-                    throw new Error("Sınıf tanımlanamadı! Dosya içindeki class ismini kontrol edin.");
-                }
-            }, 200);
-
-        } catch (e) {
-            ind.className = 'indicator error';
-            st.innerText = "HATA";
-            log(e.message, true);
-        }
-    }
-
-    function send() {
-        const input = document.getElementById('ui');
-        const val = input.value.trim();
-        if(!val) return;
-
-        addMsg(val, 'user');
-        input.value = '';
-
-        if(!ai) {
-            addMsg("Hata: Çekirdek bağlı değil. Lütfen yüklenmesini bekleyin veya logları kontrol edin.", 'ai');
-            return;
-        }
-
-        try {
-            const res = ai.konus(val);
-            // Promise desteği ekleyelim (Eğer konuş fonksiyonu async ise)
-            if(res instanceof Promise) {
-                res.then(r => addMsg(typeof r === 'object' ? r.cevap : r, 'ai'))
-                   .catch(e => log(e.message, true));
-            } else {
-                addMsg(typeof res === 'object' ? res.cevap : res, 'ai');
+        function initAI() {
+            try {
+                // Hiçbir kontrol yapmadan direkt sınıfı başlatmayı dene
+                ai = new TuncerZeka();
+                printLog("Sistem bağlandı.");
+            } catch (e) {
+                printLog("Sistem henüz hazır değil (Dosya yükleniyor olabilir).");
             }
-        } catch (e) {
-            log("Runtime: " + e.message, true);
-            addMsg("Sistem hatası: " + e.message, 'ai');
         }
-    }
 
-    function addMsg(t, s) {
-        const d = document.createElement('div');
-        d.className = `msg ${s}`;
-        d.innerText = t;
-        chat.appendChild(d);
-        chat.scrollTop = chat.scrollHeight;
-    }
+        function switchVer(v) {
+            currentVer = v;
+            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            document.getElementById('v' + (v.slice(-2))).classList.add('active');
+            printLog("Sürüm değiştirildi: " + v);
+            initAI();
+        }
 
-    document.getElementById('ui').onkeydown = (e) => e.key === 'Enter' && send();
-    
-    // İlk çalıştırma
-    window.onload = () => forceBoot('2026');
-</script>
+        function printLog(m) {
+            const chat = document.getElementById('chat');
+            chat.innerHTML += "\n" + m;
+            chat.scrollTop = chat.scrollHeight;
+        }
 
+        async function send() {
+            const input = document.getElementById('ui');
+            const val = input.value;
+            if(!val) return;
+
+            printLog("Kullanıcı: " + val);
+            input.value = '';
+
+            try {
+                // Eğer initAI başarısız olduysa tekrar dene
+                if(!ai) ai = new TuncerZeka();
+                
+                const res = await ai.konus(val);
+                const text = typeof res === 'object' ? res.cevap : res;
+                printLog("Tuncer: " + text);
+            } catch (e) {
+                printLog("Hata: TuncerZeka sınıfına ulaşılamıyor. Lütfen dosyaların klasörde olduğundan emin olun.");
+            }
+        }
+
+        document.getElementById('ui').onkeydown = (e) => { if(e.key === 'Enter') send(); };
+        
+        // Sayfa açıldıktan 1 saniye sonra zorla başlat
+        window.onload = () => setTimeout(initAI, 1000);
+    </script>
 </body>
 </html>
 
