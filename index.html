@@ -2,24 +2,28 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tuncer Zeka - Demo Paneli</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --primary: #bb86fc;
+            --primary-hover: #9965f4;
             --secondary: #03dac6;
             --text-main: #e0e0e0;
             --text-muted: #a0a0a0;
             --border: #333;
+            --error: #cf6679;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -29,37 +33,79 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+        }
+
+        .header-container {
+            width: 100%;
+            max-width: 1200px;
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
         }
 
         h1 {
             color: var(--primary);
             margin-bottom: 10px;
-            text-align: center;
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
 
         .subtitle {
             color: var(--text-muted);
-            margin-bottom: 30px;
-            text-align: center;
+            font-size: clamp(0.9rem, 2vw, 1rem);
         }
 
+        .engine-selector {
+            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .engine-selector select {
+            background: #2c2c2c;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            padding: 5px 10px;
+            border-radius: 4px;
+            outline: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* Dashboard Grid */
         .dashboard {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
             width: 100%;
             max-width: 1200px;
         }
 
+        /* Cards */
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 10px;
+            border-radius: 12px;
             padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
         .card h2 {
@@ -67,17 +113,23 @@
             font-size: 1.2rem;
             border-bottom: 1px solid var(--border);
             padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
+        /* Inputs & Buttons */
         textarea, input[type="text"] {
             width: 100%;
             background-color: #2c2c2c;
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 10px;
-            border-radius: 5px;
+            padding: 12px;
+            border-radius: 8px;
             resize: vertical;
             outline: none;
+            font-size: 15px;
+            transition: border-color 0.2s;
         }
 
         textarea:focus, input[type="text"]:focus {
@@ -88,44 +140,63 @@
             background-color: var(--primary);
             color: #000;
             border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
+            padding: 12px 20px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
-            transition: background 0.3s;
+            font-size: 15px;
+            transition: background 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
-        button:hover {
-            background-color: #9965f4;
-        }
+        button:hover { background-color: var(--primary-hover); }
+        button:active { transform: scale(0.97); }
 
         .result-box {
             background-color: #252525;
             padding: 15px;
-            border-radius: 5px;
-            min-height: 80px;
+            border-radius: 8px;
+            min-height: 100px;
             font-size: 0.95rem;
-            line-height: 1.5;
+            line-height: 1.6;
             white-space: pre-wrap;
+            border-left: 4px solid var(--secondary);
+            overflow-y: auto;
+            max-height: 250px;
         }
 
-        /* Chatbot Özel Stilleri */
+        .error-text { color: var(--error); font-weight: bold; }
+
+        /* Chatbot Specifics */
         .chat-box {
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            height: 250px;
+            gap: 12px;
+            height: 300px;
             overflow-y: auto;
             background-color: #252525;
-            padding: 10px;
-            border-radius: 5px;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px inset var(--border);
+            scroll-behavior: smooth;
         }
 
         .message {
-            padding: 8px 12px;
-            border-radius: 15px;
-            max-width: 80%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 85%;
             word-wrap: break-word;
+            font-size: 15px;
+            line-height: 1.4;
+            animation: fadeIn 0.2s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .msg-user {
@@ -133,6 +204,7 @@
             color: #000;
             align-self: flex-end;
             border-bottom-right-radius: 2px;
+            font-weight: 500;
         }
 
         .msg-bot {
@@ -140,129 +212,299 @@
             color: var(--text-main);
             align-self: flex-start;
             border-bottom-left-radius: 2px;
+            border: 1px solid var(--border);
+        }
+
+        .msg-error {
+            background-color: rgba(207, 102, 121, 0.1);
+            color: var(--error);
+            align-self: center;
+            border: 1px solid var(--error);
+            font-size: 13px;
+            text-align: center;
+            max-width: 95%;
         }
 
         .input-group {
             display: flex;
             gap: 10px;
         }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .card { padding: 15px; }
+            .input-group { flex-direction: column; }
+            .input-group button { width: 100%; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>🧠 Tuncer Zeka</h1>
-    <p class="subtitle">Sıfır Bağımlılık • Saf JavaScript • Türkçe Yapay Zeka Kütüphanesi</p>
+    <div class="header-container">
+        <h1><i class="fas fa-brain"></i> Tuncer Zeka Core</h1>
+        <p class="subtitle">Sıfır Bağımlılık • Saf JavaScript • Gerçek Kütüphane Bağlantısı</p>
+        
+        <div class="engine-selector">
+            <label for="engineSelect"><i class="fas fa-microchip"></i> Aktif Motor:</label>
+            <select id="engineSelect" onchange="motorDegistir()">
+                <option value="TuncerZeka">v2027 / v2026 (Varsayılan)</option>
+                <option value="TuncerZeka2023">v2023 (Klasik)</option>
+            </select>
+        </div>
+    </div>
 
     <div class="dashboard">
         
+        <!-- SOHBET KARTI -->
         <div class="card">
-            <h2>💬 Sohbet Botu (Chatbot)</h2>
+            <h2><i class="fas fa-comments"></i> Sohbet Botu</h2>
             <div class="chat-box" id="chatBox">
-                <div class="message msg-bot">Merhaba! Ben Tuncer. Size nasıl yardımcı olabilirim? 😊</div>
+                <div class="message msg-bot" id="status-msg">Sistem başlatılıyor... Kütüphane bağlantısı kontrol ediliyor.</div>
             </div>
             <div class="input-group">
-                <input type="text" id="chatInput" placeholder="Bir şeyler yazın..." onkeypress="if(event.key === 'Enter') gonderMesaj()">
-                <button onclick="gonderMesaj()">Gönder</button>
+                <input type="text" id="chatInput" placeholder="Bir şeyler yazın..." autocomplete="off">
+                <button id="sendBtn"><i class="fas fa-paper-plane"></i> Gönder</button>
             </div>
         </div>
 
+        <!-- DUYGU ANALİZİ KARTI -->
         <div class="card">
-            <h2>😊 Duygu Analizi</h2>
+            <h2><i class="fas fa-smile-beam"></i> Duygu Analizi</h2>
             <textarea id="duyguInput" rows="4" placeholder="Analiz edilecek metni buraya girin... (Örn: Bu kütüphane gerçekten harika çalışıyor!)"></textarea>
-            <button onclick="analizEt()">Analiz Et</button>
-            <div class="result-box" id="duyguSonuc">Sonuç burada görünecek...</div>
+            <button id="analizBtn"><i class="fas fa-search"></i> Analiz Et</button>
+            <div class="result-box" id="duyguSonuc">
+                <span style="color: var(--text-muted)">Sonuç burada görünecek...</span>
+            </div>
         </div>
 
+        <!-- ÖZET & İSTATİSTİK KARTI -->
         <div class="card">
-            <h2>📋 Metin Özetleyici & İstatistik</h2>
+            <h2><i class="fas fa-align-left"></i> Metin Özetleyici & İstatistik</h2>
             <textarea id="ozetInput" rows="5" placeholder="Uzun bir metin girin..."></textarea>
-            <button onclick="ozetleVeIstatistik()">İşle</button>
-            <div class="result-box" id="ozetSonuc">Özet ve istatistikler burada görünecek...</div>
+            <button id="ozetBtn"><i class="fas fa-magic"></i> İşle</button>
+            <div class="result-box" id="ozetSonuc">
+                <span style="color: var(--text-muted)">Özet ve istatistikler burada görünecek...</span>
+            </div>
         </div>
 
     </div>
 
-    <script src="tuncer2026.js"></script>
-    
-    <script>
-        // 1. Sohbet Botu Başlatma
-        const bot = new TuncerZeka.SohbetBotu({ isim: 'Tuncer' });
+    <!-- KULLANICI KÜTÜPHANELERİ BURADA YÜKLENMELİ -->
+    <!-- <script src="tuncer2023.js"></script> -->
+    <!-- <script src="tuncer2026.js"></script> -->
+    <!-- <script src="tuncer2027.js"></script> -->
 
-        function gonderMesaj() {
-            const inputEl = document.getElementById('chatInput');
-            const mesaj = inputEl.value.trim();
+    <script>
+        // --- SİSTEM DEĞİŞKENLERİ ---
+        let aktifKutuphaneAdi = 'TuncerZeka';
+        let botInstance = null;
+
+        // --- DOM ELEMENTLERİ ---
+        const chatBox = document.getElementById('chatBox');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const analizBtn = document.getElementById('analizBtn');
+        const ozetBtn = document.getElementById('ozetBtn');
+
+        // --- BAŞLATMA VE OLAY DİNLEYİCİLERİ ---
+        function init() {
+            // Buton Olayları (Event Listeners)
+            sendBtn.addEventListener('click', gonderMesaj);
+            chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') gonderMesaj(); });
+            
+            analizBtn.addEventListener('click', analizEt);
+            ozetBtn.addEventListener('click', ozetleVeIstatistik);
+
+            // İlk kütüphane kontrolü
+            motorDegistir();
+        }
+
+        // --- MOTOR YÖNETİMİ (SİMÜLASYON YOK, SADECE KONTROL) ---
+        function getAktifKutuphane() {
+            // Seçilen kütüphane window objesinde var mı?
+            return window[aktifKutuphaneAdi];
+        }
+
+        function motorDegistir() {
+            aktifKutuphaneAdi = document.getElementById('engineSelect').value;
+            botInstance = null; // Eski bot örneğini temizle
+            
+            const lib = getAktifKutuphane();
+            const statusMsg = document.getElementById('status-msg');
+
+            if (lib) {
+                // Kütüphane bulundu, bot örneğini oluşturmayı dene
+                try {
+                    if (typeof lib.SohbetBotu === 'function') {
+                        botInstance = new lib.SohbetBotu({ isim: 'Tuncer' });
+                    } else if (typeof lib === 'function') {
+                        // Class yapısı ise
+                        botInstance = new lib();
+                    } else {
+                        // Obje yapısı ise direkt kullan
+                        botInstance = lib;
+                    }
+                    mesajEkle('bot', `✅ [SİSTEM]: ${aktifKutuphaneAdi} kütüphanesi başarıyla bağlandı. Dinliyorum.`);
+                    if(statusMsg) statusMsg.style.display = 'none';
+                } catch (e) {
+                    mesajEkle('error', `⚠️ [BAĞLANTI HATASI]: Kütüphane bulundu ancak başlatılamadı. Hata: ${e.message}`);
+                }
+            } else {
+                // Kütüphane YOK! (Simülasyon yapma, hata ver)
+                mesajEkle('error', `❌ [KÜTÜPHANE BULUNAMADI]: "${aktifKutuphaneAdi}" objesi tarayıcıda yok. Lütfen ilgili .js dosyasını HTML'e eklediğinizden emin olun.`);
+                if(statusMsg) statusMsg.style.display = 'none';
+            }
+        }
+
+        // --- 1. SOHBET MODÜLÜ ---
+        async function gonderMesaj() {
+            const mesaj = chatInput.value.trim();
             if (!mesaj) return;
 
             mesajEkle('user', mesaj);
-            inputEl.value = '';
+            chatInput.value = '';
 
-            // Tuncer Zeka'dan cevap al
-            const yanit = bot.cevapVer(mesaj);
+            const lib = getAktifKutuphane();
             
-            setTimeout(() => {
-                mesajEkle('bot', yanit.cevap);
-            }, 400); // Küçük bir gecikme ile daha doğal bir his
+            // Güvenlik Duvarı: Kütüphane yoksa uydurma, uyar!
+            if (!lib || !botInstance) {
+                mesajEkle('error', `Sistem Hatası: Aktif bir yapay zeka motoru (Kütüphane) bulunamadı. İşlem iptal edildi.`);
+                return;
+            }
+
+            try {
+                // Kütüphanedeki fonksiyonu çağırmayı dene
+                // Kullanıcının kütüphane yapısına göre 'cevapVer' veya 'konus' olabilir
+                let yanit;
+                
+                if (typeof botInstance.cevapVer === 'function') {
+                    yanit = botInstance.cevapVer(mesaj);
+                } else if (typeof botInstance.konus === 'function') {
+                    yanit = await botInstance.konus(mesaj);
+                } else if (typeof botInstance.process === 'function') {
+                    yanit = botInstance.process(mesaj);
+                } else {
+                    throw new Error("Kütüphanede cevapVer(), konus() veya process() fonksiyonu bulunamadı.");
+                }
+
+                // Yanıt obje olarak geldiyse (örneğin senin v2026 kodundaki gibi {cevap: "..."})
+                const metin = (typeof yanit === 'object' && yanit.cevap) ? yanit.cevap : yanit;
+                
+                setTimeout(() => {
+                    mesajEkle('bot', metin);
+                }, 100);
+
+            } catch (error) {
+                mesajEkle('error', `Kütüphane Çalıştırma Hatası: ${error.message}`);
+            }
         }
 
         function mesajEkle(kim, metin) {
-            const chatBox = document.getElementById('chatBox');
             const div = document.createElement('div');
-            div.className = `message ${kim === 'user' ? 'msg-user' : 'msg-bot'}`;
+            if (kim === 'user') div.className = 'message msg-user';
+            else if (kim === 'bot') div.className = 'message msg-bot';
+            else div.className = 'message msg-error'; // Hata durumları için
+            
             div.textContent = metin;
             chatBox.appendChild(div);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // 2. Duygu Analizi
+        // --- 2. DUYGU ANALİZİ MODÜLÜ ---
         function analizEt() {
             const metin = document.getElementById('duyguInput').value;
             const sonucDiv = document.getElementById('duyguSonuc');
             
             if (!metin.trim()) {
-                sonucDiv.innerHTML = "Lütfen bir metin girin.";
+                sonucDiv.innerHTML = "<span class='error-text'>Lütfen analiz edilecek bir metin girin.</span>";
                 return;
             }
 
-            const sonuc = TuncerZeka.duyguAnaliziYap(metin);
-            
-            sonucDiv.innerHTML = `
-                <strong>Duygu:</strong> ${sonuc.duygu.toUpperCase()} ${sonuc.emoji}<br>
-                <strong>Güven:</strong> %${sonuc.guven}<br>
-                <strong>Skor:</strong> ${sonuc.skor}<br><br>
-                <small><em>Pozitif Kelimeler:</em> ${sonuc.detay.pozitifKelimeler.join(', ') || 'Yok'}</small><br>
-                <small><em>Negatif Kelimeler:</em> ${sonuc.detay.negatifKelimeler.join(', ') || 'Yok'}</small>
-            `;
+            const lib = getAktifKutuphane();
+            if (!lib || typeof lib.duyguAnaliziYap !== 'function') {
+                sonucDiv.innerHTML = "<span class='error-text'>❌ Kütüphane Hatası: Aktif motorda 'duyguAnaliziYap()' fonksiyonu bulunamadı veya kütüphane yüklenmedi.</span>";
+                return;
+            }
+
+            try {
+                // Sadece gerçek kütüphane çağrısı
+                const sonuc = lib.duyguAnaliziYap(metin);
+                
+                sonucDiv.innerHTML = `
+                    <strong>Duygu:</strong> ${sonuc.duygu.toUpperCase()} ${sonuc.emoji || ''}<br>
+                    <strong>Güven:</strong> %${sonuc.guven || 'N/A'}<br>
+                    <strong>Skor:</strong> ${sonuc.skor || 'N/A'}<br><br>
+                    <small><em>Pozitif Kelimeler:</em> ${sonuc.detay?.pozitifKelimeler?.join(', ') || 'Yok'}</small><br>
+                    <small><em>Negatif Kelimeler:</em> ${sonuc.detay?.negatifKelimeler?.join(', ') || 'Yok'}</small>
+                `;
+            } catch(e) {
+                sonucDiv.innerHTML = `<span class='error-text'>Çalıştırma Hatası: ${e.message}</span>`;
+            }
         }
 
-        // 3. Özetleme ve İstatistik
+        // --- 3. ÖZETLEME VE İSTATİSTİK MODÜLÜ ---
         function ozetleVeIstatistik() {
             const metin = document.getElementById('ozetInput').value;
             const sonucDiv = document.getElementById('ozetSonuc');
             
             if (!metin.trim()) {
-                sonucDiv.innerHTML = "Lütfen bir metin girin.";
+                sonucDiv.innerHTML = "<span class='error-text'>Lütfen bir metin girin.</span>";
                 return;
             }
 
-            // Kütüphaneden verileri çek
-            const ozet = TuncerZeka.ozetle(metin, 2); // 2 cümlelik özet
-            const istatistik = TuncerZeka.metinIstatistik(metin);
-            const anahtarKelimeler = TuncerZeka.anahtarKelimeler(metin, 5).map(k => k.kelime).join(', ');
+            const lib = getAktifKutuphane();
+            if (!lib) {
+                sonucDiv.innerHTML = "<span class='error-text'>❌ Kütüphane Hatası: Sistemde yüklü bir kütüphane bulunamadı.</span>";
+                return;
+            }
 
-            sonucDiv.innerHTML = `
-                <strong style="color:var(--secondary)">📌 Özet:</strong><br>
-                ${ozet}<br><br>
-                
-                <strong style="color:var(--secondary)">📊 İstatistikler:</strong><br>
-                • Toplam Kelime: ${istatistik.toplamKelime}<br>
-                • Benzersiz Kelime: ${istatistik.benzersizKelime}<br>
-                • Cümle Sayısı: ${istatistik.cumleSayisi}<br>
-                • Okunabilirlik Skoru: ${istatistik.okunabilirlikSkoru}/100<br><br>
+            try {
+                let htmlCikti = "";
 
-                <strong style="color:var(--secondary)">🔑 Anahtar Kelimeler:</strong><br>
-                ${anahtarKelimeler}
-            `;
+                // Özet Fonksiyonu Kontrolü
+                if (typeof lib.ozetle === 'function') {
+                    const ozet = lib.ozetle(metin, 2);
+                    htmlCikti += `<strong style="color:var(--secondary)">📌 Özet:</strong><br>${ozet}<br><br>`;
+                } else {
+                    htmlCikti += `<strong style="color:var(--secondary)">📌 Özet:</strong><br><span class='error-text'>'ozetle()' fonksiyonu kütüphanede yok.</span><br><br>`;
+                }
+
+                // İstatistik Fonksiyonu Kontrolü
+                if (typeof lib.metinIstatistik === 'function') {
+                    const ist = lib.metinIstatistik(metin);
+                    htmlCikti += `
+                        <strong style="color:var(--secondary)">📊 İstatistikler:</strong><br>
+                        • Toplam Kelime: ${ist.toplamKelime || 'N/A'}<br>
+                        • Benzersiz Kelime: ${ist.benzersizKelime || 'N/A'}<br>
+                        • Cümle Sayısı: ${ist.cumleSayisi || 'N/A'}<br>
+                        • Okunabilirlik Skoru: ${ist.okunabilirlikSkoru || 'N/A'}/100<br><br>
+                    `;
+                }
+
+                // Anahtar Kelime Fonksiyonu Kontrolü
+                if (typeof lib.anahtarKelimeler === 'function') {
+                    const ak = lib.anahtarKelimeler(metin, 5);
+                    const kelimeListesi = Array.isArray(ak) ? ak.map(k => k.kelime || k).join(', ') : ak;
+                    htmlCikti += `<strong style="color:var(--secondary)">🔑 Anahtar Kelimeler:</strong><br>${kelimeListesi}`;
+                }
+
+                sonucDiv.innerHTML = htmlCikti;
+
+            } catch(e) {
+                sonucDiv.innerHTML = `<span class='error-text'>Çalıştırma Hatası: ${e.message}</span>`;
+            }
         }
+
+        // Sayfa yüklendiğinde sistemi başlat
+        window.onload = init;
     </script>
 </body>
 </html>
+
+
