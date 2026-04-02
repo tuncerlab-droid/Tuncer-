@@ -3,335 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer OS - Yapay Zeka Terminali</title>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500&family=Inter:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>Tuncer Zeka - AI Kontrol Paneli</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #020617;
-            --accent: #38bdf8;
-            --accent-glow: rgba(56, 189, 248, 0.3);
-            --terminal-green: #10b981;
-            --error-red: #ef4444;
-            --text-dim: #64748b;
-            --glass: rgba(15, 23, 42, 0.8);
+            --bg: #030712;
+            --card: #111827;
+            --accent: #0ea5e9;
+            --success: #10b981;
+            --error: #ef4444;
+            --text: #f3f4f6;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            background-color: var(--bg-dark); 
-            color: #f1f5f9; 
-            font-family: 'Inter', sans-serif; 
-            height: 100vh; 
-            display: flex; 
-            overflow: hidden;
-        }
+        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; }
 
-        /* Scanline Efekti */
-        body::before {
-            content: " ";
-            display: block;
-            position: absolute;
-            top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 10;
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-        }
-
-        .main-frame {
-            display: flex;
-            width: 100%;
-            padding: 20px;
-            gap: 20px;
-            z-index: 1;
-        }
-
-        /* Sol Panel: Sistem Bilgisi */
-        .sidebar {
-            width: 320px;
-            background: var(--glass);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            backdrop-filter: blur(10px);
-        }
-
-        .os-logo {
-            font-family: 'Fira Code', monospace;
-            font-size: 1.5rem;
-            color: var(--accent);
-            text-shadow: 0 0 10px var(--accent-glow);
-            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
-            padding-bottom: 10px;
-        }
-
-        .stat-card {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 3px solid var(--accent);
-        }
-
-        .stat-label { font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; }
-        .stat-value { font-family: 'Fira Code', monospace; font-size: 0.9rem; margin-top: 5px; }
-
-        .engine-toggle {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            background: rgba(0,0,0,0.5);
-            border-radius: 8px;
-            padding: 4px;
-            border: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .toggle-btn {
-            padding: 10px;
-            border: none;
-            background: none;
-            color: var(--text-dim);
-            cursor: pointer;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.8rem;
-            border-radius: 6px;
-            transition: all 0.3s;
-        }
-
-        .toggle-btn.active {
-            background: var(--accent);
-            color: var(--bg-dark);
-            box-shadow: 0 0 15px var(--accent-glow);
-        }
-
-        /* Sağ Panel: Terminal */
-        .terminal {
-            flex: 1;
-            background: var(--glass);
-            border: 1px solid rgba(56, 189, 248, 0.2);
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            backdrop-filter: blur(10px);
-        }
-
-        .terminal-header {
-            padding: 12px 20px;
-            background: rgba(56, 189, 248, 0.1);
-            border-bottom: 1px solid rgba(56, 189, 248, 0.2);
+        /* Üst Bilgi Çubuğu */
+        .status-bar {
+            background: var(--card);
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
         }
 
-        .output-box {
+        .status-item { display: flex; align-items: center; gap: 8px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #4b5563; }
+        .dot.active { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .dot.error { background: var(--error); }
+
+        /* Ana İçerik */
+        .container { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow: hidden; }
+
+        .chat-window {
             flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            font-family: 'Fira Code', monospace;
-            font-size: 0.9rem;
+            background: var(--card);
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .log-entry { display: flex; gap: 10px; }
-        .log-prefix { color: var(--accent); flex-shrink: 0; }
-        .log-content { line-height: 1.6; }
+        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+        .msg.user { align-self: flex-end; background: var(--accent); color: white; }
+        .msg.ai { align-self: flex-start; background: #1f2937; border: 1px solid rgba(255,255,255,0.1); }
 
-        .ai-response { color: #cbd5e1; }
-        .user-request { color: var(--terminal-green); }
-
-        .input-line {
-            padding: 20px;
-            background: rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-top: 1px solid rgba(56, 189, 248, 0.2);
+        .controls { display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px; }
+        .btn { 
+            flex: 1; padding: 10px; border: none; border-radius: 8px; background: #1f2937; 
+            color: #9ca3af; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 12px;
         }
+        .btn.active { background: var(--accent); color: white; }
 
-        .input-line input {
-            flex: 1;
-            background: none;
-            border: none;
-            outline: none;
-            color: var(--accent);
-            font-family: 'Fira Code', monospace;
-            font-size: 1rem;
+        .input-area { display: flex; gap: 10px; }
+        input { 
+            flex: 1; background: var(--card); border: 1px solid rgba(255,255,255,0.1); 
+            padding: 15px; border-radius: 12px; color: white; outline: none;
         }
+        input:focus { border-color: var(--accent); }
+        .send-btn { background: var(--accent); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; }
 
-        .cursor {
-            width: 8px; height: 18px;
-            background: var(--accent);
-            display: inline-block;
-            animation: blink 1s infinite;
-            vertical-align: middle;
+        .debug-panel {
+            background: #000;
+            color: #4ade80;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            max-height: 80px;
+            overflow-y: auto;
+            border: 1px solid #1f2937;
         }
-
-        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
-        
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="main-frame">
-        <div class="sidebar">
-            <div class="os-logo">TUNCER_OS v4.0</div>
-            
-            <div class="stat-card">
-                <div class="stat-label">Aktif Çekirdek</div>
-                <div class="stat-value" id="activeVersion">TUN_CORE_2026</div>
-            </div>
+    <div class="status-bar">
+        <div class="status-item">
+            <div id="statusDot" class="dot"></div>
+            <span id="statusText">SİSTEM ÇEVRİMDIŞI</span>
+        </div>
+        <div id="fileNameDisplay">Yükleniyor: tuncer2026.js</div>
+    </div>
 
-            <div class="stat-card">
-                <div class="stat-label">Sistem Durumu</div>
-                <div class="stat-value" id="sysStatus" style="color: var(--text-dim);">BAĞLANILIYOR...</div>
-            </div>
+    <div class="container">
+        <div class="controls">
+            <button class="btn" id="btn2023" onclick="loadEngine('2023')">MODEL 2023</button>
+            <button class="btn active" id="btn2026" onclick="loadEngine('2026')">MODEL 2026</button>
+        </div>
 
-            <div class="engine-toggle">
-                <button class="toggle-btn" id="btn2023" onclick="bootCore('2023')">v2023</button>
-                <button class="toggle-btn active" id="btn2026" onclick="bootCore('2026')">v2026</button>
-            </div>
-
-            <div class="stat-card" style="margin-top: auto; border-left-color: var(--text-dim);">
-                <div class="stat-label">Hafıza Durumu</div>
-                <div class="stat-value" style="font-size: 0.7rem;">Buffer: OK<br>Stack: STABLE</div>
+        <div class="chat-window">
+            <div class="messages" id="chat">
+                <div class="msg ai">Sistem hazır. Lütfen bir model seçin ve konuşmaya başlayın.</div>
             </div>
         </div>
 
-        <div class="terminal">
-            <div class="terminal-header">
-                <div style="font-size: 0.75rem; color: var(--accent);">CORE_LINK: STABLE</div>
-                <div style="font-size: 0.75rem; color: var(--text-dim);" id="clock">00:00:00</div>
-            </div>
+        <div class="debug-panel" id="debug">Log: Bekleniyor...</div>
 
-            <div class="output-box" id="terminalOutput">
-                <div class="log-entry">
-                    <span class="log-prefix">SYSTEM:</span>
-                    <span class="log-content">Terminal başlatıldı. Çekirdek yazılım bekleniyor...</span>
-                </div>
-            </div>
-
-            <div class="input-line">
-                <span style="color: var(--terminal-green); font-family: 'Fira Code';">></span>
-                <input type="text" id="commandLine" placeholder="Komut girin..." autocomplete="off">
-            </div>
+        <div class="input-area">
+            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." autocomplete="off">
+            <button class="send-btn" onclick="sendMessage()">➤</button>
         </div>
     </div>
 
     <script>
-        let aiCore = null;
-        let currentV = '2026';
-        const output = document.getElementById('terminalOutput');
-        const cmdInput = document.getElementById('commandLine');
-        const sysStatus = document.getElementById('sysStatus');
+        let ai = null;
+        const chat = document.getElementById('chat');
+        const debug = document.getElementById('debug');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
 
-        // Saat güncelleme
-        setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString('tr-TR');
-        }, 1000);
+        function addLog(msg) {
+            const time = new Date().toLocaleTimeString();
+            debug.innerHTML += `<div>[${time}] ${msg}</div>`;
+            debug.scrollTop = debug.scrollHeight;
+        }
 
-        window.onload = () => bootCore('2026');
+        window.onload = () => loadEngine('2026');
 
-        cmdInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleCommand();
-        });
-
-        async function bootCore(v) {
-            currentV = v;
-            aiCore = null;
+        async function loadEngine(ver) {
+            // UI Güncelleme
+            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn' + ver).classList.add('active');
+            document.getElementById('fileNameDisplay').innerText = `Yükleniyor: tuncer${ver}.js`;
             
-            // UI Güncelle
-            document.getElementById('btn2023').className = v === '2023' ? 'toggle-btn active' : 'toggle-btn';
-            document.getElementById('btn2026').className = v === '2026' ? 'toggle-btn active' : 'toggle-btn';
-            document.getElementById('activeVersion').innerText = `TUN_CORE_${v}`;
-            sysStatus.innerText = "YÜKLENİYOR...";
-            sysStatus.style.color = "var(--text-dim)";
-
-            addLog("SYSTEM", `Çekirdek v${v} için protokoller başlatıldı...`);
-
-            // Dosya Yolunu Çöz
-            const path = window.location.pathname;
-            const dir = path.substring(0, path.lastIndexOf('/') + 1);
-            const scriptUrl = `${dir}tuncer${v}.js?v=${Date.now()}`;
+            ai = null;
+            statusDot.className = 'dot';
+            statusText.innerText = "YÜKLENİYOR...";
+            addLog(`v${ver} yüklenmeye çalışılıyor...`);
 
             // Eski scripti temizle
-            const old = document.getElementById('core-loader');
+            const old = document.getElementById('ai-script');
             if (old) old.remove();
 
-            // Yeni yükleyici
             const script = document.createElement('script');
-            script.id = 'core-loader';
-            script.src = scriptUrl;
+            script.id = 'ai-script';
+            // GitHub ve Yerel yolları desteklemek için dinamik yol
+            const dir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+            script.src = `${dir}tuncer${ver}.js?cache=` + Date.now();
 
             script.onload = () => {
-                // Sınıf Kontrolü
-                let retry = 0;
-                const timer = setInterval(() => {
-                    const CoreClass = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
-                    if (CoreClass) {
-                        aiCore = new CoreClass();
-                        sysStatus.innerText = "AKTİF";
-                        sysStatus.style.color = "var(--terminal-green)";
-                        addLog("SYSTEM", `Çekirdek v${v} başarıyla bağlandı. Komutlar kabul ediliyor.`);
-                        clearInterval(timer);
-                    } else if (retry > 10) {
-                        sysStatus.innerText = "YAZILIM HATASI";
-                        sysStatus.style.color = "var(--error-red)";
-                        addLog("ERROR", `Dosya indi ancak 'TuncerZeka' sınıfı tanımlanamadı.`);
-                        clearInterval(timer);
+                addLog("JS dosyası başarıyla indi.");
+                
+                // --- AKILLI SINIF TESPİTİ ---
+                // Eğer TuncerZeka değil de başka bir isimle kaydedildiyse (Büyük/Küçük harf gibi)
+                setTimeout(() => {
+                    let FoundClass = window.TuncerZeka || window.tuncerZeka || window.Tuncerzeka;
+                    
+                    if (!FoundClass) {
+                        // Eğer globalde bulamazsak sınıfı manuel arayalım
+                        addLog("HATA: Sınıf ismi TuncerZeka değil! window nesnesi taranıyor...");
+                        for (let key in window) {
+                            if (key.toLowerCase().includes('tuncer') && typeof window[key] === 'function') {
+                                FoundClass = window[key];
+                                addLog(`BULDUM! Sınıf ismi: ${key}`);
+                                break;
+                            }
+                        }
                     }
-                    retry++;
-                }, 100);
+
+                    if (FoundClass) {
+                        try {
+                            ai = new FoundClass();
+                            statusDot.className = 'dot active';
+                            statusText.innerText = `AKTİF (v${ver})`;
+                            addLog("Motor başarıyla başlatıldı.");
+                        } catch (e) {
+                            statusDot.className = 'dot error';
+                            statusText.innerText = "BAŞLATMA HATASI";
+                            addLog("HATA: Constructor çalıştırılamadı: " + e.message);
+                        }
+                    } else {
+                        statusDot.className = 'dot error';
+                        statusText.innerText = "SINIF BULUNAMADI";
+                        addLog("HATA: Dosya indi ama içinde uygun bir Sınıf yok.");
+                    }
+                }, 300);
             };
 
             script.onerror = () => {
-                sysStatus.innerText = "DOSYA EKSİK";
-                sysStatus.style.color = "var(--error-red)";
-                addLog("ERROR", `tuncer${v}.js dosyasına ulaşılamadı. Sunucu yolunu kontrol edin.`);
+                statusDot.className = 'dot error';
+                statusText.innerText = "DOSYA YOK";
+                addLog(`HATA: tuncer${ver}.js dosyası bu klasörde bulunamadı.`);
             };
 
             document.body.appendChild(script);
         }
 
-        async function handleCommand() {
-            const cmd = cmdInput.value.trim();
-            if (!cmd) return;
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const text = input.value.trim();
+            if (!text) return;
 
-            addLog("USER", cmd, "user-request");
-            cmdInput.value = '';
+            // Kullanıcı mesajı
+            const uDiv = document.createElement('div');
+            uDiv.className = 'msg user';
+            uDiv.innerText = text;
+            chat.appendChild(uDiv);
+            input.value = '';
 
-            if (!aiCore) {
-                addLog("SYSTEM", "Hata: Aktif çekirdek bulunamadı. Bağlantı kesik.", "error-red");
+            if (!ai) {
+                const eDiv = document.createElement('div');
+                eDiv.className = 'msg ai';
+                eDiv.innerText = "⚠️ Motor bağlı değil. Lütfen dosyanın yüklendiğinden emin olun.";
+                chat.appendChild(eDiv);
                 return;
             }
 
             try {
-                const response = await aiCore.konus(cmd);
-                const text = (typeof response === 'object') ? response.cevap : response;
-                addLog(`TUNCER_${currentV}`, text, "ai-response");
+                const response = await ai.konus(text);
+                const aDiv = document.createElement('div');
+                aDiv.className = 'msg ai';
+                aDiv.innerText = typeof response === 'object' ? response.cevap : response;
+                chat.appendChild(aDiv);
             } catch (e) {
-                addLog("CRASH", e.message, "error-red");
+                addLog("Çalışma Hatası: " + e.message);
             }
+            chat.scrollTop = chat.scrollHeight;
         }
 
-        function addLog(prefix, msg, customClass = "") {
-            const div = document.createElement('div');
-            div.className = 'log-entry';
-            div.innerHTML = `
-                <span class="log-prefix">${prefix}:</span>
-                <span class="log-content ${customClass}">${msg}</span>
-            `;
-            output.appendChild(div);
-            output.scrollTop = output.scrollHeight;
-        }
+        document.getElementById('userInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
     </script>
 </body>
 </html>
