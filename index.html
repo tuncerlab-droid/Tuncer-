@@ -38,7 +38,6 @@
             position: relative;
         }
 
-        /* Arka plan parlama efektleri */
         .glow-1 {
             position: absolute;
             top: -10%;
@@ -61,7 +60,6 @@
             pointer-events: none;
         }
 
-        /* Ana Taşıyıcı */
         .app-container {
             display: flex;
             width: 100%;
@@ -71,7 +69,6 @@
             gap: 20px;
         }
 
-        /* Sol Menü (Sidebar) */
         .sidebar {
             width: 300px;
             background: var(--panel-bg);
@@ -119,7 +116,6 @@
             color: var(--text-muted);
         }
 
-        /* Sürüm Seçici (Toggle) */
         .version-selector {
             background: rgba(15, 23, 42, 0.6);
             border-radius: 16px;
@@ -187,7 +183,6 @@
             color: var(--text-muted);
         }
 
-        /* Ana Sohbet Alanı */
         .chat-area {
             flex: 1;
             background: var(--panel-bg);
@@ -250,7 +245,6 @@
             scroll-behavior: smooth;
         }
 
-        /* Mesaj Balonları */
         .message {
             max-width: 80%;
             display: flex;
@@ -292,7 +286,6 @@
             border-bottom-left-radius: 4px;
         }
 
-        /* Kod Blokları için Stil */
         pre {
             background: #0f172a;
             padding: 15px;
@@ -318,7 +311,6 @@
             text-align: right;
         }
 
-        /* Input Alanı */
         .input-container {
             padding: 20px 30px;
             background: rgba(30, 41, 59, 0.6);
@@ -376,7 +368,6 @@
             transform: scale(0.95);
         }
 
-        /* Yükleniyor Animasyonu */
         .typing-indicator {
             display: flex;
             gap: 6px;
@@ -394,7 +385,6 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
-        /* Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -405,20 +395,10 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
 
-        /* Keyframes */
         @keyframes slideUpFade {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @keyframes pulse {
@@ -432,17 +412,9 @@
             40% { transform: scale(1); }
         }
 
-        /* Responsive */
         @media (max-width: 768px) {
-            .app-container {
-                flex-direction: column;
-                padding: 10px;
-            }
-            .sidebar {
-                width: 100%;
-                height: auto;
-                padding: 15px;
-            }
+            .app-container { flex-direction: column; padding: 10px; }
+            .sidebar { width: 100%; height: auto; padding: 15px; }
             .brand { margin-bottom: 20px; }
             .version-selector { margin-bottom: 20px; }
             .chat-header { padding: 15px; }
@@ -454,7 +426,6 @@
 </head>
 <body>
 
-    <!-- Arka Plan Parlamaları -->
     <div class="glow-1"></div>
     <div class="glow-2"></div>
 
@@ -479,10 +450,10 @@
             </div>
 
             <div class="system-status">
-                <div class="status-dot"></div>
+                <div class="status-dot" id="statusDot"></div>
                 <div class="status-text">
-                    Sistem Çevrimiçi <br>
-                    <span style="font-size: 0.75rem; opacity: 0.7" id="engineStatus">Motor bekleniyor...</span>
+                    Sistem Durumu <br>
+                    <span style="font-size: 0.75rem; opacity: 0.7" id="engineStatus">Bekleniyor...</span>
                 </div>
             </div>
         </div>
@@ -526,9 +497,10 @@
         const userInput = document.getElementById('userInput');
         const activeBg = document.getElementById('activeBg');
         const engineStatus = document.getElementById('engineStatus');
+        const statusDot = document.getElementById('statusDot');
         const currentEngineTitle = document.getElementById('currentEngineTitle');
 
-        // Sayfa yüklenince başlat
+        // Sayfa yüklenince otomatik başlat
         window.onload = () => {
             loadEngineScript('2026');
         };
@@ -549,45 +521,49 @@
             loadEngineScript(version);
         }
 
-        // --- ONARILMIŞ DOSYA YÜKLEME MANTIĞI ---
+        // MOTOR YÜKLEME - SENİN KODLARINA GÖRE AYARLANDI
         function loadEngineScript(version) {
-            aiInstance = null; // Eski motoru temizle
-            engineStatus.innerText = `Motor: tuncer${version}.js aranıyor...`;
-            engineStatus.style.color = "var(--text-muted)";
-            
-            // Eski scripti temizle
-            const existing = document.getElementById('ai-script');
-            if (existing) existing.remove();
+            aiInstance = null;
+            engineStatus.innerText = `tuncer${version}.js yükleniyor...`;
+            statusDot.style.background = "#94a3b8"; // Gri (Yükleniyor)
+            statusDot.style.boxShadow = "none";
+
+            // Mevcut motor scriptini temizle
+            const oldScript = document.getElementById('dynamic-engine');
+            if (oldScript) oldScript.remove();
 
             const script = document.createElement('script');
-            script.id = 'ai-script';
-            // Yerel dizini garantiye almak için ./ kullanıldı ve cache engellendi
-            script.src = `./tuncer${version}.js?nocache=${Date.now()}`;
+            script.id = 'dynamic-engine';
+            // Yerel dosyayı cache-breaker ile yükle
+            script.src = `./tuncer${version}.js?v=${Date.now()}`;
             
             script.onload = () => {
-                // Sınıfın tanınması için tarayıcıya 100ms zaman tanı
+                // Sınıfın global scope'ta tanınması için kısa bir delay
                 setTimeout(() => {
+                    // Senin kodlarındaki class ismi: TuncerZeka
                     const TargetClass = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
                     
                     if (TargetClass) {
                         try {
                             aiInstance = new TargetClass();
-                            engineStatus.innerText = `Motor: tuncer${version}.js AKTİF`;
-                            engineStatus.style.color = "#10b981";
+                            engineStatus.innerText = `tuncer${version}.js Aktif`;
+                            statusDot.style.background = "#10b981"; // Yeşil
+                            statusDot.style.boxShadow = "0 0 10px #10b981";
                         } catch (e) {
-                            engineStatus.innerText = "Hata: Sınıf başlatılamadı!";
-                            engineStatus.style.color = "#ef4444";
+                            engineStatus.innerText = "Sınıf hatası!";
+                            statusDot.style.background = "#ef4444";
                         }
                     } else {
-                        engineStatus.innerText = `Hata: tuncer${version}.js içerisinde 'TuncerZeka' sınıfı bulunamadı!`;
-                        engineStatus.style.color = "#ef4444";
+                        engineStatus.innerText = `Sınıf bulunamadı (TuncerZeka)`;
+                        statusDot.style.background = "#ef4444";
                     }
-                }, 100);
+                }, 150);
             };
 
             script.onerror = () => {
-                engineStatus.innerText = `Hata: tuncer${version}.js dosyası bu klasörde bulunamadı!`;
-                engineStatus.style.color = "#ef4444";
+                engineStatus.innerText = `Dosya bulunamadı: tuncer${version}.js`;
+                statusDot.style.background = "#ef4444"; // Kırmızı
+                statusDot.style.boxShadow = "0 0 10px #ef4444";
             };
 
             document.body.appendChild(script);
@@ -603,20 +579,22 @@
             const typingId = showTypingIndicator();
 
             try {
-                // Sınıf yüklü mü kontrol et
+                // Senin metodun: konus()
                 if (aiInstance && typeof aiInstance.konus === 'function') {
                     const response = await aiInstance.konus(text);
-                    const finalMsg = typeof response === 'object' ? response.cevap : response;
+                    // Senin dönüş yapın {cevap: "..."} ise onu al, yoksa direkt string ise onu al
+                    const finalMsg = (typeof response === 'object' && response.cevap) ? response.cevap : response;
+                    
                     removeTypingIndicator(typingId);
                     appendMessage(formatResponse(finalMsg), 'ai');
                 } else {
                     await new Promise(r => setTimeout(r, 800));
                     removeTypingIndicator(typingId);
-                    appendMessage(`⚠️ **HATA:** Yapay zeka motoru (\`tuncer${currentVersion}.js\`) şu an aktif değil veya klasörde bulunamadı. Lütfen JS dosyasının klasörde olduğunu ve 'TuncerZeka' sınıfını içerdiğini kontrol edin.`, 'ai');
+                    appendMessage(`⚠️ **Motor Hatası:** \`tuncer${currentVersion}.js\` dosyası klasörde bulunamadığı için yanıt üretilemedi. Lütfen dosyanın yan yana olduğundan emin olun.`, 'ai');
                 }
             } catch (error) {
                 removeTypingIndicator(typingId);
-                appendMessage("Beklenmedik bir hata: " + error.message, 'ai');
+                appendMessage("Bir çalışma hatası oluştu: " + error.message, 'ai');
             }
         }
 
@@ -670,8 +648,9 @@
         function clearChat() {
             if(confirm("Sohbeti temizle?")) {
                 chatBox.innerHTML = '';
-                addSystemMessage("Temizlendi");
-                if(aiInstance?.sifirla) aiInstance.sifirla();
+                addSystemMessage("Sohbet temizlendi.");
+                // Senin metodun: sifirla()
+                if(aiInstance && typeof aiInstance.sifirla === 'function') aiInstance.sifirla();
             }
         }
 
