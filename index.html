@@ -172,10 +172,9 @@
         .status-dot {
             width: 10px;
             height: 10px;
-            background: #10b981;
+            background: #94a3b8;
             border-radius: 50%;
-            box-shadow: 0 0 10px #10b981;
-            animation: pulse 2s infinite;
+            transition: all 0.3s ease;
         }
 
         .status-text {
@@ -307,10 +306,6 @@
             margin: 0 10px;
         }
 
-        .user .time-stamp {
-            text-align: right;
-        }
-
         .input-container {
             padding: 20px 30px;
             background: rgba(30, 41, 59, 0.6);
@@ -326,11 +321,6 @@
             transition: all 0.3s;
         }
 
-        .input-box:focus-within {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-        }
-
         .input-box input {
             flex: 1;
             background: transparent;
@@ -338,10 +328,6 @@
             color: white;
             font-size: 1rem;
             outline: none;
-        }
-
-        .input-box input::placeholder {
-            color: var(--text-muted);
         }
 
         .send-btn {
@@ -356,16 +342,6 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s;
-            font-size: 1.1rem;
-        }
-
-        .send-btn:hover {
-            background: var(--primary-hover);
-            transform: scale(1.05);
-        }
-
-        .send-btn:active {
-            transform: scale(0.95);
         }
 
         .typing-indicator {
@@ -385,26 +361,9 @@
         .typing-dot:nth-child(1) { animation-delay: -0.32s; }
         .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
 
         @keyframes typingBounce {
@@ -412,15 +371,10 @@
             40% { transform: scale(1); }
         }
 
-        @media (max-width: 768px) {
-            .app-container { flex-direction: column; padding: 10px; }
-            .sidebar { width: 100%; height: auto; padding: 15px; }
-            .brand { margin-bottom: 20px; }
-            .version-selector { margin-bottom: 20px; }
-            .chat-header { padding: 15px; }
-            .messages-container { padding: 15px; }
-            .input-container { padding: 15px; }
-            .message { max-width: 90%; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
     </style>
 </head>
@@ -430,20 +384,16 @@
     <div class="glow-2"></div>
 
     <div class="app-container">
-        <!-- Sidebar -->
         <div class="sidebar">
             <div class="brand">
-                <div class="brand-icon">
-                    <i class="fa-solid fa-brain"></i>
-                </div>
+                <div class="brand-icon"><i class="fa-solid fa-brain"></i></div>
                 <div class="brand-text">
                     <h1>TUNCER AI</h1>
                     <p>Akıllı Asistan Arayüzü</p>
                 </div>
             </div>
 
-            <!-- Versiyon Seçici -->
-            <div class="version-selector" id="versionSelector">
+            <div class="version-selector">
                 <div class="active-bg" id="activeBg"></div>
                 <button class="version-btn" data-version="2023" onclick="switchVersion('2023')">v2023</button>
                 <button class="version-btn active" data-version="2026" onclick="switchVersion('2026')">v2026</button>
@@ -458,33 +408,25 @@
             </div>
         </div>
 
-        <!-- Chat Alanı -->
         <div class="chat-area">
             <div class="chat-header">
                 <div class="header-title">
                     <i class="fa-solid fa-microchip"></i>
                     <span id="currentEngineTitle">Tuncer Zeka 2026</span>
                 </div>
-                <button class="clear-btn" onclick="clearChat()">
-                    <i class="fa-solid fa-trash-can"></i> Temizle
-                </button>
+                <button class="clear-btn" onclick="clearChat()">Temizle</button>
             </div>
 
             <div class="messages-container" id="chatBox">
                 <div class="message ai">
-                    <div class="message-bubble">
-                        Merhaba! Ben Tuncer Zeka. Seçili olan yapay zeka motorum ile size yardımcı olabilirim. Nasıl yardımcı olabilirim?
-                    </div>
-                    <span class="time-stamp">Sistem Başlatıldı</span>
+                    <div class="message-bubble">Merhaba! Ben Tuncer Zeka. Nasıl yardımcı olabilirim?</div>
                 </div>
             </div>
 
             <div class="input-container">
                 <div class="input-box">
                     <input type="text" id="userInput" placeholder="Bir mesaj yazın..." autocomplete="off">
-                    <button class="send-btn" onclick="sendMessage()">
-                        <i class="fa-solid fa-paper-plane"></i>
-                    </button>
+                    <button class="send-btn" onclick="sendMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -495,75 +437,71 @@
         let aiInstance = null;
         const chatBox = document.getElementById('chatBox');
         const userInput = document.getElementById('userInput');
-        const activeBg = document.getElementById('activeBg');
         const engineStatus = document.getElementById('engineStatus');
         const statusDot = document.getElementById('statusDot');
         const currentEngineTitle = document.getElementById('currentEngineTitle');
+        const activeBg = document.getElementById('activeBg');
 
-        // Sayfa yüklenince otomatik başlat
-        window.onload = () => {
-            loadEngineScript('2026');
+        // GitHub Pages için ana dizini belirle
+        const getBasePath = () => {
+            const path = window.location.pathname;
+            return path.substring(0, path.lastIndexOf('/') + 1);
         };
+
+        window.onload = () => loadEngineScript('2026');
 
         userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
         function switchVersion(version) {
             if (currentVersion === version) return;
             currentVersion = version;
-
-            document.querySelectorAll('.version-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.version === version);
-            });
-
+            document.querySelectorAll('.version-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.version === version));
             activeBg.style.transform = version === '2023' ? 'translateX(0)' : 'translateX(100%)';
             currentEngineTitle.innerHTML = `Tuncer Zeka ${version}`;
-            addSystemMessage(`Motor Değiştiriliyor: v${version}`);
             loadEngineScript(version);
         }
 
-        // MOTOR YÜKLEME - SENİN KODLARINA GÖRE AYARLANDI
+        // --- GITHUB UYUMLU VE GARANTİ YÜKLEME ---
         function loadEngineScript(version) {
             aiInstance = null;
             engineStatus.innerText = `tuncer${version}.js yükleniyor...`;
-            statusDot.style.background = "#94a3b8"; // Gri (Yükleniyor)
-            statusDot.style.boxShadow = "none";
+            statusDot.style.background = "#94a3b8";
+            statusDot.style.animation = "none";
 
-            // Mevcut motor scriptini temizle
             const oldScript = document.getElementById('dynamic-engine');
             if (oldScript) oldScript.remove();
 
             const script = document.createElement('script');
             script.id = 'dynamic-engine';
-            // Yerel dosyayı cache-breaker ile yükle
-            script.src = `./tuncer${version}.js?v=${Date.now()}`;
+            // GitHub/Web için kesin göreceli yol
+            script.src = `${getBasePath()}tuncer${version}.js?v=${Date.now()}`;
             
             script.onload = () => {
-                // Sınıfın global scope'ta tanınması için kısa bir delay
+                // Sınıfın yüklenmesi için bekletme süresini 200ms yaptık (GitHub hızı için)
                 setTimeout(() => {
-                    // Senin kodlarındaki class ismi: TuncerZeka
-                    const TargetClass = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
+                    // Senin kodlarındaki TuncerZeka sınıfı
+                    const AIClass = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
                     
-                    if (TargetClass) {
+                    if (AIClass) {
                         try {
-                            aiInstance = new TargetClass();
+                            aiInstance = new AIClass();
                             engineStatus.innerText = `tuncer${version}.js Aktif`;
-                            statusDot.style.background = "#10b981"; // Yeşil
-                            statusDot.style.boxShadow = "0 0 10px #10b981";
+                            statusDot.style.background = "#10b981";
+                            statusDot.style.animation = "pulse 2s infinite";
                         } catch (e) {
-                            engineStatus.innerText = "Sınıf hatası!";
+                            engineStatus.innerText = "Sınıf başlatılamadı!";
                             statusDot.style.background = "#ef4444";
                         }
                     } else {
-                        engineStatus.innerText = `Sınıf bulunamadı (TuncerZeka)`;
+                        engineStatus.innerText = "Hata: TuncerZeka sınıfı bulunamadı!";
                         statusDot.style.background = "#ef4444";
                     }
-                }, 150);
+                }, 200);
             };
 
             script.onerror = () => {
-                engineStatus.innerText = `Dosya bulunamadı: tuncer${version}.js`;
-                statusDot.style.background = "#ef4444"; // Kırmızı
-                statusDot.style.boxShadow = "0 0 10px #ef4444";
+                engineStatus.innerText = `Hata: tuncer${version}.js bulunamadı!`;
+                statusDot.style.background = "#ef4444";
             };
 
             document.body.appendChild(script);
@@ -571,51 +509,34 @@
 
         async function sendMessage() {
             const text = userInput.value.trim();
-            if (!text) return;
+            if (!text || !aiInstance) {
+                if(!aiInstance) appendMessage("⚠️ Motor henüz yüklenmedi veya bulunamadı.", "ai");
+                return;
+            }
 
             appendMessage(text, 'user');
             userInput.value = '';
-
             const typingId = showTypingIndicator();
 
             try {
                 // Senin metodun: konus()
-                if (aiInstance && typeof aiInstance.konus === 'function') {
-                    const response = await aiInstance.konus(text);
-                    // Senin dönüş yapın {cevap: "..."} ise onu al, yoksa direkt string ise onu al
-                    const finalMsg = (typeof response === 'object' && response.cevap) ? response.cevap : response;
-                    
-                    removeTypingIndicator(typingId);
-                    appendMessage(formatResponse(finalMsg), 'ai');
-                } else {
-                    await new Promise(r => setTimeout(r, 800));
-                    removeTypingIndicator(typingId);
-                    appendMessage(`⚠️ **Motor Hatası:** \`tuncer${currentVersion}.js\` dosyası klasörde bulunamadığı için yanıt üretilemedi. Lütfen dosyanın yan yana olduğundan emin olun.`, 'ai');
-                }
+                const response = await aiInstance.konus(text);
+                const finalMsg = (typeof response === 'object' && response.cevap) ? response.cevap : response;
+                
+                removeTypingIndicator(typingId);
+                appendMessage(formatResponse(finalMsg), 'ai');
             } catch (error) {
                 removeTypingIndicator(typingId);
-                appendMessage("Bir çalışma hatası oluştu: " + error.message, 'ai');
+                appendMessage("Hata: " + error.message, 'ai');
             }
         }
 
         function appendMessage(content, sender) {
-            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${sender}`;
-            msgDiv.innerHTML = `<div class="message-bubble">${content}</div><span class="time-stamp">${time}</span>`;
+            msgDiv.innerHTML = `<div class="message-bubble">${content}</div>`;
             chatBox.appendChild(msgDiv);
-            scrollToBottom();
-        }
-
-        function addSystemMessage(text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.style.textAlign = 'center';
-            msgDiv.style.margin = '10px 0';
-            msgDiv.style.fontSize = '0.8rem';
-            msgDiv.style.color = 'var(--text-muted)';
-            msgDiv.innerText = `— ${text} —`;
-            chatBox.appendChild(msgDiv);
-            scrollToBottom();
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function showTypingIndicator() {
@@ -625,7 +546,7 @@
             msgDiv.id = id;
             msgDiv.innerHTML = `<div class="message-bubble typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
             chatBox.appendChild(msgDiv);
-            scrollToBottom();
+            chatBox.scrollTop = chatBox.scrollHeight;
             return id;
         }
 
@@ -640,21 +561,13 @@
                 let code = p1.replace(/^[a-z]+\n/, '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 return `<pre><code>${code.trim()}</code></pre>`;
             });
-            formatted = formatted.replace(/\n/g, "<br>");
-            formatted = formatted.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, m => m.replace(/<br>/g, "\n"));
-            return formatted;
+            return formatted.replace(/\n/g, "<br>");
         }
 
         function clearChat() {
-            if(confirm("Sohbeti temizle?")) {
-                chatBox.innerHTML = '';
-                addSystemMessage("Sohbet temizlendi.");
-                // Senin metodun: sifirla()
-                if(aiInstance && typeof aiInstance.sifirla === 'function') aiInstance.sifirla();
-            }
+            chatBox.innerHTML = '';
+            if(aiInstance?.sifirla) aiInstance.sifirla();
         }
-
-        function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
     </script>
 </body>
 </html>
