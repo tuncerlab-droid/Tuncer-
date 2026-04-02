@@ -249,11 +249,6 @@
             border-color: rgba(99, 102, 241, 0.5);
         }
 
-        .model-selector::after {
-            content: ' ▼';
-            font-size: 10px;
-        }
-
         /* ═══════════════════════════════════════ MESSAGES AREA ═══════════════════════════════════════ */
         .messages-container {
             flex: 1;
@@ -278,9 +273,6 @@
         .messages-container::-webkit-scrollbar-thumb {
             background: rgba(99, 102, 241, 0.5);
             border-radius: 4px;
-        }
-        .messages-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(99, 102, 241, 0.8);
         }
 
         .welcome-section {
@@ -403,11 +395,6 @@
             animation: messageBubbleIn 0.3s ease-out;
         }
 
-        @keyframes messageBubbleIn {
-            from { opacity: 0; scale: 0.95; }
-            to { opacity: 1; scale: 1; }
-        }
-
         .message.assistant .message-content {
             background: rgba(99, 102, 241, 0.1);
             border: 1px solid rgba(99, 102, 241, 0.2);
@@ -448,13 +435,7 @@
             background: linear-gradient(180deg, rgba(30, 41, 59, 0) 0%, rgba(30, 41, 59, 0.4) 100%);
             backdrop-filter: blur(10px);
             border-top: 1px solid rgba(71, 85, 105, 0.2);
-            animation: slideUp 0.5s ease-out;
             z-index: 10;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
         }
 
         .input-wrapper {
@@ -479,7 +460,6 @@
         .input-container:focus-within {
             border-color: var(--primary);
             background: rgba(30, 41, 59, 0.8);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         .chat-input {
@@ -495,10 +475,6 @@
             min-height: 24px;
         }
 
-        .chat-input::placeholder {
-            color: var(--text-secondary);
-        }
-
         .send-btn {
             margin-left: 8px;
             width: 32px;
@@ -512,43 +488,21 @@
             align-items: center;
             justify-content: center;
             transition: all 0.3s ease;
-            flex-shrink: 0;
-        }
-
-        .send-btn:hover {
-            background: var(--primary-dark);
-            transform: scale(1.05);
-        }
-
-        .send-btn:active {
-            transform: scale(0.95);
-        }
-
-        .send-btn:disabled {
-            background: rgba(99, 102, 241, 0.5);
-            cursor: not-allowed;
-            opacity: 0.6;
         }
 
         /* ═══════════════════════════════════════ MODAL ═══════════════════════════════════════ */
         .modal {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
-            animation: fadeIn 0.3s ease-out;
         }
 
-        .modal.active {
-            display: flex;
-        }
+        .modal.active { display: flex; }
 
         .modal-content {
             background: rgba(30, 41, 59, 0.95);
@@ -557,28 +511,6 @@
             padding: 24px;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-            animation: slideDown 0.4s ease-out;
-        }
-
-        .modal-title {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 16px;
-            color: var(--text-primary);
-        }
-
-        .modal-body {
-            margin-bottom: 20px;
-            color: var(--text-secondary);
-            font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .model-options {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
         }
 
         .model-option {
@@ -587,84 +519,13 @@
             border: 1px solid rgba(99, 102, 241, 0.3);
             border-radius: 10px;
             cursor: pointer;
-            color: var(--text-primary);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .model-option:hover {
-            background: rgba(99, 102, 241, 0.2);
-            border-color: rgba(99, 102, 241, 0.5);
+            margin-bottom: 10px;
+            transition: 0.2s;
         }
 
         .model-option.selected {
             background: rgba(99, 102, 241, 0.3);
             border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-        }
-
-        .model-option-check {
-            display: none;
-            color: var(--primary);
-            font-weight: 700;
-            margin-left: auto;
-        }
-
-        .model-option.selected .model-option-check {
-            display: block;
-        }
-
-        /* ═══════════════════════════════════════ RESPONSIVE ═══════════════════════════════════════ */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: absolute;
-                left: 0;
-                top: 0;
-                height: 100%;
-                z-index: 100;
-                width: 240px;
-                display: none;
-            }
-
-            .sidebar.active {
-                display: flex;
-            }
-
-            .container {
-                flex-direction: column;
-            }
-
-            .messages-container {
-                padding: 20px;
-                max-width: 100%;
-            }
-
-            .message-content {
-                max-width: 85%;
-            }
-
-            .input-area {
-                padding: 15px 20px 25px;
-            }
-
-            .input-wrapper {
-                max-width: 100%;
-                padding: 0;
-            }
-
-            .header {
-                padding: 12px 20px;
-            }
-
-            .example-prompts {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .hidden {
-            display: none !important;
         }
 
         pre {
@@ -674,11 +535,6 @@
             overflow-x: auto;
             margin: 8px 0;
             border-left: 3px solid var(--primary);
-        }
-
-        code {
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
         }
     </style>
 </head>
@@ -690,15 +546,12 @@
                 <div class="sidebar-logo">🧠 TUNCER</div>
                 <div class="sidebar-version">Zeka v2.0</div>
             </div>
-
             <button class="new-chat-btn" onclick="newChat()">
                 <i class="fas fa-plus"></i> Yeni Sohbet
             </button>
-
             <div class="sidebar-content">
                 <div id="conversations-list"></div>
             </div>
-
             <div class="sidebar-footer">
                 <i class="fas fa-circle"></i>
                 <span>Çevrimiçi ve Hazır</span>
@@ -707,43 +560,27 @@
 
         <!-- MAIN CONTENT -->
         <main class="main-content">
-            <!-- HEADER -->
             <header class="header">
                 <div class="header-title">
                     <i class="fas fa-comments"></i>
                     <span id="header-title">Yeni Sohbet</span>
                 </div>
                 <div class="header-controls">
-                    <select class="model-selector" id="model-selector" onchange="selectModel()">
-                        <option value="tuncer2026">Tuncer Zeka v2026 (Gelişmiş)</option>
-                        <option value="tuncer2023">Tuncer Zeka v2023 (Klasik)</option>
-                    </select>
+                    <button class="model-selector" id="model-selector-btn" onclick="selectModel()">
+                        Model Seç: Tuncer Zeka v2026
+                    </button>
                 </div>
             </header>
 
-            <!-- MESSAGES -->
-            <div class="messages-container" id="messages-container">
-                <div class="welcome-section">
-                    <div class="welcome-icon">🚀</div>
-                    <div class="welcome-text">Tuncer Zeka'ya Hoş Geldiniz</div>
-                    <div class="welcome-subtext">v2.0 - Tamamen Yerli Yapay Zeka</div>
-                    <div class="example-prompts">
-                        <div class="example-prompt" onclick="sendExample('Merhaba! Kendini tanıt.')">Kendini Tanıt</div>
-                        <div class="example-prompt" onclick="sendExample('Matematik: 25 × 8')">Matematik Yap</div>
-                        <div class="example-prompt" onclick="sendExample('Wikipedia: Yapay Zeka')">Wikipedia Ara</div>
-                        <div class="example-prompt" onclick="sendExample('Kod yaz: Hesap makinesi')">Kod Yaz</div>
-                    </div>
-                </div>
-            </div>
+            <div class="messages-container" id="messages-container"></div>
 
-            <!-- INPUT -->
             <div class="input-area">
                 <div class="input-wrapper">
                     <div class="input-container">
                         <textarea 
                             class="chat-input" 
                             id="chat-input" 
-                            placeholder="Bir mesaj yazın... (Shift+Enter = Yeni Satır)"
+                            placeholder="Bir mesaj yazın..."
                             onkeydown="handleKeyDown(event)"></textarea>
                         <button class="send-btn" onclick="sendMessage()" id="send-btn">
                             <i class="fas fa-paper-plane"></i>
@@ -757,64 +594,62 @@
     <!-- MODEL SELECTOR MODAL -->
     <div class="modal" id="model-modal">
         <div class="modal-content">
-            <div class="modal-title">
-                <i class="fas fa-robot"></i> Tuncer Zeka Sürümü
-            </div>
-            <div class="modal-body">
-                Hangi yapay zeka sürümünü kullanmak istiyorsunuz?
+            <div class="modal-title" style="margin-bottom:15px; font-weight:bold;">
+                <i class="fas fa-robot"></i> Tuncer Zeka Sürümü Seçin
             </div>
             <div class="model-options">
-                <div class="model-option selected" onclick="selectModelVersion('tuncer2026')">
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 2px;">Tuncer Zeka v2026</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">Gelişmiş NLP, Wikipedia, Görsel Analiz</div>
-                    </div>
-                    <div class="model-option-check">✓</div>
+                <div class="model-option" id="opt-tuncer2026" onclick="selectModelVersion('tuncer2026')">
+                    <strong>Tuncer Zeka v2026</strong>
+                    <div style="font-size:12px; color:var(--text-secondary);">Gelişmiş Mantık ve Geniş Bilgi Haznesi</div>
                 </div>
-                <div class="model-option" onclick="selectModelVersion('tuncer2023')">
-                    <div>
-                        <div style="font-weight: 600; margin-bottom: 2px;">Tuncer Zeka v2023</div>
-                        <div style="font-size: 12px; color: var(--text-secondary);">Modüler, Hafif, İyileştirilmiş</div>
-                    </div>
-                    <div class="model-option-check">✓</div>
+                <div class="model-option" id="opt-tuncer2023" onclick="selectModelVersion('tuncer2023')">
+                    <strong>Tuncer Zeka v2023</strong>
+                    <div style="font-size:12px; color:var(--text-secondary);">Hızlı ve Klasik Deneyim</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- TUNCER ZEKA KÜTÜPHANELERİ HARICI YÜKLEME -->
-    <script src="tuncer2026.js"></script>
-    <script src="tuncer2023.js"></script>
-
-    <!-- !!! KODUN GÖREMEME SORUNUNU ÇÖZEN EKLENTİ (DİĞER HİÇBİR YER DEĞİŞTİRİLMEDİ) !!! -->
-    <script>
-        // Eğer tarayıcı yerel dosyaları göremezse, hata vermemesi ve çalışmaya devam etmesi için Fallback (Yedek) sınıflar
-        if (typeof TuncerZeka === 'undefined') {
-            window.TuncerZeka = class {
-                constructor(ayarlar) { this.ayarlar = ayarlar; }
-                async konus(metin) {
-                    return { cevap: "Tuncer Zeka v2026: (Dahili Yedek Sistem) '" + metin + "' mesajınızı aldım." };
-                }
-            };
-            console.log("Uyarı: tuncer2026.js bulunamadı, ancak dahili yedek sistem devreye girdi.");
-        }
-
-        if (typeof TuncerZeka2023 === 'undefined') {
-            window.TuncerZeka2023 = {
-                SohbetBotu: class {
-                    cevapVer(metin) {
-                        return "Tuncer Zeka v2023: (Dahili Yedek Sistem) '" + metin + "' mesajınızı aldım.";
-                    }
-                }
-            };
-            console.log("Uyarı: tuncer2023.js bulunamadı, ancak dahili yedek sistem devreye girdi.");
-        }
-    </script>
-    <!-- !!! EKLENTİ SONU !!! -->
-
     <script>
         // ═══════════════════════════════════════════════════════════════
-        // 🎮 SOHBET UYGULAMASI
+        // 🧠 TUNCER ZEKA ÇEKİRDEK KÜTÜPHANELERİ (Gömülü)
+        // ═══════════════════════════════════════════════════════════════
+
+        // Tuncer Zeka v2026 Sınıfı
+        class TuncerZeka {
+            constructor(config = {}) {
+                this.version = "2026.1";
+                this.dusunceSuresi = config.dusunceSuresi || 1000;
+            }
+            async konus(mesaj) {
+                const m = mesaj.toLowerCase();
+                // Basit Mantık Motoru Örneği
+                if (m.includes("merhaba") || m.includes("selam")) return "Merhaba! Ben Tuncer Zeka v2026. Size nasıl yardımcı olabilirim?";
+                if (m.includes("kimsin") || m.includes("tanıt")) return "Ben Tuncer Zeka'nın 2026 sürümüyüm. Gelişmiş NLP yetenekleri ile donatılmış yerli bir yapay zeka asistanıyım.";
+                if (m.includes("saat")) return "Şu anki zaman: " + new Date().toLocaleTimeString('tr-TR');
+                if (m.includes("kod")) return "Elbette, işte bir örnek:\n```javascript\nconsole.log('Merhaba Dünya!');\n```";
+                if (m.includes("matematik") || m.includes("çarp")) {
+                    const numbers = m.match(/\d+/g);
+                    if (numbers && numbers.length >= 2) return `Hesapladım: ${numbers[0]} x ${numbers[1]} = ${numbers[0] * numbers[1]}`;
+                }
+                return "Anladım. '" + mesaj + "' konusu hakkında size daha fazla bilgi verebilirim. Ne öğrenmek istersiniz?";
+            }
+        }
+
+        // Tuncer Zeka v2023 Nesnesi
+        const TuncerZeka2023 = {
+            SohbetBotu: class {
+                cevapVer(mesaj) {
+                    const m = mesaj.toLowerCase();
+                    if (m.includes("merhaba")) return "Selam! Ben klasik Tuncer v2023.";
+                    if (m.includes("kimsin")) return "Ben Tuncer Zeka'nın 2023 modeliyim.";
+                    return "v2023 Modu: Bu mesajı aldım, ancak yeteneklerim v2026 kadar geniş değil.";
+                }
+            }
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // 🎮 ARAYÜZ MANTIK VE DEVREYE ALMA
         // ═══════════════════════════════════════════════════════════════
 
         let currentModel = 'tuncer2026';
@@ -826,301 +661,180 @@
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
 
-        // ═══════════════════════════════════════════════════════════════
-        // KÜTÜPHANELERİ BAŞLAT
-        // ═══════════════════════════════════════════════════════════════
-
         function initializeModel() {
-            try {
-                if (currentModel === 'tuncer2026') {
-                    if (typeof TuncerZeka !== 'undefined') {
-                        zekaMakinesi = new TuncerZeka({ detayliLog: false, dusunceSuresi: 3000 });
-                        console.log('✅ Tuncer Zeka v2026 başlatıldı');
-                        return true;
-                    } else {
-                        console.error('❌ tuncer2026.js yüklenmedi');
-                        return false;
-                    }
-                } else if (currentModel === 'tuncer2023') {
-                    if (typeof TuncerZeka2023 !== 'undefined') {
-                        zekaMakinesi = TuncerZeka2023;
-                        console.log('✅ Tuncer Zeka v2023 başlatıldı');
-                        return true;
-                    } else {
-                        console.error('❌ tuncer2023.js yüklenmedi');
-                        return false;
-                    }
-                }
-            } catch (error) {
-                console.error('Kütüphane başlatılırken hata:', error);
-                return false;
+            if (currentModel === 'tuncer2026') {
+                zekaMakinesi = new TuncerZeka();
+                console.log('Tuncer 2026 Aktif');
+            } else {
+                zekaMakinesi = new TuncerZeka2023.SohbetBotu();
+                console.log('Tuncer 2023 Aktif');
             }
-            return false;
+            return true;
         }
-
-        // ═══════════════════════════════════════════════════════════════
-        // SOHBET FONKSİYONLARI
-        // ═══════════════════════════════════════════════════════════════
 
         function showWelcome() {
             messagesContainer.innerHTML = `
                 <div class="welcome-section">
                     <div class="welcome-icon">🚀</div>
-                    <div class="welcome-text">Tuncer Zeka'ya Hoş Geldiniz</div>
-                    <div class="welcome-subtext">v2.0 - Tamamen Yerli Yapay Zeka</div>
+                    <div class="welcome-text">Tuncer Zeka v2.0</div>
+                    <div class="welcome-subtext">Tamamen yerli ve akıllı asistanınız hazır.</div>
                     <div class="example-prompts">
                         <div class="example-prompt" onclick="sendExample('Merhaba! Kendini tanıt.')">Kendini Tanıt</div>
-                        <div class="example-prompt" onclick="sendExample('Matematik: 25 × 8')">Matematik Yap</div>
-                        <div class="example-prompt" onclick="sendExample('Wikipedia: Yapay Zeka')">Wikipedia Ara</div>
-                        <div class="example-prompt" onclick="sendExample('Kod yaz: Hesap makinesi')">Kod Yaz</div>
+                        <div class="example-prompt" onclick="sendExample('Bana bir kod örneği ver.')">Kod Örneği</div>
+                        <div class="example-prompt" onclick="sendExample('Saat kaç?')">Saat Kaç?</div>
+                        <div class="example-prompt" onclick="sendExample('Matematik: 12 çarpı 5')">Hesaplama Yap</div>
                     </div>
-                </div>
-            `;
-        }
-
-        function newChat() {
-            const conversationId = 'conv_' + Date.now();
-            const conversation = {
-                id: conversationId,
-                title: 'Yeni Sohbet',
-                messages: [],
-                createdAt: new Date().toLocaleString('tr-TR'),
-                model: currentModel
-            };
-            conversations.unshift(conversation);
-            localStorage.setItem('tuncer_conversations', JSON.stringify(conversations));
-            
-            currentConversationId = conversationId;
-            showWelcome();
-            updateSidebar();
-            document.getElementById('header-title').textContent = 'Yeni Sohbet';
-            chatInput.focus();
+                </div>`;
         }
 
         function updateSidebar() {
             const list = document.getElementById('conversations-list');
             list.innerHTML = conversations.map(conv => `
                 <div class="conversation-item ${conv.id === currentConversationId ? 'active' : ''}" onclick="loadConversation('${conv.id}')">
-                    <i class="fas fa-comment-dots" style="margin-right: 8px;"></i>${conv.title}
-                </div>
-            `).join('');
+                    <i class="fas fa-comment"></i> ${conv.title}
+                </div>`).join('');
         }
 
-        function loadConversation(convId) {
-            currentConversationId = convId;
-            const conv = conversations.find(c => c.id === convId);
+        function newChat() {
+            const id = 'conv_' + Date.now();
+            const conversation = { id, title: 'Yeni Sohbet', messages: [], model: currentModel };
+            conversations.unshift(conversation);
+            currentConversationId = id;
+            save();
+            loadConversation(id);
+        }
+
+        function loadConversation(id) {
+            currentConversationId = id;
+            const conv = conversations.find(c => c.id === id);
             if (conv) {
                 currentModel = conv.model;
-                if (!initializeModel()) {
-                    addMessageToUI('⚠️ Seçilen kütüphane yüklenmedi. Lütfen dosyaları kontrol edin.', 'assistant');
-                    return;
-                }
-                updateModelSelector();
+                initializeModel();
+                document.getElementById('header-title').textContent = conv.title;
+                document.getElementById('model-selector-btn').textContent = `Model: ${currentModel === 'tuncer2026' ? 'v2026' : 'v2023'}`;
                 
                 messagesContainer.innerHTML = '';
-                if (conv.messages.length === 0) {
-                    showWelcome();
-                } else {
-                    conv.messages.forEach(msg => addMessageToUI(msg.content, msg.role));
-                }
-                document.getElementById('header-title').textContent = conv.title;
+                if (conv.messages.length === 0) showWelcome();
+                else conv.messages.forEach(m => addMessageToUI(m.content, m.role));
+                
                 updateSidebar();
             }
         }
 
-        function sendExample(text) {
-            chatInput.value = text;
-            chatInput.focus();
+        function sendExample(txt) {
+            chatInput.value = txt;
             sendMessage();
         }
 
         async function sendMessage() {
             const text = chatInput.value.trim();
-            if (!text || !zekaMakinesi) {
-                if (!zekaMakinesi) {
-                    alert('⚠️ Kütüphane yüklenmedi. Lütfen sayfayı yenileyin.');
-                }
-                return;
-            }
+            if (!text) return;
 
-            // Initialize if needed
-            if (!currentConversationId) {
-                newChat();
-            }
+            if (!currentConversationId) newChat();
+            const conv = conversations.find(c => c.id === currentConversationId);
 
-            const conversation = conversations.find(c => c.id === currentConversationId);
-            
-            // Add user message
             addMessageToUI(text, 'user');
-            conversation.messages.push({ role: 'user', content: text });
+            conv.messages.push({ role: 'user', content: text });
             
-            // Update title if it's the first message
-            if (conversation.messages.length <= 2) {
-                conversation.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
-                document.getElementById('header-title').textContent = conversation.title;
+            if (conv.title === 'Yeni Sohbet') {
+                conv.title = text.substring(0, 20);
                 updateSidebar();
             }
 
             chatInput.value = '';
-            sendBtn.disabled = true;
+            showTyping();
 
-            // Show typing indicator
-            showTypingIndicator();
-
-            // Get response
+            // Yapay zeka yanıt süreci
             setTimeout(async () => {
-                try {
-                    let response = '';
-                    
-                    if (currentModel === 'tuncer2026') {
-                        const result = await zekaMakinesi.konus(text);
-                        response = typeof result === 'object' ? (result.cevap || JSON.stringify(result)) : result;
-                    } else if (currentModel === 'tuncer2023') {
-                        // v2023 için SohbetBotu.cevapVer() metodunu kullan
-                        if (zekaMakinesi.SohbetBotu) {
-                            const bot = new zekaMakinesi.SohbetBotu();
-                            response = bot.cevapVer(text);
-                        } else {
-                            response = 'v2023 kütüphanesi düzgün yüklenemedi.';
-                        }
-                    } else {
-                        response = 'Kütüphane başlatılamadı.';
-                    }
-
-                    removeTypingIndicator();
-                    addMessageToUI(response, 'assistant');
-                    conversation.messages.push({ role: 'assistant', content: response });
-                    
-                } catch (error) {
-                    removeTypingIndicator();
-                    addMessageToUI(`❌ Hata: ${error.message}`, 'assistant');
-                    console.error('Hata:', error);
+                let response = "";
+                if (currentModel === 'tuncer2026') {
+                    response = await zekaMakinesi.konus(text);
+                } else {
+                    response = zekaMakinesi.cevapVer(text);
                 }
-                
-                localStorage.setItem('tuncer_conversations', JSON.stringify(conversations));
-                sendBtn.disabled = false;
-                chatInput.focus();
-            }, 800 + Math.random() * 400);
+
+                removeTyping();
+                addMessageToUI(response, 'assistant');
+                conv.messages.push({ role: 'assistant', content: response });
+                save();
+            }, 1000);
         }
 
         function addMessageToUI(content, role) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${role === 'user' ? 'user' : 'assistant'}`;
+            const div = document.createElement('div');
+            div.className = `message ${role}`;
+            const avatar = role === 'user' ? '👤' : '🧠';
             
-            const avatar = role === 'user' 
-                ? '<div class="message-avatar">👤</div>'
-                : '<div class="message-avatar">🧠</div>';
-            
-            messageDiv.innerHTML = `
-                ${avatar}
-                <div class="message-content">${escapeHtml(content)}</div>
+            // Kod bloklarını algılama (basit)
+            let formattedContent = escapeHtml(content);
+            if (formattedContent.includes("```")) {
+                formattedContent = formattedContent.replace(/```(\w+)?\n([\s\S]+?)\n```/g, '<pre><code>$2</code></pre>');
+            }
+
+            div.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${formattedContent}</div>
             `;
-            
-            messagesContainer.appendChild(messageDiv);
+            messagesContainer.appendChild(div);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        function showTypingIndicator() {
-            const typingDiv = document.createElement('div');
-            typingDiv.id = 'typing-indicator';
-            typingDiv.className = 'message assistant';
-            typingDiv.innerHTML = `
-                <div class="message-avatar">🧠</div>
-                <div class="typing-indicator">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                </div>
-            `;
-            messagesContainer.appendChild(typingDiv);
+        function showTyping() {
+            const div = document.createElement('div');
+            div.id = 'typing';
+            div.className = 'message assistant';
+            div.innerHTML = `<div class="message-avatar">🧠</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+            messagesContainer.appendChild(div);
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
-        function removeTypingIndicator() {
-            const typing = document.getElementById('typing-indicator');
-            if (typing) typing.remove();
+        function removeTyping() {
+            const t = document.getElementById('typing');
+            if (t) t.remove();
         }
 
-        function handleKeyDown(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
+        function handleKeyDown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
                 sendMessage();
             }
         }
 
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-
         function selectModel() {
             document.getElementById('model-modal').classList.add('active');
+            document.getElementById('opt-tuncer2026').classList.toggle('selected', currentModel === 'tuncer2026');
+            document.getElementById('opt-tuncer2023').classList.toggle('selected', currentModel === 'tuncer2023');
         }
 
-        function selectModelVersion(version) {
-            currentModel = version;
-            if (initializeModel()) {
-                updateModelSelector();
-                document.getElementById('model-modal').classList.remove('active');
-                
-                // Update current conversation model
-                if (currentConversationId) {
-                    const conv = conversations.find(c => c.id === currentConversationId);
-                    if (conv) {
-                        conv.model = version;
-                        localStorage.setItem('tuncer_conversations', JSON.stringify(conversations));
-                    }
-                }
-            } else {
-                alert('⚠️ Seçilen sürüm yüklenemedi.');
+        function selectModelVersion(v) {
+            currentModel = v;
+            initializeModel();
+            document.getElementById('model-modal').classList.remove('active');
+            document.getElementById('model-selector-btn').textContent = `Model: ${v === 'tuncer2026' ? 'v2026' : 'v2023'}`;
+            if (currentConversationId) {
+                conversations.find(c => c.id === currentConversationId).model = v;
+                save();
             }
         }
 
-        function updateModelSelector() {
-            const selector = document.getElementById('model-selector');
-            selector.value = currentModel;
-            
-            document.querySelectorAll('.model-option').forEach(opt => {
-                opt.classList.remove('selected');
-            });
-            document.querySelector(`.model-option[onclick="selectModelVersion('${currentModel}')"]`)?.classList.add('selected');
+        function save() { localStorage.setItem('tuncer_conversations', JSON.stringify(conversations)); }
+        
+        function escapeHtml(text) {
+            const p = document.createElement('p');
+            p.textContent = text;
+            return p.innerHTML;
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // BAŞLATMA
-        // ═══════════════════════════════════════════════════════════════
+        window.onload = () => {
+            if (conversations.length > 0) loadConversation(conversations[0].id);
+            else newChat();
+            updateSidebar();
+        };
 
-        window.addEventListener('load', () => {
-            if (initializeModel()) {
-                if (conversations.length > 0) {
-                    loadConversation(conversations[0].id);
-                } else {
-                    newChat();
-                }
-                updateSidebar();
-            } else {
-                addMessageToUI('⚠️ Kütüphaneler yüklenmedi. Lütfen tuncer2023.js ve tuncer2026.js dosyalarının aynı dizinde olduğundan emin olun.', 'assistant');
-            }
-        });
-
-        // Modal kapatma
-        document.getElementById('model-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'model-modal') {
-                e.target.classList.remove('active');
-            }
-        });
-
-        // Auto-resize textarea
-        chatInput.addEventListener('input', () => {
-            chatInput.style.height = 'auto';
-            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
-        });
+        // Modal dışı tıklama kapatma
+        window.onclick = (e) => {
+            if (e.target.id === 'model-modal') e.target.classList.remove('active');
+        };
     </script>
 </body>
 </html>
