@@ -300,12 +300,6 @@
             color: #e2e8f0;
         }
 
-        .time-stamp {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin: 0 10px;
-        }
-
         .input-container {
             padding: 20px 30px;
             background: rgba(30, 41, 59, 0.6);
@@ -442,12 +436,7 @@
         const currentEngineTitle = document.getElementById('currentEngineTitle');
         const activeBg = document.getElementById('activeBg');
 
-        // GitHub Pages için ana dizini belirle
-        const getBasePath = () => {
-            const path = window.location.pathname;
-            return path.substring(0, path.lastIndexOf('/') + 1);
-        };
-
+        // Sayfa yüklendiğinde varsayılan motoru çalıştır
         window.onload = () => loadEngineScript('2026');
 
         userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
@@ -461,10 +450,10 @@
             loadEngineScript(version);
         }
 
-        // --- GITHUB UYUMLU VE GARANTİ YÜKLEME ---
+        // --- GÖRÜNTÜDEKİ DOSYA YAPISINA GÖRE GÜNCELLENDİ ---
         function loadEngineScript(version) {
             aiInstance = null;
-            engineStatus.innerText = `tuncer${version}.js yükleniyor...`;
+            engineStatus.innerText = `tuncer${version}.js aranıyor...`;
             statusDot.style.background = "#94a3b8";
             statusDot.style.animation = "none";
 
@@ -473,34 +462,36 @@
 
             const script = document.createElement('script');
             script.id = 'dynamic-engine';
-            // GitHub/Web için kesin göreceli yol
-            script.src = `${getBasePath()}tuncer${version}.js?v=${Date.now()}`;
+            
+            // Klasör yapındaki tam isimleri kullanıyoruz.
+            // Önemli: Tarayıcı bazen cache tuttuğu için ?v= ekliyoruz.
+            script.src = `tuncer${version}.js?nocache=${Date.now()}`;
             
             script.onload = () => {
-                // Sınıfın yüklenmesi için bekletme süresini 200ms yaptık (GitHub hızı için)
+                // Sınıfın tanımlanması için tarayıcıya süre tanı
                 setTimeout(() => {
-                    // Senin kodlarındaki TuncerZeka sınıfı
+                    // Global scope'ta TuncerZeka sınıfını ara
                     const AIClass = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
                     
                     if (AIClass) {
                         try {
                             aiInstance = new AIClass();
-                            engineStatus.innerText = `tuncer${version}.js Aktif`;
+                            engineStatus.innerText = `Motor (tuncer${version}.js) Aktif`;
                             statusDot.style.background = "#10b981";
                             statusDot.style.animation = "pulse 2s infinite";
                         } catch (e) {
-                            engineStatus.innerText = "Sınıf başlatılamadı!";
+                            engineStatus.innerText = "Sınıf başlatma hatası!";
                             statusDot.style.background = "#ef4444";
                         }
                     } else {
                         engineStatus.innerText = "Hata: TuncerZeka sınıfı bulunamadı!";
                         statusDot.style.background = "#ef4444";
                     }
-                }, 200);
+                }, 250);
             };
 
             script.onerror = () => {
-                engineStatus.innerText = `Hata: tuncer${version}.js bulunamadı!`;
+                engineStatus.innerText = `Kritik: tuncer${version}.js dosyası bulunamadı!`;
                 statusDot.style.background = "#ef4444";
             };
 
@@ -509,8 +500,10 @@
 
         async function sendMessage() {
             const text = userInput.value.trim();
-            if (!text || !aiInstance) {
-                if(!aiInstance) appendMessage("⚠️ Motor henüz yüklenmedi veya bulunamadı.", "ai");
+            if (!text) return;
+
+            if (!aiInstance) {
+                appendMessage("⚠️ Motor yüklü değil. Lütfen dosyanın klasörde ve isminin `tuncer" + currentVersion + ".js` olduğundan emin olun.", "ai");
                 return;
             }
 
@@ -519,7 +512,7 @@
             const typingId = showTypingIndicator();
 
             try {
-                // Senin metodun: konus()
+                // konus() metoduna gönder
                 const response = await aiInstance.konus(text);
                 const finalMsg = (typeof response === 'object' && response.cevap) ? response.cevap : response;
                 
@@ -527,7 +520,7 @@
                 appendMessage(formatResponse(finalMsg), 'ai');
             } catch (error) {
                 removeTypingIndicator(typingId);
-                appendMessage("Hata: " + error.message, 'ai');
+                appendMessage("Çalışma Hatası: " + error.message, 'ai');
             }
         }
 
