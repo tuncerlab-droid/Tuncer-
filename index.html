@@ -482,7 +482,7 @@
                 <div class="status-dot"></div>
                 <div class="status-text">
                     Sistem Çevrimiçi <br>
-                    <span style="font-size: 0.75rem; opacity: 0.7" id="engineStatus">Motor: tuncer2026.js bekleniyor...</span>
+                    <span style="font-size: 0.75rem; opacity: 0.7" id="engineStatus">Motor bekleniyor...</span>
                 </div>
             </div>
         </div>
@@ -500,10 +500,9 @@
             </div>
 
             <div class="messages-container" id="chatBox">
-                <!-- Hoşgeldin Mesajı -->
                 <div class="message ai">
                     <div class="message-bubble">
-                        Merhaba! Ben Tuncer Zeka. Seçili olan yapay zeka motorum ile size kod yazma, matematik işlemleri ve bilgi sağlama konusunda yardımcı olabilirim. Nasıl yardımcı olabilirim?
+                        Merhaba! Ben Tuncer Zeka. Seçili olan yapay zeka motorum ile size yardımcı olabilirim. Nasıl yardımcı olabilirim?
                     </div>
                     <span class="time-stamp">Sistem Başlatıldı</span>
                 </div>
@@ -511,7 +510,7 @@
 
             <div class="input-container">
                 <div class="input-box">
-                    <input type="text" id="userInput" placeholder="Bir mesaj yazın veya kod isteyin..." autocomplete="off">
+                    <input type="text" id="userInput" placeholder="Bir mesaj yazın..." autocomplete="off">
                     <button class="send-btn" onclick="sendMessage()">
                         <i class="fa-solid fa-paper-plane"></i>
                     </button>
@@ -520,7 +519,6 @@
         </div>
     </div>
 
-    <!-- Sistem Mantığı (UI ve Motor Yükleme) -->
     <script>
         let currentVersion = '2026';
         let aiInstance = null;
@@ -530,170 +528,124 @@
         const engineStatus = document.getElementById('engineStatus');
         const currentEngineTitle = document.getElementById('currentEngineTitle');
 
-        // Sayfa yüklendiğinde varsayılan motoru (2026) yükle
+        // Sayfa yüklenince başlat
         window.onload = () => {
             loadEngineScript('2026');
         };
 
-        // Enter tuşu ile gönderme
-        userInput.addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
+        userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
-        // Versiyon Değiştirme Fonksiyonu
         function switchVersion(version) {
             if (currentVersion === version) return;
             currentVersion = version;
 
-            // Buton Stillerini Güncelle
             document.querySelectorAll('.version-btn').forEach(btn => {
-                btn.classList.remove('active');
-                if (btn.dataset.version === version) {
-                    btn.classList.add('active');
-                }
+                btn.classList.toggle('active', btn.dataset.version === version);
             });
 
-            // Animasyonlu Arka Planı Kaydır
-            if (version === '2023') {
-                activeBg.style.transform = 'translateX(0)';
-            } else {
-                activeBg.style.transform = 'translateX(100%)';
-            }
-
-            // Başlıkları Güncelle
+            activeBg.style.transform = version === '2023' ? 'translateX(0)' : 'translateX(100%)';
             currentEngineTitle.innerHTML = `Tuncer Zeka ${version}`;
-            
-            // Bilgi Mesajı Ekle
-            addSystemMessage(`Yapay Zeka motoru değiştirildi: v${version}`);
-            
-            // Yeni JS dosyasını yükle
+            addSystemMessage(`Motor Değiştiriliyor: v${version}`);
             loadEngineScript(version);
         }
 
-        // JS Dosyasını Dinamik Yükleme (ONARILDI)
+        // --- ONARILMIŞ DOSYA YÜKLEME MANTIĞI ---
         function loadEngineScript(version) {
+            aiInstance = null; // Eski motoru temizle
             engineStatus.innerText = `Motor: tuncer${version}.js aranıyor...`;
             engineStatus.style.color = "var(--text-muted)";
             
-            // Eski scripti kaldır
-            const oldScripts = document.querySelectorAll('.ai-engine-script');
-            oldScripts.forEach(s => s.remove());
+            // Eski scripti temizle
+            const existing = document.getElementById('ai-script');
+            if (existing) existing.remove();
 
-            // Yeni scripti oluştur
             const script = document.createElement('script');
-            script.className = 'ai-engine-script';
-            
-            // Explicit yerel dizin (./) belirtildi ve önbellek kırmak için timestamp (v=...) eklendi
-            script.src = `./tuncer${version}.js?v=` + new Date().getTime();
+            script.id = 'ai-script';
+            // Yerel dizini garantiye almak için ./ kullanıldı ve cache engellendi
+            script.src = `./tuncer${version}.js?nocache=${Date.now()}`;
             
             script.onload = () => {
-                // Sınıfın global scope'a yerleşmesi için ufak bir bekleme süresi
+                // Sınıfın tanınması için tarayıcıya 100ms zaman tanı
                 setTimeout(() => {
-                    if (typeof TuncerZeka !== 'undefined' || typeof window.TuncerZeka !== 'undefined') {
-                        const AIClass = typeof TuncerZeka !== 'undefined' ? TuncerZeka : window.TuncerZeka;
-                        aiInstance = new AIClass();
-                        engineStatus.innerText = `Motor: tuncer${version}.js Aktif`;
-                        engineStatus.style.color = "#10b981";
+                    const TargetClass = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
+                    
+                    if (TargetClass) {
+                        try {
+                            aiInstance = new TargetClass();
+                            engineStatus.innerText = `Motor: tuncer${version}.js AKTİF`;
+                            engineStatus.style.color = "#10b981";
+                        } catch (e) {
+                            engineStatus.innerText = "Hata: Sınıf başlatılamadı!";
+                            engineStatus.style.color = "#ef4444";
+                        }
                     } else {
-                        engineStatus.innerText = `Hata: Sınıf bulunamadı (tuncer${version}.js)`;
+                        engineStatus.innerText = `Hata: tuncer${version}.js içerisinde 'TuncerZeka' sınıfı bulunamadı!`;
                         engineStatus.style.color = "#ef4444";
-                        console.warn("Dosya yüklendi ancak 'TuncerZeka' sınıfı global alanda bulunamadı. Lütfen js dosyasında sınıfın (class) dışarı aktarıldığından emin olun.");
-                        aiInstance = null;
                     }
-                }, 50);
+                }, 100);
             };
 
             script.onerror = () => {
-                engineStatus.innerText = `Hata: tuncer${version}.js bulunamadı!`;
+                engineStatus.innerText = `Hata: tuncer${version}.js dosyası bu klasörde bulunamadı!`;
                 engineStatus.style.color = "#ef4444";
-                aiInstance = null; // Dosya yoksa instance null
             };
 
-            // Body yerine <head> etiketine ekleyerek tarayıcının daha hızlı görmesini sağladık
-            document.head.appendChild(script);
+            document.body.appendChild(script);
         }
 
-        // Mesaj Gönderme
         async function sendMessage() {
             const text = userInput.value.trim();
             if (!text) return;
 
-            // Kullanıcı mesajını ekle
             appendMessage(text, 'user');
             userInput.value = '';
 
-            // Yükleniyor animasyonu ekle
             const typingId = showTypingIndicator();
 
             try {
-                let aiResponse = "";
-
-                // Eğer JS dosyası başarıyla yüklendiyse ve sınıf varsa çalıştır
+                // Sınıf yüklü mü kontrol et
                 if (aiInstance && typeof aiInstance.konus === 'function') {
-                    const result = await aiInstance.konus(text);
-                    aiResponse = typeof result === 'object' ? result.cevap : result;
+                    const response = await aiInstance.konus(text);
+                    const finalMsg = typeof response === 'object' ? response.cevap : response;
+                    removeTypingIndicator(typingId);
+                    appendMessage(formatResponse(finalMsg), 'ai');
                 } else {
-                    // Eğer JS dosyaları klasörde yoksa (Sadece UI test ediliyorsa) sahte cevap dön
-                    await new Promise(r => setTimeout(r, 1000)); // 1 saniye bekle
-                    aiResponse = `**Sistem Uyarısı:** \`tuncer${currentVersion}.js\` dosyası okunamadı. Lütfen index.html ile aynı klasörde olduğundan emin olun.\n\nSöylediğiniz: "${text}"`;
+                    await new Promise(r => setTimeout(r, 800));
+                    removeTypingIndicator(typingId);
+                    appendMessage(`⚠️ **HATA:** Yapay zeka motoru (\`tuncer${currentVersion}.js\`) şu an aktif değil veya klasörde bulunamadı. Lütfen JS dosyasının klasörde olduğunu ve 'TuncerZeka' sınıfını içerdiğini kontrol edin.`, 'ai');
                 }
-
-                // Yükleniyor animasyonunu kaldır ve cevabı yazdır
-                removeTypingIndicator(typingId);
-                appendMessage(formatResponse(aiResponse), 'ai');
-
             } catch (error) {
                 removeTypingIndicator(typingId);
-                appendMessage("Bir hata oluştu: " + error.message, 'ai');
+                appendMessage("Beklenmedik bir hata: " + error.message, 'ai');
             }
         }
 
-        // Mesajı DOM'a Ekleme
         function appendMessage(content, sender) {
             const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-            
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${sender}`;
-            
-            msgDiv.innerHTML = `
-                <div class="message-bubble">${content}</div>
-                <span class="time-stamp">${time}</span>
-            `;
-            
+            msgDiv.innerHTML = `<div class="message-bubble">${content}</div><span class="time-stamp">${time}</span>`;
             chatBox.appendChild(msgDiv);
             scrollToBottom();
         }
 
-        // Sistem Mesajı (Ortalanmış küçük uyarılar)
         function addSystemMessage(text) {
             const msgDiv = document.createElement('div');
             msgDiv.style.textAlign = 'center';
             msgDiv.style.margin = '10px 0';
             msgDiv.style.fontSize = '0.8rem';
             msgDiv.style.color = 'var(--text-muted)';
-            msgDiv.style.animation = 'slideUpFade 0.3s forwards';
             msgDiv.innerText = `— ${text} —`;
             chatBox.appendChild(msgDiv);
             scrollToBottom();
         }
 
-        // Yazıyor İndikatörü
         function showTypingIndicator() {
             const id = 'typing-' + Date.now();
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ai`;
             msgDiv.id = id;
-            
-            msgDiv.innerHTML = `
-                <div class="message-bubble typing-indicator">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot"></div>
-                </div>
-            `;
-            
+            msgDiv.innerHTML = `<div class="message-bubble typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
             chatBox.appendChild(msgDiv);
             scrollToBottom();
             return id;
@@ -704,44 +656,27 @@
             if (el) el.remove();
         }
 
-        // Metni Formatlama (Kod bloklarını ve satır atlamalarını düzeltme)
         function formatResponse(text) {
             if (!text) return "";
-            
-            // Kod bloklarını <pre><code> içine al
-            let formatted = text.replace(/```([\s\S]*?)```/g, function(match, p1) {
-                // Dil etiketini temizle (örn: ```javascript)
-                let code = p1.replace(/^[a-z]+\n/, ''); 
-                // HTML taglarını encode et
-                code = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            let formatted = text.replace(/```([\s\S]*?)```/g, (match, p1) => {
+                let code = p1.replace(/^[a-z]+\n/, '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
                 return `<pre><code>${code.trim()}</code></pre>`;
             });
-
-            // Satır atlamalarını <br> yap (Kod blokları dışındakileri)
             formatted = formatted.replace(/\n/g, "<br>");
-            formatted = formatted.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, function(match) {
-                 return match.replace(/<br>/g, "\n");
-            });
-
+            formatted = formatted.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, m => m.replace(/<br>/g, "\n"));
             return formatted;
         }
 
-        // Sohbeti Temizle
         function clearChat() {
-            if(confirm("Tüm sohbet geçmişi silinecek. Emin misiniz?")) {
+            if(confirm("Sohbeti temizle?")) {
                 chatBox.innerHTML = '';
-                addSystemMessage("Sohbet geçmişi temizlendi.");
-                if(aiInstance && typeof aiInstance.sifirla === 'function') {
-                    aiInstance.sifirla();
-                }
+                addSystemMessage("Temizlendi");
+                if(aiInstance?.sifirla) aiInstance.sifirla();
             }
         }
 
-        function scrollToBottom() {
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+        function scrollToBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
     </script>
 </body>
 </html>
-
 
