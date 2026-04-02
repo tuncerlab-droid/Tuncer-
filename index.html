@@ -3,238 +3,1070 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka v2026 | Yapay Zeka Arayüzü</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <title>Tuncer Zeka - Yapay Zeka Sohbet</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         :root {
-            --bg-color: #0a0f1d;
-            --glass-bg: rgba(16, 22, 37, 0.7);
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #ec4899;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-tertiary: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #475569;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 50%, #1e293b 0%, #0a0f1d 100%);
-            color: #e2e8f0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a2c4a 100%);
+            color: var(--text-primary);
+            overflow: hidden;
             height: 100vh;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Main Layout */
+        .container {
+            display: flex;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid rgba(71, 85, 105, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideInLeft 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideInLeft {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
+        }
+
+        .logo-text h1 {
+            font-size: 16px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-text p {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            padding: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .new-chat-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .conversation-item {
+            padding: 12px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 8px;
+            background: rgba(71, 85, 105, 0.1);
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-secondary);
+        }
+
+        .conversation-item:hover {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+            color: var(--text-primary);
+        }
+
+        .conversation-item.active {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid rgba(71, 85, 105, 0.3);
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .user-profile:hover {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .user-info p {
+            font-size: 12px;
+        }
+
+        /* Main Chat Area */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
             overflow: hidden;
         }
 
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .chat-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        .chat-container::-webkit-scrollbar { width: 5px; }
-        .chat-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
 
-        .message-anim { animation: fadeInUp 0.3s ease-out forwards; }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .chat-header-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .chat-header-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .model-selector {
+            background: rgba(71, 85, 105, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .model-selector:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--text-primary);
+        }
+
+        .icon-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            background: rgba(71, 85, 105, 0.2);
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .icon-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            color: var(--text-primary);
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            scroll-behavior: smooth;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.5);
+        }
+
+        .welcome-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .welcome-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .welcome-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .welcome-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            max-width: 400px;
+        }
+
+        .suggestion-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .suggestion-btn {
+            padding: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .suggestion-btn:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: var(--primary);
+            color: var(--text-primary);
+            transform: translateY(-2px);
+        }
+
+        /* Messages */
+        .message {
+            margin-bottom: 16px;
+            animation: messageSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .message-row.user {
+            justify-content: flex-end;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+
+        .message-row.user .message-avatar {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            line-height: 1.5;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+
+        .message-row.user .message-content {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            color: white;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
         }
 
         .typing-dot {
-            width: 8px; height: 8px; background: #94a3b8; border-radius: 50%;
-            animation: bounce 1.4s infinite ease-in-out;
+            width: 8px;
+            height: 8px;
+            background: rgba(99, 102, 241, 0.6);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
         }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
-        code { font-family: 'Fira Code', monospace; background: #1e293b; padding: 2px 4px; border-radius: 4px; }
-        pre { background: #0f172a; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 10px 0; border: 1px solid #334155; }
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 24px 24px;
+            border-top: 1px solid rgba(71, 85, 105, 0.3);
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(10px);
+            animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .input-field {
+            flex: 1;
+            background: rgba(71, 85, 105, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 14px;
+            resize: none;
+            max-height: 120px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            background: rgba(71, 85, 105, 0.15);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-info {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .message-content {
+                max-width: 90%;
+            }
+
+            .messages-container {
+                padding: 16px;
+            }
+
+            .input-area {
+                padding: 16px;
+            }
+
+            .suggestion-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Code Block Styling */
+        code, pre {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        pre {
+            padding: 12px;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Info Boxes */
+        .info-box {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 3px solid var(--primary);
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin: 8px 0;
+        }
+
+        .info-box.success {
+            border-left-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .info-box.warning {
+            border-left-color: var(--warning);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .info-box.error {
+            border-left-color: var(--danger);
+            background: rgba(239, 68, 68, 0.1);
+        }
     </style>
 </head>
-<body class="flex flex-col md:flex-row">
-
-    <aside class="w-full md:w-80 glass p-6 flex flex-col border-r border-white/10 z-20">
-        <div class="mb-8">
-            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                TUNCER ZEKA
-            </h1>
-            <p class="text-xs text-slate-500 font-mono">v2026.1.0 // SİSTEM AKTİF</p>
-        </div>
-
-        <div class="flex-1 space-y-6">
-            <div>
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Sistem Durumu</h3>
-                <div id="stats" class="space-y-2 text-sm">
-                    <div class="flex justify-between"><span>Hafıza:</span> <span id="stat-memory" class="text-blue-400">0</span></div>
-                    <div class="flex justify-between"><span>Konuşma:</span> <span id="stat-chat" class="text-blue-400">0</span></div>
-                    <div class="flex justify-between"><span>Öğrenilen:</span> <span id="stat-learn" class="text-blue-400">0</span></div>
+<body>
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">🧠</div>
+                    <div class="logo-text">
+                        <h1>Tuncer Zeka</h1>
+                        <p>v2.0 - Yerli Yapay Zeka</p>
+                    </div>
                 </div>
-            </div>
-
-            <div>
-                <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Hızlı Komutlar</h3>
-                <div class="grid grid-cols-1 gap-2">
-                    <button onclick="quickAction('hesapla: (15 * 4) + 100')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-blue-500/20 transition">Matematik Motoru</button>
-                    <button onclick="quickAction('kod yaz: JavaScript ile saat yap')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-purple-500/20 transition">Kod Yazma</button>
-                    <button onclick="quickAction('wikipedia: Kuantum Fiziği')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-green-500/20 transition">Bilgi Bankası</button>
-                    <button onclick="quickAction('özetle: ')" class="text-left text-xs p-2 rounded bg-white/5 hover:bg-yellow-500/20 transition">Metin Özetleme</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="mt-auto pt-6 border-t border-white/10">
-            <button onclick="resetSystem()" class="w-full p-2 text-xs text-red-400 border border-red-400/30 rounded hover:bg-red-400/10 transition">
-                SİSTEMİ SIFIRLA
-            </button>
-        </div>
-    </aside>
-
-    <main class="flex-1 flex flex-col h-full relative">
-        <div id="chat-box" class="flex-1 overflow-y-auto p-6 space-y-6 chat-container">
-            <div class="flex items-start gap-4 message-anim">
-                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <span class="font-bold">TZ</span>
-                </div>
-                <div class="max-w-[80%] glass p-4 rounded-2xl rounded-tl-none">
-                    <p class="text-sm leading-relaxed">Sistem başlatıldı. Ben Tuncer Zeka v2026. Ahmet Tuncer tarafından geliştirilen gelişmiş algoritmalarım aktif. Size nasıl yardımcı olabilirim?</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="p-6 glass border-t border-white/10">
-            <div class="max-w-4xl mx-auto flex gap-4 items-end">
-                <div class="flex-1 relative">
-                    <textarea id="user-input" rows="1" 
-                        class="w-full bg-slate-800/50 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-blue-500 transition resize-none text-sm"
-                        placeholder="Bir şey sorun veya komut verin (Örn: hesapla: 25*4)..."
-                        onkeydown="checkEnter(event)"></textarea>
-                </div>
-                <button id="send-btn" onclick="processInput()" 
-                    class="bg-blue-600 hover:bg-blue-500 p-3 rounded-xl transition shadow-lg shadow-blue-500/20">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                <button class="new-chat-btn" onclick="startNewChat()">
+                    <i class="fas fa-plus"></i> Yeni Sohbet
                 </button>
             </div>
+
+            <div class="sidebar-content" id="conversations-list">
+                <div class="info-box" style="font-size: 12px; text-align: center;">
+                    Henüz sohbet geçmişiniz yok.
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="user-avatar">👤</div>
+                    <div class="user-info">
+                        <p style="font-weight: 600;">Hoşgeldiniz</p>
+                        <p style="color: var(--text-secondary); font-size: 11px;">Türkçe Doğal Dil</p>
+                    </div>
+                </div>
+            </div>
         </div>
-    </main>
 
+        <!-- Main Chat Area -->
+        <div class="main-content">
+            <div class="chat-header">
+                <div class="chat-header-title">
+                    <i class="fas fa-robot" style="color: var(--primary); margin-right: 8px;"></i>
+                    Tuncer Zeka Sohbet Botu
+                </div>
+                <div class="chat-header-controls">
+                    <div class="model-selector">
+                        <i class="fas fa-brain"></i>
+                        <span id="model-name">Tuncer v2.0</span>
+                    </div>
+                    <button class="icon-btn" title="Ayarlar" onclick="toggleSettings()">
+                        <i class="fas fa-sliders-h"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Messages Container -->
+            <div class="messages-container" id="messages-container">
+                <div class="welcome-section">
+                    <div class="welcome-icon">🧠</div>
+                    <h2 class="welcome-title">Tuncer Zeka'ya Hoş Geldiniz</h2>
+                    <p class="welcome-subtitle">Ahmet Tuncer tarafından geliştirilen, tamamen yerli ve bağımsız yapay zeka sistemi</p>
+                    <div class="suggestion-grid" id="suggestions-grid">
+                        <button class="suggestion-btn" onclick="sendMessage('Merhaba, sen kimsin?')">Merhaba!</button>
+                        <button class="suggestion-btn" onclick="sendMessage('Matematik: 15 × 8')">Matematik</button>
+                        <button class="suggestion-btn" onclick="sendMessage('wikipedia: Yapay Zeka')">Bilgi Ara</button>
+                        <button class="suggestion-btn" onclick="sendMessage('Bir şaka anlat')">Şaka</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <form id="message-form" onsubmit="handleSendMessage(event)">
+                    <div class="input-wrapper">
+                        <textarea 
+                            id="message-input"
+                            class="input-field"
+                            placeholder="Bir mesaj yazın... (Shift + Enter için yeni satır)"
+                            rows="1"
+                        ></textarea>
+                        <button type="submit" class="send-btn" id="send-btn">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                    <div class="input-info">
+                        💡 <strong>İpucu:</strong> Wikipedia arama için "wikipedia: [konu]" yazabilirsiniz
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="tuncer2023.js"></script>
     <script src="tuncer2026.js"></script>
-
     <script>
-        // Kütüphaneyi Başlat
-        const tuncer = new TuncerZeka({
-            detayliLog: true,
-            hafizaKapasitesi: 5000
+        // ============================================================
+        // 🚀 TUNCER ZEKA CHAT UI - ANA SCRIPT
+        // ============================================================
+
+        let tuncerZeka = null;
+        let conversationHistory = [];
+        let conversationList = [];
+        let currentConversationId = null;
+        let isLoading = false;
+
+        // Başlatma
+        window.addEventListener('load', async () => {
+            console.log('🧠 Tuncer Zeka Sohbet UI Başlatılıyor...');
+            
+            // Tuncer Zeka kütüphanesini başlat
+            await initializeTuncerZeka();
+            
+            // Auto-resize textarea
+            setupTextareaAutoResize();
+            
+            // Konuşma geçmişini yükle
+            loadConversationHistory();
+            
+            console.log('✅ Sistem Hazır!');
         });
 
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
-
-        // Enter tuşu kontrolü
-        function checkEnter(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                processInput();
-            }
-        }
-
-        function quickAction(cmd) {
-            userInput.value = cmd;
-            userInput.focus();
-        }
-
-        async function processInput() {
-            const input = userInput.value.trim();
-            if (!input) return;
-
-            // Kullanıcı mesajını ekle
-            appendMessage('user', input);
-            userInput.value = '';
-            
-            // Yazıyor efekti
-            const typingId = showTyping();
-
+        async function initializeTuncerZeka() {
             try {
-                // KÜTÜPHANEYİ ÇALIŞTIR
-                const sonuc = await tuncer.konus(input);
-                
-                // Efekti kaldır ve cevabı yaz
-                removeTyping(typingId);
-                appendMessage('ai', sonuc.cevap, sonuc);
-                
-                // İstatistikleri güncelle
-                updateStats();
-            } catch (err) {
-                removeTyping(typingId);
-                appendMessage('ai', "Sistem hatası oluştu: " + err.message);
+                // Kontrol: tuncer2023.js ve tuncer2026.js yüklü mü?
+                if (typeof TuncerZeka !== 'undefined') {
+                    console.log('✅ Tuncer Zeka v2.0 Modülleri Yüklendi');
+                    return true;
+                } else {
+                    console.warn('⚠️ Tuncer Zeka modülleri bulunamadı. Lütfen tuncer2023.js ve tuncer2026.js dosyalarının aynı dizinde olduğundan emin olun.');
+                    showMessage('Uyarı: Tuncer Zeka modülleri yüklenemedi. Lütfen sayfa yeni yükleyin.', 'warning');
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Başlatma Hatası:', error);
+                showMessage('Hata: Sistem başlatılamadı', 'error');
+                return false;
             }
         }
 
-        function appendMessage(sender, text, data = null) {
-            const div = document.createElement('div');
-            div.className = `flex items-start gap-4 message-anim ${sender === 'user' ? 'flex-row-reverse' : ''}`;
+        function setupTextareaAutoResize() {
+            const textarea = document.getElementById('message-input');
+            textarea.addEventListener('input', () => {
+                textarea.style.height = 'auto';
+                const height = Math.min(textarea.scrollHeight, 120);
+                textarea.style.height = height + 'px';
+            });
+
+            // Shift+Enter için yeni satır, Enter için gönder
+            textarea.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage(e);
+                }
+            });
+        }
+
+        function handleSendMessage(e) {
+            e.preventDefault();
             
-            const avatar = sender === 'ai' 
-                ? `<div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg"><span class="font-bold">TZ</span></div>`
-                : `<div class="w-10 h-10 rounded-lg bg-slate-700 flex items-center justify-center shadow-lg"><span class="font-bold">Siz</span></div>`;
-
-            const bubbleClass = sender === 'ai' 
-                ? 'glass rounded-tl-none border-blue-500/20' 
-                : 'bg-blue-600/20 rounded-tr-none border-blue-500/40 border';
-
-            // Markdown benzeri basit kod bloklarını render et
-            let formattedText = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-            formattedText = formattedText.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-            div.innerHTML = `
-                ${avatar}
-                <div class="max-w-[85%] p-4 rounded-2xl ${bubbleClass}">
-                    <div class="text-sm leading-relaxed whitespace-pre-wrap">${formattedText}</div>
-                    ${data ? `<div class="mt-2 text-[10px] text-slate-500 font-mono">Niyet: ${data.niyet} | Süre: ${data.sure}</div>` : ''}
-                </div>
-            `;
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
             
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            if (!message || isLoading) return;
+
+            sendMessage(message);
+            input.value = '';
+            input.style.height = 'auto';
         }
 
-        function showTyping() {
-            const id = 'typing-' + Date.now();
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'flex items-start gap-4 message-anim';
-            div.innerHTML = `
-                <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center shadow-lg">TZ</div>
-                <div class="glass p-4 rounded-2xl rounded-tl-none flex gap-1">
-                    <div class="typing-dot"></div>
-                    <div class="typing-dot" style="animation-delay: 0.2s"></div>
-                    <div class="typing-dot" style="animation-delay: 0.4s"></div>
-                </div>
-            `;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return id;
-        }
+        async function sendMessage(message) {
+            if (isLoading) return;
+            
+            // Remove welcome section
+            const welcomeSection = document.querySelector('.welcome-section');
+            if (welcomeSection) {
+                welcomeSection.remove();
+            }
 
-        function removeTyping(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
+            // Kullanıcı mesajını göster
+            addMessageToUI(message, 'user');
 
-        function updateStats() {
-            const durum = tuncer.durum();
-            document.getElementById('stat-memory').innerText = durum.hafizaKullanilanSlot;
-            document.getElementById('stat-chat').innerText = durum.konusmaAdedi;
-            document.getElementById('stat-learn').innerText = durum.ogrenilenBilgiSayisi;
-        }
+            // Konuşmayı başlat
+            if (!currentConversationId) {
+                startNewChat();
+            }
 
-        function resetSystem() {
-            if(confirm("Tüm hafıza ve konuşma geçmişi silinecek. Emin misiniz?")) {
-                tuncer.sifirla();
-                chatBox.innerHTML = '';
-                appendMessage('ai', 'Sistem başarıyla sıfırlandı. Hafıza temizlendi.');
-                updateStats();
+            // Yükleme durumunu ayarla
+            isLoading = true;
+            document.getElementById('send-btn').disabled = true;
+
+            // Yazma göstergesi göster
+            showTypingIndicator();
+
+            // Cevap al
+            try {
+                let response = '';
+
+                // Tuncer Zeka kütüphanesini kullan
+                if (typeof TuncerZeka !== 'undefined' && TuncerZeka.konus) {
+                    const result = await TuncerZeka.konus(message);
+                    response = typeof result === 'string' ? result : (result.cevap || 'Cevap alınamadı.');
+                } else {
+                    // Fallback - basit bot
+                    response = getSimpleResponse(message);
+                }
+
+                // Yazma göstergesini kaldır
+                removeTypingIndicator();
+
+                // Cevabı göster
+                addMessageToUI(response, 'assistant');
+
+                // Sohbeti geçmişe ekle
+                conversationHistory.push({
+                    message,
+                    response,
+                    timestamp: new Date().toLocaleTimeString('tr-TR')
+                });
+
+            } catch (error) {
+                removeTypingIndicator();
+                console.error('Hata:', error);
+                addMessageToUI(`❌ Hata oluştu: ${error.message}`, 'error');
+            } finally {
+                isLoading = false;
+                document.getElementById('send-btn').disabled = false;
             }
         }
 
-        // Başlangıç istatistikleri
-        updateStats();
+        function addMessageToUI(message, sender = 'assistant') {
+            const container = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = `message-row ${sender === 'user' ? 'user' : ''}`;
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            avatarDiv.textContent = sender === 'user' ? '👤' : '🧠';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            // Basit Markdown desteği
+            contentDiv.innerHTML = formatMessage(message);
+
+            rowDiv.appendChild(avatarDiv);
+            rowDiv.appendChild(contentDiv);
+            messageDiv.appendChild(rowDiv);
+            container.appendChild(messageDiv);
+
+            // Scroll to bottom
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function formatMessage(text) {
+            // Kod blokları
+            text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+            
+            // Kalın metin
+            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // İtalik
+            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+            
+            // Linkler
+            text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+            
+            // Line breaks
+            text = text.replace(/\n/g, '<br>');
+            
+            return text;
+        }
+
+        function showTypingIndicator() {
+            const container = document.getElementById('messages-container');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.id = 'typing-indicator';
+
+            const rowDiv = document.createElement('div');
+            rowDiv.className = 'message-row';
+
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            avatarDiv.textContent = '🧠';
+
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'typing-indicator';
+            typingDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+
+            rowDiv.appendChild(avatarDiv);
+            rowDiv.appendChild(typingDiv);
+            messageDiv.appendChild(rowDiv);
+            container.appendChild(messageDiv);
+
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function startNewChat() {
+            currentConversationId = generateId();
+            conversationHistory = [];
+            
+            // Clear messages
+            const container = document.getElementById('messages-container');
+            container.innerHTML = `
+                <div class="welcome-section">
+                    <div class="welcome-icon">🧠</div>
+                    <h2 class="welcome-title">Yeni Sohbet</h2>
+                    <p class="welcome-subtitle">Tuncer Zeka ile konuşmaya başlayın</p>
+                    <div class="suggestion-grid">
+                        <button class="suggestion-btn" onclick="sendMessage('Merhaba, sen kimsin?')">Merhaba!</button>
+                        <button class="suggestion-btn" onclick="sendMessage('Matematik: 15 × 8')">Matematik</button>
+                        <button class="suggestion-btn" onclick="sendMessage('wikipedia: Yapay Zeka')">Bilgi Ara</button>
+                        <button class="suggestion-btn" onclick="sendMessage('Bir şaka anlat')">Şaka</button>
+                    </div>
+                </div>
+            `;
+
+            // Add to conversation list
+            addConversationToList();
+        }
+
+        function addConversationToList() {
+            const item = document.createElement('div');
+            item.className = 'conversation-item active';
+            item.id = `conv-${currentConversationId}`;
+            item.textContent = `Sohbet - ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
+            item.onclick = () => selectConversation(currentConversationId);
+
+            const list = document.getElementById('conversations-list');
+            
+            // Remove empty message
+            const emptyMsg = list.querySelector('.info-box');
+            if (emptyMsg) emptyMsg.remove();
+
+            // Add new item at top
+            list.insertBefore(item, list.firstChild);
+        }
+
+        function selectConversation(id) {
+            // Update UI
+            document.querySelectorAll('.conversation-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.getElementById(`conv-${id}`).classList.add('active');
+
+            currentConversationId = id;
+            // In a real app, you'd load the conversation history here
+        }
+
+        function loadConversationHistory() {
+            // In a real app, this would load from localStorage
+            console.log('Konuşma geçmişi yükleniyor...');
+        }
+
+        function getSimpleResponse(message) {
+            const msg = message.toLowerCase();
+
+            // Temel yanıtlar
+            if (msg.includes('merhaba') || msg.includes('selam')) {
+                return '👋 Merhaba! Ben Tuncer Zeka, Ahmet Tuncer tarafından geliştirilmiş bir yapay zeka sistemi. Size nasıl yardımcı olabilirim?\n\n**Yapabileceğim şeyler:**\n• Matematiksel hesaplamalar\n• Wikipedia\'dan bilgi arama\n• Şaka anlatma\n• Sohbet ve soru cevaplama';
+            }
+
+            if (msg.includes('kimsin') || msg.includes('nesin')) {
+                return '🧠 **Tuncer Zeka v2.0**\n\nBen, Ahmet Tuncer tarafından sıfırdan geliştirilen, tamamen yerli bir yapay zeka sistemi. Dış kütüphanelere bağımlılığım yok, saf JavaScript ile çalışıyorum.\n\n**Özelliklerim:**\n• Türkçe doğal dil işleme\n• Matematik problemlerini çözme\n• Web araması (Wikipedia)\n• Görsel analizi\n• Duygu analizi';
+            }
+
+            if (msg.includes('şaka') || msg.includes('fıkra') || msg.includes('espri')) {
+                const jokes = [
+                    '😄 Bir yapay zeka neden terapiye gitti? Çünkü çok fazla "katmanı" vardı!',
+                    '🤖 Kaç yapay zeka mühendis gerekir bir ampulü değiştirmek için? Hiç, bu donanımcıların işi!',
+                    '💡 Yapay zeka bize neden pek fıkra anlatmaz? Çünkü mizahın "kontekstini" kavrayan sinir ağları hala eğitilmemiş!',
+                    '🧠 Bir yapay zeka neden iyi oyuncu olur? Çünkü her rol için yeni ağırlıkları ayarlayabilir!'
+                ];
+                return jokes[Math.floor(Math.random() * jokes.length)];
+            }
+
+            if (msg.includes('matematik') || msg.includes('hesapla') || msg.match(/\d+\s*[+\-*/]/)) {
+                return '🔢 Matematiksel bir soru sorduğunuz görülüyor, fakat cevap verebilmek için Tuncer Zeka kütüphaneleri tam yüklenmiş olmalı.\n\nLütfen sayfayı yenileyin veya doğru dosyaların yüklendiğinden emin olun.';
+            }
+
+            // Varsayılan yanıt
+            return '💭 Hmm, ilginç bir soru. Tuncer Zeka\'nın tam işlevselliğini kullanmak için tuncer2023.js ve tuncer2026.js dosyalarının doğru şekilde yüklenmiş olması gerekiyor.\n\nBaşka ne sormak istersiniz?';
+        }
+
+        function toggleSettings() {
+            alert('⚙️ Ayarlar paneli yakında eklenecek!');
+        }
+
+        function showMessage(text, type = 'info') {
+            const container = document.getElementById('messages-container');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `info-box ${type}`;
+            msgDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
+            container.appendChild(msgDiv);
+        }
+
+        function generateId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl+N for new chat
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                startNewChat();
+            }
+        });
     </script>
 </body>
 </html>
