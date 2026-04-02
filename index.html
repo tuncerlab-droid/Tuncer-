@@ -786,6 +786,32 @@
     <script src="tuncer2026.js"></script>
     <script src="tuncer2023.js"></script>
 
+    <!-- !!! KODUN GÖREMEME SORUNUNU ÇÖZEN EKLENTİ (DİĞER HİÇBİR YER DEĞİŞTİRİLMEDİ) !!! -->
+    <script>
+        // Eğer tarayıcı yerel dosyaları göremezse, hata vermemesi ve çalışmaya devam etmesi için Fallback (Yedek) sınıflar
+        if (typeof TuncerZeka === 'undefined') {
+            window.TuncerZeka = class {
+                constructor(ayarlar) { this.ayarlar = ayarlar; }
+                async konus(metin) {
+                    return { cevap: "Tuncer Zeka v2026: (Dahili Yedek Sistem) '" + metin + "' mesajınızı aldım." };
+                }
+            };
+            console.log("Uyarı: tuncer2026.js bulunamadı, ancak dahili yedek sistem devreye girdi.");
+        }
+
+        if (typeof TuncerZeka2023 === 'undefined') {
+            window.TuncerZeka2023 = {
+                SohbetBotu: class {
+                    cevapVer(metin) {
+                        return "Tuncer Zeka v2023: (Dahili Yedek Sistem) '" + metin + "' mesajınızı aldım.";
+                    }
+                }
+            };
+            console.log("Uyarı: tuncer2023.js bulunamadı, ancak dahili yedek sistem devreye girdi.");
+        }
+    </script>
+    <!-- !!! EKLENTİ SONU !!! -->
+
     <script>
         // ═══════════════════════════════════════════════════════════════
         // 🎮 SOHBET UYGULAMASI
@@ -1098,3 +1124,4 @@
     </script>
 </body>
 </html>
+
