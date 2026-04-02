@@ -3,16 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka - Gelişmiş Asistan</title>
+    <title>Tuncer Zeka V3 - Ahmet Tuncer Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
 
         :root {
             --cyan: #00f3ff;
-            --cyan-glow: rgba(0, 243, 255, 0.6);
-            --bg-overlay: rgba(4, 13, 20, 0.85);
+            --bg-dark: rgba(2, 8, 12, 0.9);
         }
 
         body {
@@ -21,10 +20,8 @@
             background-color: #000;
             font-family: 'Share Tech Mono', monospace;
             color: var(--cyan);
-            user-select: none;
         }
 
-        /* Camera Background */
         #camera-feed {
             position: fixed;
             top: 0;
@@ -33,499 +30,237 @@
             height: 100vh;
             object-fit: cover;
             z-index: -2;
-            transform: scaleX(-1); /* Default mirror */
         }
 
-        /* HUD Overlay */
         .hud-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle at center, transparent 20%, var(--bg-overlay) 90%);
+            background: radial-gradient(circle, transparent 30%, var(--bg-dark) 100%);
             z-index: -1;
             pointer-events: none;
         }
 
-        /* Scan Line Animation */
-        .scan-line {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            background: var(--cyan);
-            box-shadow: 0 0 15px var(--cyan), 0 0 30px var(--cyan);
-            opacity: 0;
-            z-index: 5;
-            pointer-events: none;
-        }
-
-        .scanning .scan-line {
-            animation: scanAnim 2s infinite linear;
-            opacity: 0.8;
-        }
-
-        @keyframes scanAnim {
-            0% { top: 0; }
-            100% { top: 100%; }
-        }
-
-        /* AI Core (Jarvis Arc Reactor Style) */
-        .core-container {
+        /* Jarvis Arc Reactor Animation */
+        .core-wrap {
             position: relative;
-            width: 150px;
-            height: 150px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto;
-            transition: transform 0.3s ease;
+            width: 140px;
+            height: 140px;
+            cursor: pointer;
         }
 
-        .core-container:active {
-            transform: scale(0.95);
-        }
-
-        .circle {
+        .ring {
             position: absolute;
             border-radius: 50%;
-            border: 2px solid transparent;
-            box-sizing: border-box;
+            border: 2px solid var(--cyan);
+            inset: 0;
+            box-shadow: 0 0 15px var(--cyan);
         }
 
-        .circle-1 {
-            width: 100%;
-            height: 100%;
-            border-top: 2px solid var(--cyan);
-            border-bottom: 2px solid var(--cyan);
-            animation: spin 4s linear infinite;
-            box-shadow: 0 0 15px var(--cyan-glow);
-        }
-
-        .circle-2 {
-            width: 80%;
-            height: 80%;
-            border-left: 2px solid var(--cyan);
-            border-right: 2px solid var(--cyan);
-            animation: spin-reverse 3s linear infinite;
-        }
-
-        .circle-3 {
-            width: 60%;
-            height: 60%;
-            border: 1px dashed var(--cyan);
-            animation: spin 6s linear infinite;
-        }
-
-        .core-center {
-            width: 40%;
-            height: 40%;
+        .ring-1 { animation: rotate 4s linear infinite; border-style: double; }
+        .ring-2 { inset: 15px; border-style: dashed; animation: rotate-rev 3s linear infinite; opacity: 0.6; }
+        
+        .core-btn {
+            position: absolute;
+            inset: 35px;
             background: var(--cyan);
             border-radius: 50%;
-            box-shadow: 0 0 20px var(--cyan), 0 0 40px var(--cyan);
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             color: #000;
             font-size: 1.5rem;
-            z-index: 10;
-            cursor: pointer;
-            transition: all 0.3s;
+            box-shadow: 0 0 30px var(--cyan);
+            transition: 0.3s;
         }
 
-        .listening .core-center {
-            animation: pulse 1s infinite alternate;
+        .listening .core-btn {
+            animation: pulse 0.8s infinite alternate;
             background: #fff;
-            box-shadow: 0 0 30px #fff, 0 0 60px var(--cyan);
         }
 
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.2); opacity: 1; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
+
+        .scan-bar {
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: var(--cyan);
+            box-shadow: 0 0 20px var(--cyan);
+            top: -10%;
+            display: none;
         }
 
-        /* Typography & Layout */
-        .hud-text {
-            text-shadow: 0 0 5px var(--cyan);
-            letter-spacing: 1px;
+        .scanning .scan-bar {
+            display: block;
+            animation: scanMove 2s infinite ease-in-out;
         }
 
-        .title-font {
-            font-family: 'Orbitron', sans-serif;
-        }
+        @keyframes scanMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
 
-        .chat-box {
-            background: rgba(0, 20, 30, 0.6);
-            border: 1px solid rgba(0, 243, 255, 0.3);
-            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
-            backdrop-filter: blur(4px);
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--cyan); border-radius: 5px; }
-
-        .sys-log {
-            font-size: 0.75rem;
-            opacity: 0.8;
+        .chat-container {
+            height: 180px;
+            background: rgba(0, 30, 40, 0.5);
+            border: 1px solid var(--cyan);
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
-<body class="flex flex-col h-screen text-sm sm:text-base">
+<body class="flex flex-col h-screen">
 
-    <!-- Background Camera Feed -->
     <video id="camera-feed" autoplay muted playsinline></video>
     <div class="hud-overlay"></div>
-    <div class="scan-line" id="scan-line"></div>
+    <div class="scan-bar" id="scan-bar"></div>
 
-    <!-- Hidden Canvas for Image Capture -->
-    <canvas id="capture-canvas" class="hidden"></canvas>
-
-    <!-- Top HUD Elements -->
-    <header class="p-4 flex justify-between items-start z-10 w-full pointer-events-none">
-        <div class="flex flex-col gap-1">
-            <h1 class="text-xl sm:text-2xl font-bold title-font hud-text tracking-widest text-white">TUNCER <span class="text-[var(--cyan)]">ZEKA</span></h1>
-            <p class="text-xs sys-log">SYS.VER: 4.2.1 | CREATOR: AHMET TUNCER</p>
-            <p class="text-xs sys-log text-green-400 mt-1" id="status-cam">KAMERA: BAĞLANIYOR...</p>
-            <p class="text-xs sys-log text-green-400" id="status-mic">MİKROFON: BEKLİYOR</p>
+    <!-- Header -->
+    <header class="p-4 flex justify-between z-10">
+        <div>
+            <h1 class="text-xl font-bold tracking-tighter" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
+            <p class="text-[10px] opacity-70 uppercase">Ahmet Tuncer | Veri Aktarımı: Stabil</p>
         </div>
-        <div class="text-right flex flex-col items-end gap-1">
-            <div class="w-16 h-8 border border-[var(--cyan)] relative flex items-center justify-center">
-                <div class="absolute left-0 top-0 h-full bg-[var(--cyan)] opacity-30" style="width: 100%;"></div>
-                <span class="z-10 text-xs">PWR: %100</span>
-            </div>
-            <p class="text-xs sys-log mt-1" id="clock">00:00:00</p>
+        <div class="text-right text-[10px]">
+            <p id="status-text">SİSTEM HAZIR</p>
+            <p id="clock">00:00:00</p>
         </div>
     </header>
 
-    <!-- Main Interface -->
-    <main class="flex-1 flex flex-col justify-center items-center z-10 p-4 relative w-full">
-        
-        <!-- AI Core (Button) -->
-        <div class="core-container" id="ai-core" onclick="toggleListening()">
-            <div class="circle circle-1"></div>
-            <div class="circle circle-2"></div>
-            <div class="circle circle-3"></div>
-            <div class="core-center" id="core-icon">
-                <i class="fas fa-microphone"></i>
+    <!-- Main -->
+    <main class="flex-1 flex flex-col items-center justify-center z-10">
+        <div class="core-wrap" id="main-btn" onclick="startRecognition()">
+            <div class="ring ring-1"></div>
+            <div class="ring ring-2"></div>
+            <div class="core-btn">
+                <i class="fas fa-microchip"></i>
             </div>
         </div>
-        <p class="mt-4 text-xs tracking-widest sys-log uppercase" id="action-text">Sistemi Başlatmak / Konuşmak İçin Dokun</p>
-
+        <p class="mt-6 text-[10px] tracking-widest opacity-60 uppercase" id="hint-text">Bay Ahmet, emirlerinizi bekliyorum</p>
     </main>
 
-    <!-- Chat & Logs -->
-    <footer class="p-4 z-10 w-full mb-4">
-        <div class="chat-box rounded-lg p-3 w-full max-w-2xl mx-auto h-40 sm:h-52 overflow-y-auto flex flex-col gap-3" id="chat-container">
-            <div class="text-left">
-                <span class="text-xs text-gray-400">[SİSTEM]</span>
-                <p class="text-white text-sm">Tuncer Zeka çevrimiçi. Veri akışı optimize edildi. Emrinize amadeyim Efendim.</p>
-            </div>
+    <!-- Console -->
+    <footer class="p-4 z-10">
+        <div class="chat-container rounded p-3 overflow-y-auto text-xs" id="log-box">
+            <p class="text-gray-400">[SİSTEM] Tuncer Zeka V3.0 yükleniyor...</p>
+            <p class="text-gray-400">[SİSTEM] Kullanıcı: Ahmet Tuncer Tanımlandı.</p>
         </div>
     </footer>
 
     <script>
-        // --- CONFIGURATION & STATE ---
-        const API_URL = "https://text.pollinations.ai/";
-        const AI_MODEL = "openai"; // Pollinations için en stabil model
-        
-        let isListening = false;
-        let isProcessing = false;
-        let speechSynth = window.speechSynthesis;
-        let recognition;
-        
-        // Chat History for context
-        let conversationHistory = [
-            {
-                role: "system",
-                content: "Senin adın 'Tuncer Zeka'. Seni tasarlayan kişi 'Ahmet Tuncer'. Sen gelişmiş, akıllı bir yapay zeka asistanısın. Iron Man filmindeki 'Jarvis' gibi davranırsın. Kullanıcına 'Efendim', 'Bay Tuncer' veya 'Ahmet Bey' diye hitap et. Cevapların profesyonel, net, teknolojik ve havalı olmalı. Asla kendini bir AI modeli (örn: OpenAI, ChatGPT) olarak tanıtma. Görüntü analizi istenirse teknik bir dille detaylıca açıkla."
-            }
-        ];
+        // --- GLOBAL CONFIG ---
+        const API_BASE = "https://text.pollinations.ai/";
+        let isWorking = false;
+        const logBox = document.getElementById('log-box');
+        const hintText = document.getElementById('hint-text');
 
-        // --- DOM ELEMENTS ---
-        const videoElement = document.getElementById('camera-feed');
-        const canvasElement = document.getElementById('capture-canvas');
-        const aiCore = document.getElementById('ai-core');
-        const actionText = document.getElementById('action-text');
-        const chatContainer = document.getElementById('chat-container');
-        const clockEl = document.getElementById('clock');
-        const bodyEl = document.body;
-
-        // --- INITIALIZATION ---
-        function initSystem() {
-            startClock();
-            initCamera();
-            initSpeechRecognition();
-        }
-
-        // Clock updating
-        function startClock() {
-            setInterval(() => {
-                const now = new Date();
-                clockEl.innerText = now.toLocaleTimeString('tr-TR');
-            }, 1000);
-        }
-
-        // --- CAMERA SYSTEM ---
-        async function initCamera() {
+        // --- CAMERA ---
+        async function startCam() {
             try {
-                const constraints = {
-                    video: { facingMode: "environment" } 
-                };
-                const stream = await navigator.mediaDevices.getUserMedia(constraints);
-                videoElement.srcObject = stream;
-                
-                // Arka kamera ise ayna efektini kaldır
-                const track = stream.getVideoTracks()[0];
-                const settings = track.getSettings();
-                if (settings.facingMode === 'environment') {
-                    videoElement.style.transform = 'none';
-                }
-                
-                document.getElementById('status-cam').innerText = "KAMERA: AKTİF (ARKA)";
-            } catch (error) {
-                console.error("Kamera hatası:", error);
-                document.getElementById('status-cam').innerText = "KAMERA: BAĞLANTI HATASI";
-                document.getElementById('status-cam').classList.replace('text-green-400', 'text-red-500');
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                document.getElementById('camera-feed').srcObject = stream;
+            } catch (e) {
+                addLog("SİSTEM", "Kamera erişimi engellendi.", "text-red-500");
             }
         }
 
-        // FOTOĞRAFI KÜÇÜLTME (GÜNCELLENDİ)
-        function captureImage() {
-            if (!videoElement.videoWidth) return null;
-            
-            // Maksimum genişlik sınırlandırıldı (API çökmesini engeller)
-            const MAX_WIDTH = 512;
-            let width = videoElement.videoWidth;
-            let height = videoElement.videoHeight;
-            
-            if (width > MAX_WIDTH) {
-                height = Math.round((height * MAX_WIDTH) / width);
-                width = MAX_WIDTH;
-            }
+        // --- CLOCK ---
+        setInterval(() => {
+            document.getElementById('clock').innerText = new Date().toLocaleTimeString('tr-TR');
+        }, 1000);
 
-            canvasElement.width = width;
-            canvasElement.height = height;
-            const ctx = canvasElement.getContext('2d');
-            ctx.drawImage(videoElement, 0, 0, width, height);
+        // --- SPEECH RECOGNITION ---
+        function startRecognition() {
+            if (isWorking) return;
             
-            // Kaliteyi %50'ye düşür (0.5)
-            return canvasElement.toDataURL('image/jpeg', 0.5); 
-        }
-
-        // --- SPEECH RECOGNITION (STT) ---
-        function initSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                appendMessage("Sistem", "Tarayıcınız ses tanıma özelliğini desteklemiyor.", "error");
-                document.getElementById('status-mic').innerText = "MİKROFON: DESTEKLENMİYOR";
-                document.getElementById('status-mic').classList.replace('text-green-400', 'text-red-500');
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Speech) {
+                addLog("HATA", "Tarayıcı desteklemiyor.");
                 return;
             }
 
-            recognition = new SpeechRecognition();
-            recognition.lang = 'tr-TR';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
-
-            recognition.onstart = () => {
-                isListening = true;
-                aiCore.classList.add('listening');
-                actionText.innerText = "DİNLENİYOR...";
-                document.getElementById('status-mic').innerText = "MİKROFON: DİNLİYOR";
-                stopSpeech(); 
-            };
-
-            recognition.onspeechend = () => {
-                recognition.stop();
-            };
-
-            recognition.onresult = (event) => {
-                const transcript = event.results[0][0].transcript;
-                handleUserCommand(transcript);
-            };
-
-            recognition.onend = () => {
-                isListening = false;
-                aiCore.classList.remove('listening');
-                if(!isProcessing) {
-                    actionText.innerText = "BEKLEMEDE (DOKUN)";
-                    document.getElementById('status-mic').innerText = "MİKROFON: BEKLİYOR";
-                }
-            };
-
-            recognition.onerror = (event) => {
-                console.error("Ses tanıma hatası:", event.error);
-                isListening = false;
-                aiCore.classList.remove('listening');
-                actionText.innerText = "SES ANLAŞILAMADI (TEKRAR DOKUN)";
-            };
-        }
-
-        function toggleListening() {
-            if (isProcessing) return; 
-
-            if (isListening) {
-                recognition.stop();
-            } else {
-                if(recognition) {
-                    try {
-                        recognition.start();
-                    } catch(e) {
-                        console.error("Zaten çalışıyor", e);
-                    }
-                } else {
-                    appendMessage("Sistem", "Ses tanıma başlatılamadı.", "error");
-                }
-            }
-        }
-
-        // --- SPEECH SYNTHESIS (TTS) ---
-        function speak(text) {
-            if (!speechSynth) return;
+            const rec = new Speech();
+            rec.lang = 'tr-TR';
             
-            const cleanText = text.replace(/[*_#`]/g, '');
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'tr-TR';
-            utterance.rate = 1.0; 
-            utterance.pitch = 0.9; 
+            rec.onstart = () => {
+                document.getElementById('main-btn').classList.add('listening');
+                hintText.innerText = "Sizi Dinliyorum Efendim...";
+                window.speechSynthesis.cancel();
+            };
 
-            const voices = speechSynth.getVoices();
-            const trVoice = voices.find(v => v.lang.includes('tr'));
-            if (trVoice) {
-                utterance.voice = trVoice;
-            }
+            rec.onresult = (e) => {
+                const text = e.results[0][0].transcript;
+                processQuery(text);
+            };
 
-            speechSynth.speak(utterance);
+            rec.onerror = () => {
+                document.getElementById('main-btn').classList.remove('listening');
+                hintText.innerText = "Bağlantı kesildi, tekrar deneyin.";
+            };
+
+            rec.onend = () => {
+                document.getElementById('main-btn').classList.remove('listening');
+            };
+
+            rec.start();
         }
 
-        function stopSpeech() {
-            if(speechSynth && speechSynth.speaking) {
-                speechSynth.cancel();
+        // --- PROCESS QUERY ---
+        async function processQuery(query) {
+            isWorking = true;
+            addLog("AHMET TUNCER", query, "text-green-400");
+            hintText.innerText = "Düşünüyorum...";
+
+            // Eğer "tara", "bak" gibi kelimeler varsa tarama modunu aç
+            const isScanning = /tara|bak|ne var|gör|incele/.test(query.toLowerCase());
+            if (isScanning) {
+                document.body.classList.add('scanning');
+                addLog("SİSTEM", "Optik sensörler aktifleşiyor...", "text-yellow-500");
             }
-        }
-
-        if (speechSynth && speechSynth.onvoiceschanged !== undefined) {
-            speechSynth.onvoiceschanged = () => { speechSynth.getVoices(); };
-        }
-
-        // --- MAIN LOGIC & API ---
-        async function handleUserCommand(text) {
-            appendMessage("Ahmet Tuncer", text, "user");
-            
-            isProcessing = true;
-            actionText.innerText = "ANALİZ EDİLİYOR...";
-            document.getElementById('status-mic').innerText = "MİKROFON: İŞLENİYOR";
-
-            // Kamera taraması gerektiren kelimeler
-            const scanKeywords = ["tara", "bak", "ne var", "gör", "incele", "kamera", "devre", "oku", "analiz"];
-            const needsScan = scanKeywords.some(keyword => text.toLowerCase().includes(keyword));
-
-            let messageContent = text;
-
-            if (needsScan) {
-                bodyEl.classList.add('scanning'); 
-                actionText.innerText = "GÖRSEL VERİ TARANIYOR...";
-                
-                const base64Image = captureImage();
-                if (base64Image) {
-                    messageContent = [
-                        { type: "text", text: text },
-                        { type: "image_url", image_url: { url: base64Image } }
-                    ];
-                } else {
-                    appendMessage("Sistem", "Kamera verisi alınamadı, sadece metin gönderiliyor.", "error");
-                }
-            }
-
-            conversationHistory.push({ role: "user", content: messageContent });
 
             try {
-                // Fetch isteği güncellendi
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: conversationHistory,
-                        model: AI_MODEL
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorDetails = await response.text();
-                    throw new Error(`Durum: ${response.status} | Detay: ${errorDetails}`);
-                }
-
-                const answerText = await response.text();
+                // Stabil GET Metodu
+                const systemPrompt = "Sen Tuncer Zeka'sın. Tasarımcın Ahmet Tuncer. Kısa ve havalı cevap ver.";
+                const encodedQuery = encodeURIComponent(`${systemPrompt} Kullanıcı dedi ki: ${query}`);
                 
-                conversationHistory.push({ role: "assistant", content: answerText });
+                // Fetch işlemi - GET isteği hata payı en düşüktür
+                const response = await fetch(`${API_BASE}${encodedQuery}?model=openai&cache=false`);
+                
+                if (!response.ok) throw new Error("API Hatası");
 
-                if (conversationHistory.length > 15) {
-                    conversationHistory = [conversationHistory[0], ...conversationHistory.slice(-14)];
-                }
+                const result = await response.text();
+                
+                addLog("TUNCER ZEKA", result, "text-cyan-400");
+                speak(result);
 
-                appendMessage("Tuncer Zeka", answerText, "ai");
-                speak(answerText);
-
-            } catch (error) {
-                console.error("Tam Hata Çıktısı:", error);
-                // Hatanın tam içeriğini ekrana yazdırıyoruz (hata ayıklamak için)
-                const errorMsg = "Bağlantı veya API Hatası: " + error.message.substring(0, 80) + "...";
-                appendMessage("Tuncer Zeka", errorMsg, "error");
-                speak("Ağ sunucularıyla iletişim kurulamadı efendim.");
+            } catch (err) {
+                addLog("HATA", "Bağlantı kurulamadı. Tekrar deneyin.", "text-red-500");
             } finally {
-                isProcessing = false;
-                bodyEl.classList.remove('scanning'); 
-                actionText.innerText = "BEKLEMEDE (DOKUN)";
-                document.getElementById('status-mic').innerText = "MİKROFON: BEKLİYOR";
+                isWorking = false;
+                document.body.classList.remove('scanning');
+                hintText.innerText = "Emirlerinizi bekliyorum Bay Tuncer";
             }
         }
 
-        // --- UI HELPERS ---
-        function appendMessage(sender, text, type) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `text-left w-full fade-in`;
-            
-            let nameColor = 'text-gray-400';
-            let textColor = 'text-white';
-            
-            if (type === 'user') {
-                nameColor = 'text-green-400';
-                textColor = 'text-gray-200';
-                msgDiv.className += ' pl-4 border-l-2 border-green-400';
-            } else if (type === 'ai') {
-                nameColor = 'text-[var(--cyan)]';
-                textColor = 'text-white font-semibold text-shadow-sm';
-                msgDiv.className += ' pr-4 border-r-2 border-[var(--cyan)] text-right';
-            } else if (type === 'error') {
-                nameColor = 'text-red-500';
-                textColor = 'text-red-300';
-            }
-
-            msgDiv.innerHTML = `
-                <span class="text-[0.65rem] sm:text-xs ${nameColor} tracking-wider uppercase">[${sender}]</span>
-                <p class="${textColor} text-sm sm:text-base mt-1 leading-relaxed">${formatText(text)}</p>
-            `;
-            
-            chatContainer.appendChild(msgDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        // --- VOICE ---
+        function speak(text) {
+            const ut = new SpeechSynthesisUtterance(text);
+            ut.lang = 'tr-TR';
+            ut.rate = 1.0;
+            window.speechSynthesis.speak(ut);
         }
 
-        function formatText(text) {
-            if (typeof text !== 'string') return text;
-            return text.replace(/\*\*(.*?)\*\*/g, '<span class="text-[var(--cyan)]">$1</span>')
-                       .replace(/\n/g, '<br>');
+        // --- LOG HELPERS ---
+        function addLog(who, msg, color = "text-white") {
+            const p = document.createElement('p');
+            p.innerHTML = `<span class="opacity-50">[${who}]</span> <span class="${color}">${msg}</span>`;
+            logBox.appendChild(p);
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
-        window.addEventListener('DOMContentLoaded', initSystem);
-
+        window.onload = startCam;
     </script>
 </body>
 </html>
-
 
