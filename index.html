@@ -3,232 +3,237 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka - AI Kontrol Paneli</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <title>Tuncer Zeka v5.0 - Ultimate Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #030712;
-            --card: #111827;
-            --accent: #0ea5e9;
-            --success: #10b981;
-            --error: #ef4444;
-            --text: #f3f4f6;
+            --bg: #050505;
+            --panel: #111;
+            --accent: #00f2ff;
+            --text: #e0e0e0;
+            --error: #ff3333;
+            --success: #00ff88;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        /* Üst Bilgi Çubuğu */
-        .status-bar {
-            background: var(--card);
-            padding: 10px 20px;
+        /* Neon Header */
+        header {
+            padding: 15px 25px;
+            background: var(--panel);
+            border-bottom: 1px solid #222;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
         }
 
-        .status-item { display: flex; align-items: center; gap: 8px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #4b5563; }
-        .dot.active { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .logo { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            background: #222;
+            border: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: gray; }
+        .dot.online { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .dot.loading { background: orange; animation: blink 1s infinite; }
         .dot.error { background: var(--error); }
 
-        /* Ana İçerik */
-        .container { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 20px; overflow: hidden; }
+        /* Main App */
+        main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 15px; max-width: 900px; margin: 0 auto; width: 100%; }
 
-        .chat-window {
+        #chat-window {
             flex: 1;
-            background: var(--card);
-            border-radius: 12px;
+            background: var(--panel);
+            border-radius: 15px;
+            border: 1px solid #222;
+            overflow-y: auto;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.05);
+            gap: 15px;
         }
 
-        .messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .msg { max-width: 85%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
-        .msg.user { align-self: flex-end; background: var(--accent); color: white; }
-        .msg.ai { align-self: flex-start; background: #1f2937; border: 1px solid rgba(255,255,255,0.1); }
+        .bubble { max-width: 85%; padding: 12px 18px; border-radius: 18px; font-size: 14px; line-height: 1.6; position: relative; }
+        .bubble.user { align-self: flex-end; background: var(--accent); color: #000; font-weight: 500; border-bottom-right-radius: 2px; }
+        .bubble.ai { align-self: flex-start; background: #1a1a1a; border: 1px solid #333; border-bottom-left-radius: 2px; }
 
-        .controls { display: flex; gap: 10px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 12px; }
-        .btn { 
-            flex: 1; padding: 10px; border: none; border-radius: 8px; background: #1f2937; 
-            color: #9ca3af; cursor: pointer; transition: 0.3s; font-weight: bold; font-size: 12px;
-        }
-        .btn.active { background: var(--accent); color: white; }
-
-        .input-area { display: flex; gap: 10px; }
-        input { 
-            flex: 1; background: var(--card); border: 1px solid rgba(255,255,255,0.1); 
-            padding: 15px; border-radius: 12px; color: white; outline: none;
-        }
-        input:focus { border-color: var(--accent); }
-        .send-btn { background: var(--accent); border: none; width: 50px; border-radius: 12px; color: white; cursor: pointer; }
-
-        .debug-panel {
+        /* Terminal Logs */
+        #logs {
             background: #000;
-            color: #4ade80;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 10px;
             padding: 10px;
             border-radius: 8px;
+            font-family: 'JetBrains Mono';
+            font-size: 10px;
+            color: #666;
             max-height: 80px;
             overflow-y: auto;
-            border: 1px solid #1f2937;
+            border: 1px solid #222;
         }
+
+        /* Input Zone */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            background: var(--panel);
+            padding: 10px;
+            border-radius: 15px;
+            border: 1px solid #333;
+        }
+
+        input { flex: 1; background: transparent; border: none; color: white; outline: none; padding: 5px 10px; font-size: 15px; }
+        button#send { background: var(--accent); border: none; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
+        button#send:hover { transform: scale(1.05); filter: brightness(1.1); }
+
+        .selector { display: flex; gap: 10px; margin-bottom: 5px; }
+        .v-btn { flex: 1; padding: 8px; background: #1a1a1a; border: 1px solid #333; color: #666; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.3s; }
+        .v-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 242, 255, 0.05); }
+
+        @keyframes blink { 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
 
-    <div class="status-bar">
-        <div class="status-item">
-            <div id="statusDot" class="dot"></div>
-            <span id="statusText">SİSTEM ÇEVRİMDIŞI</span>
-        </div>
-        <div id="fileNameDisplay">Yükleniyor: tuncer2026.js</div>
+<header>
+    <div class="logo">TUNCER_AI.OS</div>
+    <div class="status-badge">
+        <div id="dot" class="dot"></div>
+        <span id="status-text">DISCONNECTED</span>
+    </div>
+</header>
+
+<main>
+    <div class="selector">
+        <button class="v-btn" onclick="injectEngine('2023')">CORE_2023</button>
+        <button class="v-btn active" onclick="injectEngine('2026')">CORE_2026</button>
     </div>
 
-    <div class="container">
-        <div class="controls">
-            <button class="btn" id="btn2023" onclick="loadEngine('2023')">MODEL 2023</button>
-            <button class="btn active" id="btn2026" onclick="loadEngine('2026')">MODEL 2026</button>
-        </div>
-
-        <div class="chat-window">
-            <div class="messages" id="chat">
-                <div class="msg ai">Sistem hazır. Lütfen bir model seçin ve konuşmaya başlayın.</div>
-            </div>
-        </div>
-
-        <div class="debug-panel" id="debug">Log: Bekleniyor...</div>
-
-        <div class="input-area">
-            <input type="text" id="userInput" placeholder="Mesajınızı yazın..." autocomplete="off">
-            <button class="send-btn" onclick="sendMessage()">➤</button>
-        </div>
+    <div id="chat-window">
+        <div class="bubble ai">Sistem hazır. Çekirdek yazılım enjekte ediliyor...</div>
     </div>
 
-    <script>
-        let ai = null;
-        const chat = document.getElementById('chat');
-        const debug = document.getElementById('debug');
-        const statusDot = document.getElementById('statusDot');
-        const statusText = document.getElementById('statusText');
+    <div id="logs">> Terminal initialized...</div>
 
-        function addLog(msg) {
-            const time = new Date().toLocaleTimeString();
-            debug.innerHTML += `<div>[${time}] ${msg}</div>`;
-            debug.scrollTop = debug.scrollHeight;
-        }
+    <div class="input-group">
+        <input type="text" id="userInput" placeholder="Mesajınızı girin..." autocomplete="off">
+        <button id="send" onclick="handleSend()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+    </div>
+</main>
 
-        window.onload = () => loadEngine('2026');
+<script>
+    let aiInstance = null;
+    let currentVer = '2026';
+    const logBox = document.getElementById('logs');
+    const dot = document.getElementById('dot');
+    const statusText = document.getElementById('status-text');
+    const chat = document.getElementById('chat-window');
 
-        async function loadEngine(ver) {
-            // UI Güncelleme
-            document.querySelectorAll('.btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('btn' + ver).classList.add('active');
-            document.getElementById('fileNameDisplay').innerText = `Yükleniyor: tuncer${ver}.js`;
+    function addLog(m, type = 'info') {
+        const div = document.createElement('div');
+        div.style.color = type === 'error' ? '#ff3333' : '#666';
+        div.innerText = `> [${new Date().toLocaleTimeString()}] ${m}`;
+        logBox.appendChild(div);
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // --- ENJEKSİYON MOTORU (KESİN ÇÖZÜM) ---
+    async function injectEngine(ver) {
+        currentVer = ver;
+        aiInstance = null;
+        dot.className = 'dot loading';
+        statusText.innerText = `INJECTING v${ver}...`;
+        
+        document.querySelectorAll('.v-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(ver)));
+
+        try {
+            // 1. Dosyayı ham metin olarak indir
+            const response = await fetch(`tuncer${ver}.js?t=${Date.now()}`);
+            if (!response.ok) throw new Error("Dosya sunucuda bulunamadı.");
             
-            ai = null;
-            statusDot.className = 'dot';
-            statusText.innerText = "YÜKLENİYOR...";
-            addLog(`v${ver} yüklenmeye çalışılıyor...`);
+            let code = await response.text();
+            addLog(`tuncer${ver}.js indirildi (${code.length} bytes).`);
 
-            // Eski scripti temizle
-            const old = document.getElementById('ai-script');
-            if (old) old.remove();
+            // 2. Kodu tarayıcının anlayacağı şekilde temizle ve zorla enjekte et
+            // Eğer dosya içinde 'export default' gibi ifadeler varsa temizle
+            code = code.replace(/export default/g, "");
+            code = code.replace(/export /g, "");
+
+            // 3. Kodu bir script etiketi içine koyup DOM'a ekle (Eval yerine daha güvenli)
+            const oldScript = document.getElementById('injected-core');
+            if (oldScript) oldScript.remove();
 
             const script = document.createElement('script');
-            script.id = 'ai-script';
-            // GitHub ve Yerel yolları desteklemek için dinamik yol
-            const dir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-            script.src = `${dir}tuncer${ver}.js?cache=` + Date.now();
-
-            script.onload = () => {
-                addLog("JS dosyası başarıyla indi.");
-                
-                // --- AKILLI SINIF TESPİTİ ---
-                // Eğer TuncerZeka değil de başka bir isimle kaydedildiyse (Büyük/Küçük harf gibi)
-                setTimeout(() => {
-                    let FoundClass = window.TuncerZeka || window.tuncerZeka || window.Tuncerzeka;
-                    
-                    if (!FoundClass) {
-                        // Eğer globalde bulamazsak sınıfı manuel arayalım
-                        addLog("HATA: Sınıf ismi TuncerZeka değil! window nesnesi taranıyor...");
-                        for (let key in window) {
-                            if (key.toLowerCase().includes('tuncer') && typeof window[key] === 'function') {
-                                FoundClass = window[key];
-                                addLog(`BULDUM! Sınıf ismi: ${key}`);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (FoundClass) {
-                        try {
-                            ai = new FoundClass();
-                            statusDot.className = 'dot active';
-                            statusText.innerText = `AKTİF (v${ver})`;
-                            addLog("Motor başarıyla başlatıldı.");
-                        } catch (e) {
-                            statusDot.className = 'dot error';
-                            statusText.innerText = "BAŞLATMA HATASI";
-                            addLog("HATA: Constructor çalıştırılamadı: " + e.message);
-                        }
-                    } else {
-                        statusDot.className = 'dot error';
-                        statusText.innerText = "SINIF BULUNAMADI";
-                        addLog("HATA: Dosya indi ama içinde uygun bir Sınıf yok.");
-                    }
-                }, 300);
-            };
-
-            script.onerror = () => {
-                statusDot.className = 'dot error';
-                statusText.innerText = "DOSYA YOK";
-                addLog(`HATA: tuncer${ver}.js dosyası bu klasörde bulunamadı.`);
-            };
-
+            script.id = 'injected-core';
+            script.textContent = code + `\nwindow._tempClass = typeof TuncerZeka !== 'undefined' ? TuncerZeka : null;`;
             document.body.appendChild(script);
+
+            // 4. Sınıfı yakala ve örneğini oluştur
+            setTimeout(() => {
+                const Core = window._tempClass;
+                if (Core) {
+                    aiInstance = new Core();
+                    dot.className = 'dot online';
+                    statusText.innerText = `v${ver} ACTIVE`;
+                    addLog("Sınıf başarıyla enjekte edildi.");
+                } else {
+                    throw new Error("Sınıf bulunamadı. Lütfen dosya içindeki 'class TuncerZeka' ismini kontrol edin.");
+                }
+            }, 100);
+
+        } catch (e) {
+            dot.className = 'dot error';
+            statusText.innerText = "CRITICAL ERROR";
+            addLog(e.message, 'error');
+        }
+    }
+
+    async function handleSend() {
+        const input = document.getElementById('userInput');
+        const text = input.value.trim();
+        if (!text) return;
+
+        appendMsg(text, 'user');
+        input.value = '';
+
+        if (!aiInstance) {
+            appendMsg("HATA: Çekirdek yazılım aktif değil.", 'ai');
+            return;
         }
 
-        async function sendMessage() {
-            const input = document.getElementById('userInput');
-            const text = input.value.trim();
-            if (!text) return;
-
-            // Kullanıcı mesajı
-            const uDiv = document.createElement('div');
-            uDiv.className = 'msg user';
-            uDiv.innerText = text;
-            chat.appendChild(uDiv);
-            input.value = '';
-
-            if (!ai) {
-                const eDiv = document.createElement('div');
-                eDiv.className = 'msg ai';
-                eDiv.innerText = "⚠️ Motor bağlı değil. Lütfen dosyanın yüklendiğinden emin olun.";
-                chat.appendChild(eDiv);
-                return;
-            }
-
-            try {
-                const response = await ai.konus(text);
-                const aDiv = document.createElement('div');
-                aDiv.className = 'msg ai';
-                aDiv.innerText = typeof response === 'object' ? response.cevap : response;
-                chat.appendChild(aDiv);
-            } catch (e) {
-                addLog("Çalışma Hatası: " + e.message);
-            }
-            chat.scrollTop = chat.scrollHeight;
+        try {
+            const res = await aiInstance.konus(text);
+            const final = typeof res === 'object' ? res.cevap : res;
+            appendMsg(final, 'ai');
+        } catch (e) {
+            addLog("Runtime Error: " + e.message, 'error');
+            appendMsg("Bir çalışma hatası oluştu: " + e.message, 'ai');
         }
+    }
 
-        document.getElementById('userInput').onkeypress = (e) => { if(e.key === 'Enter') sendMessage(); };
-    </script>
+    function appendMsg(t, s) {
+        const d = document.createElement('div');
+        d.className = `bubble ${s}`;
+        d.innerText = t;
+        chat.appendChild(d);
+        chat.scrollTop = chat.scrollHeight;
+    }
+
+    document.getElementById('userInput').onkeydown = (e) => e.key === 'Enter' && handleSend();
+
+    // Otomatik başlat
+    window.onload = () => injectEngine('2026');
+</script>
+
 </body>
 </html>
 
