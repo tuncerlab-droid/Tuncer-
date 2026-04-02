@@ -523,7 +523,7 @@
     <!-- Sistem Mantığı (UI ve Motor Yükleme) -->
     <script>
         let currentVersion = '2026';
-        let aiInstance = null; // Tuncer Zeka sınıfı örneği tutulacak
+        let aiInstance = null;
         const chatBox = document.getElementById('chatBox');
         const userInput = document.getElementById('userInput');
         const activeBg = document.getElementById('activeBg');
@@ -572,32 +572,37 @@
             loadEngineScript(version);
         }
 
-        // JS Dosyasını Dinamik Yükleme
+        // JS Dosyasını Dinamik Yükleme (ONARILDI)
         function loadEngineScript(version) {
             engineStatus.innerText = `Motor: tuncer${version}.js aranıyor...`;
             engineStatus.style.color = "var(--text-muted)";
             
             // Eski scripti kaldır
-            const oldScript = document.getElementById('ai-engine-script');
-            if (oldScript) {
-                oldScript.remove();
-            }
+            const oldScripts = document.querySelectorAll('.ai-engine-script');
+            oldScripts.forEach(s => s.remove());
 
             // Yeni scripti oluştur
             const script = document.createElement('script');
-            script.id = 'ai-engine-script';
-            script.src = `tuncer${version}.js`;
+            script.className = 'ai-engine-script';
+            
+            // Explicit yerel dizin (./) belirtildi ve önbellek kırmak için timestamp (v=...) eklendi
+            script.src = `./tuncer${version}.js?v=` + new Date().getTime();
             
             script.onload = () => {
-                engineStatus.innerText = `Motor: tuncer${version}.js Aktif`;
-                engineStatus.style.color = "#10b981";
-                
-                // TuncerZeka sınıfı yüklendiyse örneğini oluştur
-                if (typeof TuncerZeka !== 'undefined') {
-                    aiInstance = new TuncerZeka();
-                } else {
-                    console.warn("Dosya yüklendi ancak 'TuncerZeka' sınıfı bulunamadı.");
-                }
+                // Sınıfın global scope'a yerleşmesi için ufak bir bekleme süresi
+                setTimeout(() => {
+                    if (typeof TuncerZeka !== 'undefined' || typeof window.TuncerZeka !== 'undefined') {
+                        const AIClass = typeof TuncerZeka !== 'undefined' ? TuncerZeka : window.TuncerZeka;
+                        aiInstance = new AIClass();
+                        engineStatus.innerText = `Motor: tuncer${version}.js Aktif`;
+                        engineStatus.style.color = "#10b981";
+                    } else {
+                        engineStatus.innerText = `Hata: Sınıf bulunamadı (tuncer${version}.js)`;
+                        engineStatus.style.color = "#ef4444";
+                        console.warn("Dosya yüklendi ancak 'TuncerZeka' sınıfı global alanda bulunamadı. Lütfen js dosyasında sınıfın (class) dışarı aktarıldığından emin olun.");
+                        aiInstance = null;
+                    }
+                }, 50);
             };
 
             script.onerror = () => {
@@ -606,7 +611,8 @@
                 aiInstance = null; // Dosya yoksa instance null
             };
 
-            document.body.appendChild(script);
+            // Body yerine <head> etiketine ekleyerek tarayıcının daha hızlı görmesini sağladık
+            document.head.appendChild(script);
         }
 
         // Mesaj Gönderme
@@ -631,7 +637,7 @@
                 } else {
                     // Eğer JS dosyaları klasörde yoksa (Sadece UI test ediliyorsa) sahte cevap dön
                     await new Promise(r => setTimeout(r, 1000)); // 1 saniye bekle
-                    aiResponse = `**Sistem Uyarısı:** \`tuncer${currentVersion}.js\` dosyası bulunamadı. Lütfen arayüzün çalıştığı klasöre ilgili dosyayı ekleyin.\n\nSöylediğiniz: "${text}"`;
+                    aiResponse = `**Sistem Uyarısı:** \`tuncer${currentVersion}.js\` dosyası okunamadı. Lütfen index.html ile aynı klasörde olduğundan emin olun.\n\nSöylediğiniz: "${text}"`;
                 }
 
                 // Yükleniyor animasyonunu kaldır ve cevabı yazdır
@@ -712,7 +718,6 @@
             });
 
             // Satır atlamalarını <br> yap (Kod blokları dışındakileri)
-            // Basit bir yaklaşım: <pre> içindeki newline'lara dokunma, dışındakileri <br> yap.
             formatted = formatted.replace(/\n/g, "<br>");
             formatted = formatted.replace(/<pre><code>([\s\S]*?)<\/code><\/pre>/g, function(match) {
                  return match.replace(/<br>/g, "\n");
@@ -738,4 +743,5 @@
     </script>
 </body>
 </html>
+
 
