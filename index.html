@@ -3,235 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka v5.0 - Ultimate Interface</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
+    <title>Tuncer AI - Global Core</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #050505;
-            --panel: #111;
-            --accent: #00f2ff;
-            --text: #e0e0e0;
-            --error: #ff3333;
-            --success: #00ff88;
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --accent: #00d4ff;
+            --text: #e2e8f0;
+            --err: #ff4d4d;
+            --ok: #00ffa3;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--bg); 
+            color: var(--text); 
+            font-family: 'Inter', sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-        /* Neon Header */
         header {
-            padding: 15px 25px;
-            background: var(--panel);
-            border-bottom: 1px solid #222;
+            padding: 20px;
+            background: var(--surface);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 0 20px rgba(0, 242, 255, 0.1);
         }
 
-        .logo { font-family: 'JetBrains Mono'; font-weight: 700; color: var(--accent); letter-spacing: 2px; }
+        .brand { font-family: 'Fira Code'; font-weight: 700; color: var(--accent); font-size: 1.2rem; }
         
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
+        .badge {
+            background: #1a1a24;
+            padding: 6px 12px;
+            border-radius: 6px;
             font-size: 11px;
-            background: #222;
-            border: 1px solid #333;
+            border: 1px solid rgba(255,255,255,0.1);
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: gray; }
-        .dot.online { background: var(--success); box-shadow: 0 0 10px var(--success); }
-        .dot.loading { background: orange; animation: blink 1s infinite; }
-        .dot.error { background: var(--error); }
+        .indicator { width: 10px; height: 10px; border-radius: 50%; background: #333; }
+        .indicator.active { background: var(--ok); box-shadow: 0 0 10px var(--ok); }
+        .indicator.loading { background: #ffcc00; animation: pulse 1s infinite; }
+        .indicator.error { background: var(--err); }
 
-        /* Main App */
-        main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 15px; max-width: 900px; margin: 0 auto; width: 100%; }
+        main { flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 15px; max-width: 800px; margin: 0 auto; width: 100%; }
 
-        #chat-window {
+        #chat {
             flex: 1;
-            background: var(--panel);
-            border-radius: 15px;
-            border: 1px solid #222;
-            overflow-y: auto;
+            background: var(--surface);
+            border-radius: 12px;
             padding: 20px;
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .bubble { max-width: 85%; padding: 12px 18px; border-radius: 18px; font-size: 14px; line-height: 1.6; position: relative; }
-        .bubble.user { align-self: flex-end; background: var(--accent); color: #000; font-weight: 500; border-bottom-right-radius: 2px; }
-        .bubble.ai { align-self: flex-start; background: #1a1a1a; border: 1px solid #333; border-bottom-left-radius: 2px; }
+        .msg { padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; max-width: 85%; }
+        .msg.user { align-self: flex-end; background: var(--accent); color: #000; font-weight: 600; }
+        .msg.ai { align-self: flex-start; background: #1c1c28; border: 1px solid rgba(255,255,255,0.05); }
 
-        /* Terminal Logs */
-        #logs {
+        .terminal {
             background: #000;
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
-            font-family: 'JetBrains Mono';
+            font-family: 'Fira Code', monospace;
             font-size: 10px;
-            color: #666;
-            max-height: 80px;
+            color: #71717a;
+            max-height: 100px;
             overflow-y: auto;
-            border: 1px solid #222;
+            border: 1px solid #1a1a24;
         }
 
-        /* Input Zone */
-        .input-group {
+        .input-box {
             display: flex;
             gap: 10px;
-            background: var(--panel);
-            padding: 10px;
-            border-radius: 15px;
-            border: 1px solid #333;
+            background: var(--surface);
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
-        input { flex: 1; background: transparent; border: none; color: white; outline: none; padding: 5px 10px; font-size: 15px; }
-        button#send { background: var(--accent); border: none; width: 45px; height: 45px; border-radius: 12px; cursor: pointer; transition: 0.2s; }
-        button#send:hover { transform: scale(1.05); filter: brightness(1.1); }
+        input { flex: 1; background: transparent; border: none; color: white; outline: none; font-size: 15px; }
+        button { background: var(--accent); border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 700; transition: 0.2s; }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-        .selector { display: flex; gap: 10px; margin-bottom: 5px; }
-        .v-btn { flex: 1; padding: 8px; background: #1a1a1a; border: 1px solid #333; color: #666; border-radius: 8px; cursor: pointer; font-size: 12px; transition: 0.3s; }
-        .v-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 242, 255, 0.05); }
+        .ver-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 5px; }
+        .ver-btn { background: #1c1c28; color: #52525b; border: 1px solid #27273a; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+        .ver-btn.active { border-color: var(--accent); color: var(--accent); }
 
-        @keyframes blink { 50% { opacity: 0.3; } }
+        @keyframes pulse { 50% { opacity: 0.4; } }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo">TUNCER_AI.OS</div>
-    <div class="status-badge">
-        <div id="dot" class="dot"></div>
-        <span id="status-text">DISCONNECTED</span>
+    <div class="brand">TUNCER CORE</div>
+    <div class="badge">
+        <div id="ind" class="indicator"></div>
+        <span id="st">BEKLENİYOR...</span>
     </div>
 </header>
 
 <main>
-    <div class="selector">
-        <button class="v-btn" onclick="injectEngine('2023')">CORE_2023</button>
-        <button class="v-btn active" onclick="injectEngine('2026')">CORE_2026</button>
+    <div class="ver-grid">
+        <button class="ver-btn" onclick="forceBoot('2023')">MODEL_2023</button>
+        <button class="ver-btn active" onclick="forceBoot('2026')">MODEL_2026</button>
     </div>
 
-    <div id="chat-window">
-        <div class="bubble ai">Sistem hazır. Çekirdek yazılım enjekte ediliyor...</div>
+    <div id="chat">
+        <div class="msg ai">Sistem v6.0 hazır. Çekirdek yazılım enjeksiyonu başlatılıyor...</div>
     </div>
 
-    <div id="logs">> Terminal initialized...</div>
+    <div class="terminal" id="term">> System ready.</div>
 
-    <div class="input-group">
-        <input type="text" id="userInput" placeholder="Mesajınızı girin..." autocomplete="off">
-        <button id="send" onclick="handleSend()">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-        </button>
+    <div class="input-box">
+        <input type="text" id="ui" placeholder="Mesaj gönder..." autocomplete="off">
+        <button onclick="send()">GÖNDER</button>
     </div>
 </main>
 
 <script>
-    let aiInstance = null;
-    let currentVer = '2026';
-    const logBox = document.getElementById('logs');
-    const dot = document.getElementById('dot');
-    const statusText = document.getElementById('status-text');
-    const chat = document.getElementById('chat-window');
+    let ai = null;
+    const term = document.getElementById('term');
+    const ind = document.getElementById('ind');
+    const st = document.getElementById('st');
+    const chat = document.getElementById('chat');
 
-    function addLog(m, type = 'info') {
-        const div = document.createElement('div');
-        div.style.color = type === 'error' ? '#ff3333' : '#666';
-        div.innerText = `> [${new Date().toLocaleTimeString()}] ${m}`;
-        logBox.appendChild(div);
-        logBox.scrollTop = logBox.scrollHeight;
+    function log(m, err = false) {
+        const d = document.createElement('div');
+        d.style.color = err ? "#ff4d4d" : "#71717a";
+        d.innerText = `[${new Date().toLocaleTimeString()}] ${m}`;
+        term.appendChild(d);
+        term.scrollTop = term.scrollHeight;
     }
 
-    // --- ENJEKSİYON MOTORU (KESİN ÇÖZÜM) ---
-    async function injectEngine(ver) {
-        currentVer = ver;
-        aiInstance = null;
-        dot.className = 'dot loading';
-        statusText.innerText = `INJECTING v${ver}...`;
+    async function forceBoot(v) {
+        ai = null;
+        ind.className = 'indicator loading';
+        st.innerText = `YÜKLENİYOR v${v}`;
+        document.querySelectorAll('.ver-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(v)));
         
-        document.querySelectorAll('.v-btn').forEach(b => b.classList.toggle('active', b.innerText.includes(ver)));
-
         try {
-            // 1. Dosyayı ham metin olarak indir
-            const response = await fetch(`tuncer${ver}.js?t=${Date.now()}`);
-            if (!response.ok) throw new Error("Dosya sunucuda bulunamadı.");
+            log(`v${v} dosyası çekiliyor...`);
+            const r = await fetch(`tuncer${v}.js?v=${Date.now()}`);
+            if(!r.ok) throw new Error("Dosya bulunamadı.");
             
-            let code = await response.text();
-            addLog(`tuncer${ver}.js indirildi (${code.length} bytes).`);
+            let rawCode = await r.text();
+            log(`Dosya boyutu: ${rawCode.length} bytes.`);
 
-            // 2. Kodu tarayıcının anlayacağı şekilde temizle ve zorla enjekte et
-            // Eğer dosya içinde 'export default' gibi ifadeler varsa temizle
-            code = code.replace(/export default/g, "");
-            code = code.replace(/export /g, "");
+            // --- MANİPÜLASYON BAŞLIYOR ---
+            // Koddaki exportları temizle ve her şeyi window'a zorla
+            let processedCode = rawCode
+                .replace(/export default/g, "")
+                .replace(/export /g, "");
 
-            // 3. Kodu bir script etiketi içine koyup DOM'a ekle (Eval yerine daha güvenli)
-            const oldScript = document.getElementById('injected-core');
-            if (oldScript) oldScript.remove();
+            // Kodun sonuna sınıfı dışarı sızdırma komutu ekle
+            processedCode += `\n
+            if(typeof TuncerZeka !== 'undefined') { window.__CORE_READY = TuncerZeka; }
+            else if(typeof tuncerZeka !== 'undefined') { window.__CORE_READY = tuncerZeka; }
+            else { 
+                // Eğer isim farklıysa bulmaya çalış
+                const found = Object.keys(window).find(k => k.toLowerCase().includes('tuncer') && typeof window[k] === 'function');
+                if(found) window.__CORE_READY = window[found];
+            }`;
 
-            const script = document.createElement('script');
-            script.id = 'injected-core';
-            script.textContent = code + `\nwindow._tempClass = typeof TuncerZeka !== 'undefined' ? TuncerZeka : null;`;
-            document.body.appendChild(script);
+            // Eski scripti sil ve yenisini enjekte et
+            const old = document.getElementById('core-script');
+            if(old) old.remove();
 
-            // 4. Sınıfı yakala ve örneğini oluştur
+            const sc = document.createElement('script');
+            sc.id = 'core-script';
+            sc.textContent = processedCode;
+            document.body.appendChild(sc);
+
+            // Sınıfın hazır olmasını bekle
             setTimeout(() => {
-                const Core = window._tempClass;
-                if (Core) {
-                    aiInstance = new Core();
-                    dot.className = 'dot online';
-                    statusText.innerText = `v${ver} ACTIVE`;
-                    addLog("Sınıf başarıyla enjekte edildi.");
+                const CoreClass = window.__CORE_READY;
+                if(CoreClass) {
+                    ai = new CoreClass();
+                    ind.className = 'indicator active';
+                    st.innerText = `AKTİF v${v}`;
+                    log("BAŞARILI: Çekirdek hafızaya alındı.");
                 } else {
-                    throw new Error("Sınıf bulunamadı. Lütfen dosya içindeki 'class TuncerZeka' ismini kontrol edin.");
+                    throw new Error("Sınıf tanımlanamadı! Dosya içindeki class ismini kontrol edin.");
                 }
-            }, 100);
+            }, 200);
 
         } catch (e) {
-            dot.className = 'dot error';
-            statusText.innerText = "CRITICAL ERROR";
-            addLog(e.message, 'error');
+            ind.className = 'indicator error';
+            st.innerText = "HATA";
+            log(e.message, true);
         }
     }
 
-    async function handleSend() {
-        const input = document.getElementById('userInput');
-        const text = input.value.trim();
-        if (!text) return;
+    function send() {
+        const input = document.getElementById('ui');
+        const val = input.value.trim();
+        if(!val) return;
 
-        appendMsg(text, 'user');
+        addMsg(val, 'user');
         input.value = '';
 
-        if (!aiInstance) {
-            appendMsg("HATA: Çekirdek yazılım aktif değil.", 'ai');
+        if(!ai) {
+            addMsg("Hata: Çekirdek bağlı değil. Lütfen yüklenmesini bekleyin veya logları kontrol edin.", 'ai');
             return;
         }
 
         try {
-            const res = await aiInstance.konus(text);
-            const final = typeof res === 'object' ? res.cevap : res;
-            appendMsg(final, 'ai');
+            const res = ai.konus(val);
+            // Promise desteği ekleyelim (Eğer konuş fonksiyonu async ise)
+            if(res instanceof Promise) {
+                res.then(r => addMsg(typeof r === 'object' ? r.cevap : r, 'ai'))
+                   .catch(e => log(e.message, true));
+            } else {
+                addMsg(typeof res === 'object' ? res.cevap : res, 'ai');
+            }
         } catch (e) {
-            addLog("Runtime Error: " + e.message, 'error');
-            appendMsg("Bir çalışma hatası oluştu: " + e.message, 'ai');
+            log("Runtime: " + e.message, true);
+            addMsg("Sistem hatası: " + e.message, 'ai');
         }
     }
 
-    function appendMsg(t, s) {
+    function addMsg(t, s) {
         const d = document.createElement('div');
-        d.className = `bubble ${s}`;
+        d.className = `msg ${s}`;
         d.innerText = t;
         chat.appendChild(d);
         chat.scrollTop = chat.scrollHeight;
     }
 
-    document.getElementById('userInput').onkeydown = (e) => e.key === 'Enter' && handleSend();
-
-    // Otomatik başlat
-    window.onload = () => injectEngine('2026');
+    document.getElementById('ui').onkeydown = (e) => e.key === 'Enter' && send();
+    
+    // İlk çalıştırma
+    window.onload = () => forceBoot('2026');
 </script>
 
 </body>
