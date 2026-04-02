@@ -101,14 +101,14 @@
         .send-btn { width: 40px; height: 40px; border-radius: 14px; background: var(--primary); color: white; border: none; cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
     </style>
 </head>
 <body>
     <div class="app-container">
         <div class="sidebar">
             <div class="brand">
-                <div class="brand-icon"><i class="fa-solid fa-robot"></i></div>
+                <div class="brand-icon"><i class="fa-solid fa-brain"></i></div>
                 <div class="brand-text"><h3>TUNCER AI</h3></div>
             </div>
             <div class="version-selector">
@@ -147,7 +147,7 @@
         const activeBg = document.getElementById('activeBg');
 
         window.onload = () => {
-            appendMessage("Sistem Başlatıldı. Tuncer Zeka 2026 yükleniyor...", "ai");
+            appendMessage("Tuncer Zeka Arayüzü Başlatıldı. Motor yükleniyor...", "ai");
             loadEngine('2026');
         };
 
@@ -165,53 +165,49 @@
             loadEngine(v);
         }
 
-        // --- GELİŞTİRİLMİŞ YÜKLEME VE KONTROL MEKANİZMASI ---
         function loadEngine(v) {
             aiInstance = null;
-            engineStatus.innerText = `v${v} aranıyor...`;
-            statusDot.style.background = "#eab308"; // Sarı
-            statusDot.style.animation = "pulse 1s infinite";
+            engineStatus.innerText = `tuncer${v}.js aranıyor...`;
+            statusDot.style.background = "#94a3b8"; 
+            statusDot.style.animation = "none";
 
             const old = document.getElementById('engine-script');
             if (old) old.remove();
 
             const s = document.createElement('script');
             s.id = 'engine-script';
-            // GitHub Pages uyumlu yol bulma
-            const dir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
-            s.src = `${dir}tuncer${v}.js?v=${Date.now()}`;
+            // GitHub Pages'deki alt klasör yapısını (Tuncer-) korumak için kök dizini düzgün alıyoruz
+            const path = window.location.pathname;
+            const dir = path.substring(0, path.lastIndexOf('/') + 1);
+            s.src = `${dir}tuncer${v}.js?t=${Date.now()}`;
             
             s.onload = () => {
-                // Sınıfın global scope'a tam düşmesi için periyodik kontrol (Retry Mechanism)
-                let attempts = 0;
-                const checkInterval = setInterval(() => {
-                    attempts++;
+                // Sınıfın yüklenmesi bazen milisaniyelik gecikme yaşatabilir
+                setTimeout(() => {
+                    // Global scope'da TuncerZeka sınıfını ara
                     const Target = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
                     
                     if (Target) {
                         try {
                             aiInstance = new Target();
-                            engineStatus.innerText = `Tuncer v${v} Aktif`;
+                            engineStatus.innerText = `tuncer${v}.js Aktif`;
                             statusDot.style.background = "#10b981"; // Yeşil
-                            statusDot.style.animation = "none";
-                            clearInterval(checkInterval);
+                            statusDot.style.animation = "pulse 2s infinite";
                         } catch(e) { 
-                            engineStatus.innerText = "Sınıf Hatası";
-                            clearInterval(checkInterval);
+                            engineStatus.innerText = "Motor Başlatılamadı";
+                            statusDot.style.background = "#ef4444";
                         }
-                    } else if (attempts > 20) { // 2 saniye boyunca bulamazsa vazgeç
+                    } else {
+                        // Dosya indi ama içinde TuncerZeka sınıfı bulunamadıysa
                         engineStatus.innerText = "Sınıf Bulunamadı";
-                        statusDot.style.background = "#ef4444";
-                        statusDot.style.animation = "none";
-                        clearInterval(checkInterval);
+                        statusDot.style.background = "#eab308"; // Sarı (Dosya var ama içerik uyumsuz)
                     }
-                }, 100); // Her 100ms'de bir kontrol et
+                }, 200);
             };
             
             s.onerror = () => {
-                engineStatus.innerText = "Dosya Bulunamadı";
-                statusDot.style.background = "#ef4444";
-                statusDot.style.animation = "none";
+                engineStatus.innerText = `tuncer${v}.js Bulunamadı`;
+                statusDot.style.background = "#ef4444"; // Kırmızı
             };
             document.body.appendChild(s);
         }
@@ -223,14 +219,13 @@
             appendMessage(val, 'user');
             userInput.value = '';
 
-            // Dosya yüklenmiş olsa bile örnekleme (instance) oluşmamış olabilir
             if (!aiInstance) {
-                appendMessage("⚠️ Motor henüz tam olarak hazır değil. Dosya yükleniyor veya `TuncerZeka` sınıfı bulunamadı.", "ai");
+                appendMessage("⚠️ Motor şu an yüklü değil. Dosya isminin doğru olduğundan (tuncer2026.js) emin olun.", "ai");
                 return;
             }
 
             try {
-                // Senin metodun: konus()
+                // konus() fonksiyonunu çağır
                 const res = await aiInstance.konus(val);
                 const final = (typeof res === 'object' && res.cevap) ? res.cevap : res;
                 appendMessage(final, 'ai');
