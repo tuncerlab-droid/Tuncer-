@@ -1,266 +1,412 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka V3 - Ahmet Tuncer Edition</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
+import React, { useState, useRef, useEffect } from 'react';
+import { Send, Mic, MicOff, Camera, Loader, Volume2, VolumeX } from 'lucide-react';
 
-        :root {
-            --cyan: #00f3ff;
-            --bg-dark: rgba(2, 8, 12, 0.9);
+export default function TuncerZeka() {
+  const [messages, setMessages] = useState([{
+    id: 1,
+    text: "Merhaba! Ben Tuncer Zeka. Ahmet Tuncer tarafından tasarlandım. Seni nasıl yardımcı olabilirim?",
+    sender: 'bot',
+    timestamp: new Date()
+  }]);
+  const [input, setInput] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraStream, setCameraStream] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [scanMode, setScanMode] = useState(false);
+  
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const chatEndRef = useRef(null);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Web Speech API Türkçe konuşma tanıma
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.lang = 'tr-TR';
+      recognitionRef.current.continuous = true;
+
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onresult = (event) => {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
+        setInput(transcript);
+      };
+    }
+  }, []);
 
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Share Tech Mono', monospace;
-            color: var(--cyan);
+  // Türkçe konuşma sentezi
+  const speak = (text) => {
+    if (!soundEnabled) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'tr-TR';
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Kamera erişimi
+  const toggleCamera = async () => {
+    if (cameraActive) {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        setCameraStream(null);
+      }
+      setCameraActive(false);
+      setScanMode(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'environment' } 
+        });
+        setCameraStream(stream);
+        setCameraActive(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
         }
+      } catch (err) {
+        alert('Kamera erişimi reddedildi');
+      }
+    }
+  };
 
-        #camera-feed {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: -2;
-        }
+  // Pollinations AI'dan görüntü analizi
+  const analyzeWithAI = async (imageData) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: 'image/jpeg',
+                  data: imageData.split(',')[1]
+                }
+              },
+              {
+                type: 'text',
+                text: 'Bu ortamı analiz et. Ne görmektesin? Buraya neler eklenebilir veya düzeltilebilir? Türkçe cevap ver, kısa ve öz.'
+              }
+            ]
+          }]
+        })
+      });
 
-        .hud-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: radial-gradient(circle, transparent 30%, var(--bg-dark) 100%);
-            z-index: -1;
-            pointer-events: none;
-        }
+      const data = await response.json();
+      if (data.content && data.content[0]) {
+        const analysisText = data.content[0].text;
+        addMessage(analysisText, 'bot');
+        speak(analysisText);
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      const errorMsg = "Görüntü analizi yapamadım. Lütfen tekrar dene.";
+      addMessage(errorMsg, 'bot');
+      speak(errorMsg);
+    }
+    setIsLoading(false);
+  };
 
-        /* Jarvis Arc Reactor Animation */
-        .core-wrap {
-            position: relative;
-            width: 140px;
-            height: 140px;
-            cursor: pointer;
-        }
+  // Kamera görüntüsü çekme ve analiz etme
+  const captureAndAnalyze = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext('2d');
+      canvasRef.current.width = videoRef.current.videoWidth;
+      canvasRef.current.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0);
+      const imageData = canvasRef.current.toDataURL('image/jpeg');
+      analyzeWithAI(imageData);
+      setScanMode(false);
+    }
+  };
 
-        .ring {
-            position: absolute;
-            border-radius: 50%;
-            border: 2px solid var(--cyan);
-            inset: 0;
-            box-shadow: 0 0 15px var(--cyan);
-        }
+  // Pollinations API ile AI yanıtı
+  const callAI = async (userMessage) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system: 'Sen Tuncer Zeka adında bir yapay zeka asistanısın. Ahmet Tuncer tarafından tasarlandın. Türkçe cevap ver, dostça ve yardımcı ol. Kısa ve net cevaplar ver.',
+          messages: [
+            ...messages.map(m => ({
+              role: m.sender === 'user' ? 'user' : 'assistant',
+              content: m.text
+            })),
+            {
+              role: 'user',
+              content: userMessage
+            }
+          ]
+        })
+      });
 
-        .ring-1 { animation: rotate 4s linear infinite; border-style: double; }
-        .ring-2 { inset: 15px; border-style: dashed; animation: rotate-rev 3s linear infinite; opacity: 0.6; }
-        
-        .core-btn {
-            position: absolute;
-            inset: 35px;
-            background: var(--cyan);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #000;
-            font-size: 1.5rem;
-            box-shadow: 0 0 30px var(--cyan);
-            transition: 0.3s;
-        }
+      const data = await response.json();
+      if (data.content && data.content[0]) {
+        const botResponse = data.content[0].text;
+        addMessage(botResponse, 'bot');
+        speak(botResponse);
+      }
+    } catch (error) {
+      console.error('API Error:', error);
+      const errorMsg = "Enternet bağlantısında sorun var.";
+      addMessage(errorMsg, 'bot');
+      speak(errorMsg);
+    }
+    setIsLoading(false);
+  };
 
-        .listening .core-btn {
-            animation: pulse 0.8s infinite alternate;
-            background: #fff;
-        }
+  // Mesaj ekleme
+  const addMessage = (text, sender) => {
+    const newMessage = {
+      id: messages.length + 1,
+      text,
+      sender,
+      timestamp: new Date()
+    };
+    setMessages([...messages, newMessage]);
+  };
 
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
+  // Mesaj gönderme
+  const handleSendMessage = () => {
+    if (input.trim()) {
+      addMessage(input, 'user');
+      callAI(input);
+      setInput('');
+    }
+  };
 
-        .scan-bar {
-            position: absolute;
-            width: 100%;
-            height: 2px;
-            background: var(--cyan);
-            box-shadow: 0 0 20px var(--cyan);
-            top: -10%;
-            display: none;
-        }
-
-        .scanning .scan-bar {
-            display: block;
-            animation: scanMove 2s infinite ease-in-out;
-        }
-
-        @keyframes scanMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
-
-        .chat-container {
-            height: 180px;
-            background: rgba(0, 30, 40, 0.5);
-            border: 1px solid var(--cyan);
-            backdrop-filter: blur(10px);
-        }
-    </style>
-</head>
-<body class="flex flex-col h-screen">
-
-    <video id="camera-feed" autoplay muted playsinline></video>
-    <div class="hud-overlay"></div>
-    <div class="scan-bar" id="scan-bar"></div>
-
-    <!-- Header -->
-    <header class="p-4 flex justify-between z-10">
+  return (
+    <div className="h-screen bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 text-white font-sans flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-950 via-purple-950 to-blue-950 border-b border-purple-500/30 px-6 py-4 flex justify-between items-center backdrop-blur-md">
         <div>
-            <h1 class="text-xl font-bold tracking-tighter" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
-            <p class="text-[10px] opacity-70 uppercase">Ahmet Tuncer | Veri Aktarımı: Stabil</p>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            TUNCER ZEKA
+          </h1>
+          <p className="text-xs text-gray-400 mt-1">Tasarımcı: Ahmet Tuncer | Powered by Pollinations AI</p>
         </div>
-        <div class="text-right text-[10px]">
-            <p id="status-text">SİSTEM HAZIR</p>
-            <p id="clock">00:00:00</p>
-        </div>
-    </header>
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="p-3 rounded-full bg-purple-500/20 hover:bg-purple-500/40 transition-all duration-300 text-purple-300"
+        >
+          {soundEnabled ? <Volume2 size={20} /> : <VolumeX size={20} />}
+        </button>
+      </div>
 
-    <!-- Main -->
-    <main class="flex-1 flex flex-col items-center justify-center z-10">
-        <div class="core-wrap" id="main-btn" onclick="startRecognition()">
-            <div class="ring ring-1"></div>
-            <div class="ring ring-2"></div>
-            <div class="core-btn">
-                <i class="fas fa-microchip"></i>
+      <div className="flex flex-1 gap-4 p-4 overflow-hidden">
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col bg-gray-900/50 rounded-lg border border-purple-500/20 backdrop-blur-sm overflow-hidden">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+              >
+                <div
+                  className={`max-w-xs px-4 py-3 rounded-lg ${
+                    msg.sender === 'user'
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-br-none'
+                      : 'bg-gray-800 text-gray-100 border border-purple-500/30 rounded-bl-none'
+                  }`}
+                >
+                  <p className="text-sm">{msg.text}</p>
+                  <span className="text-xs mt-1 block opacity-70">
+                    {msg.timestamp.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-gray-800 border border-purple-500/30 px-4 py-3 rounded-lg">
+                  <Loader className="animate-spin text-purple-400" size={20} />
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-purple-500/20 p-4 space-y-3">
+            <div className="flex gap-2">
+              <button
+                onClick={() => recognitionRef.current?.start()}
+                className={`p-3 rounded-full transition-all duration-300 ${
+                  isListening
+                    ? 'bg-red-500/40 text-red-300 animate-pulse'
+                    : 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/40'
+                }`}
+                title="Sesli komut"
+              >
+                {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+              </button>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Bir şey sor veya komut ver..."
+                className="flex-1 bg-gray-800/50 border border-purple-500/30 text-white rounded-lg px-4 py-2 focus:outline-none focus:border-purple-500/60 transition-all"
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isLoading}
+                className="p-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full hover:from-blue-600 hover:to-purple-600 transition-all duration-300 disabled:opacity-50"
+              >
+                <Send size={20} />
+              </button>
             </div>
+          </div>
         </div>
-        <p class="mt-6 text-[10px] tracking-widest opacity-60 uppercase" id="hint-text">Bay Ahmet, emirlerinizi bekliyorum</p>
-    </main>
 
-    <!-- Console -->
-    <footer class="p-4 z-10">
-        <div class="chat-container rounded p-3 overflow-y-auto text-xs" id="log-box">
-            <p class="text-gray-400">[SİSTEM] Tuncer Zeka V3.0 yükleniyor...</p>
-            <p class="text-gray-400">[SİSTEM] Kullanıcı: Ahmet Tuncer Tanımlandı.</p>
+        {/* Camera Panel */}
+        <div className="w-80 flex flex-col gap-4">
+          {/* Camera Feed */}
+          <div className="bg-gray-900/50 rounded-lg border border-purple-500/20 overflow-hidden backdrop-blur-sm flex-1">
+            {cameraActive ? (
+              <div className="relative w-full h-full">
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  className="w-full h-full object-cover"
+                />
+                <canvas ref={canvasRef} style={{ display: 'none' }} />
+                {scanMode && (
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-purple-500/10 to-transparent animate-pulse flex items-center justify-center">
+                    <div className="text-purple-300 font-bold text-center">
+                      TARAMA YAPILIYOR
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                <Camera size={48} className="mb-2 opacity-50" />
+                <p className="text-sm">Kamera kapalı</p>
+              </div>
+            )}
+          </div>
+
+          {/* Camera Controls */}
+          <div className="space-y-2">
+            <button
+              onClick={toggleCamera}
+              className={`w-full py-3 rounded-lg font-bold transition-all duration-300 ${
+                cameraActive
+                  ? 'bg-red-500/30 text-red-300 hover:bg-red-500/50'
+                  : 'bg-green-500/30 text-green-300 hover:bg-green-500/50'
+              }`}
+            >
+              {cameraActive ? '⊘ Kamerayı Kapat' : '◉ Kamerayı Aç'}
+            </button>
+
+            {cameraActive && (
+              <button
+                onClick={() => {
+                  setScanMode(true);
+                  setTimeout(captureAndAnalyze, 500);
+                }}
+                disabled={isLoading}
+                className="w-full py-3 rounded-lg font-bold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50"
+              >
+                🔍 Çevremi Taraması Yap
+              </button>
+            )}
+
+            <div className="bg-gray-800/50 border border-purple-500/20 rounded-lg p-3 text-xs text-gray-300">
+              <p className="font-bold text-purple-300 mb-1">💡 İpucu:</p>
+              <p>Kamerayı aç ve "Çevremi Taraması Yap" ile ortamını analiz ettir. Neler eksik veya iyileştirilebilir görebilirsin.</p>
+            </div>
+          </div>
+
+          {/* Info Panel */}
+          <div className="bg-gradient-to-b from-purple-500/10 to-blue-500/10 border border-purple-500/20 rounded-lg p-3 text-xs text-gray-300">
+            <p className="font-bold text-purple-300 mb-2">⚙️ Sistem Bilgileri</p>
+            <ul className="space-y-1">
+              <li>Status: <span className="text-green-400">🟢 Online</span></li>
+              <li>Model: Claude Sonnet 4</li>
+              <li>API: Pollinations AI</li>
+              <li>Dil: Türkçe</li>
+              <li>Ses: {soundEnabled ? '🔊 Açık' : '🔇 Kapalı'}</li>
+            </ul>
+          </div>
         </div>
-    </footer>
+      </div>
 
-    <script>
-        // --- GLOBAL CONFIG ---
-        const API_BASE = "https://text.pollinations.ai/";
-        let isWorking = false;
-        const logBox = document.getElementById('log-box');
-        const hintText = document.getElementById('hint-text');
-
-        // --- CAMERA ---
-        async function startCam() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                document.getElementById('camera-feed').srcObject = stream;
-            } catch (e) {
-                addLog("SİSTEM", "Kamera erişimi engellendi.", "text-red-500");
-            }
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
-        // --- CLOCK ---
-        setInterval(() => {
-            document.getElementById('clock').innerText = new Date().toLocaleTimeString('tr-TR');
-        }, 1000);
-
-        // --- SPEECH RECOGNITION ---
-        function startRecognition() {
-            if (isWorking) return;
-            
-            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Speech) {
-                addLog("HATA", "Tarayıcı desteklemiyor.");
-                return;
-            }
-
-            const rec = new Speech();
-            rec.lang = 'tr-TR';
-            
-            rec.onstart = () => {
-                document.getElementById('main-btn').classList.add('listening');
-                hintText.innerText = "Sizi Dinliyorum Efendim...";
-                window.speechSynthesis.cancel();
-            };
-
-            rec.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                processQuery(text);
-            };
-
-            rec.onerror = () => {
-                document.getElementById('main-btn').classList.remove('listening');
-                hintText.innerText = "Bağlantı kesildi, tekrar deneyin.";
-            };
-
-            rec.onend = () => {
-                document.getElementById('main-btn').classList.remove('listening');
-            };
-
-            rec.start();
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
         }
 
-        // --- PROCESS QUERY ---
-        async function processQuery(query) {
-            isWorking = true;
-            addLog("AHMET TUNCER", query, "text-green-400");
-            hintText.innerText = "Düşünüyorum...";
-
-            // Eğer "tara", "bak" gibi kelimeler varsa tarama modunu aç
-            const isScanning = /tara|bak|ne var|gör|incele/.test(query.toLowerCase());
-            if (isScanning) {
-                document.body.classList.add('scanning');
-                addLog("SİSTEM", "Optik sensörler aktifleşiyor...", "text-yellow-500");
-            }
-
-            try {
-                // Stabil GET Metodu
-                const systemPrompt = "Sen Tuncer Zeka'sın. Tasarımcın Ahmet Tuncer. Kısa ve havalı cevap ver.";
-                const encodedQuery = encodeURIComponent(`${systemPrompt} Kullanıcı dedi ki: ${query}`);
-                
-                // Fetch işlemi - GET isteği hata payı en düşüktür
-                const response = await fetch(`${API_BASE}${encodedQuery}?model=openai&cache=false`);
-                
-                if (!response.ok) throw new Error("API Hatası");
-
-                const result = await response.text();
-                
-                addLog("TUNCER ZEKA", result, "text-cyan-400");
-                speak(result);
-
-            } catch (err) {
-                addLog("HATA", "Bağlantı kurulamadı. Tekrar deneyin.", "text-red-500");
-            } finally {
-                isWorking = false;
-                document.body.classList.remove('scanning');
-                hintText.innerText = "Emirlerinizi bekliyorum Bay Tuncer";
-            }
+        ::-webkit-scrollbar {
+          width: 6px;
         }
 
-        // --- VOICE ---
-        function speak(text) {
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'tr-TR';
-            ut.rate = 1.0;
-            window.speechSynthesis.speak(ut);
+        ::-webkit-scrollbar-track {
+          background: transparent;
         }
 
-        // --- LOG HELPERS ---
-        function addLog(who, msg, color = "text-white") {
-            const p = document.createElement('p');
-            p.innerHTML = `<span class="opacity-50">[${who}]</span> <span class="${color}">${msg}</span>`;
-            logBox.appendChild(p);
-            logBox.scrollTop = logBox.scrollHeight;
+        ::-webkit-scrollbar-thumb {
+          background: rgba(147, 51, 234, 0.3);
+          border-radius: 3px;
         }
 
-        window.onload = startCam;
-    </script>
-</body>
-</html>
-
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(147, 51, 234, 0.5);
+        }
+      `}</style>
+    </div>
+  );
+}
