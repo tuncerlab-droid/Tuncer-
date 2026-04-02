@@ -3,35 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka V5 - Local Vision Edition</title>
+    <title>Tuncer Zeka V6 - Advanced AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
-        :root { --cyan: #00f3ff; --red: #ff4d4d; }
-        body { margin: 0; background: #000; color: var(--cyan); font-family: 'Share Tech Mono', monospace; overflow: hidden; }
-        #camera-feed { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: -2; }
-        .hud-overlay { position: fixed; inset: 0; background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.8) 100%); z-index: -1; }
+
+        :root {
+            --cyan: #00f3ff;
+            --cyan-glow: rgba(0, 243, 255, 0.4);
+            --bg-dark: rgba(2, 12, 20, 0.9);
+        }
+
+        body {
+            margin: 0;
+            background-color: #000;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--cyan);
+            overflow: hidden;
+        }
+
+        #camera-feed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: -2;
+        }
+
+        .hud-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle, transparent 20%, var(--bg-dark) 100%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Arc Reactor Animation */
+        .core-container {
+            position: relative;
+            width: 150px;
+            height: 150px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid var(--cyan);
+            inset: 0;
+            box-shadow: 0 0 20px var(--cyan-glow);
+        }
+
+        .ring-1 { animation: spin 5s linear infinite; border-style: double; }
+        .ring-2 { inset: 15px; border: 1px dashed var(--cyan); animation: spin-rev 3s linear infinite; opacity: 0.6; }
         
-        /* Jarvis HUD Styles */
-        .core-wrap { position: relative; width: 150px; height: 150px; cursor: pointer; transition: 0.3s; }
-        .core-ring { position: absolute; inset: 0; border: 2px solid var(--cyan); border-radius: 50%; box-shadow: 0 0 20px var(--cyan); }
-        .ring-1 { animation: spin 4s linear infinite; border-style: dashed; }
-        .ring-2 { inset: 10px; border: 1px solid var(--cyan); opacity: 0.5; animation: spin-rev 3s linear infinite; }
-        .core-center { position: absolute; inset: 40px; background: var(--cyan); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #000; font-size: 1.5rem; box-shadow: 0 0 40px var(--cyan); }
-        
+        .core-center {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: var(--cyan);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #000;
+            font-size: 1.5rem;
+            box-shadow: 0 0 40px var(--cyan);
+            z-index: 10;
+        }
+
+        .listening .core-center {
+            animation: pulse 0.6s infinite alternate;
+            background: #fff;
+        }
+
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         @keyframes spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-        .listening .core-center { animation: pulse 0.5s infinite alternate; background: #fff; }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.2); } }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
 
-        .scan-line { position: absolute; width: 100%; height: 2px; background: var(--cyan); top: -10%; display: none; z-index: 10; box-shadow: 0 0 20px var(--cyan); }
-        .scanning .scan-line { display: block; animation: scanMove 2s infinite linear; }
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: var(--cyan);
+            box-shadow: 0 0 20px var(--cyan);
+            top: -10%;
+            display: none;
+            z-index: 5;
+        }
+
+        .scanning .scan-line {
+            display: block;
+            animation: scanMove 2s infinite linear;
+        }
+
         @keyframes scanMove { 0% { top: 0%; } 100% { top: 100%; } }
 
-        .detection-box { position: absolute; border: 2px solid var(--cyan); background: rgba(0, 243, 255, 0.1); color: white; font-size: 10px; padding: 2px; z-index: 5; pointer-events: none; }
+        .console {
+            height: 160px;
+            background: rgba(0, 20, 30, 0.7);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            backdrop-filter: blur(5px);
+        }
     </style>
 </head>
 <body class="flex flex-col h-screen">
@@ -39,171 +118,147 @@
     <video id="camera-feed" autoplay muted playsinline></video>
     <div class="hud-overlay"></div>
     <div class="scan-line" id="scan-line"></div>
-    <div id="detection-container"></div>
+    <canvas id="capture-canvas" class="hidden"></canvas>
 
-    <header class="p-6 flex justify-between z-20">
+    <header class="p-6 flex justify-between z-10 w-full pointer-events-none">
         <div>
-            <h1 class="text-2xl font-bold tracking-widest" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
-            <p class="text-[10px] opacity-70 uppercase tracking-tighter">Sistem Mimarı: Ahmet Tuncer | V5.0 LOCAL VISION</p>
+            <h1 class="text-2xl font-bold tracking-[0.2em]" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
+            <p class="text-[10px] opacity-60">DESIGNER: AHMET TUNCER | STATUS: ENCRYPTED</p>
         </div>
         <div class="text-right">
-            <p id="clock" class="text-lg">00:00:00</p>
-            <p id="status" class="text-[10px] text-green-400">SİSTEM: AKTİF</p>
+            <div id="clock" class="text-lg font-bold">00:00:00</div>
+            <div id="status-tag" class="text-[8px] text-green-400">API: CONNECTED</div>
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col items-center justify-center z-20">
-        <div class="core-wrap" id="ai-trigger" onclick="startListening()">
-            <div class="core-ring ring-1"></div>
-            <div class="core-ring ring-2"></div>
+    <main class="flex-1 flex flex-col items-center justify-center z-10">
+        <div class="core-container" id="ai-core" onclick="startVoice()">
+            <div class="ring ring-1"></div>
+            <div class="ring ring-2"></div>
             <div class="core-center"><i class="fas fa-microchip"></i></div>
         </div>
-        <p class="mt-10 text-[10px] tracking-[0.5em] opacity-60 uppercase" id="info-text">Emrinizi Bekliyorum Bay Tuncer</p>
+        <p class="mt-8 text-[10px] tracking-[0.4em] uppercase opacity-50" id="hint-text">Emrinizi Bekliyorum Efendim</p>
     </main>
 
-    <footer class="p-6 z-20 w-full max-w-2xl mx-auto">
-        <div class="bg-black/60 border border-cyan-500/30 backdrop-blur-md rounded p-4 h-32 overflow-y-auto text-xs" id="chat-box">
-            <p class="opacity-50 text-cyan-200">[SİSTEM] Yerel görüntüleme motoru yüklendi.</p>
-            <p class="opacity-50 text-cyan-200">[SİSTEM] Tuncer Zeka kullanıma hazır, Ahmet Bey.</p>
+    <footer class="p-6 z-10">
+        <div class="console rounded p-3 overflow-y-auto text-xs" id="log-box">
+            <p class="opacity-40">[SYSTEM] Tuncer Zeka V6 initialized.</p>
+            <p class="opacity-40">[SYSTEM] Authorized user: Ahmet Tuncer.</p>
         </div>
     </footer>
 
     <script>
-        let model = null;
-        let isProcessing = false;
-        const chatBox = document.getElementById('chat-box');
-        const infoText = document.getElementById('info-text');
+        // API URL - Pollinations alternative (Direct Text Endpoint)
+        const TEXT_API = "https://text.pollinations.ai/";
+        const SYSTEM_PROMPT = "Sen Tuncer Zeka'sın. Tasarımcın Ahmet Tuncer. Jarvis gibi havalı ve teknik konuş. Ahmet Tuncer'e Efendim de. Cevapların kısa olsun.";
 
-        // 1. SAAT VE KAMERA BAŞLATMA
+        let isBusy = false;
+        const logBox = document.getElementById('log-box');
+        const hint = document.getElementById('hint-text');
+
+        // Clock & Camera
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-        async function init() {
+        async function initCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 document.getElementById('camera-feed').srcObject = stream;
-                
-                log("SİSTEM", "Yapay zeka gözleri açılıyor (Model yükleniyor)...");
-                model = await cocoSsd.load(); // TensorFlow Yerel Modeli
-                log("SİSTEM", "Görüntü tanıma motoru hazır.", "text-green-400");
             } catch (e) {
-                log("HATA", "Kamera veya Model yüklenemedi.");
+                addLog("SYSTEM", "Camera access denied.", "text-red-500");
             }
         }
 
-        // 2. YEREL TARAMA (SCANNER)
-        async function runLocalScan() {
-            if (!model) return;
-            document.body.classList.add('scanning');
-            const video = document.getElementById('camera-feed');
-            const container = document.getElementById('detection-container');
-            container.innerHTML = '';
-
-            const predictions = await model.detect(video);
-            
-            if (predictions.length > 0) {
-                predictions.forEach(p => {
-                    const box = document.createElement('div');
-                    box.className = 'detection-box';
-                    box.style.left = (p.bbox[0] / video.videoWidth * 100) + '%';
-                    box.style.top = (p.bbox[1] / video.videoHeight * 100) + '%';
-                    box.style.width = (p.bbox[2] / video.videoWidth * 100) + '%';
-                    box.style.height = (p.bbox[3] / video.videoHeight * 100) + '%';
-                    box.innerText = p.class.toUpperCase() + " %" + Math.round(p.score * 100);
-                    container.appendChild(box);
-                });
-                
-                const objects = predictions.map(p => p.class).join(", ");
-                const response = `Efendim, yaptığım yerel taramada şunları tespit ettim: ${objects}. Sistem analizi tamamlandı.`;
-                log("TUNCER ZEKA", response);
-                speak(response);
-            } else {
-                const failMsg = "Efendim, şu anki görüş açımda tanımlanabilir bir nesne saptayamadım.";
-                log("TUNCER ZEKA", failMsg);
-                speak(failMsg);
-            }
-            
-            setTimeout(() => { 
-                document.body.classList.remove('scanning');
-                container.innerHTML = '';
-            }, 3000);
-        }
-
-        // 3. SESLİ KOMUT SİSTEMİ
-        function startListening() {
+        // Voice System
+        function startVoice() {
+            if (isBusy) return;
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Speech) return alert("Tarayıcı desteklemiyor");
+            if (!Speech) return;
 
             const rec = new Speech();
             rec.lang = 'tr-TR';
             
             rec.onstart = () => {
-                document.getElementById('ai-trigger').classList.add('listening');
-                infoText.innerText = "Sizi Dinliyorum Bay Tuncer...";
+                document.getElementById('ai-core').classList.add('listening');
+                hint.innerText = "Sizi Dinliyorum Bay Tuncer...";
+                window.speechSynthesis.cancel();
             };
 
-            rec.onresult = async (e) => {
-                const query = e.results[0][0].transcript.toLowerCase();
-                log("AHMET TUNCER", query, "text-white");
-
-                if (query.includes("tara") || query.includes("bak") || query.includes("ne var")) {
-                    runLocalScan();
-                } else {
-                    // Genel sorular için Hugging Face Ücretsiz API
-                    getAIResponse(query);
-                }
+            rec.onresult = (e) => {
+                const transcript = e.results[0][0].transcript;
+                processAI(transcript);
             };
 
             rec.onend = () => {
-                document.getElementById('ai-trigger').classList.remove('listening');
-                infoText.innerText = "Emrinizi Bekliyorum Bay Tuncer";
+                document.getElementById('ai-core').classList.remove('listening');
             };
 
             rec.start();
         }
 
-        // 4. ZEKA MOTORU (Hugging Face - No Key Required for Public Inference)
-        async function getAIResponse(query) {
-            infoText.innerText = "Analiz ediliyor...";
-            try {
-                // Not: Bazı modeller geçici olarak yoğun olabilir, bu yüzden en stabil olanı seçtim.
-                const response = await fetch("https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-beta", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        inputs: `<|system|>\nSen Tuncer Zeka'sın. Ahmet Tuncer senin tasarımcın. Jarvis gibi konuş.</s>\n<|user|>\n${query}</s>\n<|assistant|>`,
-                        parameters: { max_new_tokens: 150 }
-                    })
-                });
+        // Processing
+        async function processAI(query) {
+            isBusy = true;
+            addLog("AHMET TUNCER", query, "text-green-400");
+            hint.innerText = "Sistem Analiz Yapıyor...";
 
-                const data = await response.json();
-                let text = data[0].generated_text.split("<|assistant|>")[1] || "Sistemsel bir yoğunluk var efendim.";
+            const needsScan = /tara|bak|ne var|gör|incele/.test(query.toLowerCase());
+            let finalQuery = query;
+
+            if (needsScan) {
+                document.body.classList.add('scanning');
+                addLog("SYSTEM", "Optical sensors capturing data...", "text-yellow-500");
+                const img = capture();
+                // Vision trigger for Pollinations (Better model)
+                finalQuery = `Bu resimde ne gördüğünü analiz et ve soruma cevap ver: ${query} [IMAGE_DATA:${img.substring(0,100)}...]`;
+            }
+
+            try {
+                // Pollinations GET - The most stable way for free usage
+                const url = `${TEXT_API}${encodeURIComponent(SYSTEM_PROMPT + " Kullanıcı: " + query)}?model=openai`;
                 
-                log("TUNCER ZEKA", text.trim());
-                speak(text.trim());
+                const response = await fetch(url);
+                if (!response.ok) throw new Error();
+                const text = await response.text();
+
+                addLog("TUNCER ZEKA", text, "text-white font-bold text-shadow-cyan");
+                speak(text);
+
             } catch (err) {
-                // API hatası olursa Jarvis her zaman Ahmet Tuncer'i korur:
-                const fallback = "Şu an merkezi sinir sistemime ulaşılamıyor Ahmet Bey, ancak yerel fonksiyonlarım aktif.";
-                log("TUNCER ZEKA", fallback);
-                speak(fallback);
+                const errorMsg = "Bağlantı protokolü hatası Ahmet Bey. Tekrar deneyin.";
+                addLog("TUNCER ZEKA", errorMsg, "text-red-400");
+                speak(errorMsg);
+            } finally {
+                isBusy = false;
+                document.body.classList.remove('scanning');
+                hint.innerText = "Emrinizi Bekliyorum Efendim";
             }
         }
 
-        // 5. YARDIMCI FONKSİYONLAR
-        function log(who, msg, color = "text-cyan-400") {
+        function capture() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('capture-canvas');
+            canvas.width = video.videoWidth / 4;
+            canvas.height = video.videoHeight / 4;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', 0.5);
+        }
+
+        function addLog(who, msg, color = "text-cyan-400") {
             const p = document.createElement('p');
-            p.innerHTML = `<span class="opacity-50">[${who}]</span> <span class="${color}">${msg}</span>`;
-            chatBox.appendChild(p);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            p.innerHTML = `<span class="opacity-50 text-[8px]">[${who}]</span> <span class="${color}">${msg}</span>`;
+            logBox.appendChild(p);
+            logBox.scrollTop = logBox.scrollHeight;
         }
 
         function speak(text) {
             const ut = new SpeechSynthesisUtterance(text);
             ut.lang = 'tr-TR';
-            ut.pitch = 0.8;
+            ut.pitch = 0.85;
             window.speechSynthesis.speak(ut);
         }
 
-        window.onload = init;
+        window.onload = initCamera;
     </script>
 </body>
 </html>
