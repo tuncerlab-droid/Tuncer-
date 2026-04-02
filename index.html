@@ -13,19 +13,14 @@
             --panel-bg: rgba(30, 41, 59, 0.7);
             --panel-border: rgba(255, 255, 255, 0.1);
             --primary: #3b82f6;
-            --primary-hover: #2563eb;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
-            --user-msg: #3b82f6;
             --ai-msg: rgba(51, 65, 85, 0.8);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; position: relative; }
         
-        .glow-1 { position: absolute; top: -10%; left: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, rgba(0,0,0,0) 70%); z-index: 0; pointer-events: none; }
-        .glow-2 { position: absolute; bottom: -10%; right: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, rgba(0,0,0,0) 70%); z-index: 0; pointer-events: none; }
-
         .app-container { display: flex; width: 100%; height: 100%; z-index: 1; padding: 20px; gap: 20px; }
 
         .sidebar {
@@ -42,7 +37,6 @@
 
         .brand { display: flex; align-items: center; gap: 15px; margin-bottom: 40px; }
         .brand-icon { width: 40px; height: 40px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; }
-        .brand-text h1 { font-size: 1.2rem; font-weight: 700; color: #fff; }
 
         .version-selector {
             background: rgba(15, 23, 42, 0.6);
@@ -51,10 +45,9 @@
             display: flex;
             position: relative;
             border: 1px solid var(--panel-border);
-            margin-bottom: auto;
         }
 
-        .version-btn { flex: 1; padding: 12px 0; background: transparent; border: none; color: var(--text-muted); font-weight: 600; cursor: pointer; z-index: 2; }
+        .version-btn { flex: 1; padding: 12px 0; background: transparent; border: none; color: var(--text-muted); font-weight: 600; cursor: pointer; z-index: 2; transition: color 0.3s; }
         .version-btn.active { color: white; }
 
         .active-bg {
@@ -78,7 +71,7 @@
             border: 1px solid var(--panel-border);
         }
 
-        .status-dot { width: 10px; height: 10px; background: #94a3b8; border-radius: 50%; }
+        .status-dot { width: 10px; height: 10px; background: #94a3b8; border-radius: 50%; transition: 0.3s; }
 
         .chat-area {
             flex: 1;
@@ -105,33 +98,27 @@
         .input-container { padding: 20px 30px; background: rgba(30, 41, 59, 0.6); }
         .input-box { display: flex; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--panel-border); border-radius: 20px; padding: 8px 8px 8px 20px; }
         .input-box input { flex: 1; background: transparent; border: none; color: white; outline: none; }
-        
         .send-btn { width: 40px; height: 40px; border-radius: 14px; background: var(--primary); color: white; border: none; cursor: pointer; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-
-        @media (max-width: 768px) { .app-container { flex-direction: column; padding: 10px; } .sidebar { width: 100%; } }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="glow-1"></div>
-    <div class="glow-2"></div>
-
     <div class="app-container">
         <div class="sidebar">
             <div class="brand">
                 <div class="brand-icon"><i class="fa-solid fa-robot"></i></div>
-                <div class="brand-text"><h1>TUNCER AI</h1></div>
+                <div class="brand-text"><h3>TUNCER AI</h3></div>
             </div>
             <div class="version-selector">
                 <div class="active-bg" id="activeBg"></div>
-                <button class="version-btn" onclick="switchVersion('2023')">v2023</button>
-                <button class="version-btn active" onclick="switchVersion('2026')">v2026</button>
+                <button class="version-btn" id="btn2023" onclick="switchVersion('2023')">v2023</button>
+                <button class="version-btn active" id="btn2026" onclick="switchVersion('2026')">v2026</button>
             </div>
             <div class="system-status">
                 <div class="status-dot" id="statusDot"></div>
-                <div class="status-text" id="engineStatus">Başlatılıyor...</div>
+                <div id="engineStatus">Bekleniyor...</div>
             </div>
         </div>
 
@@ -159,15 +146,8 @@
         const engineStatus = document.getElementById('engineStatus');
         const activeBg = document.getElementById('activeBg');
 
-        // URL yapısını GitHub Pages'e göre ayarlar
-        const getFileUrl = (version) => {
-            const path = window.location.pathname;
-            const dir = path.substring(0, path.lastIndexOf('/') + 1);
-            return `${dir}tuncer${version}.js?t=${Date.now()}`;
-        };
-
         window.onload = () => {
-            appendMessage("Sistem hazır. Tuncer Zeka 2026 motoru yükleniyor...", "ai");
+            appendMessage("Sistem Başlatıldı. Tuncer Zeka 2026 yükleniyor...", "ai");
             loadEngine('2026');
         };
 
@@ -178,43 +158,60 @@
             currentVersion = v;
             activeBg.style.transform = v === '2023' ? 'translateX(0)' : 'translateX(100%)';
             document.getElementById('headerTitle').innerText = `Tuncer Zeka ${v}`;
+            
+            document.getElementById('btn2023').classList.toggle('active', v === '2023');
+            document.getElementById('btn2026').classList.toggle('active', v === '2026');
+            
             loadEngine(v);
         }
 
+        // --- GELİŞTİRİLMİŞ YÜKLEME VE KONTROL MEKANİZMASI ---
         function loadEngine(v) {
             aiInstance = null;
-            engineStatus.innerText = `v${v} yükleniyor...`;
-            statusDot.style.background = "#eab308";
+            engineStatus.innerText = `v${v} aranıyor...`;
+            statusDot.style.background = "#eab308"; // Sarı
+            statusDot.style.animation = "pulse 1s infinite";
 
             const old = document.getElementById('engine-script');
             if (old) old.remove();
 
             const s = document.createElement('script');
             s.id = 'engine-script';
-            s.src = getFileUrl(v);
+            // GitHub Pages uyumlu yol bulma
+            const dir = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+            s.src = `${dir}tuncer${v}.js?v=${Date.now()}`;
             
             s.onload = () => {
-                setTimeout(() => {
-                    // Senin sınıf ismin
+                // Sınıfın global scope'a tam düşmesi için periyodik kontrol (Retry Mechanism)
+                let attempts = 0;
+                const checkInterval = setInterval(() => {
+                    attempts++;
                     const Target = window.TuncerZeka || (typeof TuncerZeka !== 'undefined' ? TuncerZeka : null);
+                    
                     if (Target) {
                         try {
                             aiInstance = new Target();
-                            engineStatus.innerText = `v${v} Aktif`;
-                            statusDot.style.background = "#10b981";
+                            engineStatus.innerText = `Tuncer v${v} Aktif`;
+                            statusDot.style.background = "#10b981"; // Yeşil
+                            statusDot.style.animation = "none";
+                            clearInterval(checkInterval);
                         } catch(e) { 
-                            engineStatus.innerText = "Başlatma Hatası";
+                            engineStatus.innerText = "Sınıf Hatası";
+                            clearInterval(checkInterval);
                         }
-                    } else {
+                    } else if (attempts > 20) { // 2 saniye boyunca bulamazsa vazgeç
                         engineStatus.innerText = "Sınıf Bulunamadı";
                         statusDot.style.background = "#ef4444";
+                        statusDot.style.animation = "none";
+                        clearInterval(checkInterval);
                     }
-                }, 300);
+                }, 100); // Her 100ms'de bir kontrol et
             };
             
             s.onerror = () => {
-                engineStatus.innerText = "Dosya Yok";
+                engineStatus.innerText = "Dosya Bulunamadı";
                 statusDot.style.background = "#ef4444";
+                statusDot.style.animation = "none";
             };
             document.body.appendChild(s);
         }
@@ -226,18 +223,19 @@
             appendMessage(val, 'user');
             userInput.value = '';
 
+            // Dosya yüklenmiş olsa bile örnekleme (instance) oluşmamış olabilir
             if (!aiInstance) {
-                appendMessage("Motor hazır değil. Lütfen dosyanın yüklendiğinden emin olun.", "ai");
+                appendMessage("⚠️ Motor henüz tam olarak hazır değil. Dosya yükleniyor veya `TuncerZeka` sınıfı bulunamadı.", "ai");
                 return;
             }
 
             try {
                 // Senin metodun: konus()
                 const res = await aiInstance.konus(val);
-                const final = (typeof res === 'object') ? res.cevap : res;
+                const final = (typeof res === 'object' && res.cevap) ? res.cevap : res;
                 appendMessage(final, 'ai');
             } catch(e) {
-                appendMessage("Hata: " + e.message, 'ai');
+                appendMessage("Çalışma Hatası: " + e.message, "ai");
             }
         }
 
