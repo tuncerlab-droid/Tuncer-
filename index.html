@@ -3,12 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka - Yapay Zeka Sohbet</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>Tuncer Zeka v2.0 | Sohbet Arayüzü</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -26,302 +22,265 @@
             --bg-tertiary: #334155;
             --text-primary: #f1f5f9;
             --text-secondary: #cbd5e1;
-            --border: #475569;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
+            --border-color: #475569;
         }
 
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a2c4a 100%);
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1f3a 100%);
             color: var(--text-primary);
             overflow: hidden;
-            height: 100vh;
         }
 
-        /* Animated Background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 40% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: -1;
-        }
-
-        /* Main Layout */
         .container {
             display: flex;
             height: 100vh;
-            gap: 0;
+            width: 100%;
+            position: relative;
         }
 
-        /* Sidebar */
+        /* ═══════════════════════════════════════ SIDEBAR ═══════════════════════════════════════ */
         .sidebar {
-            width: 300px;
-            background: rgba(15, 23, 42, 0.8);
+            width: 280px;
+            background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(10px);
             border-right: 1px solid rgba(71, 85, 105, 0.3);
             display: flex;
             flex-direction: column;
+            animation: slideInLeft 0.5s ease-out;
             overflow: hidden;
-            animation: slideInLeft 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         @keyframes slideInLeft {
-            from {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid rgba(71, 85, 105, 0.3);
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+            text-align: center;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.2);
-        }
-
-        .logo-text h1 {
-            font-size: 16px;
+        .sidebar-logo {
+            font-size: 24px;
             font-weight: 700;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
         }
 
-        .logo-text p {
+        .sidebar-version {
             font-size: 11px;
             color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .new-chat-btn {
-            width: 100%;
-            padding: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            margin: 15px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             color: white;
             font-weight: 600;
             cursor: pointer;
-            font-size: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
             transition: all 0.3s ease;
-            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
         }
 
         .new-chat-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+        }
+
+        .new-chat-btn:active {
+            transform: translateY(0);
         }
 
         .sidebar-content {
             flex: 1;
             overflow-y: auto;
-            padding: 15px;
+            padding: 10px;
         }
 
         .conversation-item {
-            padding: 12px 14px;
+            padding: 12px 15px;
+            margin: 5px 0;
             border-radius: 8px;
             cursor: pointer;
-            margin-bottom: 8px;
-            background: rgba(71, 85, 105, 0.1);
-            border: 1px solid transparent;
-            transition: all 0.2s ease;
+            color: var(--text-secondary);
             font-size: 13px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: var(--text-secondary);
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
         }
 
         .conversation-item:hover {
             background: rgba(99, 102, 241, 0.1);
-            border-color: rgba(99, 102, 241, 0.3);
             color: var(--text-primary);
         }
 
         .conversation-item.active {
             background: rgba(99, 102, 241, 0.2);
-            border-color: var(--primary);
+            border-left-color: var(--primary);
             color: var(--text-primary);
         }
 
         .sidebar-footer {
             padding: 15px;
             border-top: 1px solid rgba(71, 85, 105, 0.3);
-            background: rgba(15, 23, 42, 0.5);
-        }
-
-        .user-profile {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 10px;
-            background: rgba(99, 102, 241, 0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
         }
 
-        .user-profile:hover {
-            background: rgba(99, 102, 241, 0.2);
+        .sidebar-footer i {
+            color: var(--secondary);
         }
 
-        .user-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            flex-shrink: 0;
+        .sidebar-content::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .sidebar-content::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 3px;
+        }
+        .sidebar-content::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
         }
 
-        .user-info p {
-            font-size: 12px;
-        }
-
-        /* Main Chat Area */
+        /* ═══════════════════════════════════════ MAIN CONTENT ═══════════════════════════════════════ */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
+            background: linear-gradient(180deg, rgba(15, 23, 42, 0.5) 0%, rgba(30, 41, 59, 0.3) 100%);
             position: relative;
             overflow: hidden;
         }
 
-        .chat-header {
-            padding: 16px 24px;
-            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
-            background: rgba(15, 23, 42, 0.4);
+        .main-content::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: pulse 8s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        /* ═══════════════════════════════════════ HEADER ═══════════════════════════════════════ */
+        .header {
+            padding: 15px 30px;
+            background: rgba(30, 41, 59, 0.4);
             backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(71, 85, 105, 0.2);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            animation: slideDown 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: slideDown 0.5s ease-out;
+            z-index: 10;
         }
 
         @keyframes slideDown {
-            from {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
-        .chat-header-title {
-            font-size: 16px;
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 18px;
             font-weight: 600;
         }
 
-        .chat-header-controls {
+        .header-title i {
+            color: var(--primary);
+            font-size: 20px;
+        }
+
+        .header-controls {
             display: flex;
-            gap: 12px;
             align-items: center;
+            gap: 15px;
         }
 
         .model-selector {
-            background: rgba(71, 85, 105, 0.2);
+            padding: 8px 14px;
+            background: rgba(99, 102, 241, 0.1);
             border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: var(--text-secondary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
             cursor: pointer;
-            font-size: 12px;
             transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
         }
 
         .model-selector:hover {
             background: rgba(99, 102, 241, 0.2);
-            border-color: var(--primary);
-            color: var(--text-primary);
+            border-color: rgba(99, 102, 241, 0.5);
         }
 
-        .icon-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 6px;
-            background: rgba(71, 85, 105, 0.2);
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
+        .model-selector::after {
+            content: ' ▼';
+            font-size: 10px;
         }
 
-        .icon-btn:hover {
-            background: rgba(99, 102, 241, 0.2);
-            color: var(--text-primary);
-        }
-
-        /* Messages Area */
+        /* ═══════════════════════════════════════ MESSAGES AREA ═══════════════════════════════════════ */
         .messages-container {
             flex: 1;
             overflow-y: auto;
-            padding: 24px;
-            scroll-behavior: smooth;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
         }
 
         .messages-container::-webkit-scrollbar {
             width: 8px;
         }
-
         .messages-container::-webkit-scrollbar-track {
             background: transparent;
         }
-
         .messages-container::-webkit-scrollbar-thumb {
-            background: rgba(99, 102, 241, 0.3);
+            background: rgba(99, 102, 241, 0.5);
             border-radius: 4px;
         }
-
         .messages-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(99, 102, 241, 0.5);
+            background: rgba(99, 102, 241, 0.8);
         }
 
         .welcome-section {
@@ -329,135 +288,134 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
             text-align: center;
+            padding: 60px 20px;
             animation: fadeIn 0.6s ease-out;
         }
 
         @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .welcome-icon {
-            font-size: 64px;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
             margin-bottom: 20px;
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
             animation: float 3s ease-in-out infinite;
         }
 
         @keyframes float {
-            0%, 100% { transform: translateY(0); }
+            0%, 100% { transform: translateY(0px); }
             50% { transform: translateY(-10px); }
         }
 
-        .welcome-title {
-            font-size: 32px;
+        .welcome-text {
+            font-size: 28px;
             font-weight: 700;
             margin-bottom: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        .welcome-subtitle {
-            font-size: 14px;
+        .welcome-subtext {
             color: var(--text-secondary);
+            font-size: 14px;
             margin-bottom: 30px;
-            max-width: 400px;
         }
 
-        .suggestion-grid {
+        .example-prompts {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 12px;
-            margin-top: 20px;
-            max-width: 500px;
             width: 100%;
+            max-width: 600px;
         }
 
-        .suggestion-btn {
-            padding: 12px;
+        .example-prompt {
+            padding: 12px 16px;
             background: rgba(99, 102, 241, 0.1);
             border: 1px solid rgba(99, 102, 241, 0.3);
-            border-radius: 8px;
-            color: var(--text-secondary);
+            border-radius: 10px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 13px;
+            color: var(--text-secondary);
             transition: all 0.3s ease;
-            font-weight: 500;
         }
 
-        .suggestion-btn:hover {
+        .example-prompt:hover {
             background: rgba(99, 102, 241, 0.2);
-            border-color: var(--primary);
+            border-color: rgba(99, 102, 241, 0.5);
             color: var(--text-primary);
-            transform: translateY(-2px);
         }
 
-        /* Messages */
+        /* ═══════════════════════════════════════ MESSAGES ═══════════════════════════════════════ */
         .message {
-            margin-bottom: 16px;
-            animation: messageSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            gap: 12px;
+            animation: messageSlideIn 0.4s ease-out;
         }
 
         @keyframes messageSlideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .message-row {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-
-        .message-row.user {
-            justify-content: flex-end;
+        .message.user {
+            flex-direction: row-reverse;
         }
 
         .message-avatar {
             width: 32px;
             height: 32px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            flex-shrink: 0;
             font-size: 16px;
+            flex-shrink: 0;
         }
 
-        .message-row.user .message-avatar {
-            background: linear-gradient(135deg, var(--accent), var(--secondary));
+        .message.assistant .message-avatar {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        }
+
+        .message.user .message-avatar {
+            background: rgba(71, 85, 105, 0.5);
         }
 
         .message-content {
             max-width: 70%;
             padding: 12px 16px;
             border-radius: 12px;
-            background: rgba(99, 102, 241, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
-            line-height: 1.5;
-            font-size: 14px;
             word-wrap: break-word;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            animation: messageBubbleIn 0.3s ease-out;
         }
 
-        .message-row.user .message-content {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
+        @keyframes messageBubbleIn {
+            from { opacity: 0; scale: 0.95; }
+            to { opacity: 1; scale: 1; }
+        }
+
+        .message.assistant .message-content {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            color: var(--text-primary);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
         }
 
@@ -470,602 +428,672 @@
         .typing-dot {
             width: 8px;
             height: 8px;
-            background: rgba(99, 102, 241, 0.6);
             border-radius: 50%;
+            background: var(--text-secondary);
             animation: typing 1.4s infinite;
         }
 
-        .typing-dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 
         @keyframes typing {
-            0%, 60%, 100% {
-                transform: translateY(0);
-                opacity: 0.5;
-            }
-            30% {
-                transform: translateY(-10px);
-                opacity: 1;
-            }
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-10px); }
         }
 
-        /* Input Area */
+        /* ═══════════════════════════════════════ INPUT AREA ═══════════════════════════════════════ */
         .input-area {
-            padding: 20px 24px 24px;
-            border-top: 1px solid rgba(71, 85, 105, 0.3);
-            background: rgba(15, 23, 42, 0.4);
+            padding: 20px 30px 30px;
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0) 0%, rgba(30, 41, 59, 0.4) 100%);
             backdrop-filter: blur(10px);
-            animation: slideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-top: 1px solid rgba(71, 85, 105, 0.2);
+            animation: slideUp 0.5s ease-out;
+            z-index: 10;
         }
 
         @keyframes slideUp {
-            from {
-                transform: translateY(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
 
         .input-wrapper {
             display: flex;
-            gap: 8px;
-            align-items: flex-end;
+            gap: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
         }
 
-        .input-field {
+        .input-container {
             flex: 1;
-            background: rgba(71, 85, 105, 0.1);
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            display: flex;
+            align-items: flex-end;
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(71, 85, 105, 0.4);
             border-radius: 12px;
             padding: 12px 16px;
-            color: var(--text-primary);
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            font-size: 14px;
-            resize: none;
-            max-height: 120px;
-            outline: none;
             transition: all 0.3s ease;
         }
 
-        .input-field:focus {
-            background: rgba(71, 85, 105, 0.15);
+        .input-container:focus-within {
             border-color: var(--primary);
+            background: rgba(30, 41, 59, 0.8);
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        .input-field::placeholder {
+        .chat-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 15px;
+            outline: none;
+            font-family: inherit;
+            resize: none;
+            max-height: 150px;
+            min-height: 24px;
+        }
+
+        .chat-input::placeholder {
             color: var(--text-secondary);
         }
 
         .send-btn {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            margin-left: 8px;
+            width: 32px;
+            height: 32px;
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
+            background: var(--primary);
             color: white;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
             transition: all 0.3s ease;
+            flex-shrink: 0;
         }
 
         .send-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 16px rgba(99, 102, 241, 0.4);
+            background: var(--primary-dark);
+            transform: scale(1.05);
         }
 
         .send-btn:active {
-            transform: translateY(0);
+            transform: scale(0.95);
         }
 
         .send-btn:disabled {
-            opacity: 0.5;
+            background: rgba(99, 102, 241, 0.5);
             cursor: not-allowed;
+            opacity: 0.6;
         }
 
-        .input-info {
-            font-size: 11px;
+        /* ═══════════════════════════════════════ MODAL ═══════════════════════════════════════ */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(30, 41, 59, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideDown 0.4s ease-out;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
             color: var(--text-secondary);
-            margin-top: 8px;
-            text-align: center;
+            font-size: 14px;
+            line-height: 1.6;
         }
 
-        /* Responsive Design */
+        .model-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .model-option {
+            padding: 12px 16px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .model-option:hover {
+            background: rgba(99, 102, 241, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .model-option.selected {
+            background: rgba(99, 102, 241, 0.3);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .model-option-check {
+            display: none;
+            color: var(--primary);
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        .model-option.selected .model-option-check {
+            display: block;
+        }
+
+        /* ═══════════════════════════════════════ RESPONSIVE ═══════════════════════════════════════ */
         @media (max-width: 768px) {
             .sidebar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                z-index: 100;
+                width: 240px;
                 display: none;
             }
 
-            .message-content {
-                max-width: 90%;
+            .sidebar.active {
+                display: flex;
+            }
+
+            .container {
+                flex-direction: column;
             }
 
             .messages-container {
-                padding: 16px;
+                padding: 20px;
+                max-width: 100%;
+            }
+
+            .message-content {
+                max-width: 85%;
             }
 
             .input-area {
-                padding: 16px;
+                padding: 15px 20px 25px;
             }
 
-            .suggestion-grid {
-                grid-template-columns: repeat(2, 1fr);
+            .input-wrapper {
+                max-width: 100%;
+                padding: 0;
+            }
+
+            .header {
+                padding: 12px 20px;
+            }
+
+            .example-prompts {
+                grid-template-columns: 1fr;
             }
         }
 
-        /* Code Block Styling */
-        code, pre {
-            background: rgba(15, 23, 42, 0.8);
-            border-radius: 6px;
-            padding: 2px 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
+        .hidden {
+            display: none !important;
         }
 
         pre {
+            background: rgba(0, 0, 0, 0.3);
             padding: 12px;
+            border-radius: 8px;
             overflow-x: auto;
             margin: 8px 0;
-        }
-
-        /* Loading State */
-        .loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-
-        /* Info Boxes */
-        .info-box {
-            background: rgba(99, 102, 241, 0.1);
             border-left: 3px solid var(--primary);
-            padding: 12px;
-            border-radius: 6px;
+        }
+
+        code {
+            font-family: 'Courier New', monospace;
             font-size: 13px;
-            margin: 8px 0;
-        }
-
-        .info-box.success {
-            border-left-color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .info-box.warning {
-            border-left-color: var(--warning);
-            background: rgba(245, 158, 11, 0.1);
-        }
-
-        .info-box.error {
-            border-left-color: var(--danger);
-            background: rgba(239, 68, 68, 0.1);
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Sidebar -->
-        <div class="sidebar">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
             <div class="sidebar-header">
-                <div class="logo">
-                    <div class="logo-icon">🧠</div>
-                    <div class="logo-text">
-                        <h1>Tuncer Zeka</h1>
-                        <p>v2.0 - Yerli Yapay Zeka</p>
-                    </div>
-                </div>
-                <button class="new-chat-btn" onclick="startNewChat()">
-                    <i class="fas fa-plus"></i> Yeni Sohbet
-                </button>
+                <div class="sidebar-logo">🧠 TUNCER</div>
+                <div class="sidebar-version">Zeka v2.0</div>
             </div>
 
-            <div class="sidebar-content" id="conversations-list">
-                <div class="info-box" style="font-size: 12px; text-align: center;">
-                    Henüz sohbet geçmişiniz yok.
-                </div>
+            <button class="new-chat-btn" onclick="newChat()">
+                <i class="fas fa-plus"></i> Yeni Sohbet
+            </button>
+
+            <div class="sidebar-content">
+                <div id="conversations-list"></div>
             </div>
 
             <div class="sidebar-footer">
-                <div class="user-profile">
-                    <div class="user-avatar">👤</div>
-                    <div class="user-info">
-                        <p style="font-weight: 600;">Hoşgeldiniz</p>
-                        <p style="color: var(--text-secondary); font-size: 11px;">Türkçe Doğal Dil</p>
-                    </div>
-                </div>
+                <i class="fas fa-circle"></i>
+                <span>Çevrimiçi ve Hazır</span>
             </div>
-        </div>
+        </aside>
 
-        <!-- Main Chat Area -->
-        <div class="main-content">
-            <div class="chat-header">
-                <div class="chat-header-title">
-                    <i class="fas fa-robot" style="color: var(--primary); margin-right: 8px;"></i>
-                    Tuncer Zeka Sohbet Botu
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <header class="header">
+                <div class="header-title">
+                    <i class="fas fa-comments"></i>
+                    <span id="header-title">Yeni Sohbet</span>
                 </div>
-                <div class="chat-header-controls">
-                    <div class="model-selector">
-                        <i class="fas fa-brain"></i>
-                        <span id="model-name">Tuncer v2.0</span>
-                    </div>
-                    <button class="icon-btn" title="Ayarlar" onclick="toggleSettings()">
-                        <i class="fas fa-sliders-h"></i>
-                    </button>
+                <div class="header-controls">
+                    <select class="model-selector" id="model-selector" onchange="selectModel()">
+                        <option value="tuncer2026">Tuncer Zeka v2026 (Gelişmiş)</option>
+                        <option value="tuncer2023">Tuncer Zeka v2023 (Klasik)</option>
+                    </select>
                 </div>
-            </div>
+            </header>
 
-            <!-- Messages Container -->
+            <!-- MESSAGES -->
             <div class="messages-container" id="messages-container">
                 <div class="welcome-section">
-                    <div class="welcome-icon">🧠</div>
-                    <h2 class="welcome-title">Tuncer Zeka'ya Hoş Geldiniz</h2>
-                    <p class="welcome-subtitle">Ahmet Tuncer tarafından geliştirilen, tamamen yerli ve bağımsız yapay zeka sistemi</p>
-                    <div class="suggestion-grid" id="suggestions-grid">
-                        <button class="suggestion-btn" onclick="sendMessage('Merhaba, sen kimsin?')">Merhaba!</button>
-                        <button class="suggestion-btn" onclick="sendMessage('Matematik: 15 × 8')">Matematik</button>
-                        <button class="suggestion-btn" onclick="sendMessage('wikipedia: Yapay Zeka')">Bilgi Ara</button>
-                        <button class="suggestion-btn" onclick="sendMessage('Bir şaka anlat')">Şaka</button>
+                    <div class="welcome-icon">🚀</div>
+                    <div class="welcome-text">Tuncer Zeka'ya Hoş Geldiniz</div>
+                    <div class="welcome-subtext">v2.0 - Tamamen Yerli Yapay Zeka</div>
+                    <div class="example-prompts">
+                        <div class="example-prompt" onclick="sendExample('Merhaba! Kendini tanıt.')">Kendini Tanıt</div>
+                        <div class="example-prompt" onclick="sendExample('Matematik: 25 × 8')">Matematik Yap</div>
+                        <div class="example-prompt" onclick="sendExample('Wikipedia: Yapay Zeka')">Wikipedia Ara</div>
+                        <div class="example-prompt" onclick="sendExample('Kod yaz: Hesap makinesi')">Kod Yaz</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Input Area -->
+            <!-- INPUT -->
             <div class="input-area">
-                <form id="message-form" onsubmit="handleSendMessage(event)">
-                    <div class="input-wrapper">
+                <div class="input-wrapper">
+                    <div class="input-container">
                         <textarea 
-                            id="message-input"
-                            class="input-field"
-                            placeholder="Bir mesaj yazın... (Shift + Enter için yeni satır)"
-                            rows="1"
-                        ></textarea>
-                        <button type="submit" class="send-btn" id="send-btn">
+                            class="chat-input" 
+                            id="chat-input" 
+                            placeholder="Bir mesaj yazın... (Shift+Enter = Yeni Satır)"
+                            onkeydown="handleKeyDown(event)"></textarea>
+                        <button class="send-btn" onclick="sendMessage()" id="send-btn">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </div>
-                    <div class="input-info">
-                        💡 <strong>İpucu:</strong> Wikipedia arama için "wikipedia: [konu]" yazabilirsiniz
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODEL SELECTOR MODAL -->
+    <div class="modal" id="model-modal">
+        <div class="modal-content">
+            <div class="modal-title">
+                <i class="fas fa-robot"></i> Tuncer Zeka Sürümü
+            </div>
+            <div class="modal-body">
+                Hangi yapay zeka sürümünü kullanmak istiyorsunuz?
+            </div>
+            <div class="model-options">
+                <div class="model-option selected" onclick="selectModelVersion('tuncer2026')">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Tuncer Zeka v2026</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Gelişmiş NLP, Wikipedia, Görsel Analiz</div>
                     </div>
-                </form>
+                    <div class="model-option-check">✓</div>
+                </div>
+                <div class="model-option" onclick="selectModelVersion('tuncer2023')">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 2px;">Tuncer Zeka v2023</div>
+                        <div style="font-size: 12px; color: var(--text-secondary);">Modüler, Hafif, İyileştirilmiş</div>
+                    </div>
+                    <div class="model-option-check">✓</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="tuncer2023.js"></script>
+    <!-- TUNCER ZEKA KÜTÜPHANELERİ HARICI YÜKLEME -->
     <script src="tuncer2026.js"></script>
+    <script src="tuncer2023.js"></script>
+
     <script>
-        // ============================================================
-        // 🚀 TUNCER ZEKA CHAT UI - ANA SCRIPT
-        // ============================================================
+        // ═══════════════════════════════════════════════════════════════
+        // 🎮 SOHBET UYGULAMASI
+        // ═══════════════════════════════════════════════════════════════
 
-        let tuncerZeka = null;
-        let conversationHistory = [];
-        let conversationList = [];
+        let currentModel = 'tuncer2026';
+        let conversations = JSON.parse(localStorage.getItem('tuncer_conversations')) || [];
         let currentConversationId = null;
-        let isLoading = false;
+        let zekaMakinesi = null;
 
-        // Başlatma
-        window.addEventListener('load', async () => {
-            console.log('🧠 Tuncer Zeka Sohbet UI Başlatılıyor...');
-            
-            // Tuncer Zeka kütüphanesini başlat
-            await initializeTuncerZeka();
-            
-            // Auto-resize textarea
-            setupTextareaAutoResize();
-            
-            // Konuşma geçmişini yükle
-            loadConversationHistory();
-            
-            console.log('✅ Sistem Hazır!');
-        });
+        const messagesContainer = document.getElementById('messages-container');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
 
-        async function initializeTuncerZeka() {
+        // ═══════════════════════════════════════════════════════════════
+        // KÜTÜPHANELERİ BAŞLAT
+        // ═══════════════════════════════════════════════════════════════
+
+        function initializeModel() {
             try {
-                // Kontrol: tuncer2023.js ve tuncer2026.js yüklü mü?
-                if (typeof TuncerZeka !== 'undefined') {
-                    console.log('✅ Tuncer Zeka v2.0 Modülleri Yüklendi');
-                    return true;
-                } else {
-                    console.warn('⚠️ Tuncer Zeka modülleri bulunamadı. Lütfen tuncer2023.js ve tuncer2026.js dosyalarının aynı dizinde olduğundan emin olun.');
-                    showMessage('Uyarı: Tuncer Zeka modülleri yüklenemedi. Lütfen sayfa yeni yükleyin.', 'warning');
-                    return false;
+                if (currentModel === 'tuncer2026') {
+                    if (typeof TuncerZeka !== 'undefined') {
+                        zekaMakinesi = new TuncerZeka({ detayliLog: false, dusunceSuresi: 3000 });
+                        console.log('✅ Tuncer Zeka v2026 başlatıldı');
+                        return true;
+                    } else {
+                        console.error('❌ tuncer2026.js yüklenmedi');
+                        return false;
+                    }
+                } else if (currentModel === 'tuncer2023') {
+                    if (typeof TuncerZeka2023 !== 'undefined') {
+                        zekaMakinesi = TuncerZeka2023;
+                        console.log('✅ Tuncer Zeka v2023 başlatıldı');
+                        return true;
+                    } else {
+                        console.error('❌ tuncer2023.js yüklenmedi');
+                        return false;
+                    }
                 }
             } catch (error) {
-                console.error('❌ Başlatma Hatası:', error);
-                showMessage('Hata: Sistem başlatılamadı', 'error');
+                console.error('Kütüphane başlatılırken hata:', error);
                 return false;
             }
+            return false;
         }
 
-        function setupTextareaAutoResize() {
-            const textarea = document.getElementById('message-input');
-            textarea.addEventListener('input', () => {
-                textarea.style.height = 'auto';
-                const height = Math.min(textarea.scrollHeight, 120);
-                textarea.style.height = height + 'px';
-            });
+        // ═══════════════════════════════════════════════════════════════
+        // SOHBET FONKSİYONLARI
+        // ═══════════════════════════════════════════════════════════════
 
-            // Shift+Enter için yeni satır, Enter için gönder
-            textarea.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                }
-            });
-        }
-
-        function handleSendMessage(e) {
-            e.preventDefault();
-            
-            const input = document.getElementById('message-input');
-            const message = input.value.trim();
-            
-            if (!message || isLoading) return;
-
-            sendMessage(message);
-            input.value = '';
-            input.style.height = 'auto';
-        }
-
-        async function sendMessage(message) {
-            if (isLoading) return;
-            
-            // Remove welcome section
-            const welcomeSection = document.querySelector('.welcome-section');
-            if (welcomeSection) {
-                welcomeSection.remove();
-            }
-
-            // Kullanıcı mesajını göster
-            addMessageToUI(message, 'user');
-
-            // Konuşmayı başlat
-            if (!currentConversationId) {
-                startNewChat();
-            }
-
-            // Yükleme durumunu ayarla
-            isLoading = true;
-            document.getElementById('send-btn').disabled = true;
-
-            // Yazma göstergesi göster
-            showTypingIndicator();
-
-            // Cevap al
-            try {
-                let response = '';
-
-                // Tuncer Zeka kütüphanesini kullan
-                if (typeof TuncerZeka !== 'undefined' && TuncerZeka.konus) {
-                    const result = await TuncerZeka.konus(message);
-                    response = typeof result === 'string' ? result : (result.cevap || 'Cevap alınamadı.');
-                } else {
-                    // Fallback - basit bot
-                    response = getSimpleResponse(message);
-                }
-
-                // Yazma göstergesini kaldır
-                removeTypingIndicator();
-
-                // Cevabı göster
-                addMessageToUI(response, 'assistant');
-
-                // Sohbeti geçmişe ekle
-                conversationHistory.push({
-                    message,
-                    response,
-                    timestamp: new Date().toLocaleTimeString('tr-TR')
-                });
-
-            } catch (error) {
-                removeTypingIndicator();
-                console.error('Hata:', error);
-                addMessageToUI(`❌ Hata oluştu: ${error.message}`, 'error');
-            } finally {
-                isLoading = false;
-                document.getElementById('send-btn').disabled = false;
-            }
-        }
-
-        function addMessageToUI(message, sender = 'assistant') {
-            const container = document.getElementById('messages-container');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-
-            const rowDiv = document.createElement('div');
-            rowDiv.className = `message-row ${sender === 'user' ? 'user' : ''}`;
-
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'message-avatar';
-            avatarDiv.textContent = sender === 'user' ? '👤' : '🧠';
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            
-            // Basit Markdown desteği
-            contentDiv.innerHTML = formatMessage(message);
-
-            rowDiv.appendChild(avatarDiv);
-            rowDiv.appendChild(contentDiv);
-            messageDiv.appendChild(rowDiv);
-            container.appendChild(messageDiv);
-
-            // Scroll to bottom
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function formatMessage(text) {
-            // Kod blokları
-            text = text.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-            
-            // Kalın metin
-            text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-            
-            // İtalik
-            text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
-            
-            // Linkler
-            text = text.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
-            
-            // Line breaks
-            text = text.replace(/\n/g, '<br>');
-            
-            return text;
-        }
-
-        function showTypingIndicator() {
-            const container = document.getElementById('messages-container');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            messageDiv.id = 'typing-indicator';
-
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'message-row';
-
-            const avatarDiv = document.createElement('div');
-            avatarDiv.className = 'message-avatar';
-            avatarDiv.textContent = '🧠';
-
-            const typingDiv = document.createElement('div');
-            typingDiv.className = 'typing-indicator';
-            typingDiv.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
-
-            rowDiv.appendChild(avatarDiv);
-            rowDiv.appendChild(typingDiv);
-            messageDiv.appendChild(rowDiv);
-            container.appendChild(messageDiv);
-
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function removeTypingIndicator() {
-            const indicator = document.getElementById('typing-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        }
-
-        function startNewChat() {
-            currentConversationId = generateId();
-            conversationHistory = [];
-            
-            // Clear messages
-            const container = document.getElementById('messages-container');
-            container.innerHTML = `
+        function showWelcome() {
+            messagesContainer.innerHTML = `
                 <div class="welcome-section">
-                    <div class="welcome-icon">🧠</div>
-                    <h2 class="welcome-title">Yeni Sohbet</h2>
-                    <p class="welcome-subtitle">Tuncer Zeka ile konuşmaya başlayın</p>
-                    <div class="suggestion-grid">
-                        <button class="suggestion-btn" onclick="sendMessage('Merhaba, sen kimsin?')">Merhaba!</button>
-                        <button class="suggestion-btn" onclick="sendMessage('Matematik: 15 × 8')">Matematik</button>
-                        <button class="suggestion-btn" onclick="sendMessage('wikipedia: Yapay Zeka')">Bilgi Ara</button>
-                        <button class="suggestion-btn" onclick="sendMessage('Bir şaka anlat')">Şaka</button>
+                    <div class="welcome-icon">🚀</div>
+                    <div class="welcome-text">Tuncer Zeka'ya Hoş Geldiniz</div>
+                    <div class="welcome-subtext">v2.0 - Tamamen Yerli Yapay Zeka</div>
+                    <div class="example-prompts">
+                        <div class="example-prompt" onclick="sendExample('Merhaba! Kendini tanıt.')">Kendini Tanıt</div>
+                        <div class="example-prompt" onclick="sendExample('Matematik: 25 × 8')">Matematik Yap</div>
+                        <div class="example-prompt" onclick="sendExample('Wikipedia: Yapay Zeka')">Wikipedia Ara</div>
+                        <div class="example-prompt" onclick="sendExample('Kod yaz: Hesap makinesi')">Kod Yaz</div>
                     </div>
                 </div>
             `;
-
-            // Add to conversation list
-            addConversationToList();
         }
 
-        function addConversationToList() {
-            const item = document.createElement('div');
-            item.className = 'conversation-item active';
-            item.id = `conv-${currentConversationId}`;
-            item.textContent = `Sohbet - ${new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`;
-            item.onclick = () => selectConversation(currentConversationId);
-
-            const list = document.getElementById('conversations-list');
+        function newChat() {
+            const conversationId = 'conv_' + Date.now();
+            const conversation = {
+                id: conversationId,
+                title: 'Yeni Sohbet',
+                messages: [],
+                createdAt: new Date().toLocaleString('tr-TR'),
+                model: currentModel
+            };
+            conversations.unshift(conversation);
+            localStorage.setItem('tuncer_conversations', JSON.stringify(conversations));
             
-            // Remove empty message
-            const emptyMsg = list.querySelector('.info-box');
-            if (emptyMsg) emptyMsg.remove();
-
-            // Add new item at top
-            list.insertBefore(item, list.firstChild);
+            currentConversationId = conversationId;
+            showWelcome();
+            updateSidebar();
+            document.getElementById('header-title').textContent = 'Yeni Sohbet';
+            chatInput.focus();
         }
 
-        function selectConversation(id) {
-            // Update UI
-            document.querySelectorAll('.conversation-item').forEach(item => {
-                item.classList.remove('active');
+        function updateSidebar() {
+            const list = document.getElementById('conversations-list');
+            list.innerHTML = conversations.map(conv => `
+                <div class="conversation-item ${conv.id === currentConversationId ? 'active' : ''}" onclick="loadConversation('${conv.id}')">
+                    <i class="fas fa-comment-dots" style="margin-right: 8px;"></i>${conv.title}
+                </div>
+            `).join('');
+        }
+
+        function loadConversation(convId) {
+            currentConversationId = convId;
+            const conv = conversations.find(c => c.id === convId);
+            if (conv) {
+                currentModel = conv.model;
+                if (!initializeModel()) {
+                    addMessageToUI('⚠️ Seçilen kütüphane yüklenmedi. Lütfen dosyaları kontrol edin.', 'assistant');
+                    return;
+                }
+                updateModelSelector();
+                
+                messagesContainer.innerHTML = '';
+                if (conv.messages.length === 0) {
+                    showWelcome();
+                } else {
+                    conv.messages.forEach(msg => addMessageToUI(msg.content, msg.role));
+                }
+                document.getElementById('header-title').textContent = conv.title;
+                updateSidebar();
+            }
+        }
+
+        function sendExample(text) {
+            chatInput.value = text;
+            chatInput.focus();
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text || !zekaMakinesi) {
+                if (!zekaMakinesi) {
+                    alert('⚠️ Kütüphane yüklenmedi. Lütfen sayfayı yenileyin.');
+                }
+                return;
+            }
+
+            // Initialize if needed
+            if (!currentConversationId) {
+                newChat();
+            }
+
+            const conversation = conversations.find(c => c.id === currentConversationId);
+            
+            // Add user message
+            addMessageToUI(text, 'user');
+            conversation.messages.push({ role: 'user', content: text });
+            
+            // Update title if it's the first message
+            if (conversation.messages.length <= 2) {
+                conversation.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
+                document.getElementById('header-title').textContent = conversation.title;
+                updateSidebar();
+            }
+
+            chatInput.value = '';
+            sendBtn.disabled = true;
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            // Get response
+            setTimeout(async () => {
+                try {
+                    let response = '';
+                    
+                    if (currentModel === 'tuncer2026') {
+                        const result = await zekaMakinesi.konus(text);
+                        response = typeof result === 'object' ? (result.cevap || JSON.stringify(result)) : result;
+                    } else if (currentModel === 'tuncer2023') {
+                        // v2023 için SohbetBotu.cevapVer() metodunu kullan
+                        if (zekaMakinesi.SohbetBotu) {
+                            const bot = new zekaMakinesi.SohbetBotu();
+                            response = bot.cevapVer(text);
+                        } else {
+                            response = 'v2023 kütüphanesi düzgün yüklenemedi.';
+                        }
+                    } else {
+                        response = 'Kütüphane başlatılamadı.';
+                    }
+
+                    removeTypingIndicator();
+                    addMessageToUI(response, 'assistant');
+                    conversation.messages.push({ role: 'assistant', content: response });
+                    
+                } catch (error) {
+                    removeTypingIndicator();
+                    addMessageToUI(`❌ Hata: ${error.message}`, 'assistant');
+                    console.error('Hata:', error);
+                }
+                
+                localStorage.setItem('tuncer_conversations', JSON.stringify(conversations));
+                sendBtn.disabled = false;
+                chatInput.focus();
+            }, 800 + Math.random() * 400);
+        }
+
+        function addMessageToUI(content, role) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${role === 'user' ? 'user' : 'assistant'}`;
+            
+            const avatar = role === 'user' 
+                ? '<div class="message-avatar">👤</div>'
+                : '<div class="message-avatar">🧠</div>';
+            
+            messageDiv.innerHTML = `
+                ${avatar}
+                <div class="message-content">${escapeHtml(content)}</div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const typingDiv = document.createElement('div');
+            typingDiv.id = 'typing-indicator';
+            typingDiv.className = 'message assistant';
+            typingDiv.innerHTML = `
+                <div class="message-avatar">🧠</div>
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typing = document.getElementById('typing-indicator');
+            if (typing) typing.remove();
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        function selectModel() {
+            document.getElementById('model-modal').classList.add('active');
+        }
+
+        function selectModelVersion(version) {
+            currentModel = version;
+            if (initializeModel()) {
+                updateModelSelector();
+                document.getElementById('model-modal').classList.remove('active');
+                
+                // Update current conversation model
+                if (currentConversationId) {
+                    const conv = conversations.find(c => c.id === currentConversationId);
+                    if (conv) {
+                        conv.model = version;
+                        localStorage.setItem('tuncer_conversations', JSON.stringify(conversations));
+                    }
+                }
+            } else {
+                alert('⚠️ Seçilen sürüm yüklenemedi.');
+            }
+        }
+
+        function updateModelSelector() {
+            const selector = document.getElementById('model-selector');
+            selector.value = currentModel;
+            
+            document.querySelectorAll('.model-option').forEach(opt => {
+                opt.classList.remove('selected');
             });
-            document.getElementById(`conv-${id}`).classList.add('active');
-
-            currentConversationId = id;
-            // In a real app, you'd load the conversation history here
+            document.querySelector(`.model-option[onclick="selectModelVersion('${currentModel}')"]`)?.classList.add('selected');
         }
 
-        function loadConversationHistory() {
-            // In a real app, this would load from localStorage
-            console.log('Konuşma geçmişi yükleniyor...');
-        }
+        // ═══════════════════════════════════════════════════════════════
+        // BAŞLATMA
+        // ═══════════════════════════════════════════════════════════════
 
-        function getSimpleResponse(message) {
-            const msg = message.toLowerCase();
-
-            // Temel yanıtlar
-            if (msg.includes('merhaba') || msg.includes('selam')) {
-                return '👋 Merhaba! Ben Tuncer Zeka, Ahmet Tuncer tarafından geliştirilmiş bir yapay zeka sistemi. Size nasıl yardımcı olabilirim?\n\n**Yapabileceğim şeyler:**\n• Matematiksel hesaplamalar\n• Wikipedia\'dan bilgi arama\n• Şaka anlatma\n• Sohbet ve soru cevaplama';
+        window.addEventListener('load', () => {
+            if (initializeModel()) {
+                if (conversations.length > 0) {
+                    loadConversation(conversations[0].id);
+                } else {
+                    newChat();
+                }
+                updateSidebar();
+            } else {
+                addMessageToUI('⚠️ Kütüphaneler yüklenmedi. Lütfen tuncer2023.js ve tuncer2026.js dosyalarının aynı dizinde olduğundan emin olun.', 'assistant');
             }
+        });
 
-            if (msg.includes('kimsin') || msg.includes('nesin')) {
-                return '🧠 **Tuncer Zeka v2.0**\n\nBen, Ahmet Tuncer tarafından sıfırdan geliştirilen, tamamen yerli bir yapay zeka sistemi. Dış kütüphanelere bağımlılığım yok, saf JavaScript ile çalışıyorum.\n\n**Özelliklerim:**\n• Türkçe doğal dil işleme\n• Matematik problemlerini çözme\n• Web araması (Wikipedia)\n• Görsel analizi\n• Duygu analizi';
+        // Modal kapatma
+        document.getElementById('model-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'model-modal') {
+                e.target.classList.remove('active');
             }
+        });
 
-            if (msg.includes('şaka') || msg.includes('fıkra') || msg.includes('espri')) {
-                const jokes = [
-                    '😄 Bir yapay zeka neden terapiye gitti? Çünkü çok fazla "katmanı" vardı!',
-                    '🤖 Kaç yapay zeka mühendis gerekir bir ampulü değiştirmek için? Hiç, bu donanımcıların işi!',
-                    '💡 Yapay zeka bize neden pek fıkra anlatmaz? Çünkü mizahın "kontekstini" kavrayan sinir ağları hala eğitilmemiş!',
-                    '🧠 Bir yapay zeka neden iyi oyuncu olur? Çünkü her rol için yeni ağırlıkları ayarlayabilir!'
-                ];
-                return jokes[Math.floor(Math.random() * jokes.length)];
-            }
-
-            if (msg.includes('matematik') || msg.includes('hesapla') || msg.match(/\d+\s*[+\-*/]/)) {
-                return '🔢 Matematiksel bir soru sorduğunuz görülüyor, fakat cevap verebilmek için Tuncer Zeka kütüphaneleri tam yüklenmiş olmalı.\n\nLütfen sayfayı yenileyin veya doğru dosyaların yüklendiğinden emin olun.';
-            }
-
-            // Varsayılan yanıt
-            return '💭 Hmm, ilginç bir soru. Tuncer Zeka\'nın tam işlevselliğini kullanmak için tuncer2023.js ve tuncer2026.js dosyalarının doğru şekilde yüklenmiş olması gerekiyor.\n\nBaşka ne sormak istersiniz?';
-        }
-
-        function toggleSettings() {
-            alert('⚙️ Ayarlar paneli yakında eklenecek!');
-        }
-
-        function showMessage(text, type = 'info') {
-            const container = document.getElementById('messages-container');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `info-box ${type}`;
-            msgDiv.innerHTML = `<i class="fas fa-info-circle"></i> ${text}`;
-            container.appendChild(msgDiv);
-        }
-
-        function generateId() {
-            return '_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Ctrl+N for new chat
-            if (e.ctrlKey && e.key === 'n') {
-                e.preventDefault();
-                startNewChat();
-            }
+        // Auto-resize textarea
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
         });
     </script>
 </body>
