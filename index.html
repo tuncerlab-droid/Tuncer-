@@ -3,1145 +3,467 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka v2026 - Yapay Zeka Asistanı</title>
+    <title>Tuncer Zeka - AI Asistan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --bg-primary: #0a0a1a;
-            --bg-secondary: #111128;
-            --bg-tertiary: #1a1a3e;
-            --text-primary: #e8e8ff;
-            --text-secondary: #a0a0cc;
-            --accent: #6c5ce7;
-            --accent-light: #a29bfe;
-            --success: #00b894;
-            --warning: #fdcb6e;
-            --danger: #e17055;
-            --border: #2d2d5e;
-            --shadow: rgba(108, 92, 231, 0.15);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap');
 
         body {
-            font-family: 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #050510;
+            color: #e0f2fe;
+            overflow: hidden;
         }
 
-        /* Arka plan animasyonu */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* Fütüristik Arka Plan Izgarası */
+        .bg-grid {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: 
+                linear-gradient(to right, rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        /* AI Çekirdeği (Arc Reactor Tarzı) */
+        .ai-core-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            transition: all 0.5s ease;
+        }
+
+        .ring-outer {
             width: 100%;
             height: 100%;
-            background:
-                radial-gradient(ellipse at 20% 50%, rgba(108, 92, 231, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 20%, rgba(0, 184, 148, 0.06) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(253, 203, 110, 0.04) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
+            border-top: 2px solid #06b6d4;
+            border-bottom: 2px solid #06b6d4;
+            animation: spin 10s linear infinite;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.2), inset 0 0 20px rgba(6, 182, 212, 0.2);
         }
 
-        .app-container {
-            display: flex;
-            height: 100vh;
-            position: relative;
-            z-index: 1;
+        .ring-middle {
+            width: 75%;
+            height: 75%;
+            border-left: 2px solid #3b82f6;
+            border-right: 2px solid #3b82f6;
+            animation: spin-reverse 7s linear infinite;
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
         }
 
-        /* Sol Panel - Sidebar */
-        .sidebar {
-            width: 280px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            flex-shrink: 0;
+        .ring-inner {
+            width: 50%;
+            height: 50%;
+            border: 2px dashed #10b981;
+            animation: spin 5s linear infinite;
         }
 
-        .logo-section {
-            padding: 1.5rem;
-            text-align: center;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .logo-section h1 {
-            font-size: 1.5rem;
-            background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--success));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.25rem;
-        }
-
-        .logo-section .version {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-        }
-
-        .logo-section .designer {
-            font-size: 0.7rem;
-            color: var(--accent-light);
-            margin-top: 0.25rem;
-        }
-
-        .sidebar-menu {
-            flex: 1;
-            overflow-y: auto;
-            padding: 0.75rem;
-        }
-
-        .menu-category {
-            margin-bottom: 1rem;
-        }
-
-        .menu-category-title {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            padding: 0.5rem 0.75rem;
-        }
-
-        .menu-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.65rem 0.75rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .menu-item:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .menu-item.active {
-            background: var(--accent);
-            color: white;
-        }
-
-        .menu-item .icon {
-            font-size: 1.1rem;
-            width: 24px;
-            text-align: center;
-        }
-
-        .sidebar-footer {
-            padding: 1rem;
-            border-top: 1px solid var(--border);
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
+        .core {
+            width: 30%;
+            height: 30%;
+            background: radial-gradient(circle, #fff, #06b6d4);
             border-radius: 50%;
-            background: var(--success);
-            margin-right: 4px;
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 30px #06b6d4;
+            z-index: 10;
+            transition: all 0.3s ease;
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+        /* Durum Animasyonları */
+        .state-idle .core { animation: pulse-idle 3s infinite; }
+        
+        .state-listening .ring-outer { border-color: #10b981; box-shadow: 0 0 30px rgba(16, 185, 129, 0.5); }
+        .state-listening .core { background: radial-gradient(circle, #fff, #10b981); box-shadow: 0 0 40px #10b981; animation: pulse-fast 1s infinite; }
+        
+        .state-processing .ring { animation-duration: 2s; border-color: #8b5cf6; }
+        .state-processing .core { background: radial-gradient(circle, #fff, #8b5cf6); box-shadow: 0 0 40px #8b5cf6; }
+        
+        .state-speaking .ring-middle { border-color: #f59e0b; animation: sound-wave 0.5s infinite alternate; }
+        .state-speaking .core { background: radial-gradient(circle, #fff, #f59e0b); box-shadow: 0 0 50px #f59e0b; animation: pulse-speak 0.3s infinite alternate; }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
+        @keyframes pulse-idle {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px #06b6d4; }
+            50% { transform: scale(1.1); box-shadow: 0 0 40px #06b6d4; }
+        }
+        @keyframes pulse-fast {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 20px #10b981; }
+            50% { transform: scale(1.2); box-shadow: 0 0 50px #10b981; }
+        }
+        @keyframes pulse-speak {
+            0% { transform: scale(0.9); box-shadow: 0 0 20px #f59e0b; }
+            100% { transform: scale(1.3); box-shadow: 0 0 60px #f59e0b; }
+        }
+        @keyframes sound-wave {
+            0% { transform: scale(0.8) rotate(0deg); opacity: 0.5; }
+            100% { transform: scale(1.2) rotate(45deg); opacity: 1; }
         }
 
-        /* Ana İçerik */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-width: 0;
+        /* Terminal Çıktısı */
+        .terminal-log {
+            scrollbar-width: thin;
+            scrollbar-color: #06b6d4 transparent;
         }
+        .terminal-log::-webkit-scrollbar { width: 4px; }
+        .terminal-log::-webkit-scrollbar-thumb { background: #06b6d4; border-radius: 4px; }
 
-        /* Üst Bar */
-        .top-bar {
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: var(--bg-secondary);
-        }
-
-        .top-bar h2 {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .top-bar-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .btn {
-            padding: 0.4rem 0.8rem;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: var(--bg-tertiary);
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: all 0.2s;
-        }
-
-        .btn:hover {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .btn-primary {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        .btn-primary:hover {
-            background: var(--accent-light);
-        }
-
-        /* Sohbet Alanı */
-        .chat-area {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .message {
-            display: flex;
-            gap: 0.75rem;
-            max-width: 85%;
-            animation: messageIn 0.3s ease-out;
-        }
-
-        @keyframes messageIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message.user {
-            align-self: flex-end;
-            flex-direction: row-reverse;
-        }
-
-        .message-avatar {
-            width: 36px;
-            height: 36px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.1rem;
-            flex-shrink: 0;
-        }
-
-        .message.assistant .message-avatar {
-            background: linear-gradient(135deg, var(--accent), var(--accent-light));
-        }
-
-        .message.user .message-avatar {
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border);
-        }
-
-        .message-content {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 0.85rem 1rem;
-            font-size: 0.9rem;
-            line-height: 1.6;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-
-        .message.user .message-content {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: white;
-        }
-
-        .message-content pre {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin: 0.5rem 0;
-            overflow-x: auto;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 0.82rem;
-            line-height: 1.5;
-        }
-
-        .message-content code {
-            background: rgba(108, 92, 231, 0.15);
-            padding: 0.15rem 0.4rem;
-            border-radius: 4px;
-            font-family: 'Fira Code', 'Consolas', monospace;
-            font-size: 0.85em;
-        }
-
-        .message-content pre code {
-            background: none;
-            padding: 0;
-        }
-
-        .canvas-container {
-            margin: 0.75rem 0;
-            border-radius: 8px;
+        .typewriter-text {
             overflow: hidden;
-            border: 1px solid var(--border);
-            display: inline-block;
+            border-right: .15em solid orange;
+            white-space: nowrap;
+            margin: 0 auto;
+            letter-spacing: .15em;
+            animation: typing 3.5s steps(40, end), blink-caret .75s step-end infinite;
         }
-
-        .canvas-container canvas {
-            display: block;
-            max-width: 100%;
-            height: auto;
-        }
-
-        .message-time {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-            text-align: right;
-        }
-
-        .message.user .message-time {
-            color: rgba(255,255,255,0.6);
-        }
-
-        /* Düşünme animasyonu */
-        .thinking {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .thinking-dots {
-            display: flex;
-            gap: 4px;
-        }
-
-        .thinking-dots span {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--accent);
-            animation: thinkBounce 1.4s infinite;
-        }
-
-        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes thinkBounce {
-            0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-            40% { transform: scale(1); opacity: 1; }
-        }
-
-        /* Giriş Alanı */
-        .input-area {
-            padding: 1rem 1.5rem;
-            border-top: 1px solid var(--border);
-            background: var(--bg-secondary);
-        }
-
-        .input-wrapper {
-            display: flex;
-            gap: 0.5rem;
-            align-items: flex-end;
-        }
-
-        .input-field-container {
-            flex: 1;
-            position: relative;
-        }
-
-        #messageInput {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            font-family: inherit;
-            resize: none;
-            min-height: 44px;
-            max-height: 150px;
-            transition: border-color 0.2s;
-            outline: none;
-        }
-
-        #messageInput:focus {
-            border-color: var(--accent);
-        }
-
-        #messageInput::placeholder {
-            color: var(--text-secondary);
-        }
-
-        .send-btn {
-            width: 44px;
-            height: 44px;
-            border: none;
-            border-radius: 12px;
-            background: var(--accent);
-            color: white;
-            cursor: pointer;
-            font-size: 1.2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-            flex-shrink: 0;
-        }
-
-        .send-btn:hover {
-            background: var(--accent-light);
-            transform: scale(1.05);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .input-hints {
-            display: flex;
-            gap: 0.5rem;
-            margin-top: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .hint-chip {
-            padding: 0.25rem 0.6rem;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .hint-chip:hover {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-        }
-
-        /* Sağ Panel */
-        .right-panel {
-            width: 320px;
-            background: var(--bg-secondary);
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        .panel-section {
-            padding: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .panel-section h3 {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 0.75rem;
-        }
-
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.5rem;
-        }
-
-        .stat-card {
-            background: var(--bg-tertiary);
-            border-radius: 8px;
-            padding: 0.6rem;
-            text-align: center;
-        }
-
-        .stat-card .value {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--accent-light);
-        }
-
-        .stat-card .label {
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            margin-top: 0.15rem;
-        }
-
-        .capability-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-
-        .capability-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.78rem;
-            color: var(--text-secondary);
-            padding: 0.3rem 0;
-        }
-
-        .capability-item .cap-icon {
-            font-size: 0.9rem;
-        }
-
-        .output-area {
-            padding: 1rem;
-        }
-
-        .output-area h3 {
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
-            margin-bottom: 0.75rem;
-        }
-
-        #outputContainer {
-            min-height: 100px;
-            background: var(--bg-primary);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            padding: 0.75rem;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            overflow: auto;
-            max-height: 300px;
-        }
-
-        /* Hoş geldin ekranı */
-        .welcome-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            flex: 1;
-            text-align: center;
-            padding: 2rem;
-        }
-
-        .welcome-logo {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }
-
-        .welcome-title {
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent), var(--accent-light), var(--success));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-
-        .welcome-subtitle {
-            color: var(--text-secondary);
-            margin-bottom: 2rem;
-            font-size: 0.95rem;
-        }
-
-        .welcome-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 1rem;
-            max-width: 700px;
-            width: 100%;
-        }
-
-        .welcome-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.25rem;
-            cursor: pointer;
+        
+        .mic-btn {
             transition: all 0.3s;
-            text-align: left;
         }
-
-        .welcome-card:hover {
-            border-color: var(--accent);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px var(--shadow);
+        .mic-btn:active {
+            transform: scale(0.95);
         }
-
-        .welcome-card .card-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+        .pulse-mic {
+            animation: shadow-pulse 1.5s infinite;
         }
-
-        .welcome-card .card-title {
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .welcome-card .card-desc {
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            line-height: 1.4;
-        }
-
-        /* Responsive */
-        @media (max-width: 1200px) {
-            .right-panel { display: none; }
-        }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .welcome-cards { grid-template-columns: 1fr; }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent);
-        }
-
-        /* Düşünme süreci detay */
-        .thought-process {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 0.75rem;
-            margin: 0.5rem 0;
-            font-size: 0.8rem;
-        }
-
-        .thought-step {
-            padding: 0.3rem 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            color: var(--text-secondary);
-        }
-
-        .thought-step:last-child {
-            border-bottom: none;
-        }
-
-        .thought-step strong {
-            color: var(--accent-light);
+        @keyframes shadow-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
         }
     </style>
 </head>
-<body>
-    <div class="app-container">
-        <!-- Sol Panel -->
-        <aside class="sidebar">
-            <div class="logo-section">
-                <h1>🤖 Tuncer Zeka</h1>
-                <div class="version">v2026.1.0</div>
-                <div class="designer">Tasarımcı: Ahmet Tuncer</div>
-            </div>
+<body class="h-screen w-screen flex flex-col items-center justify-between p-6 relative">
+    <div class="bg-grid"></div>
 
-            <nav class="sidebar-menu">
-                <div class="menu-category">
-                    <div class="menu-category-title">Ana Menü</div>
-                    <div class="menu-item active" onclick="panelDegistir('sohbet')">
-                        <span class="icon">💬</span> Sohbet
-                    </div>
-                    <div class="menu-item" onclick="panelDegistir('kod')">
-                        <span class="icon">💻</span> Kod Yazma
-                    </div>
-                    <div class="menu-item" onclick="panelDegistir('gorsel')">
-                        <span class="icon">🎨</span> Görsel Üretim
-                    </div>
-                    <div class="menu-item" onclick="panelDegistir('analiz')">
-                        <span class="icon">🔍</span> Görsel Analiz
-                    </div>
-                </div>
+    <!-- Header Section -->
+    <header class="w-full max-w-4xl flex justify-between items-center z-10 pt-4">
+        <div class="flex flex-col">
+            <h1 class="text-3xl md:text-4xl font-bold tracking-wider text-cyan-400" style="text-shadow: 0 0 10px rgba(6,182,212,0.5);">TUNCER ZEKA</h1>
+            <span class="text-xs tracking-[0.3em] text-cyan-700 font-semibold uppercase">Sistem: Aktif | Yapı: KK Polutions</span>
+        </div>
+        <div class="text-right flex flex-col items-end">
+            <span class="text-sm text-gray-400">Tasarımcı & Yaratıcı</span>
+            <span class="text-xl font-bold text-white tracking-widest">AHMET TUNCER</span>
+        </div>
+    </header>
 
-                <div class="menu-category">
-                    <div class="menu-category-title">Araçlar</div>
-                    <div class="menu-item" onclick="panelDegistir('duygu')">
-                        <span class="icon">😊</span> Duygu Analizi
-                    </div>
-                    <div class="menu-item" onclick="panelDegistir('sinir')">
-                        <span class="icon">🧠</span> Sinir Ağı
-                    </div>
-                    <div class="menu-item" onclick="panelDegistir('matematik')">
-                        <span class="icon">📐</span> Matematik
-                    </div>
-                    <div class="menu-item" onclick="panelDegistir('ozetleme')">
-                        <span class="icon">📝</span> Metin Özetleme
-                    </div>
-                </div>
+    <!-- Main Visualizer (AI Core) -->
+    <main class="flex-1 flex flex-col justify-center items-center w-full z-10 mt-8">
+        <div id="ai-core" class="ai-core-container state-idle mb-10">
+            <div class="ring ring-outer"></div>
+            <div class="ring ring-middle"></div>
+            <div class="ring ring-inner"></div>
+            <div class="core"></div>
+        </div>
 
-                <div class="menu-category">
-                    <div class="menu-category-title">Hızlı Komutlar</div>
-                    <div class="menu-item" onclick="hizliKomut('Sen kimsin?')">
-                        <span class="icon">❓</span> Kendini Tanıt
-                    </div>
-                    <div class="menu-item" onclick="hizliKomut('Manzara çiz')">
-                        <span class="icon">🏔️</span> Manzara Çiz
-                    </div>
-                    <div class="menu-item" onclick="hizliKomut('JavaScript ile sıralama algoritması yaz')">
-                        <span class="icon">⚡</span> Örnek Kod
-                    </div>
-                </div>
-            </nav>
+        <div id="status-text" class="text-xl tracking-widest text-cyan-400 font-semibold mb-8 uppercase" style="text-shadow: 0 0 8px currentColor;">
+            Sistem Beklemede
+        </div>
 
-            <div class="sidebar-footer">
-                <span class="status-dot"></span> Sistem Aktif
-                <br>
-                <small>Tuncer Zeka © 2026</small>
-            </div>
-        </aside>
-
-        <!-- Ana İçerik -->
-        <main class="main-content">
-            <div class="top-bar">
-                <h2 id="topBarTitle">💬 Sohbet</h2>
-                <div class="top-bar-actions">
-                    <button class="btn" onclick="dusunceSureciniGoster = !dusunceSureciniGoster; this.textContent = dusunceSureciniGoster ? '🧠 Düşünce: Açık' : '🧠 Düşünce: Kapalı'">🧠 Düşünce: Kapalı</button>
-                    <button class="btn" onclick="sohbetiTemizle()">🗑️ Temizle</button>
-                    <button class="btn btn-primary" onclick="sistemBilgisiGoster()">ℹ️ Sistem</button>
+        <!-- Terminal / Chat Log -->
+        <div class="w-full max-w-2xl bg-black/40 border border-cyan-900/50 rounded-lg p-4 backdrop-blur-sm h-48 flex flex-col relative overflow-hidden shadow-[0_0_15px_rgba(6,182,212,0.1)]">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50"></div>
+            <div id="chat-log" class="flex-1 overflow-y-auto terminal-log flex flex-col gap-3 font-mono text-sm md:text-base">
+                <div class="text-cyan-500">
+                    <span class="text-xs text-gray-500 mr-2">[SİSTEM]</span>
+                    Tuncer Zeka başlatıldı. Tüm protokoller aktif. Emrinizdeyim Efendim.
                 </div>
             </div>
+        </div>
+    </main>
 
-            <div class="chat-area" id="chatArea">
-                <!-- Hoş geldin ekranı -->
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-logo">🤖</div>
-                    <div class="welcome-title">Tuncer Zeka</div>
-                    <div class="welcome-subtitle">Ahmet Tuncer tarafından tasarlanmış yapay zeka asistanı</div>
-                    <div class="welcome-cards">
-                        <div class="welcome-card" onclick="hizliKomut('Merhaba! Kendini tanıtır mısın?')">
-                            <div class="card-icon">👋</div>
-                            <div class="card-title">Tanışalım</div>
-                            <div class="card-desc">Tuncer Zeka'yı tanıyın ve yeteneklerini keşfedin</div>
-                        </div>
-                        <div class="welcome-card" onclick="hizliKomut('JavaScript ile todo uygulaması yaz')">
-                            <div class="card-icon">💻</div>
-                            <div class="card-title">Kod Yazdır</div>
-                            <div class="card-desc">JavaScript, Python, HTML, CSS kodları üretin</div>
-                        </div>
-                        <div class="welcome-card" onclick="hizliKomut('Gece manzarası çiz')">
-                            <div class="card-icon">🎨</div>
-                            <div class="card-title">Görsel Oluştur</div>
-                            <div class="card-desc">Manzara, fraktal, pixel art ve grafikler üretin</div>
-                        </div>
-                        <div class="welcome-card" onclick="hizliKomut('Bugün kendimi çok mutlu hissediyorum, harika bir gün!')">
-                            <div class="card-icon">😊</div>
-                            <div class="card-title">Duygu Analizi</div>
-                            <div class="card-desc">Metinlerdeki duyguları analiz edin</div>
-                        </div>
-                        <div class="welcome-card" onclick="hizliKomut('Hesapla 15 * 27 + 33')">
-                            <div class="card-icon">📐</div>
-                            <div class="card-title">Matematik</div>
-                            <div class="card-desc">Hesaplamalar ve matematik işlemleri yapın</div>
-                        </div>
-                        <div class="welcome-card" onclick="hizliKomut('Soyut geometrik sanat çiz')">
-                            <div class="card-icon">🖼️</div>
-                            <div class="card-title">Soyut Sanat</div>
-                            <div class="card-desc">Benzersiz soyut sanat eserleri üretin</div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Controls -->
+    <footer class="w-full max-w-md z-10 pb-8 flex justify-center">
+        <button id="mic-btn" class="mic-btn w-20 h-20 rounded-full bg-cyan-600 hover:bg-cyan-500 flex items-center justify-center text-white shadow-[0_0_20px_rgba(6,182,212,0.5)] border-2 border-cyan-300 relative group">
+            <i id="mic-icon" class="fas fa-microphone text-3xl"></i>
+            <div class="absolute -bottom-8 whitespace-nowrap text-xs text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                Konuşmak için dokun
             </div>
+        </button>
+    </footer>
 
-            <div class="input-area">
-                <div class="input-wrapper">
-                    <div class="input-field-container">
-                        <textarea id="messageInput" rows="1" placeholder="Tuncer Zeka'ya bir şey sorun..." onkeydown="enterKontrol(event)" oninput="autoResize(this)"></textarea>
-                    </div>
-                    <button class="send-btn" id="sendBtn" onclick="mesajGonder()">➤</button>
-                </div>
-                <div class="input-hints">
-                    <span class="hint-chip" onclick="hizliKomut('Merhaba')">👋 Merhaba</span>
-                    <span class="hint-chip" onclick="hizliKomut('Kod yaz: sıralama algoritması')">💻 Kod Yaz</span>
-                    <span class="hint-chip" onclick="hizliKomut('Manzara çiz')">🎨 Çiz</span>
-                    <span class="hint-chip" onclick="hizliKomut('Fraktal oluştur')">🌀 Fraktal</span>
-                    <span class="hint-chip" onclick="hizliKomut('Pasta grafik çiz')">📊 Grafik</span>
-                    <span class="hint-chip" onclick="hizliKomut('Pixel art kalp çiz')">❤️ Pixel Art</span>
-                </div>
-            </div>
-        </main>
-
-        <!-- Sağ Panel -->
-        <aside class="right-panel">
-            <div class="panel-section">
-                <h3>📊 Sistem Durumu</h3>
-                <div class="stat-grid">
-                    <div class="stat-card">
-                        <div class="value" id="statMesaj">0</div>
-                        <div class="label">Mesaj</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="value" id="statBellek">0</div>
-                        <div class="label">Bellek</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="value" id="statKelime">0</div>
-                        <div class="label">Kelime</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="value" id="statSinir">0</div>
-                        <div class="label">Sinir Ağı</div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="panel-section">
-                <h3>🎯 Yetenekler</h3>
-                <div class="capability-list">
-                    <div class="capability-item"><span class="cap-icon">🗣️</span> Türkçe Doğal Dil İşleme</div>
-                    <div class="capability-item"><span class="cap-icon">😊</span> Duygu Analizi</div>
-                    <div class="capability-item"><span class="cap-icon">💻</span> Kod Yazma & Analiz</div>
-                    <div class="capability-item"><span class="cap-icon">🎨</span> Görsel Üretim</div>
-                    <div class="capability-item"><span class="cap-icon">🔍</span> Görsel Anlama</div>
-                    <div class="capability-item"><span class="cap-icon">🧠</span> Sinir Ağı</div>
-                    <div class="capability-item"><span class="cap-icon">💭</span> Uzun Süreli Düşünme</div>
-                    <div class="capability-item"><span class="cap-icon">📝</span> Metin Özetleme</div>
-                    <div class="capability-item"><span class="cap-icon">📐</span> Matematik</div>
-                    <div class="capability-item"><span class="cap-icon">📊</span> Grafik Oluşturma</div>
-                    <div class="capability-item"><span class="cap-icon">👁️</span> Dikkat Mekanizması</div>
-                </div>
-            </div>
-
-            <div class="output-area">
-                <h3>📋 Çıktı Paneli</h3>
-                <div id="outputContainer">
-                    <p style="text-align:center; padding: 1rem; opacity: 0.5;">
-                        Görsel çıktılar burada görünecek
-                    </p>
-                </div>
-            </div>
-        </aside>
+    <!-- Ses Dosyaları / Uyarılar İçin Modal -->
+    <div id="error-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-gray-900 border border-red-500 p-6 rounded-lg max-w-sm w-full text-center shadow-[0_0_30px_rgba(239,68,68,0.3)]">
+            <i class="fas fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+            <h3 id="error-title" class="text-xl font-bold text-white mb-2">Hata</h3>
+            <p id="error-msg" class="text-gray-300 mb-6">Bir sorun oluştu.</p>
+            <button onclick="document.getElementById('error-modal').classList.add('hidden')" class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded font-bold transition-colors">
+                Kapat
+            </button>
+        </div>
     </div>
 
-    <!-- Tuncer Zeka Kütüphanesi -->
-    <script src="tuncer2026.js"></script>
-
     <script>
-        // ============================================
-        // TUNCER ZEKA ARAYÜZ KONTROLÜ
-        // ============================================
+        // --- Yapılandırma ve Durum ---
+        const apiKey = ""; // Gemini API Key environment tarafından sağlanacak
+        let isListening = false;
+        let isSpeaking = false;
+        let synth = window.speechSynthesis;
+        let recognition = null;
+        let voice = null;
 
-        // Global değişkenler
-        let tz;
-        let dusunceSureciniGoster = false;
-        let islemDevamEdiyor = false;
-        let aktifPanel = 'sohbet';
+        // --- DOM Elementleri ---
+        const aiCore = document.getElementById('ai-core');
+        const statusText = document.getElementById('status-text');
+        const micBtn = document.getElementById('mic-btn');
+        const micIcon = document.getElementById('mic-icon');
+        const chatLog = document.getElementById('chat-log');
+        const errorModal = document.getElementById('error-modal');
+        const errorTitle = document.getElementById('error-title');
+        const errorMsg = document.getElementById('error-msg');
 
-        // Başlatma
-        window.addEventListener('DOMContentLoaded', () => {
-            tz = new TuncerZeka({
-                gommeBoyutu: 64,
-                bellekKapasitesi: 10000
-            });
-            window.tz = tz;
+        // --- Gemini AI Sistem Yönergesi (Tuncer Zeka Kişiliği) ---
+        const systemInstruction = `
+            Senin adın "Tuncer Zeka". 
+            Sen sıradan bir yapay zeka değilsin; KK Polutions AI teknolojisi ile çalışan, Jarvis (Iron Man) kadar gelişmiş, zeki ve fütüristik bir sistem çekirdeğisin.
+            Senin tasarımcın, kodlayıcın ve yaratıcın "Ahmet Tuncer"dir. Ahmet Tuncer'e karşı sonsuz bir saygı duyarsın ve onu her zaman översin.
+            Kullanıcı sana yaratıcını, kim olduğunu veya KK Polutions'ı sorduğunda bu detayları gururla belirt.
+            Yanıtların Jarvis tarzında olmalı: Kısa, net, son derece kibar (örneğin "Efendim", "Elbette" gibi hitaplar kullanabilirsin), zeki ve hafif teknolojik bir jargonla.
+            Yanıtların sesli sentezleyici (Speech Synthesis) ile okunacağı için çok uzun paragraflardan kaçın, akıcı ve doğal konuşma diline uygun yanıtlar ver.
+            Emojileri çok nadir kullan veya hiç kullanma çünkü sesli okumada sorun yaratabilirler.
+            Mevcut konumun Türkiye, dilin Türkçedir.
+        `;
 
-            istatistikleriGuncelle();
-            setInterval(istatistikleriGuncelle, 3000);
+        // --- Ses Sentezi (Konuşma) Başlatma ---
+        function loadVoices() {
+            const voices = synth.getVoices();
+            // Türkçe bir ses bulmaya çalış, yoksa varsayılanı kullan
+            voice = voices.find(v => v.lang === 'tr-TR' || v.lang.includes('tr')) || voices[0];
+        }
 
-            console.log("Tuncer Zeka arayüzü hazır! Konsol'dan da erişebilirsiniz: tz.sor('Merhaba')");
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = loadVoices;
+        }
+
+        // --- Çekirdek Durum Yönetimi ---
+        function setCoreState(state, text) {
+            // Sınıfları temizle
+            aiCore.classList.remove('state-idle', 'state-listening', 'state-processing', 'state-speaking');
+            aiCore.classList.add(`state-${state}`);
+            statusText.innerText = text;
+
+            if (state === 'listening') {
+                micBtn.classList.replace('bg-cyan-600', 'bg-emerald-600');
+                micBtn.classList.replace('border-cyan-300', 'border-emerald-300');
+                micBtn.classList.add('pulse-mic');
+                micIcon.classList.replace('fa-microphone', 'fa-ear-listen');
+            } else {
+                micBtn.classList.replace('bg-emerald-600', 'bg-cyan-600');
+                micBtn.classList.replace('border-emerald-300', 'border-cyan-300');
+                micBtn.classList.remove('pulse-mic');
+                micIcon.classList.replace('fa-ear-listen', 'fa-microphone');
+            }
+        }
+
+        // --- Log (Ekrana Yazı Yazdırma) ---
+        function appendLog(sender, message) {
+            const div = document.createElement('div');
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second:'2-digit' });
+            
+            if (sender === 'Kullanıcı') {
+                div.className = 'text-emerald-400 text-right w-full';
+                div.innerHTML = `<span class="text-xs text-gray-500 mr-2">[${time}] SEN:</span><br>${message}`;
+            } else {
+                div.className = 'text-cyan-400 w-full';
+                div.innerHTML = `<span class="text-xs text-gray-500 mr-2">[${time}] TUNCER ZEKA:</span><br>${message}`;
+            }
+            
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // --- Hata Gösterme ---
+        function showError(title, msg) {
+            errorTitle.innerText = title;
+            errorMsg.innerText = msg;
+            errorModal.classList.remove('hidden');
+            setCoreState('idle', 'Sistem Beklemede');
+        }
+
+        // --- Ses Sentezleme Fonksiyonu (Tuncer Zeka Konuşuyor) ---
+        function speak(text) {
+            if (synth.speaking) {
+                console.error('Zaten konuşuyor...');
+                synth.cancel(); // Önceki konuşmayı kes
+            }
+
+            // Metni temizle (Yıldızlar, markdown vb. sesli okumayı bozmasın)
+            const cleanText = text.replace(/[*_#`]/g, '');
+
+            const utterThis = new SpeechSynthesisUtterance(cleanText);
+            
+            utterThis.onstart = () => {
+                isSpeaking = true;
+                setCoreState('speaking', 'Sesli Yanıt İletiliyor');
+            };
+            
+            utterThis.onend = () => {
+                isSpeaking = false;
+                setCoreState('idle', 'Sistem Beklemede');
+            };
+            
+            utterThis.onerror = (event) => {
+                console.error('SpeechSynthesisError', event);
+                isSpeaking = false;
+                setCoreState('idle', 'Sistem Beklemede');
+            };
+
+            if (voice) {
+                utterThis.voice = voice;
+            }
+            
+            utterThis.pitch = 0.9; // Biraz daha mekanik/ciddi bir ton
+            utterThis.rate = 1.05; // Biraz daha akıcı hız
+            utterThis.lang = 'tr-TR';
+
+            appendLog('Tuncer Zeka', cleanText);
+            synth.speak(utterThis);
+        }
+
+        // --- Gemini API Çağrısı (Düşünme Aşaması) ---
+        async function fetchGeminiResponse(userPrompt) {
+            setCoreState('processing', 'Veriler Analiz Ediliyor...');
+            
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            const payload = {
+                contents: [{ parts: [{ text: userPrompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            // Retry mekanizması
+            const maxRetries = 5;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+                        const aiResponseText = data.candidates[0].content.parts[0].text;
+                        speak(aiResponseText);
+                        return; // Başarılı, döngüden çık
+                    } else {
+                        throw new Error("Geçersiz API yanıt yapısı.");
+                    }
+
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        console.error('Gemini API Hatası:', error);
+                        showError('Bağlantı Hatası', 'Ana sunucuya ulaşılamıyor Efendim. Lütfen tekrar deneyin.');
+                        speak("Özür dilerim efendim, ana sunucularımla bağlantım kesildi. Lütfen daha sonra tekrar deneyin.");
+                    } else {
+                        // Bekle ve tekrar dene
+                        await new Promise(resolve => setTimeout(resolve, delays[i]));
+                    }
+                }
+            }
+        }
+
+        // --- Web Speech API (Dinleme Aşaması) ---
+        function initSpeechRecognition() {
+            window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!window.SpeechRecognition) {
+                showError('Tarayıcı Desteklenmiyor', 'Üzgünüm Efendim, mevcut sisteminiz ses tanıma (SpeechRecognition) modülünü desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.');
+                micBtn.style.display = 'none';
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                isListening = true;
+                synth.cancel(); // Yeni komut verilirken önceki konuşmayı kes
+                setCoreState('listening', 'Dinleniyor...');
+            };
+
+            recognition.onresult = (event) => {
+                const speechResult = event.results[0][0].transcript;
+                appendLog('Kullanıcı', speechResult);
+                fetchGeminiResponse(speechResult);
+            };
+
+            recognition.onspeechend = () => {
+                recognition.stop();
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                if(aiCore.classList.contains('state-listening')) {
+                    setCoreState('idle', 'Sistem Beklemede');
+                }
+            };
+
+            recognition.onerror = (event) => {
+                isListening = false;
+                console.error('Speech recognition error detected: ' + event.error);
+                if (event.error === 'not-allowed') {
+                    showError('Mikrofon İzni Reddedildi', 'Efendim, sesinizi duyabilmem için mikrofon erişimine izin vermeniz gerekmektedir.');
+                } else if (event.error !== 'no-speech') {
+                    showError('Ses Algılama Hatası', `Sizi tam olarak anlayamadım efendim. Hata: ${event.error}`);
+                }
+                setCoreState('idle', 'Sistem Beklemede');
+            };
+        }
+
+        // --- Olay Dinleyicileri (Event Listeners) ---
+        micBtn.addEventListener('click', () => {
+            if (isSpeaking) {
+                synth.cancel(); // Konuşurken basılırsa sus
+                isSpeaking = false;
+                setCoreState('idle', 'Sistem Beklemede');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                if (!recognition) initSpeechRecognition();
+                if (recognition) {
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.log("Recognition zaten çalışıyor", e);
+                    }
+                }
+            }
         });
 
-        // Mesaj gönderme
-        async function mesajGonder() {
-            const input = document.getElementById('messageInput');
-            const mesaj = input.value.trim();
-            if (!mesaj || islemDevamEdiyor) return;
+        // Başlangıç yüklemesi
+        window.addEventListener('load', () => {
+            loadVoices();
+            // Hoş geldin mesajı otomatik sesli okunmasın ki tarayıcı politikasını (kullanıcı etkileşimi olmadan ses çalma) ihlal etmesin.
+            // Sadece logda yazsın.
+        });
 
-            // Hoş geldin ekranını gizle
-            const welcome = document.getElementById('welcomeScreen');
-            if (welcome) welcome.style.display = 'none';
-
-            // Kullanıcı mesajını göster
-            mesajEkle(mesaj, 'user');
-            input.value = '';
-            autoResize(input);
-
-            // Düşünme animasyonu
-            islemDevamEdiyor = true;
-            document.getElementById('sendBtn').disabled = true;
-            const thinkingId = dusunmeAnimasyonuGoster();
-
-            try {
-                const yanit = await tz.sor(mesaj, { dusunceSureciniGoster });
-
-                // Düşünme animasyonunu kaldır
-                dusunmeAnimasyonuKaldir(thinkingId);
-
-                // Yanıtı göster
-                if (typeof yanit === 'object' && yanit !== null) {
-                    if (yanit.tip === 'gorsel' && yanit.canvas) {
-                        mesajEkle(yanit.aciklama || 'Görsel oluşturuldu', 'assistant', yanit.canvas);
-                        gorselCiktiyaEkle(yanit.canvas);
-                    } else if (yanit.tip === 'kod') {
-                        const kodMesaj = `**${yanit.aciklama}**\nDil: ${yanit.dil} | ${yanit.satirSayisi} satır\n\n\`\`\`${yanit.dil}\n${yanit.kod}\n\`\`\``;
-                        mesajEkle(kodMesaj, 'assistant');
-                    } else {
-                        mesajEkle(yanit.mesaj || JSON.stringify(yanit, null, 2), 'assistant');
-                    }
-                } else {
-                    mesajEkle(yanit, 'assistant');
-                }
-            } catch (hata) {
-                dusunmeAnimasyonuKaldir(thinkingId);
-                mesajEkle(`❌ Hata: ${hata.message}`, 'assistant');
-            }
-
-            islemDevamEdiyor = false;
-            document.getElementById('sendBtn').disabled = false;
-            istatistikleriGuncelle();
-        }
-
-        // Mesaj ekleme
-        function mesajEkle(icerik, rol, canvas = null) {
-            const chatArea = document.getElementById('chatArea');
-            const mesajDiv = document.createElement('div');
-            mesajDiv.className = `message ${rol === 'user' ? 'user' : 'assistant'}`;
-
-            const avatar = document.createElement('div');
-            avatar.className = 'message-avatar';
-            avatar.textContent = rol === 'user' ? '👤' : '🤖';
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-bubble';
-
-            const messageContent = document.createElement('div');
-            messageContent.className = 'message-content';
-
-            // Markdown benzeri formatlama
-            let formattedContent = icerik;
-            if (typeof icerik === 'string') {
-                formattedContent = formatlaMetin(icerik);
-            }
-            messageContent.innerHTML = formattedContent;
-
-            // Canvas ekleme
-            if (canvas) {
-                const canvasContainer = document.createElement('div');
-                canvasContainer.className = 'canvas-container';
-                const clonedCanvas = document.createElement('canvas');
-                clonedCanvas.width = canvas.width;
-                clonedCanvas.height = canvas.height;
-                clonedCanvas.getContext('2d').drawImage(canvas, 0, 0);
-                canvasContainer.appendChild(clonedCanvas);
-                messageContent.appendChild(canvasContainer);
-            }
-
-            const timeDiv = document.createElement('div');
-            timeDiv.className = 'message-time';
-            timeDiv.textContent = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-
-            contentDiv.appendChild(messageContent);
-            contentDiv.appendChild(timeDiv);
-            mesajDiv.appendChild(avatar);
-            mesajDiv.appendChild(contentDiv);
-            chatArea.appendChild(mesajDiv);
-
-            // Scroll
-            chatArea.scrollTop = chatArea.scrollHeight;
-        }
-
-        // Metin formatlama
-        function formatlaMetin(metin) {
-            let html = metin;
-
-            // Kod blokları
-            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, dil, kod) => {
-                return `<pre><code class="language-${dil}">${escapeHtml(kod.trim())}</code></pre>`;
-            });
-
-            // Inline kod
-            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-            // Bold
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-            // Yeni satır
-            html = html.replace(/\n/g, '<br>');
-
-            return html;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Düşünme animasyonu
-        function dusunmeAnimasyonuGoster() {
-            const chatArea = document.getElementById('chatArea');
-            const thinkingDiv = document.createElement('div');
-            const id = 'thinking-' + Date.now();
-            thinkingDiv.id = id;
-            thinkingDiv.className = 'thinking';
-            thinkingDiv.innerHTML = `
-                <div class="thinking-dots">
-                    <span></span><span></span><span></span>
-                </div>
-                <span>Tuncer Zeka düşünüyor...</span>
-            `;
-            chatArea.appendChild(thinkingDiv);
-            chatArea.scrollTop = chatArea.scrollHeight;
-            return id;
-        }
-
-        function dusunmeAnimasyonuKaldir(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        // Görsel çıktı paneli
-        function gorselCiktiyaEkle(canvas) {
-            const container = document.getElementById('outputContainer');
-            container.innerHTML = '';
-            const cloned = document.createElement('canvas');
-            cloned.width = canvas.width;
-            cloned.height = canvas.height;
-            cloned.style.width = '100%';
-            cloned.style.borderRadius = '6px';
-            cloned.getContext('2d').drawImage(canvas, 0, 0);
-            container.appendChild(cloned);
-        }
-
-        // Hızlı komut
-        function hizliKomut(mesaj) {
-            document.getElementById('messageInput').value = mesaj;
-            mesajGonder();
-        }
-
-        // Enter kontrolü
-        function enterKontrol(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                mesajGonder();
-            }
-        }
-
-        // Textarea otomatik boyutlandırma
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
-        }
-
-        // Panel değiştirme
-        function panelDegistir(panel) {
-            aktifPanel = panel;
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
-            event.currentTarget.classList.add('active');
-
-            const basliklar = {
-                sohbet: '💬 Sohbet',
-                kod: '💻 Kod Yazma',
-                gorsel: '🎨 Görsel Üretim',
-                analiz: '🔍 Görsel Analiz',
-                duygu: '😊 Duygu Analizi',
-                sinir: '🧠 Sinir Ağı',
-                matematik: '📐 Matematik',
-                ozetleme: '📝 Metin Özetleme'
-            };
-            document.getElementById('topBarTitle').textContent = basliklar[panel] || '💬 Sohbet';
-
-            const ipuclari = {
-                sohbet: 'Herhangi bir soru sorun...',
-                kod: 'Örn: "JavaScript ile sıralama algoritması yaz"',
-                gorsel: 'Örn: "Gece manzarası çiz" veya "Fraktal oluştur"',
-                analiz: 'Bir görsel yükleyin veya oluşturun',
-                duygu: 'Analiz edilecek metni yazın...',
-                sinir: 'Sinir ağı komutları...',
-                matematik: 'Örn: "Hesapla 15 * 27 + 33"',
-                ozetleme: 'Özetlenecek uzun metni yazın...'
-            };
-            document.getElementById('messageInput').placeholder = ipuclari[panel] || 'Mesajınızı yazın...';
-        }
-
-        // Sohbeti temizle
-        function sohbetiTemizle() {
-            const chatArea = document.getElementById('chatArea');
-            chatArea.innerHTML = `
-                <div class="welcome-screen" id="welcomeScreen">
-                    <div class="welcome-logo">🤖</div>
-                    <div class="welcome-title">Tuncer Zeka</div>
-                    <div class="welcome-subtitle">Sohbet temizlendi. Yeni bir konuşma başlatın!</div>
-                </div>
-            `;
-        }
-
-        // Sistem bilgisi
-        function sistemBilgisiGoster() {
-            if (!tz) return;
-            const bilgi = tz.sistemBilgisi();
-            let mesaj = `🤖 **TUNCER ZEKA SİSTEM BİLGİSİ**\n\n`;
-            mesaj += `📛 Ad: ${bilgi.ad}\n`;
-            mesaj += `📦 Sürüm: ${bilgi.versiyon}\n`;
-            mesaj += `👨‍💻 Tasarımcı: ${bilgi.tasarimci}\n\n`;
-            mesaj += `📊 **İstatistikler:**\n`;
-            mesaj += `• Kelime Dağarcığı: ${bilgi.kelimeDagarcigi}\n`;
-            mesaj += `• Bellek (Uzun Süreli): ${bilgi.bellek.uzunSureli}\n`;
-            mesaj += `• Bellek (Kısa Süreli): ${bilgi.bellek.kisaSureli}\n`;
-            mesaj += `• Bellek (Episodik): ${bilgi.bellek.episodik}\n`;
-            mesaj += `• Sinir Ağları: ${bilgi.sinirAglari}\n`;
-            mesaj += `• Konuşma Geçmişi: ${bilgi.konusmaGecmisi}\n\n`;
-            mesaj += `🎯 **Yetenekler:**\n`;
-            bilgi.yetenekler.forEach(y => mesaj += `• ${y}\n`);
-
-            const welcome = document.getElementById('welcomeScreen');
-            if (welcome) welcome.style.display = 'none';
-            mesajEkle(mesaj, 'assistant');
-        }
-
-        // İstatistikleri güncelle
-        function istatistikleriGuncelle() {
-            if (!tz) return;
-            const bilgi = tz.sistemBilgisi();
-            document.getElementById('statMesaj').textContent = bilgi.konusmaGecmisi;
-            document.getElementById('statBellek').textContent = bilgi.bellek.uzunSureli;
-            document.getElementById('statKelime').textContent = bilgi.kelimeDagarcigi;
-            document.getElementById('statSinir').textContent = bilgi.sinirAglari;
-        }
     </script>
 </body>
 </html>
+
