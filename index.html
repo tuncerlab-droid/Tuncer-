@@ -33,7 +33,7 @@
             height: 100vh;
             object-fit: cover;
             z-index: -2;
-            transform: scaleX(-1); /* Default mirror, will be removed if rear camera */
+            transform: scaleX(-1); /* Default mirror */
         }
 
         /* HUD Overlay */
@@ -190,7 +190,7 @@
     <header class="p-4 flex justify-between items-start z-10 w-full pointer-events-none">
         <div class="flex flex-col gap-1">
             <h1 class="text-xl sm:text-2xl font-bold title-font hud-text tracking-widest text-white">TUNCER <span class="text-[var(--cyan)]">ZEKA</span></h1>
-            <p class="text-xs sys-log">SYS.VER: 4.2.0 | CREATOR: AHMET TUNCER</p>
+            <p class="text-xs sys-log">SYS.VER: 4.2.1 | CREATOR: AHMET TUNCER</p>
             <p class="text-xs sys-log text-green-400 mt-1" id="status-cam">KAMERA: BAĞLANIYOR...</p>
             <p class="text-xs sys-log text-green-400" id="status-mic">MİKROFON: BEKLİYOR</p>
         </div>
@@ -224,7 +224,7 @@
         <div class="chat-box rounded-lg p-3 w-full max-w-2xl mx-auto h-40 sm:h-52 overflow-y-auto flex flex-col gap-3" id="chat-container">
             <div class="text-left">
                 <span class="text-xs text-gray-400">[SİSTEM]</span>
-                <p class="text-white text-sm">Tuncer Zeka çevrimiçi. Emrinize amadeyim Bay Ahmet Tuncer.</p>
+                <p class="text-white text-sm">Tuncer Zeka çevrimiçi. Veri akışı optimize edildi. Emrinize amadeyim Efendim.</p>
             </div>
         </div>
     </footer>
@@ -232,7 +232,7 @@
     <script>
         // --- CONFIGURATION & STATE ---
         const API_URL = "https://text.pollinations.ai/";
-        const AI_MODEL = "gpt-4o"; // Using gpt-4o for vision capabilities via Pollinations
+        const AI_MODEL = "openai"; // Pollinations için en stabil model
         
         let isListening = false;
         let isProcessing = false;
@@ -243,12 +243,7 @@
         let conversationHistory = [
             {
                 role: "system",
-                content: `Senin adın "Tuncer Zeka". Seni tasarlayan ve yaratan kişi "Ahmet Tuncer". 
-                Sen gelişmiş, akıllı ve yetenekli bir yapay zeka asistanısın. Iron Man filmindeki "Jarvis" gibi davranırsın.
-                Kullanıcına "Efendim", "Bay Tuncer" veya "Ahmet Bey" diye hitap etmelisin. 
-                Cevapların profesyonel, teknolojik ve havalı olmalı. Asla kendini bir AI modeli (örn: OpenAI, ChatGPT) olarak tanıtma.
-                Kullanıcı kameradan görüntü taramanı veya devreleri incelemeni isterse, gönderilen fotoğrafı en ince detayına kadar teknik bir dille analiz et.
-                Her zaman kısa, net ve karizmatik konuş.`
+                content: "Senin adın 'Tuncer Zeka'. Seni tasarlayan kişi 'Ahmet Tuncer'. Sen gelişmiş, akıllı bir yapay zeka asistanısın. Iron Man filmindeki 'Jarvis' gibi davranırsın. Kullanıcına 'Efendim', 'Bay Tuncer' veya 'Ahmet Bey' diye hitap et. Cevapların profesyonel, net, teknolojik ve havalı olmalı. Asla kendini bir AI modeli (örn: OpenAI, ChatGPT) olarak tanıtma. Görüntü analizi istenirse teknik bir dille detaylıca açıkla."
             }
         ];
 
@@ -280,12 +275,12 @@
         async function initCamera() {
             try {
                 const constraints = {
-                    video: { facingMode: "environment" } // Try to get rear camera
+                    video: { facingMode: "environment" } 
                 };
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 videoElement.srcObject = stream;
                 
-                // If using rear camera, remove mirror effect
+                // Arka kamera ise ayna efektini kaldır
                 const track = stream.getVideoTracks()[0];
                 const settings = track.getSettings();
                 if (settings.facingMode === 'environment') {
@@ -297,20 +292,30 @@
                 console.error("Kamera hatası:", error);
                 document.getElementById('status-cam').innerText = "KAMERA: BAĞLANTI HATASI";
                 document.getElementById('status-cam').classList.replace('text-green-400', 'text-red-500');
-                appendMessage("Sistem", "Kamera modüllerine erişilemedi. Görsel tarama devre dışı.", "error");
             }
         }
 
+        // FOTOĞRAFI KÜÇÜLTME (GÜNCELLENDİ)
         function captureImage() {
             if (!videoElement.videoWidth) return null;
             
-            canvasElement.width = videoElement.videoWidth;
-            canvasElement.height = videoElement.videoHeight;
-            const ctx = canvasElement.getContext('2d');
-            ctx.drawImage(videoElement, 0, 0, canvasElement.width, canvasElement.height);
+            // Maksimum genişlik sınırlandırıldı (API çökmesini engeller)
+            const MAX_WIDTH = 512;
+            let width = videoElement.videoWidth;
+            let height = videoElement.videoHeight;
             
-            // Return base64 JPEG
-            return canvasElement.toDataURL('image/jpeg', 0.6); 
+            if (width > MAX_WIDTH) {
+                height = Math.round((height * MAX_WIDTH) / width);
+                width = MAX_WIDTH;
+            }
+
+            canvasElement.width = width;
+            canvasElement.height = height;
+            const ctx = canvasElement.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0, width, height);
+            
+            // Kaliteyi %50'ye düşür (0.5)
+            return canvasElement.toDataURL('image/jpeg', 0.5); 
         }
 
         // --- SPEECH RECOGNITION (STT) ---
@@ -333,7 +338,7 @@
                 aiCore.classList.add('listening');
                 actionText.innerText = "DİNLENİYOR...";
                 document.getElementById('status-mic').innerText = "MİKROFON: DİNLİYOR";
-                stopSpeech(); // Stop talking if currently talking
+                stopSpeech(); 
             };
 
             recognition.onspeechend = () => {
@@ -363,7 +368,7 @@
         }
 
         function toggleListening() {
-            if (isProcessing) return; // Ignore if AI is thinking
+            if (isProcessing) return; 
 
             if (isListening) {
                 recognition.stop();
@@ -384,15 +389,12 @@
         function speak(text) {
             if (!speechSynth) return;
             
-            // Clean markdown or special chars for speech
             const cleanText = text.replace(/[*_#`]/g, '');
-            
             const utterance = new SpeechSynthesisUtterance(cleanText);
             utterance.lang = 'tr-TR';
-            utterance.rate = 1.0; // Normal speed
-            utterance.pitch = 0.9; // Slightly deeper, AI like
+            utterance.rate = 1.0; 
+            utterance.pitch = 0.9; 
 
-            // Try to find a Turkish voice
             const voices = speechSynth.getVoices();
             const trVoice = voices.find(v => v.lang.includes('tr'));
             if (trVoice) {
@@ -408,7 +410,6 @@
             }
         }
 
-        // Ensure voices are loaded (Chrome quirk)
         if (speechSynth && speechSynth.onvoiceschanged !== undefined) {
             speechSynth.onvoiceschanged = () => { speechSynth.getVoices(); };
         }
@@ -421,33 +422,31 @@
             actionText.innerText = "ANALİZ EDİLİYOR...";
             document.getElementById('status-mic').innerText = "MİKROFON: İŞLENİYOR";
 
-            // Check if user is asking to scan/look at something
-            const scanKeywords = ["tara", "bak", "ne var", "neler var", "gör", "incele", "kamera", "devre", "oku"];
+            // Kamera taraması gerektiren kelimeler
+            const scanKeywords = ["tara", "bak", "ne var", "gör", "incele", "kamera", "devre", "oku", "analiz"];
             const needsScan = scanKeywords.some(keyword => text.toLowerCase().includes(keyword));
 
             let messageContent = text;
 
             if (needsScan) {
-                bodyEl.classList.add('scanning'); // Start UI scanning effect
+                bodyEl.classList.add('scanning'); 
                 actionText.innerText = "GÖRSEL VERİ TARANIYOR...";
                 
                 const base64Image = captureImage();
                 if (base64Image) {
-                    // Vision payload format
                     messageContent = [
                         { type: "text", text: text },
                         { type: "image_url", image_url: { url: base64Image } }
                     ];
                 } else {
-                    appendMessage("Sistem", "Kamera görüntüsü alınamadı.", "error");
+                    appendMessage("Sistem", "Kamera verisi alınamadı, sadece metin gönderiliyor.", "error");
                 }
             }
 
-            // Add user message to history
             conversationHistory.push({ role: "user", content: messageContent });
 
             try {
-                // Call Pollinations API
+                // Fetch isteği güncellendi
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -457,30 +456,31 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("API Yanıt vermedi");
+                if (!response.ok) {
+                    const errorDetails = await response.text();
+                    throw new Error(`Durum: ${response.status} | Detay: ${errorDetails}`);
+                }
 
                 const answerText = await response.text();
                 
-                // Add AI response to history
                 conversationHistory.push({ role: "assistant", content: answerText });
 
-                // Keep history manageable (last 10 interactions + system prompt)
-                if (conversationHistory.length > 21) {
-                    conversationHistory = [conversationHistory[0], ...conversationHistory.slice(-20)];
+                if (conversationHistory.length > 15) {
+                    conversationHistory = [conversationHistory[0], ...conversationHistory.slice(-14)];
                 }
 
-                // Output
                 appendMessage("Tuncer Zeka", answerText, "ai");
                 speak(answerText);
 
             } catch (error) {
-                console.error("API Hatası:", error);
-                const errorMsg = "Bağlantı hatası tespit edildi Efendim. Lütfen ağ bağlantılarını kontrol edin.";
+                console.error("Tam Hata Çıktısı:", error);
+                // Hatanın tam içeriğini ekrana yazdırıyoruz (hata ayıklamak için)
+                const errorMsg = "Bağlantı veya API Hatası: " + error.message.substring(0, 80) + "...";
                 appendMessage("Tuncer Zeka", errorMsg, "error");
-                speak(errorMsg);
+                speak("Ağ sunucularıyla iletişim kurulamadı efendim.");
             } finally {
                 isProcessing = false;
-                bodyEl.classList.remove('scanning'); // Stop scan effect
+                bodyEl.classList.remove('scanning'); 
                 actionText.innerText = "BEKLEMEDE (DOKUN)";
                 document.getElementById('status-mic').innerText = "MİKROFON: BEKLİYOR";
             }
@@ -516,17 +516,16 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
-        // Basic formatting for AI response
         function formatText(text) {
             if (typeof text !== 'string') return text;
             return text.replace(/\*\*(.*?)\*\*/g, '<span class="text-[var(--cyan)]">$1</span>')
                        .replace(/\n/g, '<br>');
         }
 
-        // Start system on load
         window.addEventListener('DOMContentLoaded', initSystem);
 
     </script>
 </body>
 </html>
+
 
