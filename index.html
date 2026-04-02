@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka V3 - Ahmet Tuncer Edition</title>
+    <title>Tuncer Zeka V4 - AI Assistant</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -11,7 +11,8 @@
 
         :root {
             --cyan: #00f3ff;
-            --bg-dark: rgba(2, 8, 12, 0.9);
+            --cyan-glow: rgba(0, 243, 255, 0.4);
+            --bg-dark: rgba(2, 12, 20, 0.9);
         }
 
         body {
@@ -38,16 +39,16 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle, transparent 30%, var(--bg-dark) 100%);
+            background: radial-gradient(circle, transparent 20%, var(--bg-dark) 100%);
             z-index: -1;
             pointer-events: none;
         }
 
-        /* Jarvis Arc Reactor Animation */
-        .core-wrap {
+        /* Arc Reactor UI */
+        .core-container {
             position: relative;
-            width: 140px;
-            height: 140px;
+            width: 160px;
+            height: 160px;
             cursor: pointer;
         }
 
@@ -56,112 +57,133 @@
             border-radius: 50%;
             border: 2px solid var(--cyan);
             inset: 0;
-            box-shadow: 0 0 15px var(--cyan);
+            box-shadow: 0 0 15px var(--cyan-glow);
         }
 
-        .ring-1 { animation: rotate 4s linear infinite; border-style: double; }
-        .ring-2 { inset: 15px; border-style: dashed; animation: rotate-rev 3s linear infinite; opacity: 0.6; }
+        .ring-outer { animation: spin 5s linear infinite; border-style: double; }
+        .ring-inner { inset: 15px; border: 1px dashed var(--cyan); animation: spin-rev 3s linear infinite; opacity: 0.6; }
         
-        .core-btn {
+        .core-button {
             position: absolute;
-            inset: 35px;
+            inset: 40px;
             background: var(--cyan);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #000;
-            font-size: 1.5rem;
-            box-shadow: 0 0 30px var(--cyan);
-            transition: 0.3s;
+            font-size: 1.8rem;
+            box-shadow: 0 0 40px var(--cyan);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 10;
         }
 
-        .listening .core-btn {
-            animation: pulse 0.8s infinite alternate;
+        .listening .core-button {
+            animation: pulse 0.6s infinite alternate;
             background: #fff;
+            transform: scale(1.1);
         }
 
-        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
 
-        .scan-bar {
+        .scan-line {
             position: absolute;
             width: 100%;
-            height: 2px;
-            background: var(--cyan);
+            height: 4px;
+            background: linear-gradient(to bottom, transparent, var(--cyan), transparent);
             box-shadow: 0 0 20px var(--cyan);
             top: -10%;
             display: none;
+            z-index: 5;
         }
 
-        .scanning .scan-bar {
+        .scanning .scan-line {
             display: block;
-            animation: scanMove 2s infinite ease-in-out;
+            animation: scanMove 2.5s infinite linear;
         }
 
-        @keyframes scanMove { 0% { top: 0%; } 50% { top: 100%; } 100% { top: 0%; } }
+        @keyframes scanMove { 0% { top: 0%; } 100% { top: 100%; } }
 
-        .chat-container {
-            height: 180px;
-            background: rgba(0, 30, 40, 0.5);
-            border: 1px solid var(--cyan);
-            backdrop-filter: blur(10px);
+        .chat-display {
+            height: 200px;
+            background: rgba(0, 20, 30, 0.7);
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            backdrop-filter: blur(8px);
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
         }
+
+        .sys-info { font-size: 10px; color: rgba(0, 243, 255, 0.6); }
+        .loading-dots:after { content: '...'; animation: dots 1.5s steps(5, end) infinite; }
+        @keyframes dots { 0%, 20% { content: '.'; } 40% { content: '..'; } 60% { content: '...'; } }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
     <video id="camera-feed" autoplay muted playsinline></video>
     <div class="hud-overlay"></div>
-    <div class="scan-bar" id="scan-bar"></div>
+    <div class="scan-line" id="scan-line"></div>
+    <canvas id="capture-canvas" class="hidden"></canvas>
 
-    <!-- Header -->
-    <header class="p-4 flex justify-between z-10">
+    <!-- Header Section -->
+    <header class="p-4 flex justify-between items-start z-10 w-full pointer-events-none">
         <div>
-            <h1 class="text-xl font-bold tracking-tighter" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
-            <p class="text-[10px] opacity-70 uppercase">Ahmet Tuncer | Veri Aktarımı: Stabil</p>
+            <h1 class="text-2xl font-bold tracking-widest text-white" style="font-family: Orbitron">TUNCER <span class="text-[var(--cyan)]">ZEKA</span></h1>
+            <p class="sys-info uppercase">DESIGNER: AHMET TUNCER | ENGINE: GEMINI 2.5 FLASH</p>
+            <div id="cam-status" class="text-[8px] mt-1 text-green-400">KAMERA: HAZIR</div>
         </div>
-        <div class="text-right text-[10px]">
-            <p id="status-text">SİSTEM HAZIR</p>
-            <p id="clock">00:00:00</p>
+        <div class="text-right">
+            <div id="clock" class="text-lg font-bold">00:00:00</div>
+            <div id="mic-status" class="text-[8px] text-green-400">SES MODÜLÜ: AKTİF</div>
         </div>
     </header>
 
-    <!-- Main -->
+    <!-- UI Main Body -->
     <main class="flex-1 flex flex-col items-center justify-center z-10">
-        <div class="core-wrap" id="main-btn" onclick="startRecognition()">
-            <div class="ring ring-1"></div>
-            <div class="ring ring-2"></div>
-            <div class="core-btn">
+        <div class="core-container" id="interaction-core" onclick="toggleAI()">
+            <div class="ring ring-outer"></div>
+            <div class="ring ring-inner"></div>
+            <div class="core-button" id="core-btn">
                 <i class="fas fa-microchip"></i>
             </div>
         </div>
-        <p class="mt-6 text-[10px] tracking-widest opacity-60 uppercase" id="hint-text">Bay Ahmet, emirlerinizi bekliyorum</p>
+        <p class="mt-8 text-[10px] tracking-[0.3em] uppercase opacity-70" id="hint-text">Bay Ahmet, emirlerinizi bekliyorum</p>
     </main>
 
-    <!-- Console -->
-    <footer class="p-4 z-10">
-        <div class="chat-container rounded p-3 overflow-y-auto text-xs" id="log-box">
-            <p class="text-gray-400">[SİSTEM] Tuncer Zeka V3.0 yükleniyor...</p>
-            <p class="text-gray-400">[SİSTEM] Kullanıcı: Ahmet Tuncer Tanımlandı.</p>
+    <!-- Console / Chat -->
+    <footer class="p-4 z-10 w-full max-w-3xl mx-auto">
+        <div class="chat-display rounded-lg p-3 overflow-y-auto text-sm" id="chat-log">
+            <p class="opacity-50">[SİSTEM] Tuncer Zeka V4.0 Başlatıldı...</p>
+            <p class="opacity-50">[SİSTEM] Kimlik Doğrulandı: Ahmet Tuncer.</p>
         </div>
     </footer>
 
     <script>
-        // --- GLOBAL CONFIG ---
-        const API_BASE = "https://text.pollinations.ai/";
-        let isWorking = false;
-        const logBox = document.getElementById('log-box');
-        const hintText = document.getElementById('hint-text');
+        // --- API CONFIG ---
+        const apiKey = ""; // Runtime provides the key
+        const SYSTEM_PROMPT = `Senin adın Tuncer Zeka. Tasarımcın ve sahibin Ahmet Tuncer'dir. 
+        Kullanıcın olan Ahmet Tuncer'e her zaman "Efendim", "Bay Tuncer" veya "Ahmet Bey" diye hitap etmelisin. 
+        Sen Iron Man'in Jarvis'i gibi çok akıllı, teknik, yardımsever ve karizmatik bir asistansın. 
+        Cevapların kısa, öz ve profesyonel olmalı. Eğer bir görüntü gönderilirse (etrafı tara dendiğinde), 
+        görüntüdeki nesneleri veya elektronik devreleri çok detaylı bir şekilde analiz et.`;
 
-        // --- CAMERA ---
-        async function startCam() {
+        let isListening = false;
+        let isProcessing = false;
+        const chatLog = document.getElementById('chat-log');
+        const hintText = document.getElementById('hint-text');
+        const coreBtn = document.getElementById('interaction-core');
+
+        // --- CAMERA SETUP ---
+        async function startCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" } 
+                });
                 document.getElementById('camera-feed').srcObject = stream;
-            } catch (e) {
-                addLog("SİSTEM", "Kamera erişimi engellendi.", "text-red-500");
+            } catch (err) {
+                logMessage("SİSTEM", "Kamera modülü başlatılamadı.", "text-red-500");
+                document.getElementById('cam-status').innerText = "KAMERA: ERİŞİM YOK";
             }
         }
 
@@ -171,95 +193,141 @@
         }, 1000);
 
         // --- SPEECH RECOGNITION ---
-        function startRecognition() {
-            if (isWorking) return;
-            
-            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Speech) {
-                addLog("HATA", "Tarayıcı desteklemiyor.");
+        function toggleAI() {
+            if (isProcessing) return;
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                logMessage("HATA", "Tarayıcı ses tanımayı desteklemiyor.");
                 return;
             }
 
-            const rec = new Speech();
-            rec.lang = 'tr-TR';
-            
-            rec.onstart = () => {
-                document.getElementById('main-btn').classList.add('listening');
-                hintText.innerText = "Sizi Dinliyorum Efendim...";
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+
+            recognition.onstart = () => {
+                isListening = true;
+                coreBtn.classList.add('listening');
+                hintText.innerText = "Sizi dinliyorum Efendim...";
                 window.speechSynthesis.cancel();
             };
 
-            rec.onresult = (e) => {
-                const text = e.results[0][0].transcript;
-                processQuery(text);
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                handleQuery(transcript);
             };
 
-            rec.onerror = () => {
-                document.getElementById('main-btn').classList.remove('listening');
-                hintText.innerText = "Bağlantı kesildi, tekrar deneyin.";
+            recognition.onerror = () => {
+                coreBtn.classList.remove('listening');
+                hintText.innerText = "Ses anlaşılamadı.";
             };
 
-            rec.onend = () => {
-                document.getElementById('main-btn').classList.remove('listening');
+            recognition.onend = () => {
+                isListening = false;
+                coreBtn.classList.remove('listening');
             };
 
-            rec.start();
+            recognition.start();
         }
 
-        // --- PROCESS QUERY ---
-        async function processQuery(query) {
-            isWorking = true;
-            addLog("AHMET TUNCER", query, "text-green-400");
-            hintText.innerText = "Düşünüyorum...";
+        // --- API CALL (GEMINI) ---
+        async function callGemini(text, imageData = null) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            let parts = [{ text: text }];
+            if (imageData) {
+                parts.push({
+                    inlineData: {
+                        mimeType: "image/png",
+                        data: imageData.split(',')[1]
+                    }
+                });
+            }
 
-            // Eğer "tara", "bak" gibi kelimeler varsa tarama modunu aç
-            const isScanning = /tara|bak|ne var|gör|incele/.test(query.toLowerCase());
-            if (isScanning) {
+            const payload = {
+                contents: [{ parts: parts }],
+                systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] }
+            };
+
+            // Exponential Backoff Implementation
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text;
+                } catch (err) {
+                    if (i === 4) throw err;
+                    const delay = Math.pow(2, i) * 1000;
+                    await new Promise(r => setTimeout(r, delay));
+                }
+            }
+        }
+
+        // --- CORE LOGIC ---
+        async function handleQuery(query) {
+            isProcessing = true;
+            logMessage("AHMET TUNCER", query, "text-green-400");
+            hintText.innerHTML = "Sistem İşliyor <span class='loading-dots'></span>";
+
+            const scanTrigger = /tara|bak|ne var|gör|incele|analiz/.test(query.toLowerCase());
+            let imageData = null;
+
+            if (scanTrigger) {
                 document.body.classList.add('scanning');
-                addLog("SİSTEM", "Optik sensörler aktifleşiyor...", "text-yellow-500");
+                logMessage("SİSTEM", "Görsel sensörler veri topluyor...", "text-yellow-500");
+                imageData = capturePhoto();
             }
 
             try {
-                // Stabil GET Metodu
-                const systemPrompt = "Sen Tuncer Zeka'sın. Tasarımcın Ahmet Tuncer. Kısa ve havalı cevap ver.";
-                const encodedQuery = encodeURIComponent(`${systemPrompt} Kullanıcı dedi ki: ${query}`);
-                
-                // Fetch işlemi - GET isteği hata payı en düşüktür
-                const response = await fetch(`${API_BASE}${encodedQuery}?model=openai&cache=false`);
-                
-                if (!response.ok) throw new Error("API Hatası");
-
-                const result = await response.text();
-                
-                addLog("TUNCER ZEKA", result, "text-cyan-400");
-                speak(result);
-
+                const response = await callGemini(query, imageData);
+                logMessage("TUNCER ZEKA", response, "text-white font-bold");
+                speak(response);
             } catch (err) {
-                addLog("HATA", "Bağlantı kurulamadı. Tekrar deneyin.", "text-red-500");
+                const errMsg = "Bağlantı hatası Efendim. Sunuculara erişemiyorum.";
+                logMessage("SİSTEM", errMsg, "text-red-500");
+                speak(errMsg);
             } finally {
-                isWorking = false;
+                isProcessing = false;
                 document.body.classList.remove('scanning');
                 hintText.innerText = "Emirlerinizi bekliyorum Bay Tuncer";
             }
         }
 
-        // --- VOICE ---
-        function speak(text) {
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'tr-TR';
-            ut.rate = 1.0;
-            window.speechSynthesis.speak(ut);
+        // --- HELPERS ---
+        function capturePhoto() {
+            const video = document.getElementById('camera-feed');
+            const canvas = document.getElementById('capture-canvas');
+            canvas.width = video.videoWidth / 2; // Resize for speed
+            canvas.height = video.videoHeight / 2;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/png', 0.7);
         }
 
-        // --- LOG HELPERS ---
-        function addLog(who, msg, color = "text-white") {
+        function logMessage(sender, text, colorClass = "text-white") {
             const p = document.createElement('p');
-            p.innerHTML = `<span class="opacity-50">[${who}]</span> <span class="${color}">${msg}</span>`;
-            logBox.appendChild(p);
-            logBox.scrollTop = logBox.scrollHeight;
+            p.className = "mb-2 fade-in";
+            p.innerHTML = `<span class="opacity-50 text-[10px] uppercase">[${sender}]</span><br><span class="${colorClass}">${text}</span>`;
+            chatLog.appendChild(p);
+            chatLog.scrollTop = chatLog.scrollHeight;
         }
 
-        window.onload = startCam;
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            utterance.pitch = 0.9;
+            utterance.rate = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        window.onload = startCamera;
     </script>
 </body>
 </html>
