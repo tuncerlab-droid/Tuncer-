@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka V8 - Ahmet Tuncer Edition</title>
+    <title>Tuncer Zeka V7 - Puter.js Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Puter.js SDK - No Key Required -->
+    <script src="https://js.puter.com/v2/"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Share+Tech+Mono&display=swap');
 
         :root {
             --cyan: #00f3ff;
-            --bg-dark: rgba(2, 8, 15, 0.9);
+            --bg-dark: rgba(2, 10, 18, 0.95);
         }
 
         body {
@@ -34,137 +36,133 @@
         .hud-overlay {
             position: fixed;
             inset: 0;
-            background: radial-gradient(circle, transparent 20%, var(--bg-dark) 100%);
+            background: radial-gradient(circle, transparent 10%, var(--bg-dark) 100%);
             z-index: -1;
             pointer-events: none;
         }
 
-        /* ARC Reactor UI */
-        .core-box {
+        /* Arc Reactor UI */
+        .core-container {
             position: relative;
-            width: 160px;
-            height: 160px;
+            width: 170px;
+            height: 170px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+
+        .core-container:active { transform: scale(0.9); }
 
         .ring {
             position: absolute;
             border-radius: 50%;
             border: 2px solid var(--cyan);
             inset: 0;
-            box-shadow: 0 0 20px var(--cyan);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.3);
         }
 
-        .ring-1 { animation: spin 4s linear infinite; border-style: double; }
-        .ring-2 { inset: 15px; border: 1px dashed var(--cyan); animation: spin-rev 3s linear infinite; opacity: 0.6; }
+        .ring-1 { animation: rotate 6s linear infinite; border-style: double; border-width: 4px; }
+        .ring-2 { inset: 20px; border: 1px dashed var(--cyan); animation: rotate-rev 4s linear infinite; opacity: 0.5; }
         
-        .core-inner {
+        .core-center {
             position: absolute;
-            width: 70px;
-            height: 70px;
+            inset: 50px;
             background: var(--cyan);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #000;
-            font-size: 1.6rem;
-            box-shadow: 0 0 40px var(--cyan);
-            z-index: 10;
-        }
-
-        .listening .core-inner {
-            animation: pulse 0.5s infinite alternate;
-            background: #fff;
-            box-shadow: 0 0 50px #fff;
-        }
-
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes spin-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
-        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
-
-        .scan-anim {
-            position: absolute;
-            width: 100%;
-            height: 4px;
-            background: linear-gradient(to bottom, transparent, var(--cyan), transparent);
-            box-shadow: 0 0 15px var(--cyan);
-            top: -10%;
-            display: none;
+            font-size: 1.8rem;
+            box-shadow: 0 0 50px var(--cyan);
             z-index: 5;
         }
 
-        .scanning .scan-anim {
+        .listening .core-center {
+            animation: pulse 0.7s infinite alternate;
+            background: #fff;
+            box-shadow: 0 0 60px #fff;
+        }
+
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes rotate-rev { from { transform: rotate(360deg); } to { transform: rotate(0deg); } }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.15); } }
+
+        .scan-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(180deg, transparent, var(--cyan), transparent);
+            top: -10%;
+            display: none;
+            z-index: 10;
+        }
+
+        .scanning .scan-line {
             display: block;
-            animation: scanLine 2s infinite linear;
+            animation: scanMove 2.5s infinite linear;
         }
 
-        @keyframes scanLine { 0% { top: 0%; } 100% { top: 100%; } }
+        @keyframes scanMove { 0% { top: 0%; } 100% { top: 100%; } }
 
-        .log-display {
+        .terminal {
             height: 180px;
-            background: rgba(0, 20, 30, 0.7);
-            border: 1px solid rgba(0, 243, 255, 0.2);
-            backdrop-filter: blur(8px);
+            background: rgba(0, 15, 25, 0.8);
+            border: 1px solid rgba(0, 243, 255, 0.4);
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 0 20px rgba(0, 243, 255, 0.1);
         }
 
-        .fade-in { animation: fadeIn 0.5s ease-in; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .sys-label { font-size: 10px; color: rgba(0, 243, 255, 0.5); text-transform: uppercase; }
     </style>
 </head>
 <body class="flex flex-col h-screen">
 
     <video id="camera-feed" autoplay muted playsinline></video>
     <div class="hud-overlay"></div>
-    <div class="scan-anim" id="scan-bar"></div>
-    <canvas id="snapshot" class="hidden"></canvas>
+    <div class="scan-line" id="scan-line"></div>
+    <canvas id="capture-canvas" class="hidden"></canvas>
 
-    <!-- Header HUD -->
+    <!-- UI Header -->
     <header class="p-6 flex justify-between z-10 w-full pointer-events-none">
         <div>
-            <h1 class="text-2xl font-bold tracking-[0.2em] title-font" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
-            <p class="text-[10px] opacity-60">ARCHITECT: AHMET TUNCER | PROTOCOL: STABLE</p>
-            <div id="api-status" class="text-[8px] text-green-400 mt-1 uppercase">SİSTEM ÇEVRİMİÇİ</div>
+            <h1 class="text-2xl font-bold tracking-[0.3em]" style="font-family: Orbitron">TUNCER <span class="text-white">ZEKA</span></h1>
+            <p class="sys-label">User: Ahmet Tuncer | Engine: Puter Cloud AI</p>
+            <div id="puter-status" class="text-[8px] text-green-400 mt-1 uppercase">Puter SDK: Connected</div>
         </div>
         <div class="text-right">
             <div id="clock" class="text-xl font-bold">00:00:00</div>
-            <div class="text-[8px] opacity-50">ENCRYPTED LINE</div>
+            <div class="sys-label">Secure Line: Active</div>
         </div>
     </header>
 
-    <!-- Core Interaction -->
+    <!-- Center Interaction -->
     <main class="flex-1 flex flex-col items-center justify-center z-10">
-        <div class="core-box" id="ai-trigger" onclick="startRecognition()">
+        <div class="core-container" id="ai-trigger" onclick="startJarvis()">
             <div class="ring ring-1"></div>
             <div class="ring ring-2"></div>
-            <div class="core-inner"><i class="fas fa-microchip"></i></div>
+            <div class="core-center"><i class="fas fa-atom"></i></div>
         </div>
-        <p class="mt-8 text-[10px] tracking-[0.4em] uppercase opacity-50" id="info-text">Emrinizi bekliyorum Bay Tuncer</p>
+        <p class="mt-10 text-[10px] tracking-[0.5em] uppercase opacity-60" id="hint">Sizi dinliyorum Efendim</p>
     </main>
 
-    <!-- Terminal -->
+    <!-- Terminal Output -->
     <footer class="p-6 z-10">
-        <div class="log-display rounded-lg p-4 overflow-y-auto text-xs" id="log-content">
-            <p class="opacity-40">[SYSTEM] Tuncer Zeka V8 initialization complete.</p>
-            <p class="opacity-40">[SYSTEM] Direct Neural Link: Ahmet Tuncer.</p>
+        <div class="terminal rounded-lg p-4 overflow-y-auto text-xs" id="terminal-box">
+            <p class="opacity-50">[SYSTEM] Tuncer Zeka V7 (Puter Edition) ready.</p>
+            <p class="opacity-50">[SYSTEM] Identifying Architect: Ahmet Tuncer...</p>
         </div>
     </footer>
 
     <script>
-        // API List (Sırasıyla denenir)
-        const API_ENDPOINTS = [
-            "https://text.pollinations.ai/",
-            "https://api.duckduckgo.com/ai/" // Fallback
-        ];
-
+        // System Config
+        const ARCHITECT = "Ahmet Tuncer";
+        const SYSTEM_PROMPT = `Senin adın Tuncer Zeka. Tasarımcın ${ARCHITECT}. Jarvis gibi konuş. Efendim de. Çok teknik ve havalı ol. Cevaplarını kısa tut.`;
+        
         let isProcessing = false;
-        const logBox = document.getElementById('log-content');
-        const infoText = document.getElementById('info-text');
+        const terminalBox = document.getElementById('terminal-box');
+        const hintText = document.getElementById('hint');
 
-        // Saat & Kamera
+        // Clock & Camera Initializer
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
         async function initCamera() {
@@ -172,28 +170,31 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 document.getElementById('camera-feed').srcObject = stream;
             } catch (e) {
-                addLog("SYSTEM", "Camera module error.", "text-red-500");
+                addLog("SYSTEM", "Optical sensors failed to initialize.", "text-red-500");
             }
         }
 
-        // Ses Tanıma
-        function startRecognition() {
+        // Voice Engine
+        function startJarvis() {
             if (isProcessing) return;
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Speech) return;
+            if (!Speech) {
+                addLog("ERROR", "Voice recognition not supported.");
+                return;
+            }
 
             const recognition = new Speech();
             recognition.lang = 'tr-TR';
             
             recognition.onstart = () => {
                 document.getElementById('ai-trigger').classList.add('listening');
-                infoText.innerText = "DİNLENİYOR...";
+                hintText.innerText = "Veri girişi bekleniyor...";
                 window.speechSynthesis.cancel();
             };
 
             recognition.onresult = async (event) => {
-                const query = event.results[0][0].transcript;
-                processQuery(query);
+                const transcript = event.results[0][0].transcript;
+                processWithPuter(transcript);
             };
 
             recognition.onend = () => {
@@ -203,56 +204,56 @@
             recognition.start();
         }
 
-        // Yapay Zeka İşlemi
-        async function processQuery(query) {
+        // Puter AI Implementation
+        async function processWithPuter(query) {
             isProcessing = true;
-            addLog("AHMET TUNCER", query, "text-green-400");
-            infoText.innerText = "ANALİZ EDİLİYOR...";
+            addLog(ARCHITECT.toUpperCase(), query, "text-green-400");
+            hintText.innerText = "Analiz ediliyor...";
 
-            const needsScan = /tara|bak|ne var|gör|incele|nedir/.test(query.toLowerCase());
+            const needsScan = /tara|bak|ne var|gör|incele|analiz/.test(query.toLowerCase());
             if (needsScan) {
                 document.body.classList.add('scanning');
-                addLog("SYSTEM", "Optik sensörler tarama yapıyor...", "text-yellow-500");
+                addLog("SYSTEM", "Scanning environment via optical array...", "text-yellow-500");
+                // Puter şu an doğrudan görsel analiz yapmasa da Jarvis simülasyonu devam eder
             }
 
             try {
-                // Pollinations GET protokolü (en stabil anahtarsız yöntem)
-                const sysPrompt = "Sen Tuncer Zeka'sın. Tasarımcın Ahmet Tuncer. Jarvis gibi havalı konuş. Efendim de. Cevabın kısa olsun.";
-                const encodedUrl = `${API_ENDPOINTS[0]}${encodeURIComponent(sysPrompt + " Kullanıcı: " + query)}?model=openai`;
+                // puter.ai.chat - No Key, No Credit, Cloud Based
+                const response = await puter.ai.chat(`${SYSTEM_PROMPT} Kullanıcı: ${query}`);
                 
-                const response = await fetch(encodedUrl);
-                if (!response.ok) throw new Error("Link error");
-                
-                const answer = await response.text();
+                const answer = typeof response === 'string' ? response : response.message.content;
                 
                 addLog("TUNCER ZEKA", answer, "text-white font-bold");
                 speak(answer);
 
             } catch (err) {
-                const fallbackMsg = "Merkezi sinir sisteminde bir gecikme var Ahmet Bey, ancak hala buradayım.";
-                addLog("SİSTEM", fallbackMsg, "text-red-400");
-                speak(fallbackMsg);
+                console.error(err);
+                const errorMsg = "Bağlantı protokolünde bir aksama var efendim. Tekrar deneyin.";
+                addLog("SYSTEM", errorMsg, "text-red-400");
+                speak(errorMsg);
             } finally {
                 isProcessing = false;
                 document.body.classList.remove('scanning');
-                infoText.innerText = "EMRİNİZİ BEKLİYORUM EFENDİM";
+                hintText.innerText = "Emrinizi bekliyorum Efendim";
             }
         }
 
+        // Helper: Logging
         function addLog(who, msg, color = "text-cyan-400") {
             const p = document.createElement('p');
             p.className = "mb-1 fade-in";
-            p.innerHTML = `<span class="opacity-40 text-[8px] uppercase">[${who}]</span> <span class="${color}">${msg}</span>`;
-            logBox.appendChild(p);
-            logBox.scrollTop = logBox.scrollHeight;
+            p.innerHTML = `<span class="opacity-40 text-[8px]">[${who}]</span> <span class="${color}">${msg}</span>`;
+            terminalBox.appendChild(p);
+            terminalBox.scrollTop = terminalBox.scrollHeight;
         }
 
+        // Helper: Voice Synthesis
         function speak(text) {
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'tr-TR';
-            ut.pitch = 0.8;
-            ut.rate = 1.0;
-            window.speechSynthesis.speak(ut);
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            utterance.pitch = 0.8;
+            utterance.rate = 1.1;
+            window.speechSynthesis.speak(utterance);
         }
 
         window.onload = initCamera;
