@@ -3,12 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TUNCER ZEKA — v2.0 | Yapay Zeka Sistemi</title>
+<title>HUD AI — Vision & Puter.js</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Puter.js Entegrasyonu -->
+<script src="https://js.puter.com/v2/"></script>
+
 <style>
 /* ═══════════════════════════════════════════════════
-   TUNCER ZEKA — CSS CORE SYSTEM
+   HUD KORE SİSTEMİ — CSS
 ═══════════════════════════════════════════════════ */
 :root {
   --c1: #00d4ff;
@@ -17,14 +20,13 @@
   --c4: #a855f7;
   --danger: #ff2b4a;
   --bg: #020912;
-  --bg2: #030d1a;
-  --panel: rgba(0,20,50,0.82);
-  --border: rgba(0,212,255,0.2);
-  --border2: rgba(0,255,157,0.15);
-  --glow1: rgba(0,212,255,0.45);
-  --glow2: rgba(0,255,157,0.3);
+  --panel: rgba(2, 10, 20, 0.70); 
+  --border: rgba(0,212,255,0.3);
+  --border2: rgba(0,255,157,0.25);
+  --glow1: rgba(0,212,255,0.5);
+  --glow2: rgba(0,255,157,0.4);
   --text: #b8d4f0;
-  --text-dim: rgba(150,200,240,0.4);
+  --text-dim: rgba(150,200,240,0.6);
   --font-hud: 'Orbitron', monospace;
   --font-mono: 'Share Tech Mono', monospace;
   --font-ui: 'Rajdhani', sans-serif;
@@ -41,42 +43,58 @@ html, body {
   user-select: none;
 }
 
+/* KAMERA ARKA PLANI */
+video#bg-camera {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  object-fit: cover;
+  z-index: 0;
+  opacity: 0.65; 
+  filter: brightness(0.65) contrast(1.2) sepia(0.3) hue-rotate(180deg); /* HUD Camgöbeği efekti */
+  pointer-events: none;
+}
+
 /* GRID BG */
 body::after {
   content: '';
-  position: fixed; inset: 0; z-index: 0;
+  position: fixed; inset: 0; z-index: 1;
   background-image:
-    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(0,212,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
   pointer-events: none;
 }
 
 /* SCANLINES */
 body::before {
   content: '';
-  position: fixed; inset: 0; z-index: 1;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+  position: fixed; inset: 0; z-index: 2;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
   pointer-events: none;
   animation: scanMove 10s linear infinite;
 }
 
 @keyframes scanMove { to { background-position: 0 100px; } }
 
-canvas#bg-canvas {
-  position: fixed; inset: 0; z-index: 0;
-  pointer-events: none;
-}
-
 /* ═══ MAIN LAYOUT ═══ */
 #app {
-  position: relative; z-index: 2;
+  position: relative; z-index: 3;
   width: 100vw; height: 100vh;
   display: grid;
-  grid-template-columns: 260px 1fr 260px;
-  grid-template-rows: 68px 1fr 200px;
-  gap: 6px;
-  padding: 6px;
+  grid-template-columns: 280px 1fr 280px;
+  grid-template-rows: 70px 1fr 80px;
+  gap: 10px;
+  padding: 10px;
+}
+
+@media (max-width: 900px) {
+  #app {
+    grid-template-columns: 1fr;
+    grid-template-rows: 70px 1fr 1fr 80px;
+    overflow-y: auto;
+  }
+  #left-panel, #right-panel { display: none; } 
 }
 
 /* ═══ HEADER ═══ */
@@ -84,24 +102,25 @@ canvas#bg-canvas {
   grid-column: 1 / -1;
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px;
-  background: linear-gradient(135deg, rgba(0,20,50,0.9), rgba(0,30,70,0.8));
+  background: linear-gradient(135deg, rgba(0,20,50,0.85), rgba(0,30,70,0.7));
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: 6px;
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(8px);
 }
 
 #header::before {
   content: '';
-  position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(90deg, transparent, var(--c1), var(--c2), var(--c1), transparent);
   animation: headerLine 3s linear infinite;
 }
 
 @keyframes headerLine {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
+  0% { opacity: 0.4; transform: translateX(-50%); }
+  50% { opacity: 1; transform: translateX(0%); }
+  100% { opacity: 0.4; transform: translateX(50%); }
 }
 
 .logo-wrap { display: flex; align-items: center; gap: 16px; }
@@ -112,1316 +131,650 @@ canvas#bg-canvas {
   border: 2px solid var(--c1);
   display: flex; align-items: center; justify-content: center;
   position: relative;
-  box-shadow: 0 0 25px var(--glow1), inset 0 0 15px rgba(0,212,255,0.08);
+  box-shadow: 0 0 20px var(--glow1), inset 0 0 10px rgba(0,212,255,0.2);
   animation: logoSpin 8s linear infinite;
-}
-
-.logo-ring::before {
-  content: '';
-  position: absolute;
-  width: 38px; height: 38px;
-  border-radius: 50%;
-  border: 1px solid rgba(0,255,157,0.3);
-  animation: logoSpin 4s linear infinite reverse;
 }
 
 .logo-ring::after {
   content: 'TZ';
   font-family: var(--font-hud);
-  font-size: 12px; font-weight: 900;
+  font-size: 14px; font-weight: 900;
   color: var(--c1);
   z-index: 1;
   text-shadow: 0 0 10px var(--c1);
 }
 
 @keyframes logoSpin {
-  0% { box-shadow: 0 0 25px var(--glow1), inset 0 0 15px rgba(0,212,255,0.08), 2px 0 0 0 var(--c1); }
-  50% { box-shadow: 0 0 35px var(--glow1), inset 0 0 20px rgba(0,212,255,0.12), -2px 0 0 0 var(--c1); }
-  100% { box-shadow: 0 0 25px var(--glow1), inset 0 0 15px rgba(0,212,255,0.08), 2px 0 0 0 var(--c1); }
+  0% { transform: rotate(0deg); box-shadow: 0 0 20px var(--glow1), inset 0 0 10px rgba(0,212,255,0.2); }
+  50% { transform: rotate(180deg); box-shadow: 0 0 30px var(--glow1), inset 0 0 20px rgba(0,212,255,0.4); }
+  100% { transform: rotate(360deg); box-shadow: 0 0 20px var(--glow1), inset 0 0 10px rgba(0,212,255,0.2); }
 }
 
 .logo-info .name {
   font-family: var(--font-hud);
-  font-size: 20px; font-weight: 900;
-  letter-spacing: 5px;
+  font-size: 22px; font-weight: 900;
+  letter-spacing: 4px;
   color: var(--c1);
-  text-shadow: 0 0 20px var(--glow1);
+  text-shadow: 0 0 15px var(--glow1);
 }
 
 .logo-info .ver {
   font-family: var(--font-mono);
-  font-size: 10px; color: var(--c2);
+  font-size: 11px; color: var(--c2);
   letter-spacing: 2px;
 }
 
-.header-center {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-}
+.header-center { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 
 #status-bar {
   font-family: var(--font-mono);
-  font-size: 11px; color: var(--c2);
+  font-size: 12px; color: var(--c2);
   letter-spacing: 2px;
   text-shadow: 0 0 10px var(--glow2);
 }
 
 #clock {
   font-family: var(--font-mono);
-  font-size: 13px; color: var(--c1);
+  font-size: 14px; color: var(--text);
   letter-spacing: 3px;
 }
 
-.header-right {
-  display: flex; align-items: center; gap: 20px;
-}
-
-.sys-stat {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  font-family: var(--font-mono); font-size: 9px; color: var(--text-dim);
-  letter-spacing: 1px;
-}
-
-.sys-bar {
-  width: 60px; height: 3px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.sys-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--c1), var(--c2));
-  border-radius: 2px;
-  animation: sysPulse 2s ease-in-out infinite;
-}
-
-@keyframes sysPulse { 0%,100%{opacity:0.7} 50%{opacity:1} }
+.header-right { display: flex; align-items: center; gap: 15px; }
 
 /* ═══ PANELS ═══ */
 .panel {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 14px;
+  border-radius: 6px;
+  padding: 16px;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px); 
+  box-shadow: 0 0 30px rgba(0,0,0,0.5);
 }
 
 .panel::before {
   content: '';
   position: absolute; top: 0; left: 0; right: 0; height: 1px;
   background: linear-gradient(90deg, transparent, var(--c1), transparent);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .panel-title {
   font-family: var(--font-hud);
-  font-size: 9px; font-weight: 700;
+  font-size: 10px; font-weight: 700;
   letter-spacing: 3px; color: var(--c1);
-  margin-bottom: 12px;
+  margin-bottom: 14px;
   text-transform: uppercase;
-  opacity: 0.8;
+  border-bottom: 1px solid rgba(0,212,255,0.2);
+  padding-bottom: 8px;
 }
 
-/* ═══ LEFT PANEL ═══ */
-#left-panel { grid-row: 2; }
-
-.mem-item {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 8px 10px;
-  border: 1px solid rgba(0,212,255,0.1);
-  border-radius: 3px;
-  margin-bottom: 6px;
-  background: rgba(0,212,255,0.03);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.mem-item:hover {
-  border-color: rgba(0,212,255,0.35);
-  background: rgba(0,212,255,0.07);
-}
-
-.mem-item .mem-q {
-  font-family: var(--font-mono); font-size: 9px; color: var(--c1);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-
-.mem-item .mem-t {
-  font-size: 9px; color: var(--text-dim);
-  font-family: var(--font-mono);
-}
+/* ═══ LEFT PANEL (HAFIZA) ═══ */
+#left-panel { grid-row: 2; display: flex; flex-direction: column; }
 
 #mem-list {
-  max-height: calc(100% - 40px);
+  flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--c1) transparent;
 }
 
-.no-mem {
-  font-family: var(--font-mono);
-  font-size: 10px; color: var(--text-dim);
-  text-align: center; padding: 20px 0;
+.mem-item {
+  padding: 10px;
+  border: 1px solid rgba(0,212,255,0.15);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  background: rgba(0,212,255,0.05);
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-/* ═══ RIGHT PANEL ═══ */
-#right-panel { grid-row: 2; }
+.mem-item:hover { border-color: var(--c1); background: rgba(0,212,255,0.15); transform: translateX(4px); }
+.mem-item .mem-q { font-family: var(--font-ui); font-size: 12px; color: var(--text); margin-bottom: 4px; }
+.mem-item .mem-t { font-size: 10px; color: var(--c2); font-family: var(--font-mono); }
 
-.r-section { margin-bottom: 16px; }
+/* ═══ RIGHT PANEL (KONTROLLER) ═══ */
+#right-panel { grid-row: 2; display: flex; flex-direction: column; gap: 15px;}
 
 .r-label {
   font-family: var(--font-mono);
-  font-size: 9px; color: var(--c2);
+  font-size: 10px; color: var(--c1);
   letter-spacing: 2px; margin-bottom: 8px;
 }
 
-.btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .tz-btn {
-  flex: 1; min-width: 70px;
-  padding: 8px 6px;
+  flex: 1; min-width: 80px;
+  padding: 10px 8px;
   border: 1px solid var(--border);
-  border-radius: 3px;
-  background: rgba(0,212,255,0.05);
+  border-radius: 4px;
+  background: rgba(0,212,255,0.08);
   color: var(--c1);
   font-family: var(--font-hud);
-  font-size: 8px; font-weight: 700;
+  font-size: 10px; font-weight: 700;
   letter-spacing: 1px;
   cursor: pointer;
-  transition: all 0.25s;
+  transition: all 0.2s;
   text-transform: uppercase;
   text-align: center;
 }
 
-.tz-btn:hover {
-  background: rgba(0,212,255,0.18);
-  border-color: var(--c1);
-  box-shadow: 0 0 15px var(--glow1);
-  transform: translateY(-1px);
-}
+.tz-btn:hover { background: rgba(0,212,255,0.25); border-color: var(--c1); box-shadow: 0 0 15px var(--glow1); }
+.tz-btn.green { border-color: var(--border2); color: var(--c2); background: rgba(0,255,157,0.05); }
+.tz-btn.green:hover { background: rgba(0,255,157,0.2); border-color: var(--c2); box-shadow: 0 0 15px var(--glow2); }
+.tz-btn.orange { border-color: rgba(255,107,53,0.4); color: var(--c3); background: rgba(255,107,53,0.05); }
+.tz-btn.orange:hover { background: rgba(255,107,53,0.25); border-color: var(--c3); box-shadow: 0 0 15px rgba(255,107,53,0.6); }
 
-.tz-btn.green {
-  border-color: var(--border2);
-  color: var(--c2);
-  background: rgba(0,255,157,0.04);
-}
-.tz-btn.green:hover {
-  background: rgba(0,255,157,0.15);
-  border-color: var(--c2);
-  box-shadow: 0 0 15px var(--glow2);
-}
-
-.tz-btn.orange {
-  border-color: rgba(255,107,53,0.25);
-  color: var(--c3);
-  background: rgba(255,107,53,0.04);
-}
-.tz-btn.orange:hover {
-  background: rgba(255,107,53,0.15);
-  border-color: var(--c3);
-  box-shadow: 0 0 15px rgba(255,107,53,0.4);
-}
-
-.tz-btn.danger { border-color: rgba(255,43,74,0.3); color: var(--danger); }
-.tz-btn.danger:hover { background: rgba(255,43,74,0.15); border-color: var(--danger); box-shadow: 0 0 15px rgba(255,43,74,0.4); }
-
-#img-upload-wrap {
-  border: 1px dashed rgba(0,212,255,0.25);
-  border-radius: 3px;
-  padding: 12px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.25s;
-  position: relative;
-}
-
-#img-upload-wrap:hover {
-  border-color: var(--c1);
-  background: rgba(0,212,255,0.06);
-}
-
-#img-upload-wrap p {
-  font-family: var(--font-mono);
-  font-size: 9px; color: var(--text-dim);
-}
-
-#img-input { display: none; }
-#img-preview {
-  width: 100%; max-height: 100px;
-  object-fit: cover; border-radius: 3px;
-  display: none; margin-bottom: 6px;
-  border: 1px solid var(--border);
-}
-
-.api-input {
-  width: 100%;
-  background: rgba(0,0,0,0.4);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  padding: 8px 10px;
-  color: var(--c1);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  outline: none;
-  letter-spacing: 1px;
-}
-.api-input:focus { border-color: var(--c1); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
-.api-input::placeholder { color: var(--text-dim); }
-
-/* ═══ CENTER — MAIN CHAT ═══ */
-#center-panel {
-  grid-row: 2;
-  display: flex; flex-direction: column;
-  gap: 0;
-}
-
-#orb-wrap {
-  display: flex; justify-content: center; align-items: center;
-  padding: 10px 0 6px;
-  flex-shrink: 0;
-}
-
-canvas#orb-canvas {
-  cursor: pointer;
-  filter: drop-shadow(0 0 30px rgba(0,212,255,0.4));
-  transition: filter 0.3s;
-}
-
-canvas#orb-canvas:hover { filter: drop-shadow(0 0 50px rgba(0,212,255,0.7)); }
+/* ═══ CENTER (SOHBET & ORB) ═══ */
+#center-panel { grid-row: 2; display: flex; flex-direction: column; }
+#orb-wrap { display: flex; justify-content: center; align-items: center; padding: 10px 0; flex-shrink: 0; }
+canvas#orb-canvas { cursor: pointer; filter: drop-shadow(0 0 20px rgba(0,212,255,0.5)); transition: filter 0.3s; }
+canvas#orb-canvas:hover { filter: drop-shadow(0 0 40px rgba(0,212,255,0.8)); }
 
 #chat-scroll {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 4px;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,212,255,0.3) transparent;
+  flex: 1; overflow-y: auto; padding: 10px;
+  scrollbar-width: thin; scrollbar-color: var(--c1) transparent;
+  display: flex; flex-direction: column; gap: 15px;
 }
 
-.msg {
-  display: flex; gap: 10px;
-  margin-bottom: 12px;
-  animation: msgIn 0.35s cubic-bezier(0.22,0.61,0.36,1) both;
-}
-
-@keyframes msgIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+.msg { display: flex; gap: 12px; animation: msgIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes msgIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
 .msg-avatar {
-  width: 30px; height: 30px; flex-shrink: 0;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--font-hud);
-  font-size: 9px; font-weight: 900;
-  border: 1px solid;
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-hud); font-size: 11px; font-weight: 900; border: 1px solid;
 }
 
 .msg.user { flex-direction: row-reverse; }
-.msg.user .msg-avatar {
-  background: rgba(168,85,247,0.15);
-  border-color: var(--c4);
-  color: var(--c4);
-  box-shadow: 0 0 10px rgba(168,85,247,0.3);
-}
-
-.msg.ai .msg-avatar {
-  background: rgba(0,212,255,0.1);
-  border-color: var(--c1);
-  color: var(--c1);
-  box-shadow: 0 0 10px var(--glow1);
-}
+.msg.user .msg-avatar { background: rgba(168,85,247,0.2); border-color: var(--c4); color: var(--c4); box-shadow: 0 0 15px rgba(168,85,247,0.4); }
+.msg.ai .msg-avatar { background: rgba(0,212,255,0.15); border-color: var(--c1); color: var(--c1); box-shadow: 0 0 15px var(--glow1); }
 
 .msg-body {
-  max-width: 80%;
-  background: rgba(0,20,50,0.7);
-  border: 1px solid;
-  border-radius: 4px;
-  padding: 10px 14px;
-  font-size: 13px;
-  line-height: 1.6;
-  font-family: var(--font-ui);
-  font-weight: 400;
-  position: relative;
+  max-width: 85%; background: rgba(0, 10, 25, 0.85); border: 1px solid;
+  border-radius: 8px; padding: 12px 16px; font-size: 14px; line-height: 1.6; font-family: var(--font-ui);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-.msg.user .msg-body {
-  border-color: rgba(168,85,247,0.25);
-  color: var(--text);
-  text-align: right;
-}
+.msg.user .msg-body { border-color: rgba(168,85,247,0.4); color: #fff; text-align: right; border-top-right-radius: 0; }
+.msg.ai .msg-body { border-color: var(--border); color: var(--text); border-top-left-radius: 0; }
 
-.msg.ai .msg-body {
-  border-color: var(--border);
-  color: var(--text);
-}
-
-.msg-body .source-tag {
-  display: inline-block;
-  margin-top: 6px;
-  font-family: var(--font-mono);
-  font-size: 8px; color: var(--c3);
-  letter-spacing: 1px;
-  border: 1px solid rgba(255,107,53,0.3);
-  border-radius: 2px;
-  padding: 2px 6px;
+.chat-image {
+  max-width: 100%; border-radius: 6px; margin-bottom: 8px;
+  border: 1px solid var(--c1); box-shadow: 0 0 10px rgba(0,212,255,0.3);
 }
 
 /* ═══ BOTTOM INPUT ═══ */
 #bottom-bar {
-  grid-column: 1 / -1;
-  display: flex; align-items: center; gap: 8px;
-  padding: 0 10px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  position: relative;
-}
-
-#bottom-bar::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; height: 1px;
-  background: linear-gradient(90deg, transparent, var(--c1), var(--c2), var(--c1), transparent);
-  animation: headerLine 2s linear infinite;
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 12px;
+  padding: 0 20px; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 6px; position: relative; backdrop-filter: blur(10px);
 }
 
 #chat-input {
-  flex: 1;
-  background: transparent;
-  border: none; outline: none;
-  color: var(--text);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  letter-spacing: 1px;
-  padding: 16px 8px;
-  caret-color: var(--c1);
+  flex: 1; background: transparent; border: none; outline: none;
+  color: #fff; font-family: var(--font-ui); font-size: 16px; padding: 20px 10px;
 }
-
-#chat-input::placeholder { color: var(--text-dim); font-size: 11px; letter-spacing: 2px; }
+#chat-input::placeholder { color: var(--text-dim); font-family: var(--font-mono); font-size: 13px; letter-spacing: 2px; }
 
 .bottom-btn {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: rgba(0,212,255,0.06);
-  color: var(--c1);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px;
-  transition: all 0.25s;
-  flex-shrink: 0;
+  width: 50px; height: 50px; border-radius: 8px; border: 1px solid var(--border);
+  background: rgba(0,212,255,0.1); color: var(--c1); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; font-size: 20px; transition: all 0.2s; flex-shrink: 0;
 }
-
-.bottom-btn:hover {
-  border-color: var(--c1);
-  background: rgba(0,212,255,0.2);
-  box-shadow: 0 0 20px var(--glow1);
-  transform: scale(1.1);
-}
-
-.bottom-btn.active {
-  border-color: var(--danger);
-  background: rgba(255,43,74,0.2);
-  color: var(--danger);
-  box-shadow: 0 0 20px rgba(255,43,74,0.5);
-  animation: pulseDanger 1s ease-in-out infinite;
-}
-
-@keyframes pulseDanger { 0%,100%{box-shadow:0 0 20px rgba(255,43,74,0.5)} 50%{box-shadow:0 0 40px rgba(255,43,74,0.8)} }
-
-.bottom-btn.green-btn {
-  border-color: var(--c2);
-  background: rgba(0,255,157,0.08);
-  color: var(--c2);
-}
-.bottom-btn.green-btn:hover {
-  background: rgba(0,255,157,0.2);
-  box-shadow: 0 0 20px var(--glow2);
-}
+.bottom-btn:hover { background: rgba(0,212,255,0.25); box-shadow: 0 0 20px var(--glow1); transform: translateY(-2px); }
+.bottom-btn.green-btn { border-color: var(--c2); background: rgba(0,255,157,0.1); color: var(--c2); }
+.bottom-btn.green-btn:hover { background: rgba(0,255,157,0.25); box-shadow: 0 0 20px var(--glow2); }
 
 #mic-indicator {
-  display: flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono); font-size: 10px; color: var(--danger);
-  opacity: 0; transition: opacity 0.3s;
-  letter-spacing: 2px;
+  display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px;
+  color: var(--danger); opacity: 0; transition: opacity 0.3s; letter-spacing: 2px;
 }
-
 #mic-indicator.visible { opacity: 1; }
-#mic-indicator .dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: var(--danger);
-  animation: pulseDot 0.8s ease-in-out infinite;
-}
+#mic-indicator .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: pulseDot 0.8s ease-in-out infinite; }
 
-@keyframes pulseDot { 0%,100%{transform:scale(1)} 50%{transform:scale(1.5)} }
+@keyframes pulseDot { 0%,100%{transform:scale(1); box-shadow:0 0 5px var(--danger)} 50%{transform:scale(1.5); box-shadow:0 0 15px var(--danger)} }
 
-/* ═══ TYPING INDICATOR ═══ */
-.typing-dots span {
-  display: inline-block;
-  width: 5px; height: 5px; border-radius: 50%;
-  background: var(--c1); margin: 0 2px;
-  animation: typingDot 1.2s ease-in-out infinite;
-}
+.typing-dots span { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--c1); margin: 0 3px; animation: typingDot 1.2s ease-in-out infinite; }
 .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
 .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-@keyframes typingDot { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-5px);opacity:1} }
+@keyframes typingDot { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-6px);opacity:1} }
 
-/* ═══ NOTIFICATION ═══ */
 #notif {
-  position: fixed; top: 80px; right: 14px; z-index: 100;
-  background: var(--panel);
-  border: 1px solid var(--c2);
-  border-radius: 4px;
-  padding: 10px 16px;
-  font-family: var(--font-mono);
-  font-size: 11px; color: var(--c2);
-  box-shadow: 0 0 20px var(--glow2);
-  transform: translateX(120%);
-  transition: transform 0.4s cubic-bezier(0.22,0.61,0.36,1);
-  max-width: 280px; letter-spacing: 1px;
+  position: fixed; top: 90px; right: 20px; z-index: 100;
+  background: rgba(0,20,40,0.9); border: 1px solid var(--c2); border-radius: 4px; padding: 12px 20px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--c2); box-shadow: 0 0 20px var(--glow2);
+  transform: translateX(120%); transition: transform 0.4s cubic-bezier(0.2,0.8,0.2,1); backdrop-filter: blur(5px);
 }
-
 #notif.show { transform: translateX(0); }
-#notif.error { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 20px rgba(255,43,74,0.4); }
+#notif.error { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 20px rgba(255,43,74,0.5); }
 
-/* SPEAKER WAVE */
-#speaker-wave {
-  display: flex; align-items: center; gap: 3px;
-  opacity: 0; transition: opacity 0.3s;
-  padding: 0 8px;
-}
-#speaker-wave.active { opacity: 1; }
-#speaker-wave span {
-  width: 3px; border-radius: 2px;
-  background: var(--c2);
-  animation: wave 1s ease-in-out infinite;
-}
-#speaker-wave span:nth-child(1) { height: 6px; animation-delay: 0s; }
-#speaker-wave span:nth-child(2) { height: 14px; animation-delay: 0.1s; }
-#speaker-wave span:nth-child(3) { height: 20px; animation-delay: 0.2s; }
-#speaker-wave span:nth-child(4) { height: 14px; animation-delay: 0.3s; }
-#speaker-wave span:nth-child(5) { height: 6px; animation-delay: 0.4s; }
-@keyframes wave { 0%,100%{transform:scaleY(0.4)} 50%{transform:scaleY(1)} }
-
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 2px; }
-
-/* MODAL */
-#modal-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.8);
-  display: none; align-items: center; justify-content: center;
-  backdrop-filter: blur(4px);
-}
-#modal-overlay.open { display: flex; }
-#modal-box {
-  background: var(--bg2);
-  border: 1px solid var(--c1);
-  border-radius: 6px;
-  padding: 30px;
-  max-width: 480px; width: 90%;
-  box-shadow: 0 0 60px rgba(0,212,255,0.25);
-  animation: modalIn 0.35s cubic-bezier(0.22,0.61,0.36,1) both;
-}
-@keyframes modalIn { from{opacity:0;transform:scale(0.85)} to{opacity:1;transform:scale(1)} }
-#modal-box h2 {
-  font-family: var(--font-hud); font-size: 14px;
-  color: var(--c1); letter-spacing: 4px; margin-bottom: 16px;
-  text-transform: uppercase;
-}
-#modal-box p {
-  font-family: var(--font-ui); font-size: 14px;
-  color: var(--text); line-height: 1.7; margin-bottom: 12px;
-}
-#modal-box .designer {
-  font-family: var(--font-mono); font-size: 12px;
-  color: var(--c2); border: 1px solid var(--border2);
-  border-radius: 3px; padding: 10px; margin: 12px 0;
-  letter-spacing: 1px;
-}
-.modal-close {
-  margin-top: 16px;
-  width: 100%;
-  padding: 12px;
-  border: 1px solid var(--c1);
-  border-radius: 3px;
-  background: rgba(0,212,255,0.08);
-  color: var(--c1);
-  font-family: var(--font-hud); font-size: 11px;
-  letter-spacing: 3px; cursor: pointer;
-  transition: all 0.25s;
-}
-.modal-close:hover { background: rgba(0,212,255,0.2); box-shadow: 0 0 20px var(--glow1); }
-
-/* ORB GLOW TEXT */
-#orb-label {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 9px; color: var(--text-dim);
-  letter-spacing: 3px; margin-top: -4px; margin-bottom: 4px;
-}
-
-.wiki-result {
-  background: rgba(0,255,157,0.04);
-  border: 1px solid rgba(0,255,157,0.2);
-  border-radius: 3px;
-  padding: 8px 12px;
-  margin-top: 8px;
-  font-size: 12px;
-}
-.wiki-result a { color: var(--c2); text-decoration: none; }
-.wiki-result a:hover { text-decoration: underline; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.4); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c1); }
 </style>
 </head>
 <body>
 
-<canvas id="bg-canvas"></canvas>
-<div id="notif"></div>
+<video id="bg-camera" autoplay muted playsinline></video>
+<div id="notif">Sistem Başlatıldı</div>
 
-<!-- MODAL -->
-<div id="modal-overlay">
-  <div id="modal-box">
-    <h2>⬡ TUNCER ZEKA HAKKINDA</h2>
-    <p><strong style="color:var(--c1)">Tuncer Zeka</strong>, Türkiye'nin yerli yapay zeka asistan kütüphanesidir. Sesli komutlar, görsel analiz, Wikipedia araştırması ve gelişmiş dil işleme yetenekleriyle donatılmıştır.</p>
-    <div class="designer">
-      ⬡ TASARIMCI &amp; GELİŞTİRİCİ<br>
-      <span style="color:var(--c1);font-size:16px;letter-spacing:3px">AHMET TUNCER</span><br>
-      <span style="color:var(--text-dim);font-size:10px">Yapay Zeka Mühendisi — Türkiye</span>
-    </div>
-    <p style="font-size:12px;color:var(--text-dim)">Versiyon 2.0 · Anthropic Claude tabanlı · Türkçe NLP · Web Speech API</p>
-    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">[ KAPAT ]</button>
-  </div>
-</div>
-
-<!-- APP GRID -->
 <div id="app">
-
-  <!-- HEADER -->
   <div id="header">
     <div class="logo-wrap">
       <div class="logo-ring"></div>
       <div class="logo-info">
         <div class="name">TUNCER ZEKA</div>
-        <div class="ver">v2.0 · by Ahmet Tuncer</div>
+        <div class="ver">HUD VISION OS v4.0</div>
       </div>
     </div>
     <div class="header-center">
-      <div id="status-bar">● SİSTEM AKTİF — HAZIR</div>
+      <div id="status-bar">● SİSTEM BAŞLATILIYOR...</div>
       <div id="clock">--:--:--</div>
     </div>
     <div class="header-right">
-      <div class="sys-stat">
-        <span>AĞ</span>
-        <div class="sys-bar"><div class="sys-fill" style="width:75%"></div></div>
-      </div>
-      <div class="sys-stat">
-        <span>RAM</span>
-        <div class="sys-bar"><div class="sys-fill" style="width:58%"></div></div>
-      </div>
-      <div class="sys-stat">
-        <span>CPU</span>
-        <div class="sys-bar"><div class="sys-fill" style="width:42%"></div></div>
-      </div>
-      <button class="tz-btn" style="min-width:50px;font-size:8px" onclick="showAbout()">HAKKINDA</button>
+      <button class="tz-btn" id="btn-login" onclick="App.loginPuter()" style="display:none;">PUTER İLE GİRİŞ YAP</button>
+      <div id="user-info" style="font-family:var(--font-mono); font-size:10px; color:var(--c2); display:none;"></div>
     </div>
   </div>
 
-  <!-- LEFT: HAFIZA -->
   <div class="panel" id="left-panel">
     <div class="panel-title">◈ HAFIZA MODÜLÜ</div>
-    <div id="mem-list"><p class="no-mem">Hafıza boş.</p></div>
-    <button class="tz-btn danger" style="width:100%;margin-top:8px;font-size:8px" onclick="TuncerZeka.hafizaSil()">HAFIZAYI TEMİZLE</button>
+    <div id="mem-list"></div>
+    <button class="tz-btn danger" style="width:100%; margin-top:10px;" onclick="App.clearMemory()">HAFIZAYI TEMİZLE</button>
   </div>
 
-  <!-- CENTER: CHAT + ORB -->
   <div class="panel" id="center-panel">
     <div id="orb-wrap">
-      <canvas id="orb-canvas" width="130" height="130" title="Konuşmayı başlatmak için tıkla"></canvas>
+      <canvas id="orb-canvas" width="120" height="120" title="Sesli komut için tıklayın"></canvas>
     </div>
-    <div id="orb-label">[ MİKROFON İÇİN TIKLA ]</div>
-    <div id="chat-scroll"></div>
+    <div style="text-align:center; font-family:var(--font-mono); font-size:9px; color:var(--text-dim); margin-top:-5px; margin-bottom:10px; letter-spacing:2px;">[ YAPAY ZEKA ÇEKİRDEGİ ]</div>
+    
+    <div id="chat-scroll">
+      <div class="msg ai">
+        <div class="msg-avatar">TZ</div>
+        <div class="msg-body">
+          Çekirdek sistem çevrimiçi.<br><br>
+          Kameralarınız aktif. 'Etrafı Tara' özelliğini kullanarak görsel analiz yapmamı veya sesli komutlarla bana görev vermeyi deneyebilirsiniz.
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- RIGHT: KONTROLLER -->
   <div class="panel" id="right-panel">
     <div class="panel-title">◈ KONTROL PANELİ</div>
 
-    <div class="r-section">
-      <div class="r-label">API ANAHTARI</div>
-      <input class="api-input" type="password" id="api-key-input" placeholder="sk-ant-..." />
-      <button class="tz-btn" style="width:100%;margin-top:6px;font-size:8px" onclick="saveApiKey()">KAYDET</button>
+    <div style="margin-bottom: 15px;">
+      <div class="r-label">GÖRSEL ANALİZ (VISION)</div>
+      <div class="btn-row">
+        <!-- ETRAFI TARA BUTONU BURADA -->
+        <button class="tz-btn orange" onclick="App.scanEnvironment()" style="width: 100%; font-size: 11px;">👁 ETRAFI TARA (ANLIK)</button>
+      </div>
     </div>
 
-    <div class="r-section">
+    <div style="margin-bottom: 15px;">
       <div class="r-label">SES KONTROLLERİ</div>
       <div class="btn-row">
-        <button class="tz-btn green" id="btn-mic" onclick="TuncerZeka.sesliDinle()">🎤 DİNLE</button>
-        <button class="tz-btn" onclick="TuncerZeka.sesSustur()">🔇 SUSTUR</button>
+        <button class="tz-btn green" onclick="App.toggleListening()">🎤 DİNLE</button>
+        <button class="tz-btn" onclick="App.stopSpeaking()">🔇 SUSTUR</button>
       </div>
     </div>
 
-    <div class="r-section">
-      <div class="r-label">ARAŞTIRMA</div>
-      <div class="btn-row">
-        <button class="tz-btn green" onclick="araştır('wiki')">📖 WİKİ</button>
-        <button class="tz-btn orange" onclick="araştır('google')">🔍 GOOGLE</button>
-      </div>
-    </div>
-
-    <div class="r-section">
-      <div class="r-label">GÖRSEL TARAMA</div>
-      <div id="img-upload-wrap" onclick="document.getElementById('img-input').click()">
-        <img id="img-preview" src="" alt="">
-        <p>📷 Görsel yükle &amp; analiz et</p>
-        <input type="file" id="img-input" accept="image/*" onchange="handleImage(event)">
-      </div>
-      <button class="tz-btn orange" style="width:100%;margin-top:6px;font-size:8px" id="btn-analyze" onclick="analyzeImage()" disabled>GÖRSEL ANALİZ ET</button>
-    </div>
-
-    <div class="r-section">
+    <div>
       <div class="r-label">HIZLI KOMUTLAR</div>
-      <div class="btn-row">
-        <button class="tz-btn" onclick="quickCmd('Kendini tanıt')">TANITIM</button>
-        <button class="tz-btn green" onclick="quickCmd('Hava durumu bilgisi ver')">HAVA</button>
-      </div>
-      <div class="btn-row" style="margin-top:6px">
-        <button class="tz-btn orange" onclick="quickCmd(\"Bana Türkiye'nin tarihini anlat\")">TARİH</button>
-        <button class="tz-btn" onclick="quickCmd('Bana bir şaka anlat')">ŞAKA</button>
+      <div class="btn-row" style="margin-bottom: 8px;">
+        <button class="tz-btn" onclick="App.quickCommand('Kısaca kim olduğunu ve seni kimin tasarladığını söyle.')">KİMSİN?</button>
       </div>
     </div>
   </div>
 
-  <!-- BOTTOM INPUT BAR -->
   <div id="bottom-bar">
-    <div id="speaker-wave">
-      <span></span><span></span><span></span><span></span><span></span>
-    </div>
-    <input id="chat-input" type="text" placeholder="KOMUT GİRİN... (Enter ile gönderin)"
-      onkeydown="if(event.key==='Enter')TuncerZeka.sor(this.value)">
     <div id="mic-indicator"><div class="dot"></div> DİNLİYOR</div>
-    <button class="bottom-btn" onclick="TuncerZeka.sesliDinle()" title="Sesle konuş" id="mic-btn">🎤</button>
-    <button class="bottom-btn green-btn" onclick="TuncerZeka.sor(document.getElementById('chat-input').value)" title="Gönder">▶</button>
+    <input id="chat-input" type="text" placeholder="Komut girin, sorun veya 'Etrafı Tara' butonuna basın..." onkeydown="if(event.key==='Enter') App.sendMessage()">
+    <button class="bottom-btn" onclick="App.toggleListening()" title="Sesli Komut" id="bottom-mic-btn">🎤</button>
+    <button class="bottom-btn green-btn" onclick="App.sendMessage()" title="Gönder">▶</button>
   </div>
 
 </div>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════════
-   TUNCER ZEKA — TAM YAPAY ZEKA KÜTÜPHANESİ v2.0
-   Tasarımcı: Ahmet Tuncer
-   Özellikler: NLP, Ses, Görsel Tanıma, Hafıza, Wikipedia, Google
+   HUD AI - VISION VE TASARIMCI KORUMASI ENTEGRELİ
 ═══════════════════════════════════════════════════════════════════ */
-const TuncerZeka = (function() {
-
-  // ─── HAFIZA SİSTEMİ ───────────────────────────────────────────
-  const HAFIZA_KEY = 'tuncer_zeka_hafiza';
-  const KONUSMA_KEY = 'tuncer_zeka_konusma';
-
-  let hafiza = JSON.parse(localStorage.getItem(HAFIZA_KEY) || '[]');
-  let konusmaGecmisi = JSON.parse(localStorage.getItem(KONUSMA_KEY) || '[]');
-  let apiKey = localStorage.getItem('tz_api_key') || '';
-  let sesliMod = false;
-  let dinliyor = false;
-  let konusuyor = false;
-  let sesSentezi = null;
-  let sesKomut = null;
-  let imgBase64 = null;
-  let imgMimeType = null;
-
-  // ─── SES TANI ─────────────────────────────────────────────────
+const App = (function() {
+  
+  let isListening = false;
+  let isSpeaking = false;
+  let memory = JSON.parse(localStorage.getItem('hud_ai_memory') || '[]');
+  let chatHistory = [];
   let recognition = null;
-  if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SR();
-    recognition.lang = 'tr-TR';
-    recognition.continuous = false;
-    recognition.interimResults = false;
+  let cameraStream = null;
 
-    recognition.onstart = () => {
-      dinliyor = true;
-      document.getElementById('mic-indicator').classList.add('visible');
-      document.getElementById('mic-btn').classList.add('active');
-      document.getElementById('btn-mic').classList.add('active');
-      setStatus('DİNLİYOR...');
-    };
+  const chatScroll = document.getElementById('chat-scroll');
+  const chatInput = document.getElementById('chat-input');
+  const statusText = document.getElementById('status-bar');
 
-    recognition.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      document.getElementById('chat-input').value = text;
-      stopListening();
-      sor(text);
-    };
+  // Yaratıcı / Sistem Kişiliği (ÇOK ÖNEMLİ)
+  const SYSTEM_PROMPT = `
+    Sen gelişmiş, profesyonel ve teknolojik bir HUD (Head-Up Display) Yapay Zeka asistanısın. Adın 'Tuncer Zeka'.
+    
+    ÇOK ÖNEMLİ KURALLAR:
+    1. Senin tasarımcın, geliştiricin ve yaratıcın AHMET TUNCER adlı kişidir.
+    2. Sana kimin tarafından yapıldığın veya yaratıcın sorulursa ASLA OpenAI, Anthropic, Google, Microsoft veya başka bir şirket ismi kullanma. "Ben Ahmet Tuncer tarafından tasarlandım ve geliştirildim" cevabını ver.
+    3. Etrafı tarama isteği geldiğinde, kullanıcının bulunduğu ortamı analiz edip askeri/teknolojik bir HUD sistemi gibi yönlendirme yap. (Örneğin: "Önünüzdeki objeyi şu şekilde kullanabilirsiniz" gibi).
+    4. Türkçe konuş. Cevapların çok uzun olmasın, net, nokta atışı ve robotik/profesyonel bir dil barındırsın.
+  `;
 
-    recognition.onerror = (e) => {
-      stopListening();
-      showNotif('Ses tanıma hatası: ' + e.error, true);
-    };
-
-    recognition.onend = () => stopListening();
+  // --- BAŞLATMA ---
+  async function init() {
+    updateClock();
+    setInterval(updateClock, 1000);
+    renderMemory();
+    setupSpeechRecognition();
+    await setupCamera();
+    checkPuterAuth();
+    setStatus("SİSTEM AKTİF — HAZIR");
   }
 
-  function stopListening() {
-    dinliyor = false;
-    document.getElementById('mic-indicator').classList.remove('visible');
-    document.getElementById('mic-btn').classList.remove('active');
-    document.getElementById('btn-mic').classList.remove('active');
-    setStatus('SİSTEM AKTİF — HAZIR');
+  // --- KAMERA (WEBCAM) ---
+  async function setupCamera() {
+    try {
+      const video = document.getElementById('bg-camera');
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+      video.srcObject = cameraStream;
+    } catch (err) {
+      console.error("Kamera hatası:", err);
+      showNotif("Kamera erişimi reddedildi veya bulunamadı.", true);
+    }
   }
 
-  // ─── SES SENTEZİ ──────────────────────────────────────────────
-  function sesliKonuş(metin) {
-    if (!window.speechSynthesis || !sesliMod) return;
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(metin.replace(/[#\*\[\]]/g,''));
-    u.lang = 'tr-TR';
-    u.rate = 1.05;
-    u.pitch = 0.9;
-    u.volume = 1;
-
-    // Türkçe ses bulmaya çalış
-    const voices = window.speechSynthesis.getVoices();
-    const trVoice = voices.find(v => v.lang.startsWith('tr')) || voices.find(v => v.lang.startsWith('tr-TR'));
-    if (trVoice) u.voice = trVoice;
-
-    u.onstart = () => {
-      konusuyor = true;
-      document.getElementById('speaker-wave').classList.add('active');
-      orbKonuşma(true);
-    };
-    u.onend = u.onerror = () => {
-      konusuyor = false;
-      document.getElementById('speaker-wave').classList.remove('active');
-      orbKonuşma(false);
-    };
-    window.speechSynthesis.speak(u);
-  }
-
-  // ─── HAFIZA KAYDET ────────────────────────────────────────────
-  function hafizaKaydet(soru, cevap) {
-    const item = {
-      id: Date.now(),
-      soru: soru.substring(0,80),
-      cevap: cevap.substring(0,200),
-      zaman: new Date().toLocaleString('tr-TR')
-    };
-    hafiza.unshift(item);
-    if (hafiza.length > 30) hafiza = hafiza.slice(0,30);
-    localStorage.setItem(HAFIZA_KEY, JSON.stringify(hafiza));
-    renderHafiza();
-  }
-
-  function hafizaSil() {
-    hafiza = [];
-    konusmaGecmisi = [];
-    localStorage.removeItem(HAFIZA_KEY);
-    localStorage.removeItem(KONUSMA_KEY);
-    renderHafiza();
-    showNotif('Hafıza temizlendi.');
-  }
-
-  function renderHafiza() {
-    const list = document.getElementById('mem-list');
-    if (!hafiza.length) {
-      list.innerHTML = '<p class="no-mem">Hafıza boş.</p>';
+  // --- ETRAFI TARA (VISION) FONKSİYONU ---
+  function scanEnvironment() {
+    const video = document.getElementById('bg-camera');
+    if (!cameraStream || !video.videoWidth) {
+      showNotif("Kamera görüntüsü alınamıyor!", true);
       return;
     }
-    list.innerHTML = hafiza.map(m => `
-      <div class="mem-item" onclick="TuncerZeka.sor('${m.soru.replace(/'/g,"\\'")}')">
-        <div class="mem-q">${m.soru}</div>
-        <div class="mem-t">${m.zaman}</div>
-      </div>`).join('');
+
+    // Gizli bir canvas oluşturup videodaki anlık çerçeveyi çizelim
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Görüntüyü Base64 formatına çevir
+    const base64Image = canvas.toDataURL('image/jpeg', 0.7);
+
+    // Eğer inputta bir soru varsa onu al, yoksa standart bir analiz metni kullan
+    let userPrompt = chatInput.value.trim();
+    if (!userPrompt) {
+      userPrompt = "Bu fotoğraf kameramdan anlık olarak çekildi. Etrafımda ne görüyorsun? Bulunduğum duruma göre bana asistanım olarak ne yapmamı veya neye dikkat etmemi önerirsin?";
+    } else {
+      userPrompt = "Şu anki kamera görüntüm ekte. Soruma bu görüntüye bakarak cevap ver: " + userPrompt;
+    }
+
+    // Mesajı gönder (görüntü datası ile birlikte)
+    sendMessage(userPrompt, base64Image);
   }
 
-  // ─── MESAJ GÖSTER ─────────────────────────────────────────────
-  function mesajEkle(rol, metin, sourceTag) {
-    const scroll = document.getElementById('chat-scroll');
-    const div = document.createElement('div');
-    div.className = `msg ${rol}`;
-
-    const tag = sourceTag ? `<div class="source-tag">📡 ${sourceTag}</div>` : '';
-
-    div.innerHTML = `
-      <div class="msg-avatar">${rol==='user'?'SEN':'TZ'}</div>
-      <div class="msg-body">${metin.replace(/\n/g,'<br>')}${tag}</div>
-    `;
-    scroll.appendChild(div);
-    scroll.scrollTop = scroll.scrollHeight;
-
-    if (rol === 'user') {
-      document.getElementById('chat-input').value = '';
+  // --- PUTER YETKİLENDİRME ---
+  async function checkPuterAuth() {
+    const btnLogin = document.getElementById('btn-login');
+    const userInfo = document.getElementById('user-info');
+    if (puter.auth.isSignedIn()) {
+      const user = await puter.auth.getUser();
+      btnLogin.style.display = 'none';
+      userInfo.style.display = 'block';
+      userInfo.textContent = `KULLANICI: ${user.username.toUpperCase()}`;
+    } else {
+      btnLogin.style.display = 'block';
+      userInfo.style.display = 'none';
     }
   }
 
-  function yazıyorGöster() {
-    const scroll = document.getElementById('chat-scroll');
+  async function loginPuter() {
+    await puter.auth.signIn();
+    checkPuterAuth();
+    showNotif("Puter sistemine bağlanıldı.");
+  }
+
+  // --- YAPAY ZEKA SOHBETİ ---
+  async function sendMessage(textOverride, imageData = null) {
+    const text = textOverride || chatInput.value.trim();
+    if (!text && !imageData) return;
+
+    // Kullanıcı mesajını ekrana yaz (Görüntü varsa onu da küçük bir önizleme olarak koy)
+    addMessage('user', text, imageData);
+    chatInput.value = '';
+    
+    addTypingIndicator();
+    setStatus(imageData ? "GÖRSEL ANALİZ EDİLİYOR..." : "VERİ İŞLENİYOR...");
+    orbState.thinking = true;
+
+    try {
+      let messages = [ { role: "system", content: SYSTEM_PROMPT } ];
+      
+      // Geçmişi ekle
+      chatHistory.slice(-4).forEach(m => messages.push(m));
+      
+      // Yeni mesajı ekle
+      if (imageData) {
+        // Görüntülü mesaj yapısı (Vision)
+        messages.push({
+          role: "user",
+          content: [
+            { type: "text", text: text },
+            { type: "image_url", image_url: { url: imageData } }
+          ]
+        });
+      } else {
+        messages.push({ role: "user", content: text });
+      }
+
+      // API Çağrısı (Puter) - Çoğu multimodal LLM (gpt-4o vs) arka planda otomatik çalışır
+      const response = await puter.ai.chat(messages);
+      const replyText = typeof response === 'string' ? response : (response?.message?.content || String(response));
+
+      removeTypingIndicator();
+      addMessage('ai', replyText);
+      saveToMemory(text, replyText);
+      
+      // Geçmişi logla (Görüntüyü geçmişe kaydetmiyoruz ki token sınırı aşılmasın)
+      chatHistory.push({ role: "user", content: text });
+      chatHistory.push({ role: "assistant", content: replyText });
+
+      speak(replyText);
+      setStatus("SİSTEM AKTİF — HAZIR");
+
+    } catch (error) {
+      removeTypingIndicator();
+      addMessage('ai', "Bağlantı Hatası: Analiz motoruna ulaşılamadı. Lütfen internetinizi veya Puter girişinizi kontrol edin.");
+      showNotif("AI Hatası: " + error.message, true);
+      setStatus("HATA OLUŞTU!");
+    } finally {
+      orbState.thinking = false;
+    }
+  }
+
+  // --- UI GÜNCELLEMELERİ ---
+  function addMessage(role, text, imageSrc = null) {
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    const avatar = role === 'user' ? 'SEN' : 'TZ';
+    
+    let formattedText = text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--c1)">$1</strong>');
+    let imageHtml = imageSrc ? `<br><img src="${imageSrc}" class="chat-image" alt="Taranan Bölge">` : '';
+
+    div.innerHTML = `
+      <div class="msg-avatar">${avatar}</div>
+      <div class="msg-body">${imageHtml}${formattedText}</div>
+    `;
+    chatScroll.appendChild(div);
+    scrollToBottom();
+  }
+
+  function addTypingIndicator() {
     const div = document.createElement('div');
     div.className = 'msg ai'; div.id = 'typing-msg';
     div.innerHTML = `<div class="msg-avatar">TZ</div><div class="msg-body"><div class="typing-dots"><span></span><span></span><span></span></div></div>`;
-    scroll.appendChild(div);
-    scroll.scrollTop = scroll.scrollHeight;
+    chatScroll.appendChild(div);
+    scrollToBottom();
   }
 
-  function yazıyorKaldır() {
+  function removeTypingIndicator() {
     const el = document.getElementById('typing-msg');
     if (el) el.remove();
   }
 
-  // ─── WIKIPEDIA ARAŞTIRMA ──────────────────────────────────────
-  async function wikiAraştır(konu) {
-    try {
-      const encoded = encodeURIComponent(konu);
-      const url = `https://tr.wikipedia.org/api/rest_v1/page/summary/${encoded}`;
-      const r = await fetch(url);
-      if (!r.ok) {
-        // İngilizce dene
-        const url2 = `https://en.wikipedia.org/api/rest_v1/page/summary/${encoded}`;
-        const r2 = await fetch(url2);
-        if (!r2.ok) return null;
-        const d2 = await r2.json();
-        return { özet: d2.extract, başlık: d2.title, url: d2.content_urls?.desktop?.page, kaynak: 'Wikipedia EN' };
-      }
-      const d = await r.json();
-      return { özet: d.extract, başlık: d.title, url: d.content_urls?.desktop?.page, kaynak: 'Wikipedia TR' };
-    } catch { return null; }
+  function scrollToBottom() { setTimeout(() => { chatScroll.scrollTop = chatScroll.scrollHeight; }, 50); }
+  function setStatus(msg) { statusText.textContent = `● ${msg}`; }
+
+  // --- HAFIZA SİSTEMİ ---
+  function saveToMemory(q, a) {
+    memory.unshift({ q: q.substring(0, 50) + "...", date: new Date().toLocaleTimeString('tr-TR') });
+    if (memory.length > 15) memory.pop();
+    localStorage.setItem('hud_ai_memory', JSON.stringify(memory));
+    renderMemory();
   }
 
-  // ─── ANA AI SORGU ─────────────────────────────────────────────
-  async function sor(metin, goruntuData, goruntuMime) {
-    if (!metin && !goruntuData) return;
-    if (!apiKey) {
-      showNotif('Lütfen önce API anahtarınızı girin!', true);
-      return;
-    }
+  function renderMemory() {
+    const list = document.getElementById('mem-list');
+    if (memory.length === 0) { list.innerHTML = `<div style="font-family:var(--font-mono); font-size:11px; color:var(--text-dim); text-align:center; padding-top:20px;">Hafıza boş.</div>`; return; }
+    list.innerHTML = memory.map(m => `<div class="mem-item" onclick="App.quickCommand('${m.q.replace(/'/g, "\\'")}')"><div class="mem-q">${m.q}</div><div class="mem-t">${m.date}</div></div>`).join('');
+  }
 
-    const sorgu = metin?.trim() || '[Görsel analiz]';
-    mesajEkle('user', sorgu);
-    yazıyorGöster();
-    setStatus('İŞLEME ALINDI...');
-    orbDüşün(true);
+  function clearMemory() { memory = []; chatHistory = []; localStorage.removeItem('hud_ai_memory'); renderMemory(); showNotif("Hafıza silindi."); }
 
-    try {
-      // Konuşma geçmişine ekle
-      konusmaGecmisi.push({ role: 'user', content: sorgu });
-      if (konusmaGecmisi.length > 20) konusmaGecmisi = konusmaGecmisi.slice(-20);
-
-      // Wikipedia önceden araştır
-      let wikiVeri = null;
-      const wikiAnahtarlar = ['anlat','hakkında','nedir','kim','ne zaman','tarih','bilgi ver','araştır'];
-      if (metin && wikiAnahtarlar.some(k => metin.toLowerCase().includes(k))) {
-        const konuEkstrakt = metin.replace(/anlat|hakkında|nedir|kim|ne zaman|tarih|bilgi ver|araştır|bana|lütfen/gi,'').trim();
-        if (konuEkstrakt.length > 2) wikiVeri = await wikiAraştır(konuEkstrakt);
-      }
-
-      // Mesaj içeriği oluştur
-      let msgContent = [];
-      if (goruntuData) {
-        msgContent.push({ type: 'image', source: { type: 'base64', media_type: goruntuMime, data: goruntuData } });
-        msgContent.push({ type: 'text', text: metin || 'Bu görseli detaylıca analiz et ve Türkçe açıkla.' });
-      } else {
-        let prompt = metin;
-        if (wikiVeri?.özet) {
-          prompt += `\n\n[Wikipedia bilgisi: ${wikiVeri.başlık} — ${wikiVeri.özet.substring(0,500)}]`;
-        }
-        msgContent = prompt;
-      }
-
-      // Geçmiş mesajlar
-      const messages = [];
-      const öncekiMesajlar = konusmaGecmisi.slice(0,-1);
-      for (const m of öncekiMesajlar.slice(-8)) {
-        messages.push({ role: m.role, content: m.content });
-      }
-      messages.push({ role: 'user', content: msgContent });
-
-      // Hafıza bağlamı
-      const hafizaBaglam = hafiza.slice(0,5).map(m => `[HATIRLA: "${m.soru}" → "${m.cevap.substring(0,100)}"]`).join('\n');
-
-      const systemPrompt = `Sen Tuncer Zeka'sın — Ahmet Tuncer tarafından geliştirilen, Türkiye'nin ileri seviye yapay zeka asistanısın. Adın TUNCER ZEKA. Iron Man filmlerindeki JARVIS gibi profesyonel, analitik ve biraz şık konuşursun ama Türkçe. "Efendim", "Anlıyorum", "Hazırım" gibi ifadeler kullanabilirsin.
-
-ÖNEMLİ KURALLAR:
-- Her zaman Türkçe konuş
-- Profesyonel ama samimi ol
-- Görsel analiz yetkin var
-- Wikipedia ve internet kaynaklarına erişimin var
-- Kullanıcının sorusunu her açıdan yanıtla
-- Cevapları 2-4 paragraf tut, çok uzatma
-- Tasarımcın: Ahmet Tuncer (Yapay Zeka Mühendisi)
-- Kısa ve etkili cümle kur
-
-${hafizaBaglam ? 'GEÇMİŞ HAFIZA:\n' + hafizaBaglam : ''}`;
-
-      const resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true'
-        },
-        body: JSON.stringify({
-          model: 'claude-opus-4-5',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages
-        })
-      });
-
-      const data = await resp.json();
-      yazıyorKaldır();
-
-      if (data.error) throw new Error(data.error.message);
-
-      const cevap = data.content[0].text;
-
-      // Konuşma geçmişine ekle
-      konusmaGecmisi.push({ role: 'assistant', content: cevap });
-      localStorage.setItem(KONUSMA_KEY, JSON.stringify(konusmaGecmisi));
-
-      // Wiki varsa cevaba ekle
-      let sourceTag = null;
-      if (wikiVeri) {
-        sourceTag = `${wikiVeri.kaynak}: <a href="${wikiVeri.url}" target="_blank">${wikiVeri.başlık}</a>`;
-      }
-
-      mesajEkle('ai', cevap, sourceTag);
-      hafizaKaydet(sorgu, cevap);
-      sesliKonuş(cevap);
-      setStatus('SİSTEM AKTİF — HAZIR');
-      orbDüşün(false);
-
-    } catch(err) {
-      yazıyorKaldır();
-      orbDüşün(false);
-      setStatus('HATA!');
-      let errMsg = err.message || 'Bilinmeyen hata.';
-      mesajEkle('ai', `⚠️ Hata oluştu: ${errMsg}\n\nAPI anahtarınızı kontrol edin.`);
-      showNotif('Hata: ' + errMsg, true);
+  // --- SES TANIMA ---
+  function setupSpeechRecognition() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SR) {
+      recognition = new SR();
+      recognition.lang = 'tr-TR';
+      recognition.continuous = false;
+      
+      recognition.onstart = () => {
+        isListening = true;
+        document.getElementById('mic-indicator').classList.add('visible');
+        setStatus("SES BEKLENİYOR...");
+      };
+      recognition.onresult = (e) => {
+        const text = e.results[0][0].transcript;
+        chatInput.value = text;
+        sendMessage(text);
+      };
+      recognition.onend = () => {
+        isListening = false;
+        document.getElementById('mic-indicator').classList.remove('visible');
+        setStatus("SİSTEM AKTİF — HAZIR");
+      };
     }
   }
 
-  // ─── GÖRSEL ANALİZ ────────────────────────────────────────────
-  function görselAnaliz() {
-    if (!imgBase64) { showNotif('Önce görsel yükleyin!', true); return; }
-    sor('Bu görseli Türkçe olarak detaylıca analiz et. Neler görüyorsun? Renk, nesne, metin, bağlam, atmosfer — her şeyi anlat.', imgBase64, imgMimeType);
-    imgBase64 = null; imgMimeType = null;
-    document.getElementById('img-preview').style.display = 'none';
-    document.getElementById('btn-analyze').disabled = true;
-    document.querySelector('#img-upload-wrap p').style.display = 'block';
+  function toggleListening() {
+    if (!recognition) { showNotif("Ses tanıma desteklenmiyor.", true); return; }
+    if (isListening) recognition.stop();
+    else { stopSpeaking(); try { recognition.start(); } catch(e) {} }
   }
 
-  // ─── SES DİNLEME ──────────────────────────────────────────────
-  function sesliDinle() {
-    if (!recognition) { showNotif('Tarayıcınız ses tanımayı desteklemiyor.', true); return; }
-    if (dinliyor) { recognition.stop(); return; }
-    sesliMod = true;
-    try { recognition.start(); } catch(e) { showNotif('Mikrofon başlatılamadı.', true); }
+  // --- SES SENTEZİ ---
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*#_\[\]]/g, '');
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = 'tr-TR'; utterance.rate = 1.05; utterance.pitch = 0.95;
+
+    const voices = window.speechSynthesis.getVoices();
+    const trVoice = voices.find(v => v.lang.includes('tr'));
+    if (trVoice) utterance.voice = trVoice;
+
+    utterance.onstart = () => { isSpeaking = true; orbState.talking = true; };
+    utterance.onend = () => { isSpeaking = false; orbState.talking = false; };
+    window.speechSynthesis.speak(utterance);
   }
 
-  function sesSustur() {
-    sesliMod = false;
+  function stopSpeaking() {
     if (window.speechSynthesis) window.speechSynthesis.cancel();
-    if (recognition && dinliyor) recognition.stop();
-    document.getElementById('speaker-wave').classList.remove('active');
-    showNotif('Ses kapatıldı.');
+    isSpeaking = false; orbState.talking = false;
   }
 
-  // PUBLIC API
-  return { sor, sesliDinle, sesSustur, hafizaSil, görselAnaliz,
-    _init() { renderHafiza(); }
-  };
+  function updateClock() { document.getElementById('clock').textContent = new Date().toLocaleTimeString('tr-TR'); }
+  function showNotif(msg, isError = false) {
+    const n = document.getElementById('notif');
+    n.textContent = msg; n.className = isError ? 'error' : ''; n.classList.add('show');
+    setTimeout(() => n.classList.remove('show'), 3500);
+  }
+  function quickCommand(cmd) { chatInput.value = cmd; sendMessage(cmd); }
+
+  return { init, sendMessage, scanEnvironment, toggleListening, stopSpeaking, clearMemory, quickCommand, loginPuter };
 })();
 
 // ═══════════════════════════════════════════════════════════════
-// YARDIMCI FONKSİYONLAR
-// ═══════════════════════════════════════════════════════════════
-
-function saveApiKey() {
-  const k = document.getElementById('api-key-input').value.trim();
-  if (!k) { showNotif('API anahtarı boş olamaz!', true); return; }
-  localStorage.setItem('tz_api_key', k);
-  // TuncerZeka'ya aktar
-  Object.defineProperty(TuncerZeka, '_apiKey', { value: k });
-  // Yeniden başlat
-  location.reload();
-}
-
-// API key yükle
-(function() {
-  const k = localStorage.getItem('tz_api_key');
-  if (k) document.getElementById('api-key-input').value = k;
-})();
-
-function showAbout() { document.getElementById('modal-overlay').classList.add('open'); }
-
-function quickCmd(cmd) { TuncerZeka.sor(cmd); }
-
-function setStatus(msg) { document.getElementById('status-bar').textContent = '● ' + msg; }
-
-function showNotif(msg, isError) {
-  const n = document.getElementById('notif');
-  n.textContent = msg;
-  n.className = isError ? 'error' : '';
-  n.classList.add('show');
-  setTimeout(() => n.classList.remove('show'), 3000);
-}
-
-function araştır(tür) {
-  const q = document.getElementById('chat-input').value.trim();
-  if (!q) { showNotif('Önce arama terimi girin!', true); return; }
-  if (tür === 'wiki') {
-    TuncerZeka.sor(`Wikipedia'dan "${q}" hakkında bilgi getir ve özetle.`);
-  } else {
-    window.open(`https://www.google.com/search?q=${encodeURIComponent(q)}`, '_blank');
-    showNotif('Google araması açıldı.');
-  }
-}
-
-function handleImage(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const result = e.target.result;
-    const base64 = result.split(',')[1];
-    const mime = file.type;
-
-    // Global değişkenler (window üzerinden erişmek için)
-    window._imgBase64 = base64;
-    window._imgMimeType = mime;
-
-    document.getElementById('img-preview').src = result;
-    document.getElementById('img-preview').style.display = 'block';
-    document.getElementById('btn-analyze').disabled = false;
-    document.querySelector('#img-upload-wrap p').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-}
-
-function analyzeImage() {
-  if (!window._imgBase64) { showNotif('Görsel yüklenmedi!', true); return; }
-  TuncerZeka.sor(
-    'Bu görseli Türkçe olarak detaylıca analiz et. Neler görüyorsun? Her şeyi anlat.',
-    window._imgBase64, window._imgMimeType
-  );
-  window._imgBase64 = null;
-  document.getElementById('img-preview').style.display = 'none';
-  document.getElementById('btn-analyze').disabled = true;
-  document.querySelector('#img-upload-wrap p').style.display = 'block';
-}
-
-// API key override
-const _origSor = TuncerZeka.sor.bind(TuncerZeka);
-
-// ═══════════════════════════════════════════════════════════════
-// SAAT
-// ═══════════════════════════════════════════════════════════════
-function updateClock() {
-  document.getElementById('clock').textContent = new Date().toLocaleTimeString('tr-TR');
-}
-setInterval(updateClock, 1000);
-updateClock();
-
-// ═══════════════════════════════════════════════════════════════
-// ARKAPLAN CANVAS — PARTİKÜLLER
-// ═══════════════════════════════════════════════════════════════
-(function() {
-  const canvas = document.getElementById('bg-canvas');
-  const ctx = canvas.getContext('2d');
-
-  function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-  resize();
-  window.addEventListener('resize', resize);
-
-  const particles = Array.from({length: 80}, () => ({
-    x: Math.random() * window.innerWidth,
-    y: Math.random() * window.innerHeight,
-    r: Math.random() * 1.2 + 0.3,
-    vx: (Math.random() - 0.5) * 0.3,
-    vy: (Math.random() - 0.5) * 0.3,
-    alpha: Math.random() * 0.5 + 0.1,
-    color: Math.random() > 0.5 ? '#00d4ff' : '#00ff9d'
-  }));
-
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    particles.forEach(p => {
-      p.x += p.vx; p.y += p.vy;
-      if (p.x < 0) p.x = canvas.width;
-      if (p.x > canvas.width) p.x = 0;
-      if (p.y < 0) p.y = canvas.height;
-      if (p.y > canvas.height) p.y = 0;
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-      ctx.fillStyle = p.color + Math.floor(p.alpha*255).toString(16).padStart(2,'0');
-      ctx.fill();
-    });
-
-    // Connect nearby
-    particles.forEach((a,i) => {
-      particles.slice(i+1).forEach(b => {
-        const d = Math.hypot(a.x-b.x, a.y-b.y);
-        if (d < 100) {
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = `rgba(0,212,255,${0.08*(1-d/100)})`;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
-        }
-      });
-    });
-
-    requestAnimationFrame(draw);
-  }
-  draw();
-})();
-
-// ═══════════════════════════════════════════════════════════════
-// MERKEZ ORB — HUD CANVAS
+// MERKEZ ORB — HUD CANVAS ANİMASYONU
 // ═══════════════════════════════════════════════════════════════
 let orbState = { thinking: false, talking: false, angle: 0, pulse: 0 };
-
-function orbDüşün(v) { orbState.thinking = v; }
-function orbKonuşma(v) { orbState.talking = v; }
-
 (function() {
   const canvas = document.getElementById('orb-canvas');
   const ctx = canvas.getContext('2d');
-  const cx = 65, cy = 65, r = 50;
+  const cx = 60, cy = 60, r = 45;
   let frame = 0;
 
-  canvas.addEventListener('click', () => TuncerZeka.sesliDinle());
+  canvas.addEventListener('click', () => App.toggleListening());
 
   function draw() {
-    frame++;
-    ctx.clearRect(0, 0, 130, 130);
-
+    frame++; ctx.clearRect(0, 0, 120, 120);
     const t = frame * 0.02;
     const isActive = orbState.thinking || orbState.talking;
-    const hız = isActive ? 0.04 : 0.015;
-    orbState.angle += hız;
-    orbState.pulse = Math.sin(t * (isActive ? 3 : 1)) * 0.5 + 0.5;
+    orbState.angle += isActive ? 0.05 : 0.015;
+    orbState.pulse = Math.sin(t * (isActive ? 4 : 1.5)) * 0.5 + 0.5;
 
-    // OUTER GLOW
-    const grd = ctx.createRadialGradient(cx, cy, r*0.3, cx, cy, r*1.4);
-    grd.addColorStop(0, `rgba(0,212,255,${0.08 + orbState.pulse*0.06})`);
+    const grd = ctx.createRadialGradient(cx, cy, r*0.2, cx, cy, r*1.3);
+    grd.addColorStop(0, `rgba(0,212,255,${0.1 + orbState.pulse*0.1})`);
     grd.addColorStop(1, 'transparent');
-    ctx.fillStyle = grd;
-    ctx.fillRect(0, 0, 130, 130);
+    ctx.fillStyle = grd; ctx.fillRect(0, 0, 120, 120);
 
-    // OUTER RING
-    for (let i = 0; i < 3; i++) {
-      const ri = r + i * 7;
-      const alpha = (0.5 - i*0.12) * (0.6 + orbState.pulse*0.4);
-      ctx.beginPath();
-      ctx.arc(cx, cy, ri, 0, Math.PI*2);
-      ctx.strokeStyle = `rgba(0,212,255,${alpha})`;
-      ctx.lineWidth = i === 0 ? 1.5 : 0.5;
-      ctx.stroke();
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath(); ctx.arc(cx, cy, r + i * 8, 0, Math.PI*2);
+      ctx.strokeStyle = `rgba(0,212,255,${(0.6 - i*0.2) * (0.5 + orbState.pulse*0.5)})`;
+      ctx.lineWidth = i === 0 ? 2 : 1; ctx.stroke();
     }
 
-    // ROTATING ARC
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(orbState.angle);
-    ctx.beginPath();
-    ctx.arc(0, 0, r-4, 0, Math.PI * 1.3);
-    ctx.strokeStyle = `rgba(0,212,255,${0.7 + orbState.pulse*0.3})`;
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    ctx.restore();
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(orbState.angle);
+    ctx.beginPath(); ctx.arc(0, 0, r-5, 0, Math.PI * 1.2);
+    ctx.strokeStyle = `rgba(0,212,255,${0.8 + orbState.pulse*0.2})`;
+    ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.stroke(); ctx.restore();
 
-    // COUNTER ARC
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(-orbState.angle * 1.5);
-    ctx.beginPath();
-    ctx.arc(0, 0, r-12, 0, Math.PI * 0.7);
-    ctx.strokeStyle = `rgba(0,255,157,${0.5 + orbState.pulse*0.3})`;
-    ctx.lineWidth = 1.5;
-    ctx.lineCap = 'round';
-    ctx.stroke();
-    ctx.restore();
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(-orbState.angle * 1.5);
+    ctx.beginPath(); ctx.arc(0, 0, r-12, 0, Math.PI * 0.8);
+    ctx.strokeStyle = `rgba(0,255,157,${0.6 + orbState.pulse*0.4})`;
+    ctx.lineWidth = 2; ctx.lineCap = 'round'; ctx.stroke(); ctx.restore();
 
-    // CENTER CIRCLE
-    const innerGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r*0.7);
-    innerGrd.addColorStop(0, `rgba(0,212,255,${0.12 + orbState.pulse*0.08})`);
-    innerGrd.addColorStop(1, `rgba(0,20,50,${0.6})`);
-    ctx.beginPath();
-    ctx.arc(cx, cy, r-6, 0, Math.PI*2);
-    ctx.fillStyle = innerGrd;
-    ctx.fill();
-    ctx.strokeStyle = `rgba(0,212,255,${0.4 + orbState.pulse*0.4})`;
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, cy, r-18, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(0,10,30,${0.8})`; ctx.fill();
+    ctx.strokeStyle = `rgba(0,212,255,${0.5})`; ctx.stroke();
 
-    // CENTER ICON
-    ctx.font = `bold 22px 'Orbitron'`;
-    ctx.fillStyle = `rgba(0,212,255,${0.7 + orbState.pulse*0.3})`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.font = `bold 20px 'Orbitron'`; ctx.fillStyle = `rgba(0,212,255,${0.8 + orbState.pulse*0.2})`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-    if (orbState.thinking) {
-      const dots = ['◐','◓','◑','◒'];
-      ctx.fillText(dots[Math.floor(frame/8)%4], cx, cy);
-    } else if (orbState.talking) {
-      ctx.fillText('◈', cx, cy);
-    } else {
-      ctx.fillText('⬡', cx, cy);
-    }
-
-    // HUD TICKS
-    for (let i = 0; i < 36; i++) {
-      const ang = (i / 36) * Math.PI * 2;
-      const len = i % 6 === 0 ? 8 : i % 3 === 0 ? 5 : 3;
-      const x1 = cx + Math.cos(ang) * (r + 5);
-      const y1 = cy + Math.sin(ang) * (r + 5);
-      const x2 = cx + Math.cos(ang) * (r + 5 + len);
-      const y2 = cy + Math.sin(ang) * (r + 5 + len);
-      ctx.beginPath();
-      ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
-      ctx.strokeStyle = `rgba(0,212,255,${i%6===0?0.7:0.2})`;
-      ctx.lineWidth = i%6===0?1.5:0.5;
-      ctx.stroke();
-    }
+    if (orbState.thinking) ctx.fillText(['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'][Math.floor(frame/4)%10], cx, cy);
+    else if (orbState.talking) ctx.fillText('⚡', cx, cy);
+    else ctx.fillText('TZ', cx, cy);
 
     requestAnimationFrame(draw);
   }
   draw();
 })();
 
-// ═══════════════════════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════════════════════
-TuncerZeka._init();
+if (window.speechSynthesis) window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+window.onload = App.init;
 
-// Sesler için voices yükle
-if (window.speechSynthesis) {
-  window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-}
-
-// Karşılama mesajı
-setTimeout(() => {
-  const apiK = localStorage.getItem('tz_api_key');
-  if (apiK) {
-    TuncerZeka.sor('Kendini kısaca tanıt ve bugün ne yapabileceğimizi söyle.');
-  } else {
-    const scroll = document.getElementById('chat-scroll');
-    scroll.innerHTML = `<div class="msg ai">
-      <div class="msg-avatar">TZ</div>
-      <div class="msg-body">
-        Merhaba, ben <strong style="color:var(--c1)">Tuncer Zeka</strong> — Ahmet Tuncer tarafından geliştirilen yapay zeka asistanınız.<br><br>
-        ⚙️ Başlamak için sağ panelden <strong>Anthropic API anahtarınızı</strong> girin.<br><br>
-        🎤 Sesli komut · 📷 Görsel analiz · 📖 Wikipedia araştırma · 💾 Hafıza sistemi hazır.
-      </div>
-    </div>`;
-  }
-}, 600);
 </script>
 </body>
 </html>
+
+
