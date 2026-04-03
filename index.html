@@ -2,116 +2,129 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tuncer Zeka v2026 - Kontrol Paneli</title>
+    
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            alert("KOD HATASI YAKALANDI!\n\nHata: " + message + "\nSatır: " + lineno + "\nDosya: " + source);
+            return true;
+        };
+    </script>
+
     <style>
-        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; }
-        h2 { color: var(--accent); margin-top: 0; font-size: 1.2rem; }
-        textarea { width: 100%; height: 60px; background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; box-sizing: border-box; }
-        button { background: var(--accent); color: #0f172a; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
-        #nlp-output, #math-output { background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; font-family: monospace; font-size: 0.9rem; color: #10b981; min-height: 40px; white-space: pre-wrap; }
-        canvas { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; background: #000; }
-        select { width: 100%; padding: 8px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155; }
+        :root {
+            --bg: #050505; --card: #121212; --text: #e0e0e0;
+            --accent: #00ff9d; --user-bg: #1a1a1a; --ai-bg: #222222;
+        }
+        body {
+            background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0; display: flex; flex-direction: column; height: 100vh;
+        }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .msg { max-width: 85%; padding: 12px 18px; border-radius: 15px; line-height: 1.5; font-size: 15px; position: relative; }
+        .user { align-self: flex-end; background: var(--user-bg); border-bottom-right-radius: 2px; color: var(--accent); }
+        .ai { align-self: flex-start; background: var(--ai-bg); border-bottom-left-radius: 2px; border: 1px solid #333; }
+        
+        #input-area { background: #111; padding: 15px; border-top: 1px solid #333; display: flex; gap: 10px; }
+        input { 
+            flex: 1; background: #1d1d1d; border: 1px solid #444; color: white; 
+            padding: 12px; border-radius: 8px; outline: none; 
+        }
+        input:focus { border-color: var(--accent); }
+        button { background: var(--accent); color: black; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        canvas { max-width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #444; }
+        .status-bar { font-size: 11px; color: #666; padding: 5px 20px; background: #000; text-align: right; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1 style="text-align:center; color: var(--accent);">TUNCER ZEKA v2026</h1>
-    
-    <div class="grid">
-        <div class="card">
-            <h2>Türkçe Dil İşleme</h2>
-            <textarea id="nlp-input" placeholder="Nasılsın? Bugün çok mutluyum!"></textarea>
-            <button onclick="analizEt()">Analiz Et</button>
-            <div id="nlp-output">Sonuç bekliyor...</div>
-        </div>
-
-        <div class="card">
-            <h2>Görsel Üretim</h2>
-            <select id="render-type">
-                <option value="manzara">Manzara Üret</option>
-                <option value="fraktal">Mandelbrot Fraktalı</option>
-                <option value="pixel">Pixel Art (Karakter)</option>
-                <option value="soyut">Soyut Geometrik</option>
-            </select>
-            <button onclick="gorselUret()">Görsel Oluştur</button>
-            <div id="canvas-container"></div>
-        </div>
-
-        <div class="card">
-            <h2>Sistem Durumu</h2>
-            <div id="memory-stats">Yükleniyor...</div>
-            <button onclick="agiTestEt()">Sinir Ağını Test Et</button>
-            <div id="math-output"></div>
-        </div>
-    </div>
+<div id="chat-window">
+    <div class="msg ai"><b>Tuncer Zeka v2026:</b> Çekirdek sistem aktif. Analiz, görsel üretim ve bellek birimleri hazır. Sana nasıl yardımcı olabilirim Ahmet?</div>
 </div>
-<script>
-    window.onerror = function(message, source, lineno, colno, error) {
-        alert("SİSTEM HATASI!\nMesaj: " + message + "\nSatır: " + lineno + "\nDosya: " + source);
-        return true;
-    };
-</script>
+
+<div class="status-bar" id="stats">Bellek: %0 | Niyet: Bekliyor</div>
+
+<div id="input-area">
+    <input type="text" id="user-input" placeholder="Mesajınızı yazın veya 'resim çiz' deyin..." onkeypress="if(event.key==='Enter') sendMessage()">
+    <button onclick="sendMessage()">Gönder</button>
+</div>
 
 <script src="tuncer2026.js"></script>
 
-<script src="tuncer2026.js"></script>
-
 <script>
-    // Kütüphane yüklendikten sonra nesneleri oluştur
-    let nlp, ressam, bellek;
+    // Kütüphane nesnelerini tanımlıyoruz
+    let nlp, ressam, bellek, ag;
 
     window.onload = () => {
+        // Senin kütüphanendeki sınıfları başlatıyoruz
         try {
             nlp = new TurkceDilIsleme();
             ressam = new GorselUretim();
             bellek = new BellekSistemi();
-            bellekYenile();
+            ag = new SinirAgi([2, 5, 1]); // Test amaçlı küçük bir ağ
+            updateStatus("Sistem Hazır");
         } catch(e) {
-            console.error("Kütüphane yüklenemedi:", e);
-            alert("tuncer2026.js dosyası bulunamadı veya hatalı!");
+            console.error("Başlatma hatası:", e);
         }
     };
 
-    function analizEt() {
-        const text = document.getElementById('nlp-input').value;
-        if(!text) return;
-        const duygu = nlp.duyguAnalizi(text);
-        const niyet = nlp.niyetTespit(text);
-        document.getElementById('nlp-output').innerText = 
-            `Duygu: ${duygu.duygu}\nNiyet: ${niyet.niyet}\nSkor: ${duygu.skor}`;
-        bellek.kisaSureliEkle(text);
-        bellekYenile();
-    }
-
-    function gorselUret() {
-        const tip = document.getElementById('render-type').value;
-        const container = document.getElementById('canvas-container');
-        container.innerHTML = ""; 
-        let cvs;
-        if(tip === 'manzara') cvs = ressam.manzaraUret(400, 250);
-        else if(tip === 'fraktal') cvs = ressam.fraktalUret(400, 400);
-        else if(tip === 'pixel') cvs = ressam.pixelArtUret(16, 16, 15);
-        else cvs = ressam.soyutSanatUret(400, 400);
-        container.appendChild(cvs);
-    }
-
-    function bellekYenile() {
+    function updateStatus(niyet = "-") {
         const s = bellek.istatistikler();
-        document.getElementById('memory-stats').innerText = 
-            `Kısa Süreli Bellek: ${s.kisaSureli}\nUzun Süreli: ${s.uzunSureli}\nDoluluk: ${s.kullanimOrani}`;
+        document.getElementById('stats').innerText = `Bellek: ${s.kullanimOrani} | Niyet: ${niyet}`;
     }
 
-    function agiTestEt() {
-        const ag = new SinirAgi([2, 3, 1], 0.1);
-        ag.topluEgit([{giris:[1,0], hedef:[1]}, {giris:[0,1], hedef:[1]}], 500);
-        const sonuc = ag.tahminEt([1,0]);
-        document.getElementById('math-output').innerText = `Sinir Ağı [1,0] Tahmini: ${sonuc[0].toFixed(4)}`;
+    function addMessage(text, isUser, isHtml = false) {
+        const win = document.getElementById('chat-window');
+        const div = document.createElement('div');
+        div.className = `msg ${isUser ? 'user' : 'ai'}`;
+        
+        if(isHtml) div.innerHTML = text;
+        else div.innerText = (isUser ? "Siz: " : "Tuncer Zeka: ") + text;
+        
+        win.appendChild(div);
+        win.scrollTop = win.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('user-input');
+        const text = input.value.trim();
+        if(!text) return;
+
+        addMessage(text, true);
+        input.value = '';
+
+        // 1. ADIM: NLP Analizi (Senin niyetTespit fonksiyonun)
+        const analiz = nlp.niyetTespit(text);
+        const duygu = nlp.duyguAnalizi(text);
+        updateStatus(analiz.niyet);
+
+        // 2. ADIM: Belleğe Ekle
+        bellek.kisaSureliEkle(text);
+
+        // 3. ADIM: Mantıksal Karar Ağacı
+        setTimeout(() => {
+            if(analiz.niyet === "gorselUretim" || text.includes("çiz") || text.includes("resim")) {
+                addMessage("Hemen bir görsel tasarlıyorum...", false);
+                const cvs = ressam.manzaraUret(400, 250); // Senin kütüphanendeki fonksiyon
+                const container = document.createElement('div');
+                container.className = "msg ai";
+                container.innerHTML = "<b>Üretilen Görsel:</b><br>";
+                container.appendChild(cvs);
+                document.getElementById('chat-window').appendChild(container);
+            } 
+            else if(analiz.niyet === "selamlama") {
+                addMessage("Merhaba! Tuncer Zeka algoritmaları seni selamlıyor. Bugün neler yapacağız?", false);
+            }
+            else {
+                const anahtar = nlp.anahtarKelimeCikar(text, 2);
+                const cevap = `Mesajını analiz ettim. Duygun: ${duygu.duygu}. Odak noktan: ${anahtar.length > 0 ? anahtar[0].kelime : 'genel sohbet'}. Sana bu konuda nasıl destek olabilirim?`;
+                addMessage(cevap, false);
+            }
+            
+            updateStatus(analiz.niyet);
+        }, 600);
     }
 </script>
 
