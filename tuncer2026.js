@@ -1590,4 +1590,1412 @@
                 ctx.lineTo(genislik - kenarBosluk, y);
                 ctx.stroke();
 
-                const 
+                const deger = maxDeger - (aralik / 5) * i;
+                ctx.fillStyle = "#888";
+                ctx.font = "11px Arial";
+                ctx.textAlign = "right";
+                ctx.fillText(deger.toFixed(1), kenarBosluk - 5, y + 4);
+            }
+
+            if (tip === "cubuk") {
+                const cubukGen = (grafikGen / veri.length) * 0.7;
+                const bosluk = (grafikGen / veri.length) * 0.3;
+
+                veri.forEach((d, i) => {
+                    const x = kenarBosluk + i * (cubukGen + bosluk) + bosluk / 2;
+                    const cubukYuk = ((d.deger - minDeger) / aralik) * grafikYuk;
+                    const y = kenarBosluk + 20 + grafikYuk - cubukYuk;
+
+                    const renk = d.renk || `hsl(${(i * 360) / veri.length}, 70%, 55%)`;
+                    const grad = ctx.createLinearGradient(x, y, x, y + cubukYuk);
+                    grad.addColorStop(0, renk);
+                    grad.addColorStop(1, renk.replace("55%", "35%"));
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(x, y, cubukGen, cubukYuk);
+
+                    // Etiket
+                    ctx.fillStyle = "#ccc";
+                    ctx.font = "10px Arial";
+                    ctx.textAlign = "center";
+                    ctx.save();
+                    ctx.translate(x + cubukGen / 2, kenarBosluk + 20 + grafikYuk + 15);
+                    ctx.rotate(-0.3);
+                    ctx.fillText(d.etiket || `${i + 1}`, 0, 0);
+                    ctx.restore();
+
+                    // Değer
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "bold 11px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(d.deger.toFixed(1), x + cubukGen / 2, y - 5);
+                });
+            } else if (tip === "cizgi") {
+                ctx.beginPath();
+                ctx.strokeStyle = secenekler.cizgiRenk || "#00ff88";
+                ctx.lineWidth = 2.5;
+
+                const noktalar = [];
+                veri.forEach((d, i) => {
+                    const x = kenarBosluk + (i / (veri.length - 1 || 1)) * grafikGen;
+                    const y = kenarBosluk + 20 + grafikYuk - ((d.deger - minDeger) / aralik) * grafikYuk;
+                    noktalar.push({ x, y });
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+
+                // Noktalar
+                noktalar.forEach((n, i) => {
+                    ctx.beginPath();
+                    ctx.arc(n.x, n.y, 4, 0, Math.PI * 2);
+                    ctx.fillStyle = "#00ff88";
+                    ctx.fill();
+                    ctx.strokeStyle = "#fff";
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    ctx.fillStyle = "#ccc";
+                    ctx.font = "10px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(veri[i].etiket || "", n.x, kenarBosluk + 20 + grafikYuk + 15);
+                });
+            } else if (tip === "pasta") {
+                const merkezX = genislik / 2;
+                const merkezY = yukseklik / 2 + 10;
+                const yaricap = Math.min(grafikGen, grafikYuk) / 2.5;
+                const toplam = veri.reduce((a, b) => a + b.deger, 0);
+                let baslangicAci = -Math.PI / 2;
+
+                veri.forEach((d, i) => {
+                    const dilimAci = (d.deger / toplam) * Math.PI * 2;
+                    const renk = d.renk || `hsl(${(i * 360) / veri.length}, 70%, 55%)`;
+
+                    ctx.beginPath();
+                    ctx.moveTo(merkezX, merkezY);
+                    ctx.arc(merkezX, merkezY, yaricap, baslangicAci, baslangicAci + dilimAci);
+                    ctx.closePath();
+                    ctx.fillStyle = renk;
+                    ctx.fill();
+                    ctx.strokeStyle = "#1a1a2e";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Etiket
+                    const etiketAci = baslangicAci + dilimAci / 2;
+                    const etiketX = merkezX + Math.cos(etiketAci) * (yaricap + 25);
+                    const etiketY = merkezY + Math.sin(etiketAci) * (yaricap + 25);
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "11px Arial";
+                    ctx.textAlign = "center";
+                    ctx.fillText(`${d.etiket || ""} (${((d.deger / toplam) * 100).toFixed(1)}%)`, etiketX, etiketY);
+
+                    baslangicAci += dilimAci;
+                });
+            }
+
+            return canvas;
+        }
+    }
+
+    // ================================================================
+    // BÖLÜM 9: KOD YAZMA & ANALİZ SİSTEMİ
+    // ================================================================
+
+    class KodYazici {
+        constructor() {
+            this.sablonlar = this.sablonlariYukle();
+            this.dilBilgisi = this.dilBilgisiYukle();
+        }
+
+        sablonlariYukle() {
+            return {
+                javascript: {
+                    fonksiyon: (ad, parametreler, govde) =>
+                        `function ${ad}(${parametreler}) {\n${govde}\n}`,
+                    okFonksiyon: (ad, parametreler, govde) =>
+                        `const ${ad} = (${parametreler}) => {\n${govde}\n};`,
+                    sinif: (ad, ozellikler, metodlar) =>
+                        `class ${ad} {\n  constructor(${ozellikler}) {\n    ${ozellikler.split(",").map(p => `this.${p.trim()} = ${p.trim()};`).join("\n    ")}\n  }\n\n${metodlar}\n}`,
+                    dongu: (tip, kosul, govde) => {
+                        if (tip === "for") return `for (let i = 0; i < ${kosul}; i++) {\n${govde}\n}`;
+                        if (tip === "while") return `while (${kosul}) {\n${govde}\n}`;
+                        if (tip === "forEach") return `${kosul}.forEach((eleman, index) => {\n${govde}\n});`;
+                        return "";
+                    },
+                    async: (ad, govde) =>
+                        `async function ${ad}() {\n  try {\n${govde}\n  } catch (hata) {\n    console.error("Hata:", hata);\n  }\n}`,
+                    promise: (govde) =>
+                        `new Promise((resolve, reject) => {\n${govde}\n});`,
+                    fetchAPI: (url) =>
+                        `async function veriCek() {\n  try {\n    const yanit = await fetch("${url}");\n    const veri = await yanit.json();\n    console.log(veri);\n    return veri;\n  } catch (hata) {\n    console.error("Veri çekme hatası:", hata);\n  }\n}`,
+                    eventListener: (eleman, olay, govde) =>
+                        `document.querySelector("${eleman}").addEventListener("${olay}", function(e) {\n${govde}\n});`,
+                    modul: (ad, ihracatlar) =>
+                        `// ${ad} modülü\n${ihracatlar.map(i => `export function ${i}() {\n  // TODO: Implementasyon\n}`).join("\n\n")}\n\nexport default { ${ihracatlar.join(", ")} };`
+                },
+                html: {
+                    sayfa: (baslik, icerik) =>
+                        `<!DOCTYPE html>\n<html lang="tr">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${baslik}</title>\n  <style>\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body { font-family: 'Segoe UI', sans-serif; }\n  </style>\n</head>\n<body>\n  ${icerik}\n</body>\n</html>`,
+                    form: (alanlar) =>
+                        `<form id="form" onsubmit="return false;">\n${alanlar.map(a => `  <div class="form-grup">\n    <label for="${a.ad}">${a.etiket}</label>\n    <input type="${a.tip || "text"}" id="${a.ad}" name="${a.ad}" placeholder="${a.placeholder || ""}" ${a.zorunlu ? "required" : ""}>\n  </div>`).join("\n")}\n  <button type="submit">Gönder</button>\n</form>`,
+                    tablo: (basliklar, satirlar) =>
+                        `<table>\n  <thead>\n    <tr>\n${basliklar.map(b => `      <th>${b}</th>`).join("\n")}\n    </tr>\n  </thead>\n  <tbody>\n${satirlar.map(s => `    <tr>\n${s.map(h => `      <td>${h}</td>`).join("\n")}\n    </tr>`).join("\n")}\n  </tbody>\n</table>`
+                },
+                css: {
+                    flexbox: (yonelim = "row") =>
+                        `.container {\n  display: flex;\n  flex-direction: ${yonelim};\n  justify-content: center;\n  align-items: center;\n  gap: 1rem;\n  flex-wrap: wrap;\n}`,
+                    grid: (sutun = 3) =>
+                        `.grid-container {\n  display: grid;\n  grid-template-columns: repeat(${sutun}, 1fr);\n  gap: 1rem;\n  padding: 1rem;\n}`,
+                    animasyon: (ad, keyframes) =>
+                        `@keyframes ${ad} {\n${keyframes}\n}\n\n.${ad}-animasyonlu {\n  animation: ${ad} 1s ease-in-out infinite;\n}`,
+                    karanlikTema: () =>
+                        `:root {\n  --bg: #1a1a2e;\n  --text: #eee;\n  --primary: #e94560;\n  --secondary: #0f3460;\n  --accent: #16213e;\n}\n\nbody {\n  background: var(--bg);\n  color: var(--text);\n  font-family: 'Segoe UI', sans-serif;\n}`
+                },
+                python: {
+                    fonksiyon: (ad, parametreler, govde) =>
+                        `def ${ad}(${parametreler}):\n    """${ad} fonksiyonu"""\n${govde.split("\n").map(l => "    " + l).join("\n")}`,
+                    sinif: (ad, ozellikler) =>
+                        `class ${ad}:\n    def __init__(self, ${ozellikler}):\n${ozellikler.split(",").map(p => `        self.${p.trim()} = ${p.trim()}`).join("\n")}\n\n    def __str__(self):\n        return f"${ad}(${ozellikler.split(",").map(p => `${p.trim()}={self.${p.trim()}}`).join(", ")})"`,
+                    listComprehension: (ifade, degisken, kaynak, kosul) =>
+                        `sonuc = [${ifade} for ${degisken} in ${kaynak}${kosul ? ` if ${kosul}` : ""}]`
+                }
+            };
+        }
+
+        dilBilgisiYukle() {
+            return {
+                javascript: {
+                    uzanti: ".js",
+                    yorumTek: "//",
+                    yorumCok: ["/*", "*/"],
+                    anahtarKelimeler: ["function", "const", "let", "var", "if", "else", "for", "while", "return", "class", "new", "this", "async", "await", "import", "export", "try", "catch"]
+                },
+                python: {
+                    uzanti: ".py",
+                    yorumTek: "#",
+                    yorumCok: ['"""', '"""'],
+                    anahtarKelimeler: ["def", "class", "if", "elif", "else", "for", "while", "return", "import", "from", "try", "except", "with", "as", "lambda", "yield"]
+                },
+                html: {
+                    uzanti: ".html",
+                    yorumTek: null,
+                    yorumCok: ["<!--", "-->"],
+                    anahtarKelimeler: ["div", "span", "p", "h1", "h2", "h3", "a", "img", "form", "input", "button", "table", "ul", "li"]
+                }
+            };
+        }
+
+        kodUret(istek) {
+            const istekLower = istek.toLowerCase();
+            let kod = "";
+            let dil = "javascript";
+            let aciklama = "";
+
+            // Dil tespiti
+            if (istekLower.includes("python")) dil = "python";
+            else if (istekLower.includes("html")) dil = "html";
+            else if (istekLower.includes("css")) dil = "css";
+
+            // İstek analizi ve kod üretimi
+            if (istekLower.includes("sıralama") || istekLower.includes("sort")) {
+                aciklama = "Çeşitli sıralama algoritmaları";
+                kod = this.siralamaAlgoritmalari(dil);
+            } else if (istekLower.includes("arama") || istekLower.includes("search")) {
+                aciklama = "Arama algoritmaları";
+                kod = this.aramaAlgoritmalari(dil);
+            } else if (istekLower.includes("hesap") || istekLower.includes("kalkül") || istekLower.includes("matematik")) {
+                aciklama = "Matematik hesaplama fonksiyonları";
+                kod = this.matematikKodu(dil);
+            } else if (istekLower.includes("todo") || istekLower.includes("yapılacak")) {
+                aciklama = "Todo (Yapılacaklar) uygulaması";
+                kod = this.todoUygulamasi();
+                dil = "html";
+            } else if (istekLower.includes("form")) {
+                aciklama = "Form oluşturma";
+                kod = this.sablonlar.html.form([
+                    { ad: "isim", etiket: "İsim", tip: "text", placeholder: "Adınız", zorunlu: true },
+                    { ad: "email", etiket: "E-posta", tip: "email", placeholder: "E-posta adresiniz", zorunlu: true },
+                    { ad: "mesaj", etiket: "Mesaj", tip: "text", placeholder: "Mesajınız" }
+                ]);
+                dil = "html";
+            } else if (istekLower.includes("api") || istekLower.includes("fetch") || istekLower.includes("veri çek")) {
+                aciklama = "API'den veri çekme";
+                kod = this.sablonlar.javascript.fetchAPI("https://jsonplaceholder.typicode.com/posts");
+            } else if (istekLower.includes("animasyon")) {
+                aciklama = "CSS animasyonu";
+                kod = this.sablonlar.css.animasyon("ziplama", "  0%, 100% { transform: translateY(0); }\n  50% { transform: translateY(-20px); }");
+                dil = "css";
+            } else if (istekLower.includes("tema") || istekLower.includes("karanlık")) {
+                aciklama = "Karanlık tema CSS";
+                kod = this.sablonlar.css.karanlikTema();
+                dil = "css";
+            } else if (istekLower.includes("sınıf") || istekLower.includes("class")) {
+                aciklama = "Sınıf oluşturma";
+                if (dil === "python") {
+                    kod = this.sablonlar.python.sinif("Ogrenci", "ad, yas, numara");
+                } else {
+                    kod = this.sablonlar.javascript.sinif("Ogrenci", "ad, yas, numara", '  bilgiGoster() {\n    return `${this.ad} - ${this.yas} yaşında`;\n  }');
+                }
+            } else if (istekLower.includes("oyun") || istekLower.includes("game")) {
+                aciklama = "Basit bir oyun";
+                kod = this.basitOyun();
+                dil = "javascript";
+            } else if (istekLower.includes("grid") || istekLower.includes("ızgara")) {
+                aciklama = "CSS Grid düzeni";
+                kod = this.sablonlar.css.grid(3);
+                dil = "css";
+            } else if (istekLower.includes("flexbox") || istekLower.includes("flex")) {
+                aciklama = "CSS Flexbox düzeni";
+                kod = this.sablonlar.css.flexbox("row");
+                dil = "css";
+            } else if (istekLower.includes("sayfa") || istekLower.includes("web")) {
+                aciklama = "Temel web sayfası";
+                kod = this.sablonlar.html.sayfa("Tuncer Zeka Sayfası", '<div style="text-align:center; padding:2rem;">\n    <h1>Merhaba Dünya!</h1>\n    <p>Bu sayfa Tuncer Zeka tarafından oluşturuldu.</p>\n  </div>');
+                dil = "html";
+            } else {
+                aciklama = "İstenen kod yapısı";
+                kod = this.genelKodUret(istek, dil);
+            }
+
+            return {
+                kod,
+                dil,
+                aciklama,
+                satirSayisi: kod.split("\n").length,
+                karakter: kod.length
+            };
+        }
+
+        siralamaAlgoritmalari(dil) {
+            if (dil === "python") {
+                return `# Sıralama Algoritmaları - Tuncer Zeka
+# Tasarımcı: Ahmet Tuncer
+
+def bubble_sort(dizi):
+    """Kabarcık sıralama"""
+    n = len(dizi)
+    for i in range(n):
+        for j in range(0, n-i-1):
+            if dizi[j] > dizi[j+1]:
+                dizi[j], dizi[j+1] = dizi[j+1], dizi[j]
+    return dizi
+
+def quick_sort(dizi):
+    """Hızlı sıralama"""
+    if len(dizi) <= 1:
+        return dizi
+    pivot = dizi[len(dizi) // 2]
+    sol = [x for x in dizi if x < pivot]
+    orta = [x for x in dizi if x == pivot]
+    sag = [x for x in dizi if x > pivot]
+    return quick_sort(sol) + orta + quick_sort(sag)
+
+def merge_sort(dizi):
+    """Birleştirmeli sıralama"""
+    if len(dizi) <= 1:
+        return dizi
+    orta = len(dizi) // 2
+    sol = merge_sort(dizi[:orta])
+    sag = merge_sort(dizi[orta:])
+    return birlestir(sol, sag)
+
+def birlestir(sol, sag):
+    sonuc = []
+    i = j = 0
+    while i < len(sol) and j < len(sag):
+        if sol[i] <= sag[j]:
+            sonuc.append(sol[i])
+            i += 1
+        else:
+            sonuc.append(sag[j])
+            j += 1
+    sonuc.extend(sol[i:])
+    sonuc.extend(sag[j:])
+    return sonuc
+
+# Test
+test = [64, 34, 25, 12, 22, 11, 90]
+print("Bubble Sort:", bubble_sort(test.copy()))
+print("Quick Sort:", quick_sort(test.copy()))
+print("Merge Sort:", merge_sort(test.copy()))`;
+            }
+
+            return `// Sıralama Algoritmaları - Tuncer Zeka
+// Tasarımcı: Ahmet Tuncer
+
+// Kabarcık Sıralama (Bubble Sort)
+function bubbleSort(dizi) {
+    const arr = [...dizi];
+    const n = arr.length;
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n - i - 1; j++) {
+            if (arr[j] > arr[j + 1]) {
+                [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+            }
+        }
+    }
+    return arr;
+}
+
+// Hızlı Sıralama (Quick Sort)
+function quickSort(dizi) {
+    if (dizi.length <= 1) return dizi;
+    const pivot = dizi[Math.floor(dizi.length / 2)];
+    const sol = dizi.filter(x => x < pivot);
+    const orta = dizi.filter(x => x === pivot);
+    const sag = dizi.filter(x => x > pivot);
+    return [...quickSort(sol), ...orta, ...quickSort(sag)];
+}
+
+// Birleştirmeli Sıralama (Merge Sort)
+function mergeSort(dizi) {
+    if (dizi.length <= 1) return dizi;
+    const orta = Math.floor(dizi.length / 2);
+    const sol = mergeSort(dizi.slice(0, orta));
+    const sag = mergeSort(dizi.slice(orta));
+    return birlestir(sol, sag);
+}
+
+function birlestir(sol, sag) {
+    const sonuc = [];
+    let i = 0, j = 0;
+    while (i < sol.length && j < sag.length) {
+        if (sol[i] <= sag[j]) sonuc.push(sol[i++]);
+        else sonuc.push(sag[j++]);
+    }
+    return [...sonuc, ...sol.slice(i), ...sag.slice(j)];
+}
+
+// Seçmeli Sıralama (Selection Sort)
+function selectionSort(dizi) {
+    const arr = [...dizi];
+    for (let i = 0; i < arr.length; i++) {
+        let minIdx = i;
+        for (let j = i + 1; j < arr.length; j++) {
+            if (arr[j] < arr[minIdx]) minIdx = j;
+        }
+        [arr[i], arr[minIdx]] = [arr[minIdx], arr[i]];
+    }
+    return arr;
+}
+
+// Test
+const test = [64, 34, 25, 12, 22, 11, 90];
+console.log("Bubble Sort:", bubbleSort(test));
+console.log("Quick Sort:", quickSort(test));
+console.log("Merge Sort:", mergeSort(test));
+console.log("Selection Sort:", selectionSort(test));`;
+        }
+
+        aramaAlgoritmalari(dil) {
+            return `// Arama Algoritmaları - Tuncer Zeka
+// Tasarımcı: Ahmet Tuncer
+
+// İkili Arama (Binary Search)
+function ikiliArama(dizi, hedef) {
+    let sol = 0, sag = dizi.length - 1;
+    while (sol <= sag) {
+        const orta = Math.floor((sol + sag) / 2);
+        if (dizi[orta] === hedef) return orta;
+        if (dizi[orta] < hedef) sol = orta + 1;
+        else sag = orta - 1;
+    }
+    return -1;
+}
+
+// Doğrusal Arama (Linear Search)
+function dogrusalArama(dizi, hedef) {
+    for (let i = 0; i < dizi.length; i++) {
+        if (dizi[i] === hedef) return i;
+    }
+    return -1;
+}
+
+// Derinlik Öncelikli Arama (DFS)
+function dfs(graf, baslangic, ziyaretEdilen = new Set()) {
+    ziyaretEdilen.add(baslangic);
+    console.log("Ziyaret:", baslangic);
+    for (const komsu of (graf[baslangic] || [])) {
+        if (!ziyaretEdilen.has(komsu)) {
+            dfs(graf, komsu, ziyaretEdilen);
+        }
+    }
+    return ziyaretEdilen;
+}
+
+// Genişlik Öncelikli Arama (BFS)
+function bfs(graf, baslangic) {
+    const ziyaretEdilen = new Set();
+    const kuyruk = [baslangic];
+    ziyaretEdilen.add(baslangic);
+    while (kuyruk.length > 0) {
+        const dugum = kuyruk.shift();
+        console.log("Ziyaret:", dugum);
+        for (const komsu of (graf[dugum] || [])) {
+            if (!ziyaretEdilen.has(komsu)) {
+                ziyaretEdilen.add(komsu);
+                kuyruk.push(komsu);
+            }
+        }
+    }
+    return ziyaretEdilen;
+}
+
+// Test
+const siraliDizi = [1, 3, 5, 7, 9, 11, 13, 15];
+console.log("İkili Arama (7):", ikiliArama(siraliDizi, 7));
+console.log("Doğrusal Arama (11):", dogrusalArama(siraliDizi, 11));
+
+const graf = { A: ["B", "C"], B: ["D", "E"], C: ["F"], D: [], E: ["F"], F: [] };
+console.log("DFS:"); dfs(graf, "A");
+console.log("BFS:"); bfs(graf, "A");`;
+        }
+
+        matematikKodu(dil) {
+            return `// Matematik Fonksiyonları - Tuncer Zeka
+// Tasarımcı: Ahmet Tuncer
+
+const TuncerMatematik = {
+    // Faktöriyel
+    faktoriyel(n) {
+        if (n <= 1) return 1;
+        return n * this.faktoriyel(n - 1);
+    },
+
+    // Fibonacci
+    fibonacci(n) {
+        const dizi = [0, 1];
+        for (let i = 2; i <= n; i++) {
+            dizi.push(dizi[i-1] + dizi[i-2]);
+        }
+        return dizi;
+    },
+
+    // Asal sayı kontrolü
+    asalMi(n) {
+        if (n < 2) return false;
+        if (n === 2) return true;
+        if (n % 2 === 0) return false;
+        for (let i = 3; i <= Math.sqrt(n); i += 2) {
+            if (n % i === 0) return false;
+        }
+        return true;
+    },
+
+    // Asal sayıları bul
+    asalSayilar(limit) {
+        return Array.from({length: limit}, (_, i) => i + 2).filter(n => this.asalMi(n));
+    },
+
+    // EBOB (GCD)
+    ebob(a, b) {
+        while (b !== 0) {
+            [a, b] = [b, a % b];
+        }
+        return a;
+    },
+
+    // EKOK (LCM)
+    ekok(a, b) {
+        return (a * b) / this.ebob(a, b);
+    },
+
+    // Üs alma
+    us(taban, us) {
+        return Math.pow(taban, us);
+    },
+
+    // Kombinasyon
+    kombinasyon(n, r) {
+        return this.faktoriyel(n) / (this.faktoriyel(r) * this.faktoriyel(n - r));
+    },
+
+    // Permütasyon
+    permutasyon(n, r) {
+        return this.faktoriyel(n) / this.faktoriyel(n - r);
+    },
+
+    // Ortalama
+    ortalama(dizi) {
+        return dizi.reduce((a, b) => a + b, 0) / dizi.length;
+    },
+
+    // Medyan
+    medyan(dizi) {
+        const sirali = [...dizi].sort((a, b) => a - b);
+        const orta = Math.floor(sirali.length / 2);
+        return sirali.length % 2 ? sirali[orta] : (sirali[orta - 1] + sirali[orta]) / 2;
+    },
+
+    // Standart sapma
+    standartSapma(dizi) {
+        const ort = this.ortalama(dizi);
+        const varyans = dizi.reduce((acc, val) => acc + (val - ort) ** 2, 0) / dizi.length;
+        return Math.sqrt(varyans);
+    },
+
+    // Matris çarpımı
+    matrisCarp(a, b) {
+        const sonuc = [];
+        for (let i = 0; i < a.length; i++) {
+            sonuc[i] = [];
+            for (let j = 0; j < b[0].length; j++) {
+                let toplam = 0;
+                for (let k = 0; k < a[0].length; k++) {
+                    toplam += a[i][k] * b[k][j];
+                }
+                sonuc[i][j] = toplam;
+            }
+        }
+        return sonuc;
+    },
+
+    // Sayısal türev
+    turev(f, x, h = 0.0001) {
+        return (f(x + h) - f(x - h)) / (2 * h);
+    },
+
+    // Sayısal integral (Simpson kuralı)
+    integral(f, a, b, n = 1000) {
+        const h = (b - a) / n;
+        let toplam = f(a) + f(b);
+        for (let i = 1; i < n; i++) {
+            toplam += (i % 2 === 0 ? 2 : 4) * f(a + i * h);
+        }
+        return (h / 3) * toplam;
+    }
+};
+
+// Test
+console.log("10! =", TuncerMatematik.faktoriyel(10));
+console.log("Fibonacci(10):", TuncerMatematik.fibonacci(10));
+console.log("Asal sayılar (50'ye kadar):", TuncerMatematik.asalSayilar(50));
+console.log("EBOB(48, 18):", TuncerMatematik.ebob(48, 18));
+console.log("C(10,3):", TuncerMatematik.kombinasyon(10, 3));
+console.log("π ≈", TuncerMatematik.integral(x => 4/(1+x*x), 0, 1));`;
+        }
+
+        todoUygulamasi() {
+            return `<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yapılacaklar - Tuncer Zeka</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; display: flex; justify-content: center; padding: 2rem; }
+        .container { max-width: 500px; width: 100%; }
+        h1 { text-align: center; margin-bottom: 1.5rem; color: #e94560; }
+        .input-grup { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+        input { flex: 1; padding: 0.75rem; border: 2px solid #333; border-radius: 8px; background: #16213e; color: #eee; font-size: 1rem; }
+        button { padding: 0.75rem 1.5rem; border: none; border-radius: 8px; background: #e94560; color: white; cursor: pointer; font-size: 1rem; }
+        button:hover { background: #c73650; }
+        .todo-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; margin-bottom: 0.5rem; background: #16213e; border-radius: 8px; }
+        .todo-item.tamamlandi { opacity: 0.5; text-decoration: line-through; }
+        .todo-item span { flex: 1; }
+        .sil-btn { background: #333; padding: 0.5rem 0.75rem; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Yapılacaklar</h1>
+        <div class="input-grup">
+            <input type="text" id="yeniGorev" placeholder="Yeni görev ekle..." onkeypress="if(event.key==='Enter')ekle()">
+            <button onclick="ekle()">Ekle</button>
+        </div>
+        <div id="liste"></div>
+    </div>
+    <script>
+        let gorevler = JSON.parse(localStorage.getItem('gorevler') || '[]');
+        function render() {
+            const liste = document.getElementById('liste');
+            liste.innerHTML = gorevler.map((g, i) => \`
+                <div class="todo-item \${g.tamam ? 'tamamlandi' : ''}">
+                    <input type="checkbox" \${g.tamam ? 'checked' : ''} onchange="degistir(\${i})">
+                    <span>\${g.metin}</span>
+                    <button class="sil-btn" onclick="sil(\${i})">🗑️</button>
+                </div>\`).join('');
+            localStorage.setItem('gorevler', JSON.stringify(gorevler));
+        }
+        function ekle() {
+            const input = document.getElementById('yeniGorev');
+            if (input.value.trim()) {
+                gorevler.push({ metin: input.value.trim(), tamam: false });
+                input.value = '';
+                render();
+            }
+        }
+        function degistir(i) { gorevler[i].tamam = !gorevler[i].tamam; render(); }
+        function sil(i) { gorevler.splice(i, 1); render(); }
+        render();
+    </script>
+</body>
+</html>`;
+        }
+
+        basitOyun() {
+            return `// Basit Yılan Oyunu - Tuncer Zeka
+// Tasarımcı: Ahmet Tuncer
+
+const canvas = document.createElement('canvas');
+canvas.width = 400; canvas.height = 400;
+canvas.style.border = '2px solid #e94560';
+canvas.style.background = '#1a1a2e';
+document.body.appendChild(canvas);
+const ctx = canvas.getContext('2d');
+
+const BOYUT = 20;
+let yilan = [{x: 10, y: 10}];
+let yon = {x: 1, y: 0};
+let yem = yeniYem();
+let skor = 0;
+let oyunBitti = false;
+
+function yeniYem() {
+    return {
+        x: Math.floor(Math.random() * (canvas.width / BOYUT)),
+        y: Math.floor(Math.random() * (canvas.height / BOYUT))
+    };
+}
+
+document.addEventListener('keydown', (e) => {
+    switch(e.key) {
+        case 'ArrowUp': if(yon.y !== 1) yon = {x:0, y:-1}; break;
+        case 'ArrowDown': if(yon.y !== -1) yon = {x:0, y:1}; break;
+        case 'ArrowLeft': if(yon.x !== 1) yon = {x:-1, y:0}; break;
+        case 'ArrowRight': if(yon.x !== -1) yon = {x:1, y:0}; break;
+    }
+});
+
+function guncelle() {
+    if (oyunBitti) return;
+    const bas = {x: yilan[0].x + yon.x, y: yilan[0].y + yon.y};
+
+    // Duvar kontrolü
+    if (bas.x < 0 || bas.x >= canvas.width/BOYUT || bas.y < 0 || bas.y >= canvas.height/BOYUT) {
+        oyunBitti = true; return;
+    }
+    // Kendine çarpma
+    if (yilan.some(p => p.x === bas.x && p.y === bas.y)) {
+        oyunBitti = true; return;
+    }
+
+    yilan.unshift(bas);
+    if (bas.x === yem.x && bas.y === yem.y) {
+        skor += 10;
+        yem = yeniYem();
+    } else {
+        yilan.pop();
+    }
+}
+
+function ciz() {
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Yılan
+    yilan.forEach((p, i) => {
+        ctx.fillStyle = i === 0 ? '#e94560' : '#0f3460';
+        ctx.fillRect(p.x * BOYUT, p.y * BOYUT, BOYUT - 1, BOYUT - 1);
+    });
+
+    // Yem
+    ctx.fillStyle = '#00ff88';
+    ctx.fillRect(yem.x * BOYUT, yem.y * BOYUT, BOYUT - 1, BOYUT - 1);
+
+    // Skor
+    ctx.fillStyle = '#fff';
+    ctx.font = '16px Arial';
+    ctx.fillText('Skor: ' + skor, 10, 20);
+
+    if (oyunBitti) {
+        ctx.fillStyle = 'rgba(0,0,0,0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#e94560';
+        ctx.font = 'bold 30px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('OYUN BİTTİ!', canvas.width/2, canvas.height/2);
+        ctx.font = '20px Arial';
+        ctx.fillText('Skor: ' + skor, canvas.width/2, canvas.height/2 + 35);
+    }
+}
+
+setInterval(() => { guncelle(); ciz(); }, 150);`;
+        }
+
+        genelKodUret(istek, dil) {
+            const kelimeler = istek.toLowerCase().split(/\s+/);
+            let kod = `// ${istek}\n// Tuncer Zeka tarafından üretildi\n// Tasarımcı: Ahmet Tuncer\n\n`;
+
+            if (kelimeler.some(k => ["fonksiyon", "function", "metod"].includes(k))) {
+                const ad = kelimeler.find(k => !["bir", "yaz", "oluştur", "fonksiyon", "function", "metod", "kod"].includes(k)) || "tuncerFonksiyon";
+                kod += this.sablonlar.javascript.fonksiyon(ad, "parametre", '  // TODO: Fonksiyon gövdesini yazın\n  console.log("' + ad + ' çalıştı!", parametre);\n  return parametre;');
+            } else {
+                kod += `// İstek: "${istek}"\n`;
+                kod += `// Bu istek için özel bir şablon bulunamadı.\n`;
+                kod += `// Aşağıda temel bir yapı oluşturuldu:\n\n`;
+                kod += `function tuncerCozum() {\n`;
+                kod += `  // Çözüm burada uygulanacak\n`;
+                kod += `  console.log("Tuncer Zeka - Çözüm hazır!");\n`;
+                kod += `}\n\ntuncerCozum();`;
+            }
+
+            return kod;
+        }
+
+        kodAnaliz(kod) {
+            const satirlar = kod.split("\n");
+            const satirSayisi = satirlar.length;
+            const bosOlmayanSatirlar = satirlar.filter((s) => s.trim().length > 0).length;
+            const yorumSatirlari = satirlar.filter((s) => {
+                const t = s.trim();
+                return t.startsWith("//") || t.startsWith("#") || t.startsWith("/*") || t.startsWith("*") || t.startsWith("<!--");
+            }).length;
+
+            // Fonksiyon tespiti
+            const fonksiyonlar = [];
+            const fonksiyonRegex = /(?:function\s+(\w+)|const\s+(\w+)\s*=\s*(?:$|async)|def\s+(\w+))/g;
+            let esleme;
+            while ((esleme = fonksiyonRegex.exec(kod)) !== null) {
+                fonksiyonlar.push(esleme[1] || esleme[2] || esleme[3]);
+            }
+
+            // Değişken tespiti
+            const degiskenler = [];
+            const degiskenRegex = /(?:let|const|var)\s+(\w+)/g;
+            while ((esleme = degiskenRegex.exec(kod)) !== null) {
+                degiskenler.push(esleme[1]);
+            }
+
+            // Karmaşıklık tahmini
+            let karmasiklik = 0;
+            const karmasiklikAnahtarlar = ["if", "else", "for", "while", "switch", "case", "catch", "&&", "||", "?"];
+            for (const anahtar of karmasiklikAnahtarlar) {
+                const regex = new RegExp(anahtar.replace(/[.*+?^${}()|[$\$/g, '\\$&'), "g");
+                const eslemeler = kod.match(regex);
+                if (eslemeler) karmasiklik += eslemeler.length;
+            }
+
+            // Dil tespiti
+            let dil = "bilinmiyor";
+            if (kod.includes("function") || kod.includes("const ") || kod.includes("=>")) dil = "JavaScript";
+            else if (kod.includes("def ") || kod.includes("import ") && kod.includes(":")) dil = "Python";
+            else if (kod.includes("<!DOCTYPE") || kod.includes("<html")) dil = "HTML";
+            else if (kod.includes("{") && kod.includes(":") && kod.includes(";") && !kod.includes("function")) dil = "CSS";
+
+            // Kalite skoru
+            const yorumOrani = yorumSatirlari / satirSayisi;
+            let kaliteSkor = 50;
+            if (yorumOrani > 0.1) kaliteSkor += 15;
+            if (fonksiyonlar.length > 0) kaliteSkor += 10;
+            if (karmasiklik < satirSayisi * 0.3) kaliteSkor += 10;
+            if (bosOlmayanSatirlar / satirSayisi > 0.7) kaliteSkor += 5;
+            kaliteSkor = Math.min(100, kaliteSkor);
+
+            return {
+                satirSayisi,
+                bosOlmayanSatirlar,
+                yorumSatirlari,
+                yorumOrani: (yorumOrani * 100).toFixed(1) + "%",
+                fonksiyonlar,
+                fonksiyonSayisi: fonksiyonlar.length,
+                degiskenler,
+                degiskenSayisi: degiskenler.length,
+                karmasiklik,
+                karmasiklikSeviye: karmasiklik < 5 ? "Düşük" : karmasiklik < 15 ? "Orta" : "Yüksek",
+                tespiEdilendil: dil,
+                kaliteSkor,
+                kaliteDerece: kaliteSkor >= 80 ? "Çok İyi ⭐" : kaliteSkor >= 60 ? "İyi 👍" : kaliteSkor >= 40 ? "Orta 📝" : "Geliştirilebilir 🔧",
+                karakterSayisi: kod.length,
+                kelimeSayisi: kod.split(/\s+/).length
+            };
+        }
+    }
+
+    // ================================================================
+    // BÖLÜM 10: UZUN SÜRELİ DÜŞÜNME (CHAIN OF THOUGHT)
+    // ================================================================
+
+    class DusunmeMotoru {
+        constructor(bellek, dilIsleme, kelimeGomme) {
+            this.bellek = bellek;
+            this.dilIsleme = dilIsleme;
+            this.kelimeGomme = kelimeGomme;
+            this.dikkat = new DikkatMekanizmasi(64);
+            this.dusunceSureci = [];
+            this.maxDusunmeDerinligi = 10;
+            this.dusunmeZamani = 0;
+        }
+
+        async dusun(soru, derinlik = 5) {
+            const baslangicZamani = Date.now();
+            this.dusunceSureci = [];
+            derinlik = Math.min(derinlik, this.maxDusunmeDerinligi);
+
+            this.adimEkle("🔍 Analiz", `Soru alındı: "${soru}"`);
+
+            // Adım 1: Soruyu anlama
+            const niyet = this.dilIsleme.niyetTespit(soru);
+            this.adimEkle("🎯 Niyet Tespiti", `Tespit edilen niyet: ${niyet.niyet} (güven: ${niyet.skor})`);
+
+            // Adım 2: Anahtar kelimeleri çıkarma
+            const anahtarlar = this.dilIsleme.anahtarKelimeCikar(soru);
+            this.adimEkle("🔑 Anahtar Kelimeler", `Bulunan: ${anahtarlar.map(a => a.kelime).join(", ")}`);
+
+            // Adım 3: Bellekten ilgili bilgi arama
+            const bellekSonuclari = this.bellek.ara(soru);
+            if (bellekSonuclari.length > 0) {
+                this.adimEkle("🧠 Bellek Tarama", `${bellekSonuclari.length} ilgili kayıt bulundu`);
+            } else {
+                this.adimEkle("🧠 Bellek Tarama", "İlgili kayıt bulunamadı, yeni bilgi üretilecek");
+            }
+
+            // Adım 4: Duygu analizi
+            const duygu = this.dilIsleme.duyguAnalizi(soru);
+            this.adimEkle("💭 Duygu Analizi", `Algılanan duygu: ${duygu.duygu}`);
+
+            // Adım 5: Dikkat mekanizması ile odaklanma
+            const soruVektor = this.kelimeGomme.cumleVektoru(soru);
+            const kelimeler = this.dilIsleme.tokenize(soru);
+            if (kelimeler.length > 1) {
+                const kelimeVektorleri = kelimeler.map(k => this.kelimeGomme.kelimeVektoru(k));
+                const dikkatSonuc = this.dikkat.dikkatHesapla(soruVektor, kelimeVektorleri, kelimeVektorleri);
+                const enOnemliIdx = dikkatSonuc.agirliklar.indexOf(Math.max(...dikkatSonuc.agirliklar));
+                this.adimEkle("👁️ Dikkat Odağı", `En önemli kelime: "${kelimeler[enOnemliIdx]}" (ağırlık: ${dikkatSonuc.agirliklar[enOnemliIdx].toFixed(3)})`);
+            }
+
+            // Adım 6: Derinlemesine düşünme döngüsü
+            for (let d = 0; d < derinlik - 5; d++) {
+                await this.bekle(50); // Düşünme simülasyonu
+                const altDusunce = this.altDusunceUret(soru, niyet, anahtarlar, d);
+                this.adimEkle(`🔄 Düşünme Katmanı ${d + 1}`, altDusunce);
+            }
+
+            // Adım 7: Sonuç sentezi
+            const sonuc = this.sonucSentezle(soru, niyet, anahtarlar, duygu, bellekSonuclari);
+            this.adimEkle("✅ Sonuç", sonuc);
+
+            this.dusunmeZamani = Date.now() - baslangicZamani;
+            this.adimEkle("⏱️ Süre", `Düşünme süresi: ${this.dusunmeZamani}ms`);
+
+            // Belleğe kaydet
+            this.bellek.kisaSureliEkle({ soru, sonuc, zaman: Date.now() });
+            this.bellek.episodikEkle({ tip: "dusunme", soru, sonuc, duygu: duygu.duygu });
+
+            return {
+                sonuc,
+                dusunceSureci: this.dusunceSureci,
+                niyet: niyet.niyet,
+                duygu: duygu.duygu,
+                sure: this.dusunmeZamani,
+                derinlik,
+                guvenSkor: Math.min(0.95, 0.5 + niyet.skor * 0.1 + (bellekSonuclari.length > 0 ? 0.15 : 0))
+            };
+        }
+
+        adimEkle(baslik, icerik) {
+            this.dusunceSureci.push({
+                baslik,
+                icerik,
+                zaman: Date.now()
+            });
+        }
+
+        altDusunceUret(soru, niyet, anahtarlar, katman) {
+            const dusunceler = [
+                `Sorunun bağlamını değerlendiriyorum... "${niyet.niyet}" niyeti ile ilgili bilgi tabanını tarıyorum.`,
+                `Anahtar kavramlar arasındaki ilişkileri analiz ediyorum: ${anahtarlar.slice(0, 3).map(a => a.kelime).join(" ↔ ")}`,
+                `Alternatif yorumları değerlendiriyorum ve en uygun yanıtı seçiyorum.`,
+                `Bağlamsal tutarlılığı kontrol ediyorum ve yanıtı rafine ediyorum.`,
+                `Son doğrulama yapıyorum ve güven skorunu hesaplıyorum.`
+            ];
+            return dusunceler[katman % dusunceler.length];
+        }
+
+        sonucSentezle(soru, niyet, anahtarlar, duygu, bellekSonuclari) {
+            // Niyet bazlı yanıt üretimi
+            switch (niyet.niyet) {
+                case "selamlama":
+                    return this.selamlamaYaniti(soru);
+                case "vedalaşma":
+                    return "Görüşmek üzere! Size yardımcı olabildiysem ne mutlu. Tekrar beklerim! 👋";
+                case "kendiHakkinda":
+                    return this.kendiHakkindaYanit();
+                case "matematik":
+                    return this.matematikCoz(soru);
+                case "duyguAnaliz":
+                    return `Duygu analizim: ${duygu.duygu}\nSkor: ${duygu.skor}\n${duygu.detay}`;
+                case "bilgi":
+                    return this.bilgiYaniti(soru, anahtarlar);
+                default:
+                    return this.genelYanit(soru, niyet, anahtarlar, duygu);
+            }
+        }
+
+        selamlamaYaniti(soru) {
+            const yanitlar = [
+                "Merhaba! Ben Tuncer Zeka 🤖 Ahmet Tuncer tarafından tasarlandım. Size nasıl yardımcı olabilirim?",
+                "Selam! Tuncer Zeka olarak hizmetinizdeyim. Ne yapmamı istersiniz? 😊",
+                "Hoş geldiniz! Ben Tuncer Zeka, yapay zeka asistanınız. Sorularınızı bekliyorum!",
+                "Merhaba! Bugün size nasıl yardımcı olabilirim? Kod yazma, görsel analiz, matematik ve daha fazlası için hazırım! 🚀"
+            ];
+            return yanitlar[Math.floor(Math.random() * yanitlar.length)];
+        }
+
+        kendiHakkindaYanit() {
+            return `🤖 Ben Tuncer Zeka (v2026)!
+
+👨‍💻 Tasarımcım: Ahmet Tuncer
+
+🧠 Yeteneklerim:
+• Doğal Dil İşleme (Türkçe)
+• Duygu Analizi
+• Kod Yazma & Analiz (JavaScript, Python, HTML, CSS)
+• Görsel Anlama & Üretim
+• Matematik Hesaplama
+• Uzun Süreli Düşünme (Chain of Thought)
+• Sinir Ağı ile Öğrenme
+• Bellek Sistemi (Kısa/Uzun Süreli)
+• Dikkat Mekanizması (Transformer benzeri)
+
+💡 Tamamen bağımsız çalışırım - API veya internet bağlantısı gerektirmem!
+📦 Tek dosyada (tuncer2026.js) tüm yeteneklerimi barındırırım.
+
+Bana istediğiniz soruyu sorabilir, kod yazdırabilir, görsel oluşturabilir veya analiz yaptırabilirsiniz!`;
+        }
+
+        matematikCoz(soru) {
+            try {
+                // Basit matematik ifadelerini çöz
+                const ifade = soru.replace(/[^0-9+\-*/().^%\s]/g, "")
+                    .replace(/\^/g, "**")
+                    .trim();
+
+                if (ifade && /^[0-9+\-*/().%\s]+$/.test(ifade)) {
+                    const sonuc = Function('"use strict"; return (' + ifade + ')')();
+                    return `📐 Hesaplama: ${ifade} = ${sonuc}`;
+                }
+
+                // Özel matematik komutları
+                if (soru.includes("karekök") || soru.includes("karekok")) {
+                    const sayi = parseFloat(soru.match(/\d+/));
+                    if (!isNaN(sayi)) return `📐 √${sayi} = ${Math.sqrt(sayi).toFixed(6)}`;
+                }
+                if (soru.includes("faktöriyel") || soru.includes("faktoriyel")) {
+                    const sayi = parseInt(soru.match(/\d+/));
+                    if (!isNaN(sayi) && sayi <= 170) {
+                        let sonuc = 1;
+                        for (let i = 2; i <= sayi; i++) sonuc *= i;
+                        return `📐 ${sayi}! = ${sonuc}`;
+                    }
+                }
+                if (soru.includes("asal")) {
+                    const sayi = parseInt(soru.match(/\d+/));
+                    if (!isNaN(sayi)) {
+                        const asalMi = (n) => {
+                            if (n < 2) return false;
+                            for (let i = 2; i <= Math.sqrt(n); i++) if (n % i === 0) return false;
+                            return true;
+                        };
+                        return `📐 ${sayi} ${asalMi(sayi) ? "asal bir sayıdır ✅" : "asal değildir ❌"}`;
+                    }
+                }
+
+                return "📐 Matematik ifadesini anlayamadım. Lütfen daha açık yazın. Örnek: 'hesapla 15 + 27 * 3' veya 'karekök 144'";
+            } catch (e) {
+                return "📐 Hesaplama sırasında bir hata oluştu. Lütfen ifadeyi kontrol edin.";
+            }
+        }
+
+        bilgiYaniti(soru, anahtarlar) {
+            const konular = {
+                "yapay zeka": "Yapay zeka (YZ), makinelerin insan benzeri zekâ görevlerini yerine getirmesini sağlayan bilgisayar bilimi dalıdır. Makine öğrenimi, derin öğrenme, doğal dil işleme gibi alt alanları vardır. Ben de bir yapay zeka sistemi olarak Ahmet Tuncer tarafından tasarlandım!",
+                "javascript": "JavaScript, web'in temel programlama dilidir. Brendan Eich tarafından 1995'te oluşturulmuştur. Tarayıcılarda çalışır, Node.js ile sunucu tarafında da kullanılabilir. Dinamik, prototip tabanlı bir dildir.",
+                "python": "Python, Guido van Rossum tarafından 1991'de oluşturulan yüksek seviyeli bir programlama dilidir. Okunabilirliği, geniş kütüphane desteği ve çok yönlülüğü ile bilinir. Yapay zeka, veri bilimi ve web geliştirmede yaygın kullanılır.",
+                "sinir ağı": "Yapay sinir ağları, insan beynindeki nöronlardan esinlenen hesaplama modelleridir. Katmanlardan oluşur: giriş katmanı, gizli katmanlar ve çıkış katmanı. Geri yayılım algoritması ile öğrenirler.",
+                "makine öğrenimi": "Makine öğrenimi, bilgisayarların açıkça programlanmadan verilerden öğrenmesini sağlayan YZ alt alanıdır. Denetimli öğrenme, denetimsiz öğrenme ve pekiştirmeli öğrenme olmak üzere üç ana türü vardır.",
+                "html": "HTML (HyperText Markup Language), web sayfalarının yapısını tanımlayan işaretleme dilidir. Tim Berners-Lee tarafından 1991'de oluşturulmuştur. En son sürümü HTML5'tir.",
+                "css": "CSS (Cascading Style Sheets), web sayfalarının görünümünü ve düzenini kontrol eden stil dilidir. Flexbox, Grid, animasyonlar ve responsive tasarım gibi güçlü özelliklere sahiptir."
+            };
+
+            for (const [konu, bilgi] of Object.entries(konular)) {
+                if (soru.toLowerCase().includes(konu)) {
+                    return `📚 ${bilgi}`;
+                }
+            }
+
+            return `📚 "${anahtarlar.map(a => a.kelime).join(", ")}" hakkında bilgi tabanımda detaylı bir kayıt bulamadım. Ancak sorularınızı yanıtlamaya devam edebilirim. Daha spesifik bir soru sorabilir misiniz?`;
+        }
+
+        genelYanit(soru, niyet, anahtarlar, duygu) {
+            let yanit = "";
+
+            if (duygu.skor < -0.2) {
+                yanit += "Üzgün görünüyorsunuz, umarım yardımcı olabilirim. ";
+            } else if (duygu.skor > 0.2) {
+                yanit += "Enerjiniz harika! ";
+            }
+
+            yanit += `"${soru}" hakkında düşüncelerimi paylaşayım:\n\n`;
+
+            if (anahtarlar.length > 0) {
+                yanit += `Sorununuzda "${anahtarlar[0].kelime}" konusu öne çıkıyor. `;
+            }
+
+            yanit += "Bu konuda size yardımcı olmak isterim. ";
+            yanit += "\n\nBana daha spesifik sorular sorabilirsiniz:\n";
+            yanit += "• 'Kod yaz: ...' - Kod üretimi\n";
+            yanit += "• 'Hesapla: ...' - Matematik\n";
+            yanit += "• 'Anlat: ...' - Bilgi\n";
+            yanit += "• 'Duygu analiz: ...' - Duygu analizi\n";
+            yanit += "• 'Resim çiz' - Görsel üretim";
+
+            return yanit;
+        }
+
+        bekle(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+        }
+    }
+
+    // ================================================================
+    // BÖLÜM 11: ANA TUNCER ZEKA SINIFI
+    // ================================================================
+
+    class TuncerZeka {
+        constructor(secenekler = {}) {
+            this.versiyon = "2026.1.0";
+            this.tasarimci = "Ahmet Tuncer";
+            this.ad = "Tuncer Zeka";
+
+            // Alt sistemleri başlat
+            this.kelimeGomme = new KelimeGomme(secenekler.gommeBoyutu || 64);
+            this.dilIsleme = new TurkceDilIsleme();
+            this.bellek = new BellekSistemi(secenekler.bellekKapasitesi || 10000);
+            this.gorselAnlama = new GorselAnlama();
+            this.gorselUretim = new GorselUretim();
+            this.kodYazici = new KodYazici();
+            this.dusunmeMotoru = new DusunmeMotoru(this.bellek, this.dilIsleme, this.kelimeGomme);
+
+            // Sinir ağları
+            this.sinirAglari = {};
+            this.varsayilanAg = null;
+
+            // Konuşma geçmişi
+            this.konusmaGecmisi = [];
+            this.maxGecmis = 100;
+
+            // Başlangıç bilgi tabanını yükle
+            this.bilgiTabaniYukle();
+
+            console.log(`
+╔══════════════════════════════════════╗
+║        TUNCER ZEKA v${this.versiyon}        ║
+║   Tasarımcı: ${this.tasarimci}          ║
+║   Durum: Aktif ✅                    ║
+╚══════════════════════════════════════╝`);
+        }
+
+        bilgiTabaniYukle() {
+            const bilgiler = {
+                "tuncer zeka": "Tuncer Zeka, Ahmet Tuncer tarafından tasarlanmış bir yapay zeka kütüphanesidir.",
+                "ahmet tuncer": "Ahmet Tuncer, Tuncer Zeka yapay zeka sisteminin tasarımcısı ve geliştiricisidir.",
+                "yapay zeka": "Yapay zeka, makinelerin insan benzeri zekâ görevlerini yerine getirmesini sağlayan bilgisayar bilimi dalıdır.",
+                "sinir ağı": "Yapay sinir ağları, insan beyninden esinlenen hesaplama modelleridir.",
+                "derin öğrenme": "Derin öğrenme, çok katmanlı sinir ağları kullanan makine öğrenimi alt alanıdır.",
+                "doğal dil işleme": "Doğal dil işleme, bilgisayarların insan dilini anlaması ve üretmesi ile ilgilenen alandır.",
+                "transformer": "Transformer, dikkat mekanizması kullanan ve NLP'de devrim yaratan bir sinir ağı mimarisidir."
+            };
+
+            for (const [anahtar, deger] of Object.entries(bilgiler)) {
+                this.bellek.uzunSureliEkle(anahtar, deger, 0.9);
+            }
+        }
+
+        // Ana sohbet fonksiyonu
+        async sor(mesaj, secenekler = {}) {
+            const baslangic = Date.now();
+            const dusunmeDerinligi = secenekler.derinlik || 7;
+
+            // Konuşma geçmişine ekle
+            this.konusmaGecmisi.push({ rol: "kullanici", mesaj, zaman: Date.now() });
+
+            // Niyet tespiti
+            const niyet = this.dilIsleme.niyetTespit(mesaj);
+
+            let yanit;
+
+            switch (niyet.niyet) {
+                case "kodYazma":
+                    yanit = await this.kodYaz(mesaj);
+                    break;
+                case "gorselAnaliz":
+                    yanit = "📷 Görsel analizi için lütfen `gorselAnaliz(gorselKaynagi)` fonksiyonunu kullanın. Canvas veya Image elementi gönderebilirsiniz.";
+                    break;
+                case "gorselUretim":
+                    yanit = await this.gorselOlustur(mesaj);
+                    break;
+                case "matematik":
+                    const dusunce = await this.dusunmeMotoru.dusun(mesaj, 3);
+                    yanit = dusunce.sonuc;
+                    break;
+                default:
+                    const sonuc = await this.dusunmeMotoru.dusun(mesaj, dusunmeDerinligi);
+                    yanit = sonuc.sonuc;
+
+                    if (secenekler.dusunceSureciniGoster) {
+                        yanit = "💭 DÜŞÜNME SÜRECİ:\n" +
+                            sonuc.dusunceSureci.map(d => `${d.baslik}: ${d.icerik}`).join("\n") +
+                            "\n\n📝 YANIT:\n" + yanit;
+                    }
+            }
+
+            // Konuşma geçmişine ekle
+            this.konusmaGecmisi.push({ rol: "asistan", mesaj: typeof yanit === "string" ? yanit : yanit.aciklama || "Yanıt üretildi", zaman: Date.now() });
+
+            // Geçmiş sınırı
+            if (this.konusmaGecmisi.length > this.maxGecmis * 2) {
+                this.konusmaGecmisi = this.konusmaGecmisi.slice(-this.maxGecmis);
+            }
+
+            return yanit;
+        }
+
+        // Kod yazma
+        async kodYaz(istek) {
+            const sonuc = this.kodYazici.kodUret(istek);
+            return {
+                tip: "kod",
+                ...sonuc,
+                mesaj: `✅ ${sonuc.aciklama}\n📝 Dil: ${sonuc.dil}\n📊 ${sonuc.satirSayisi} satır kod üretildi\n\n${sonuc.kod}`
+            };
+        }
+
+        // Kod analizi
+        kodAnalizEt(kod) {
+            return this.kodYazici.kodAnaliz(kod);
+        }
+
+        // Görsel oluşturma
+        async gorselOlustur(istek) {
+            const istekLower = istek.toLowerCase();
+
+            if (istekLower.includes("manzara")) {
+                let zaman = "gunduz";
+                if (istekLower.includes("gece")) zaman = "gece";
+                else if (istekLower.includes("akşam") || istekLower.includes("aksam")) zaman = "aksam";
+                const canvas = this.gorselUretim.manzaraUret(600, 400, { zaman });
+                return { tip: "gorsel", canvas, aciklama: `${zaman} manzarası oluşturuldu` };
+            }
+            if (istekLower.includes("fraktal") || istekLower.includes("mandelbrot")) {
+                const tip = istekLower.includes("julia") ? "julia" : "mandelbrot";
+                const canvas = this.gorselUretim.fraktalUret(400, 400, tip);
+                return { tip: "gorsel", canvas, aciklama: `${tip} fraktalı oluşturuldu` };
+            }
+            if (istekLower.includes("pixel") || istekLower.includes("piksel")) {
+                let tema = "karakter";
+                if (istekLower.includes("kalp")) tema = "kalp";
+                else if (istekLower.includes("yıldız") || istekLower.includes("yildiz")) tema = "yildiz";
+                else if (istekLower.includes("ev")) tema = "ev";
+                const canvas = this.gorselUretim.pixelArtUret(16, 16, 20, tema);
+                return { tip: "gorsel", canvas, aciklama: `${tema} pixel art oluşturuldu` };
+            }
+            if (istekLower.includes("soyut") || istekLower.includes("sanat")) {
+                let stil = "geometrik";
+                if (istekLower.includes("dalga")) stil = "dalga";
+                else if (istekLower.includes("nokta")) stil = "noktasal";
+                const canvas = this.gorselUretim.soyutSanatUret(500, 500, stil);
+                return { tip: "gorsel", canvas, aciklama: `${stil} soyut sanat oluşturuldu` };
+            }
+            if (istekLower.includes("grafik") || istekLower.includes("chart")) {
+                const veri = [
+                    { etiket: "Ocak", deger: 65 },
+                    { etiket: "Şubat", deger: 78 },
+                    { etiket: "Mart", deger: 90 },
+                    { etiket: "Nisan", deger: 81 },
+                    { etiket: "Mayıs", deger: 95 },
+                    { etiket: "Haziran", deger: 110 }
+                ];
+                let tip = "cubuk";
+                if (istekLower.includes("çizgi") || istekLower.includes("cizgi")) tip = "cizgi";
+                else if (istekLower.includes("pasta")) tip = "pasta";
+                const canvas = this.gorselUretim.grafikUret(veri, tip, { baslik: "Tuncer Zeka - Örnek Grafik" });
+                return { tip: "gorsel", canvas, aciklama: `${tip} grafik oluşturuldu` };
+            }
+
+            // Varsayılan: manzara
+            const canvas = this.gorselUretim.manzaraUret(600, 400);
+            return { tip: "gorsel", canvas, aciklama: "Varsayılan manzara oluşturuldu" };
+        }
+
+        // Görsel analiz
+        async gorselAnaliz(kaynak) {
+            if (typeof kaynak === "string") {
+                await this.gorselAnlama.gorselYukle(kaynak);
+            } else if (kaynak instanceof HTMLCanvasElement) {
+                this.gorselAnlama.canvas = kaynak;
+                this.gorselAnlama.ctx = kaynak.getContext("2d");
+            } else if (kaynak instanceof HTMLImageElement) {
+                this.gorselAnlama.canvasOlustur(kaynak.width, kaynak.height);
+                this.gorselAnlama.ctx.drawImage(kaynak, 0, 0);
+            }
+
+            const analiz = this.gorselAnlama.gorselAnaliz();
+            const palet = this.gorselAnlama.renkPaletiCikar(this.gorselAnlama.pikselVerisiAl());
+
+            return {
+                ...analiz,
+                renkPaleti: palet,
+                mesaj: `🖼️ Görsel Analiz Raporu:\n${analiz.aciklama}\n\nBoyut: ${analiz.boyut.genislik}x${analiz.boyut.yukseklik}\nBaskın Renk: ${analiz.baskinRenk}\nParlaklık: ${analiz.parlaklik.durum}\nKontrast: ${analiz.kontrast.durum}`
+            };
+        }
+
+        // Görsel filtre uygula
+        gorselFiltre(filtreAdi, ...parametreler) {
+            const imageData = this.gorselAnlama.pikselVerisiAl();
+            if (!imageData) return null;
+
+            if (this.gorselAnlama.filtreler[filtreAdi]) {
+                const sonuc = this.gorselAnlama.filtreler[filtreAdi](imageData, ...parametreler);
+                this.gorselAnlama.pikselVerisiYaz(sonuc);
+                return this.gorselAnlama.canvas;
+            }
+            return null;
+        }
+
+        // Duygu analizi
+        duyguAnaliz(metin) {
+            return this.dilIsleme.duyguAnalizi(metin);
+        }
+
+        // Metin özetleme
+        ozetle(metin, cumleSayisi = 3) {
+            return this.dilIsleme.metinOzetle(metin, cumleSayisi);
+        }
+
+        // Sinir ağı oluşturma
+        sinirAgiOlustur(ad, katmanlar, ogrenmeOrani = 0.01) {
+            const ag = new SinirAgi(katmanlar, ogrenmeOrani);
+            this.sinirAglari[ad] = ag;
+            if (!this.varsayilanAg) this.varsayilanAg = ag;
+            return ag;
+        }
+
+        // Sinir ağı eğitimi
+        sinirAgiEgit(ad, veriSeti, epochSayisi = 100) {
+            const ag = this.sinirAglari[ad];
+            if (!ag) throw new Error(`"${ad}" adında sinir ağı bulunamadı!`);
+            return ag.topluEgit(veriSeti, epochSayisi);
+        }
+
+        // Sinir ağı tahmini
+        sinirAgiTahmin(ad, giris) {
+            const ag = this.sinirAglari[ad];
+            if (!ag) throw new Error(`"${ad}" adında sinir ağı bulunamadı!`);
+            return ag.tahminEt(giris);
+        }
+
+        // Kelime benzerliği
+        kelimeBenzerligi(kelime1, kelime2) {
+            return this.kelimeGomme.benzerlik(kelime1, kelime2);
+        }
+
+        // Cümle benzerliği
+        cumleBenzerligi(cumle1, cumle2) {
+            const v1 = this.kelimeGomme.cumleVektoru(cumle1);
+            const v2 = this.kelimeGomme.cumleVektoru(cumle2);
+            return Matematik.kosinusBenzerlik(v1, v2);
+        }
+
+        // Grafik oluşturma
+        grafikOlustur(veri, tip = "cubuk", secenekler = {}) {
+            return this.gorselUretim.grafikUret(veri, tip, secenekler);
+        }
+
+        // Bellek istatistikleri
+        bellekDurumu() {
+            return this.bellek.istatistikler();
+        }
+
+        // Sistem bilgisi
+        sistemBilgisi() {
+            return {
+                ad: this.ad,
+                versiyon: this.versiyon,
+                tasarimci: this.tasarimci,
+                bellek: this.bellek.istatistikler(),
+                sinirAglari: Object.keys(this.sinirAglari).length,
+                kelimeDagarcigi: this.kelimeGomme.kelimeSozlugu.size,
+                konusmaGecmisi: this.konusmaGecmisi.length,
+                yetenekler: [
+                    "Doğal Dil İşleme (Türkçe)",
+                    "Duygu Analizi",
+                    "Kod Yazma & Analiz",
+                    "Görsel Anlama & Üretim",
+                    "Sinir Ağı Eğitimi",
+                    "Uzun Süreli Düşünme",
+                    "Bellek Sistemi",
+                    "Dikkat Mekanizması",
+                    "Kelime Gömme",
+                    "Metin Özetleme",
+                    "Grafik Oluşturma"
+                ]
+            };
+        }
+
+        // Yardım
+        yardim() {
+            return `
+🤖 TUNCER ZEKA v${this.versiyon} - KULLANIM KILAVUZU
+👨‍💻 Tasarımcı: ${this.tasarimci}
+
+📌 TEMEL KOMUTLAR:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🗣️ tz.sor("mesaj")              → Sohbet / Soru-Cevap
+💻 tz.kodYaz("istek")            → Kod üretimi
+📊 tz.kodAnalizEt(kod)           → Kod analizi
+🖼️ tz.gorselOlustur("istek")    → Görsel üretimi
+🔍 tz.gorselAnaliz(kaynak)       → Görsel analizi
+😊 tz.duyguAnaliz("metin")       → Duygu analizi
+📝 tz.ozetle("uzun metin")       → Metin özetleme
+📈 tz.grafikOlustur(veri, tip)   → Grafik oluşturma
+🧠 tz.sinirAgiOlustur(ad, [...]) → Sinir ağı oluşturma
+📏 tz.kelimeBenzerligi(k1, k2)   → Kelime benzerliği
+ℹ️ tz.sistemBilgisi()            → Sistem bilgisi
+❓ tz.yardim()                   → Bu yardım mesajı
+
+📌 ÖRNEK KULLANIM:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+await tz.sor("Merhaba, nasılsın?")
+await tz.sor("JavaScript ile sıralama algoritması yaz")
+await tz.gorselOlustur("gece manzarası çiz")
+tz.duyguAnaliz("Bugün çok mutluyum!")
+await tz.sor("Hesapla 15 * 27 + 33")
+            `;
+        }
+    }
+
+    // ================================================================
+    // BÖLÜM 12: GLOBAL EXPORT
+    // ================================================================
+
+    // Alt sınıfları da dışa aktar
+    TuncerZeka.SinirAgi = SinirAgi;
+    TuncerZeka.KelimeGomme = KelimeGomme;
+    TuncerZeka.DikkatMekanizmasi = DikkatMekanizmasi;
+    TuncerZeka.BellekSistemi = BellekSistemi;
+    TuncerZeka.TurkceDilIsleme = TurkceDilIsleme;
+    TuncerZeka.GorselAnlama = GorselAnlama;
+    TuncerZeka.GorselUretim = GorselUretim;
+    TuncerZeka.KodYazici = KodYazici;
+    TuncerZeka.DusunmeMotoru = DusunmeMotoru;
+    TuncerZeka.Matematik = Matematik;
+
+    // Global'e ata
+    global.TuncerZeka = TuncerZeka;
+
+    // Kısa erişim
+    global.tz = null; // index.html'de oluşturulacak
+
+})(typeof window !== "undefined" ? window : global);
