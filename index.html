@@ -1,494 +1,119 @@
 <!DOCTYPE html>
-<html lang="tr" class="scroll-smooth">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka | Yeni Nesil Yapay Zeka</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Tuncer Zeka v2026 - Kontrol Paneli</title>
     <style>
-        /* Özel Animasyonlar */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-15px); }
-            100% { transform: translateY(0px); }
-        }
-        @keyframes glow {
-            0% { box-shadow: 0 0 5px #06b6d4; }
-            50% { box-shadow: 0 0 20px #06b6d4, 0 0 30px #3b82f6; }
-            100% { box-shadow: 0 0 5px #06b6d4; }
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes popIn {
-            0% { opacity: 0; transform: scale(0.8); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
-        body {
-            background-color: #0f172a; /* Slate 900 */
-            color: #f8fafc;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-        }
-
-        .floating { animation: float 6s ease-in-out infinite; }
-        .glowing-border { animation: glow 3s infinite; }
-        
-        .modal-overlay {
-            backdrop-filter: blur(8px);
-            transition: all 0.3s ease;
-        }
-        
-        .modal-content {
-            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-
-        /* Scrollbar Gizleme/Güzelleştirme */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #60a5fa; }
+        :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --accent: #38bdf8; }
+        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: var(--card); padding: 20px; border-radius: 12px; border: 1px solid #334155; }
+        h2 { color: var(--accent); margin-top: 0; font-size: 1.2rem; }
+        textarea { width: 100%; height: 60px; background: #0f172a; border: 1px solid #334155; color: white; padding: 10px; border-radius: 8px; box-sizing: border-box; }
+        button { background: var(--accent); color: #0f172a; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold; margin-top: 10px; width: 100%; }
+        #nlp-output, #math-output { background: #000; padding: 10px; border-radius: 8px; margin-top: 10px; font-family: monospace; font-size: 0.9rem; color: #10b981; min-height: 40px; white-space: pre-wrap; }
+        canvas { max-width: 100%; height: auto; border-radius: 8px; margin-top: 10px; background: #000; }
+        select { width: 100%; padding: 8px; border-radius: 8px; background: #0f172a; color: white; border: 1px solid #334155; }
     </style>
 </head>
-<body class="antialiased selection:bg-cyan-500 selection:text-white">
+<body>
 
-    <!-- Navigasyon Menüsü -->
-    <nav class="fixed w-full z-40 top-0 start-0 border-b border-slate-700 bg-slate-900/80 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between p-4">
-            <a href="#" class="flex items-center space-x-3 rtl:space-x-reverse">
-                <i class="fa-solid fa-brain text-cyan-400 text-3xl"></i>
-                <span class="self-center text-2xl font-bold whitespace-nowrap text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Tuncer Zeka</span>
-            </a>
-            <div class="flex md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse items-center gap-4">
-                <!-- Bakiye Göstergesi -->
-                <div class="hidden md:flex flex-col items-end mr-4">
-                    <span class="text-xs text-slate-400 uppercase tracking-wider">Cüzdan</span>
-                    <span class="text-lg font-bold text-emerald-400"><span id="nav-balance">0</span> TL</span>
-                </div>
-                <button onclick="scrollToSection('admin-section')" class="text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:bg-gradient-to-bl focus:ring-4 focus:outline-none focus:ring-cyan-300 font-medium rounded-lg text-sm px-4 py-2 text-center transition-all duration-300 transform hover:scale-105 shadow-lg shadow-cyan-500/50">
-                    <i class="fa-solid fa-lock mr-2"></i>Admin
-                </button>
-            </div>
-            <div class="items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
-                <ul class="flex flex-col p-4 md:p-0 mt-4 font-medium border border-slate-700 rounded-lg md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0">
-                    <li><a href="#home" class="block py-2 px-3 text-cyan-400 rounded md:bg-transparent md:p-0 hover:text-cyan-300 transition-colors">Ana Sayfa</a></li>
-                    <li><a href="#about" class="block py-2 px-3 text-white rounded hover:text-cyan-400 md:p-0 transition-colors">Hakkımızda</a></li>
-                    <li><a href="#products" class="block py-2 px-3 text-white rounded hover:text-cyan-400 md:p-0 transition-colors">Ürünler</a></li>
-                </ul>
-            </div>
+<div class="container">
+    <h1 style="text-align:center; color: var(--accent);">TUNCER ZEKA v2026</h1>
+    
+    <div class="grid">
+        <div class="card">
+            <h2>Türkçe Dil İşleme</h2>
+            <textarea id="nlp-input" placeholder="Nasılsın? Bugün çok mutluyum!"></textarea>
+            <button onclick="analizEt()">Analiz Et</button>
+            <div id="nlp-output">Sonuç bekliyor...</div>
         </div>
-    </nav>
 
-    <!-- Hero Bölümü -->
-    <section id="home" class="pt-32 pb-20 px-4 min-h-screen flex items-center">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-            <div class="space-y-6">
-                <div class="inline-block px-4 py-1 rounded-full bg-cyan-900/50 border border-cyan-500/30 text-cyan-400 text-sm font-semibold mb-4">
-                    🚀 Geleceğin Teknolojisi Şimdi Burada
-                </div>
-                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight">
-                    Sınırları <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-600">Aşan</span><br>Yapay Zeka
-                </h1>
-                <p class="text-lg text-slate-400">
-                    Tuncer Zeka Pro ve efsanevi Tuncer Zeka Holo ile dijital dünyada kontrolü elinize alın. Benzersiz işlem gücü ve holografik arayüz deneyimi sizi bekliyor.
-                </p>
-                <div class="pt-4 flex gap-4">
-                    <button onclick="scrollToSection('products')" class="px-8 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-bold transition-colors shadow-lg shadow-cyan-500/30">
-                        Ürünleri İncele
-                    </button>
-                    <button onclick="scrollToSection('about')" class="px-8 py-3 rounded-lg border border-slate-600 hover:border-cyan-400 hover:text-cyan-400 transition-colors">
-                        Daha Fazla Bilgi
-                    </button>
-                </div>
-            </div>
-            <div class="relative flex justify-center floating">
-                <div class="absolute inset-0 bg-cyan-500/20 blur-[100px] rounded-full"></div>
-                <div class="relative w-full max-w-md h-80 bg-slate-800 rounded-2xl border border-slate-700 flex items-center justify-center overflow-hidden glowing-border">
-                    <span class="text-slate-500 flex flex-col items-center">
-                        <i class="fa-solid fa-microchip text-6xl mb-4 text-cyan-400/50"></i>
-                        
-                    </span>
-                </div>
-            </div>
+        <div class="card">
+            <h2>Görsel Üretim</h2>
+            <select id="render-type">
+                <option value="manzara">Manzara Üret</option>
+                <option value="fraktal">Mandelbrot Fraktalı</option>
+                <option value="pixel">Pixel Art (Karakter)</option>
+                <option value="soyut">Soyut Geometrik</option>
+            </select>
+            <button onclick="gorselUret()">Görsel Oluştur</button>
+            <div id="canvas-container"></div>
         </div>
-    </section>
 
-    <!-- Hakkımızda Bölümü -->
-    <section id="about" class="py-20 bg-slate-800/50 px-4">
-        <div class="max-w-7xl mx-auto text-center">
-            <h2 class="text-3xl md:text-4xl font-bold mb-6">Neden <span class="text-cyan-400">Tuncer Zeka?</span></h2>
-            <p class="text-slate-400 max-w-3xl mx-auto text-lg mb-12">
-                Yılların getirdiği AR-GE çalışmaları sonucunda ortaya çıkan Tuncer Zeka serisi, verileri işleme, öğrenme ve holografik modelleme konusunda rakiplerinin fersah fersah önündedir.
-            </p>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-cyan-500 transition-colors group">
-                    <div class="w-14 h-14 bg-cyan-900/50 rounded-lg flex items-center justify-center text-cyan-400 text-2xl mb-4 mx-auto group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-bolt"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Işık Hızında İşlem</h3>
-                    <p class="text-slate-400 text-sm">Kuantum mimarisi sayesinde anlık veri analizi ve karar verme mekanizması.</p>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-purple-500 transition-colors group">
-                    <div class="w-14 h-14 bg-purple-900/50 rounded-lg flex items-center justify-center text-purple-400 text-2xl mb-4 mx-auto group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-vr-cardboard"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Holografik Arayüz</h3>
-                    <p class="text-slate-400 text-sm">Holo serisi ile fiziksel ekranları aşın, verilerle uzayda etkileşime geçin.</p>
-                </div>
-                <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 hover:border-emerald-500 transition-colors group">
-                    <div class="w-14 h-14 bg-emerald-900/50 rounded-lg flex items-center justify-center text-emerald-400 text-2xl mb-4 mx-auto group-hover:scale-110 transition-transform">
-                        <i class="fa-solid fa-shield-halved"></i>
-                    </div>
-                    <h3 class="text-xl font-bold mb-2">Aşılmaz Güvenlik</h3>
-                    <p class="text-slate-400 text-sm">Satın alım sonrası size özel üretilen şifreleme anahtarları ile tam koruma.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Ürünler Bölümü -->
-    <section id="products" class="py-20 px-4">
-        <div class="max-w-7xl mx-auto">
-            <div class="text-center mb-16">
-                <h2 class="text-3xl md:text-5xl font-bold mb-4">Lisans <span class="text-cyan-400">Seçenekleri</span></h2>
-                <p class="text-slate-400 text-lg">İhtiyacınıza uygun yapay zeka modülünü seçin ve anında erişim sağlayın.</p>
-            </div>
-
-            <div class="flex flex-col md:flex-row gap-8 justify-center items-stretch max-w-5xl mx-auto">
-                
-                <!-- Tuncer Zeka Pro -->
-                <div class="flex-1 bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden hover:border-cyan-500 transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/20 transform hover:-translate-y-2 flex flex-col">
-                    <div class="h-48 bg-slate-900 flex items-center justify-center border-b border-slate-700 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiMzMzg4ZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')]"></div>
-                        <span class="text-slate-600 z-10 text-center flex flex-col items-center">
-                            <i class="fa-solid fa-box-open text-4xl mb-2 text-cyan-500"></i>
-                            
-                        </span>
-                    </div>
-                    <div class="p-8 flex flex-col flex-1">
-                        <h3 class="text-2xl font-bold mb-2">Tuncer Zeka Pro</h3>
-                        <p class="text-slate-400 mb-6 text-sm">Gelişmiş analitik işlemler ve otomasyon için standart yapay zeka paketi.</p>
-                        <div class="text-4xl font-extrabold text-cyan-400 mb-6 mt-auto">1.666 TL</div>
-                        <ul class="space-y-3 mb-8 text-sm text-slate-300">
-                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2"></i> 1 Yıllık Lisans</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2"></i> Gelişmiş API Erişimi</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-emerald-400 mr-2"></i> 7/24 Destek</li>
-                        </ul>
-                        <button onclick="buyProduct('Pro')" class="w-full py-3 rounded-lg bg-slate-700 hover:bg-cyan-500 hover:text-slate-900 font-bold transition-all text-white border border-slate-600 hover:border-transparent flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-cart-shopping"></i> Satın Al
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Tuncer Zeka Holo -->
-                <div class="flex-1 bg-gradient-to-b from-slate-800 to-indigo-900/50 rounded-2xl border-2 border-purple-500 overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/40 transform hover:-translate-y-2 relative flex flex-col">
-                    <div class="absolute top-0 right-0 bg-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">
-                        Premium
-                    </div>
-                    <div class="h-48 flex items-center justify-center border-b border-purple-500/30 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-purple-500/10 mix-blend-overlay"></div>
-                        <span class="text-purple-300 z-10 text-center flex flex-col items-center">
-                            <i class="fa-brands fa-space-awesome text-5xl mb-2 text-purple-400 animate-pulse"></i>
-                            
-                        </span>
-                    </div>
-                    <div class="p-8 flex flex-col flex-1">
-                        <h3 class="text-2xl font-bold mb-2 text-white">Tuncer Zeka Holo</h3>
-                        <p class="text-purple-200 mb-6 text-sm">Holografik arayüz desteği ile fiziksel sınırları kaldıran üst düzey sistem.</p>
-                        <div class="text-4xl font-extrabold text-purple-400 mb-6 mt-auto">89.000 TL</div>
-                        <ul class="space-y-3 mb-8 text-sm text-purple-100">
-                            <li class="flex items-center"><i class="fa-solid fa-check text-purple-400 mr-2"></i> Sınırsız Ömür Boyu Lisans</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-purple-400 mr-2"></i> Holografik Projeksiyon Modülü</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-purple-400 mr-2"></i> Kuantum Veri İşleme</li>
-                            <li class="flex items-center"><i class="fa-solid fa-check text-purple-400 mr-2"></i> Özel Donanım Kiti</li>
-                        </ul>
-                        <button onclick="buyProduct('Holo')" class="w-full py-3 rounded-lg bg-purple-500 hover:bg-purple-400 text-white font-bold transition-all shadow-lg shadow-purple-500/50 flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-gem"></i> Özel Satın Alım
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <!-- Admin Bölümü (Bakiye Yükleme) -->
-    <section id="admin-section" class="py-20 px-4 bg-slate-900 border-t border-slate-800">
-        <div class="max-w-md mx-auto bg-slate-800 rounded-2xl border border-slate-700 p-8 shadow-2xl relative overflow-hidden">
-            <!-- Arka Plan Efekti -->
-            <div class="absolute -top-24 -right-24 w-48 h-48 bg-red-500/10 rounded-full blur-[50px]"></div>
-            
-            <div class="text-center mb-8 relative z-10">
-                <div class="w-16 h-16 bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-700">
-                    <i class="fa-solid fa-user-shield text-2xl text-red-400"></i>
-                </div>
-                <h2 class="text-2xl font-bold">Yetkili Paneli</h2>
-                <p class="text-sm text-slate-400 mt-2">Sisteme bakiye yüklemek için giriş yapın.</p>
-            </div>
-
-            <!-- Login Formu -->
-            <div id="admin-login-view" class="space-y-4 relative z-10">
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">Erişim Şifresi</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-key absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
-                        <input type="password" id="admin-password" placeholder="Şifrenizi girin..." class="w-full bg-slate-900 border border-slate-600 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-colors">
-                    </div>
-                </div>
-                <button onclick="attemptAdminLogin()" class="w-full py-3 rounded-lg bg-slate-700 hover:bg-red-500/80 text-white font-bold transition-all flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-right-to-bracket"></i> Doğrula
-                </button>
-            </div>
-
-            <!-- Bakiye Yükleme Formu (Gizli) -->
-            <div id="admin-dashboard-view" class="hidden space-y-4 relative z-10">
-                <div class="p-3 bg-emerald-900/30 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm text-center mb-4 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-unlock"></i> Erişim Onaylandı
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-slate-400 mb-1">Yüklenecek Tutar (TL)</label>
-                    <div class="relative">
-                        <i class="fa-solid fa-turkish-lira-sign absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-500"></i>
-                        <input type="number" id="balance-amount" placeholder="Örn: 5000" class="w-full bg-slate-900 border border-slate-600 rounded-lg py-3 pl-10 pr-4 text-white focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
-                    </div>
-                </div>
-                <button onclick="addBalance()" class="w-full py-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
-                    <i class="fa-solid fa-coins"></i> Bakiyeyi Tanımla
-                </button>
-                <button onclick="logoutAdmin()" class="w-full py-2 mt-2 rounded-lg bg-transparent hover:bg-slate-700 text-slate-400 text-sm transition-all">
-                    Sistemden Çık
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer class="border-t border-slate-800 bg-slate-900 py-8 text-center text-slate-500 text-sm">
-        <p>&copy; 2026 Tuncer Zeka Teknolojileri. Tüm hakları saklıdır.</p>
-    </footer>
-
-    <!-- ÖZEL MODAL SİSTEMİ (Alert yerine geçer) -->
-    <div id="custom-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4">
-        <!-- Arka Plan Karartma -->
-        <div class="absolute inset-0 bg-slate-900/80 modal-overlay" onclick="closeModal()"></div>
-        
-        <!-- Modal Kutusu -->
-        <div class="relative w-full max-w-md bg-slate-800 border border-slate-600 rounded-2xl shadow-2xl overflow-hidden modal-content">
-            <!-- Tepe Şeridi (Dinamik Renk) -->
-            <div id="modal-top-bar" class="h-2 w-full bg-cyan-500"></div>
-            
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        <div id="modal-icon-bg" class="w-10 h-10 rounded-full flex items-center justify-center bg-cyan-900/50 text-cyan-500 text-xl">
-                            <i id="modal-icon" class="fa-solid fa-info"></i>
-                        </div>
-                        <h3 id="modal-title" class="text-xl font-bold text-white">Bildirim</h3>
-                    </div>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-white transition-colors">
-                        <i class="fa-solid fa-xmark text-xl"></i>
-                    </button>
-                </div>
-                
-                <div id="modal-body" class="text-slate-300 mb-6">
-                    Mesaj içeriği buraya gelecek.
-                </div>
-                
-                <!-- Gizli Şifre Kutusu (Sadece başarılı satın alımda görünür) -->
-                <div id="secret-code-box" class="hidden bg-slate-900 border border-dashed border-slate-600 rounded-lg p-4 mb-6 text-center">
-                    <p class="text-xs text-slate-400 uppercase tracking-widest mb-1">Lisans Anahtarınız</p>
-                    <p id="secret-code-text" class="text-xl font-mono font-bold text-emerald-400 select-all cursor-pointer" onclick="copyCode()">XXXXXX</p>
-                    <p class="text-[10px] text-slate-500 mt-1">(Kopyalamak için tıklayın)</p>
-                </div>
-
-                <div class="flex justify-end">
-                    <button id="modal-btn" onclick="closeModal()" class="px-6 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white font-medium transition-colors">
-                        Kapat
-                    </button>
-                </div>
-            </div>
+        <div class="card">
+            <h2>Sistem Durumu</h2>
+            <div id="memory-stats">Yükleniyor...</div>
+            <button onclick="agiTestEt()">Sinir Ağını Test Et</button>
+            <div id="math-output"></div>
         </div>
     </div>
+</div>
+<script>
+    window.onerror = function(message, source, lineno, colno, error) {
+        alert("SİSTEM HATASI!\nMesaj: " + message + "\nSatır: " + lineno + "\nDosya: " + source);
+        return true;
+    };
+</script>
 
+<script src="tuncer2026.js"></script>
 
-    <!-- JavaScript Mantığı -->
-    <script>
-        // Durum (State) Yönetimi
-        let balance = 0;
-        let isAdminLoggedIn = false;
+<script src="tuncer2026.js"></script>
 
-        // Ürün Veritabanı
-        const products = {
-            'Pro': { name: 'Tuncer Zeka Pro', price: 1666, code: '175017' },
-            'Holo': { name: 'Tuncer Zeka Holo', price: 89000, code: 'LQHR01_NPoQ' }
-        };
+<script>
+    // Kütüphane yüklendikten sonra nesneleri oluştur
+    let nlp, ressam, bellek;
 
-        const adminPassword = "175017";
-
-        // Arayüz Güncelleme
-        function updateUI() {
-            document.getElementById('nav-balance').innerText = balance.toLocaleString('tr-TR');
+    window.onload = () => {
+        try {
+            nlp = new TurkceDilIsleme();
+            ressam = new GorselUretim();
+            bellek = new BellekSistemi();
+            bellekYenile();
+        } catch(e) {
+            console.error("Kütüphane yüklenemedi:", e);
+            alert("tuncer2026.js dosyası bulunamadı veya hatalı!");
         }
+    };
 
-        // Scroll Fonksiyonu
-        function scrollToSection(id) {
-            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
-        }
+    function analizEt() {
+        const text = document.getElementById('nlp-input').value;
+        if(!text) return;
+        const duygu = nlp.duyguAnalizi(text);
+        const niyet = nlp.niyetTespit(text);
+        document.getElementById('nlp-output').innerText = 
+            `Duygu: ${duygu.duygu}\nNiyet: ${niyet.niyet}\nSkor: ${duygu.skor}`;
+        bellek.kisaSureliEkle(text);
+        bellekYenile();
+    }
 
-        // --- ADMIN İŞLEMLERİ ---
-        function attemptAdminLogin() {
-            const inputPass = document.getElementById('admin-password').value;
-            if (inputPass === adminPassword) {
-                isAdminLoggedIn = true;
-                document.getElementById('admin-login-view').classList.add('hidden');
-                document.getElementById('admin-dashboard-view').classList.remove('hidden');
-                document.getElementById('admin-password').value = ''; // Temizle
-                showModal('Başarılı', 'Yetkili sistemine giriş yapıldı.', 'success');
-            } else {
-                showModal('Erişim Reddedildi', 'Hatalı yetkili şifresi girdiniz!', 'error');
-            }
-        }
+    function gorselUret() {
+        const tip = document.getElementById('render-type').value;
+        const container = document.getElementById('canvas-container');
+        container.innerHTML = ""; 
+        let cvs;
+        if(tip === 'manzara') cvs = ressam.manzaraUret(400, 250);
+        else if(tip === 'fraktal') cvs = ressam.fraktalUret(400, 400);
+        else if(tip === 'pixel') cvs = ressam.pixelArtUret(16, 16, 15);
+        else cvs = ressam.soyutSanatUret(400, 400);
+        container.appendChild(cvs);
+    }
 
-        function logoutAdmin() {
-            isAdminLoggedIn = false;
-            document.getElementById('admin-login-view').classList.remove('hidden');
-            document.getElementById('admin-dashboard-view').classList.add('hidden');
-            showModal('Çıkış Yapıldı', 'Güvenli bir şekilde sistemden çıkıldı.', 'info');
-        }
+    function bellekYenile() {
+        const s = bellek.istatistikler();
+        document.getElementById('memory-stats').innerText = 
+            `Kısa Süreli Bellek: ${s.kisaSureli}\nUzun Süreli: ${s.uzunSureli}\nDoluluk: ${s.kullanimOrani}`;
+    }
 
-        function addBalance() {
-            if (!isAdminLoggedIn) return;
-            const amountInput = document.getElementById('balance-amount');
-            const amount = parseFloat(amountInput.value);
+    function agiTestEt() {
+        const ag = new SinirAgi([2, 3, 1], 0.1);
+        ag.topluEgit([{giris:[1,0], hedef:[1]}, {giris:[0,1], hedef:[1]}], 500);
+        const sonuc = ag.tahminEt([1,0]);
+        document.getElementById('math-output').innerText = `Sinir Ağı [1,0] Tahmini: ${sonuc[0].toFixed(4)}`;
+    }
+</script>
 
-            if (!isNaN(amount) && amount > 0) {
-                balance += amount;
-                updateUI();
-                amountInput.value = '';
-                showModal('Bakiye Eklendi', `Sisteme başarıyla <b>${amount.toLocaleString('tr-TR')} TL</b> tanımlandı.`, 'success');
-                // Bakiyeyi gösterip yukarı kaydır
-                setTimeout(() => scrollToSection('home'), 1500);
-            } else {
-                showModal('Hata', 'Lütfen geçerli bir tutar giriniz.', 'error');
-            }
-        }
-
-        // --- SATIN ALIM İŞLEMLERİ ---
-        function buyProduct(productId) {
-            const product = products[productId];
-            
-            if (balance >= product.price) {
-                // Başarılı Satın Alım
-                balance -= product.price;
-                updateUI();
-                
-                // Şifreli Modal Göster
-                showModal(
-                    'Satın Alım Başarılı!', 
-                    `Tebrikler, <b>${product.name}</b> modülünü başarıyla satın aldınız. Kurulum için aşağıdaki lisans anahtarını kullanın.`, 
-                    'purchase',
-                    product.code
-                );
-            } else {
-                // Yetersiz Bakiye
-                showModal(
-                    'Bakiye Yetersiz', 
-                    `Bu işlem için bakiyeniz yetersiz.<br><br>Gereken: <b>${product.price.toLocaleString('tr-TR')} TL</b><br>Mevcut: <b>${balance.toLocaleString('tr-TR')} TL</b><br><br>Lütfen yetkili panelinden bakiye tanımlayın.`, 
-                    'error'
-                );
-            }
-        }
-
-        // --- ÖZEL MODAL (GUI) YÖNETİMİ ---
-        function showModal(title, message, type, secretCode = null) {
-            const modal = document.getElementById('custom-modal');
-            const topBar = document.getElementById('modal-top-bar');
-            const iconBg = document.getElementById('modal-icon-bg');
-            const icon = document.getElementById('modal-icon');
-            const titleEl = document.getElementById('modal-title');
-            const bodyEl = document.getElementById('modal-body');
-            const secretBox = document.getElementById('secret-code-box');
-            const secretText = document.getElementById('secret-code-text');
-            const btn = document.getElementById('modal-btn');
-
-            // İçerikleri Ayarla
-            titleEl.innerText = title;
-            bodyEl.innerHTML = message;
-
-            // Tema Ayarlama
-            topBar.className = 'h-2 w-full';
-            iconBg.className = 'w-10 h-10 rounded-full flex items-center justify-center text-xl';
-            icon.className = '';
-            btn.className = 'px-6 py-2 rounded-lg text-white font-medium transition-colors';
-
-            if (type === 'success') {
-                topBar.classList.add('bg-emerald-500');
-                iconBg.classList.add('bg-emerald-900/50', 'text-emerald-500');
-                icon.classList.add('fa-solid', 'fa-check');
-                btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
-            } else if (type === 'error') {
-                topBar.classList.add('bg-red-500');
-                iconBg.classList.add('bg-red-900/50', 'text-red-500');
-                icon.classList.add('fa-solid', 'fa-triangle-exclamation');
-                btn.classList.add('bg-red-600', 'hover:bg-red-500');
-            } else if (type === 'purchase') {
-                topBar.classList.add('bg-purple-500');
-                iconBg.classList.add('bg-purple-900/50', 'text-purple-400');
-                icon.classList.add('fa-solid', 'fa-award');
-                btn.classList.add('bg-purple-600', 'hover:bg-purple-500');
-            } else {
-                topBar.classList.add('bg-cyan-500');
-                iconBg.classList.add('bg-cyan-900/50', 'text-cyan-500');
-                icon.classList.add('fa-solid', 'fa-info');
-                btn.classList.add('bg-slate-700', 'hover:bg-slate-600');
-            }
-
-            // Gizli Şifre Kutusu Mantığı
-            if (secretCode) {
-                secretBox.classList.remove('hidden');
-                secretText.innerText = secretCode;
-            } else {
-                secretBox.classList.add('hidden');
-            }
-
-            // Modalı Göster
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('custom-modal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function copyCode() {
-            const code = document.getElementById('secret-code-text').innerText;
-            navigator.clipboard.writeText(code).then(() => {
-                const textEl = document.getElementById('secret-code-text');
-                const originalText = textEl.innerText;
-                textEl.innerText = "KOPYALANDI!";
-                textEl.classList.replace('text-emerald-400', 'text-white');
-                setTimeout(() => {
-                    textEl.innerText = originalText;
-                    textEl.classList.replace('text-white', 'text-emerald-400');
-                }, 1500);
-            });
-        }
-
-        // Başlangıç Ayarları
-        updateUI();
-        
-        // Enter tuşu ile admin girişi yapabilme
-        document.getElementById('admin-password').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') attemptAdminLogin();
-        });
-        document.getElementById('balance-amount').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') addBalance();
-        });
-    </script>
 </body>
 </html>
-
