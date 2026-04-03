@@ -1,826 +1,268 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="scroll-smooth">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Tuncer Zeka — Yapay Zeka Sistemi</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuncer Zeka | Holografik Akıllı Gözlük</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+        
+        body { font-family: 'Rajdhani', sans-serif; background-color: #020617; }
+        .font-tech { font-family: 'Orbitron', sans-serif; }
+        
+        /* Holographic Text & Borders */
+        .holo-text { text-shadow: 0 0 8px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.4); }
+        .holo-border { box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); }
+        .orange-glow { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); border: 1px solid rgba(249, 115, 22, 0.5); }
+        
+        /* Blueprint / Grid Background */
+        .blueprint-bg {
+            background-image: 
+                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
 
-<style>
-/* ===== RESET & ROOT ===== */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --bg:#010a12;
-  --bg2:#030f1c;
-  --panel:#04162a;
-  --border:#0c3558;
-  --cyan:#00d4ff;
-  --cyan2:#00a8cc;
-  --cyan3:#007fa3;
-  --gold:#ffd700;
-  --red:#ff3b3b;
-  --green:#00ff88;
-  --text:#b0d8ef;
-  --text2:#5a8aa8;
-  --glow: 0 0 8px #00d4ff88, 0 0 20px #00d4ff33;
-  --glow2:0 0 15px #00d4ffaa;
-}
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        .ring-anim::before {
+            content: '';
+            position: absolute;
+            inset: -10px;
+            border: 2px solid theme('colors.cyan.400');
+            border-radius: inherit;
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
 
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Exo 2',sans-serif;}
-
-/* ===== SCANLINES OVERLAY ===== */
-body::after{
-  content:'';position:fixed;inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.015) 2px,rgba(0,212,255,.015) 4px);
-  pointer-events:none;z-index:9999;
-}
-
-/* ===== LAYOUT ===== */
-#app{display:grid;grid-template-rows:52px 1fr 70px;grid-template-columns:280px 1fr 320px;height:100vh;gap:1px;background:var(--border);}
-
-/* ===== HEADER ===== */
-header{
-  grid-column:1/-1;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 24px;background:var(--panel);border-bottom:1px solid var(--border);
-}
-.logo{display:flex;align-items:center;gap:12px;}
-.logo-icon{
-  width:34px;height:34px;border-radius:50%;border:2px solid var(--cyan);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:var(--glow);animation:pulse-ring 3s ease-in-out infinite;
-}
-.logo-icon svg{width:18px;height:18px;fill:var(--cyan);}
-.logo-text{font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--cyan);letter-spacing:3px;text-shadow:var(--glow);}
-.logo-sub{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:2px;}
-
-.header-mid{display:flex;gap:24px;align-items:center;}
-.hud-pill{
-  font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);letter-spacing:1px;
-  padding:3px 10px;border:1px solid var(--border);border-radius:2px;
-}
-.hud-pill span{color:var(--green);}
-
-.header-right{display:flex;gap:8px;align-items:center;}
-#clock{font-family:'Orbitron',monospace;font-size:16px;color:var(--cyan);letter-spacing:2px;}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:blink 2s ease-in-out infinite;}
-
-/* ===== LEFT PANEL ===== */
-#panel-left{
-  background:var(--panel);padding:16px 14px;overflow-y:auto;
-  display:flex;flex-direction:column;gap:14px;
-}
-.section-title{
-  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;
-  color:var(--cyan2);border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:4px;
-}
-
-/* Hafıza */
-#hafiza-list{display:flex;flex-direction:column;gap:5px;}
-.hafiza-item{
-  font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text);
-  padding:5px 8px;background:#061828;border-left:2px solid var(--cyan3);
-  border-radius:2px;line-height:1.4;word-break:break-all;
-}
-.hafiza-item .hkey{color:var(--cyan);font-size:9px;}
-.hafiza-empty{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);text-align:center;padding:12px;}
-
-/* Sistem bilgisi */
-#sistem-info{display:flex;flex-direction:column;gap:6px;}
-.info-row{
-  display:flex;justify-content:space-between;align-items:center;
-  font-family:'Share Tech Mono',monospace;font-size:10px;
-}
-.info-row .label{color:var(--text2);}
-.info-row .val{color:var(--cyan);text-align:right;}
-.info-row .val.ok{color:var(--green);}
-.info-row .val.err{color:var(--red);}
-
-/* Progress bar */
-.pbar{width:100%;height:3px;background:#061828;border-radius:2px;margin-top:2px;}
-.pbar-fill{height:100%;background:linear-gradient(90deg,var(--cyan3),var(--cyan));border-radius:2px;transition:width .5s;}
-
-/* Araştırma paneli */
-#arastirma-panel{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);}
-#arastirma-status{padding:6px;background:#061828;border-radius:2px;line-height:1.5;}
-
-/* ===== CENTER ===== */
-#center{background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;}
-
-/* HUD köşeleri */
-.hud-corner{position:absolute;width:40px;height:40px;border-color:var(--cyan3);border-style:solid;opacity:.5;}
-.hud-corner.tl{top:12px;left:12px;border-width:2px 0 0 2px;}
-.hud-corner.tr{top:12px;right:12px;border-width:2px 2px 0 0;}
-.hud-corner.bl{bottom:12px;left:12px;border-width:0 0 2px 2px;}
-.hud-corner.br{bottom:12px;right:12px;border-width:0 2px 2px 0;}
-
-/* Parçacık canvas */
-#particle-canvas{position:absolute;inset:0;pointer-events:none;}
-
-/* JARVIS Hologram */
-#hologram{
-  position:relative;width:300px;height:300px;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
-}
-.ring{
-  position:absolute;border-radius:50%;border-style:solid;
-  border-color:var(--cyan) transparent transparent transparent;
-  animation:spin 4s linear infinite;
-}
-.ring1{width:290px;height:290px;border-width:1px;animation-duration:8s;}
-.ring2{width:250px;height:250px;border-width:2px;animation-direction:reverse;animation-duration:5s;}
-.ring3{width:200px;height:200px;border-width:1px;border-color:var(--cyan3) transparent transparent transparent;animation-duration:3.5s;}
-.ring4{
-  width:160px;height:160px;border-width:3px;
-  border-color:var(--cyan) var(--cyan) transparent transparent;
-  animation-duration:2.5s;
-}
-.ring-dash{
-  position:absolute;width:240px;height:240px;border-radius:50%;
-  border:1px dashed var(--cyan3);opacity:.3;animation:spin 20s linear infinite reverse;
-}
-
-/* Core */
-.core{
-  position:relative;width:90px;height:90px;border-radius:50%;
-  background:radial-gradient(circle,rgba(0,212,255,.3) 0%,rgba(0,212,255,.05) 60%,transparent 100%);
-  box-shadow:0 0 30px rgba(0,212,255,.6), inset 0 0 20px rgba(0,212,255,.3);
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-  border:2px solid var(--cyan);transition:all .3s;
-}
-.core:hover{box-shadow:0 0 50px rgba(0,212,255,.9), inset 0 0 30px rgba(0,212,255,.5);}
-.core.dinliyor{
-  background:radial-gradient(circle,rgba(255,61,61,.4) 0%,rgba(255,61,61,.1) 60%,transparent 100%);
-  box-shadow:0 0 40px rgba(255,61,61,.8), inset 0 0 20px rgba(255,61,61,.4);
-  border-color:var(--red);animation:pulse-core 0.6s ease-in-out infinite;
-}
-.core.konuşuyor{
-  background:radial-gradient(circle,rgba(0,255,136,.3) 0%,rgba(0,255,136,.05) 60%,transparent 100%);
-  box-shadow:0 0 40px rgba(0,255,136,.7), inset 0 0 20px rgba(0,255,136,.3);
-  border-color:var(--green);
-}
-.core-icon{font-size:28px;user-select:none;}
-.core-label{
-  position:absolute;bottom:-28px;font-family:'Share Tech Mono',monospace;font-size:10px;
-  color:var(--cyan2);letter-spacing:2px;white-space:nowrap;
-}
-
-/* Dalga */
-#wave-canvas{position:absolute;bottom:0;left:0;right:0;height:60px;pointer-events:none;}
-
-/* Kamera kutusu */
-#cam-box{
-  position:absolute;right:14px;top:14px;width:180px;height:135px;
-  border:1px solid var(--border);border-radius:4px;overflow:hidden;
-  background:#000;box-shadow:0 0 10px #00000088;
-}
-#cam-video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:.85;}
-#cam-canvas{display:none;}
-#cam-overlay{
-  position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:flex-end;
-  padding:5px;pointer-events:none;
-}
-.cam-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan);background:rgba(1,10,18,.7);padding:2px 5px;border-radius:2px;}
-.cam-scan-line{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:scan 3s ease-in-out infinite;}
-#cam-btn{
-  position:absolute;left:14px;top:14px;
-  background:rgba(4,22,42,.9);border:1px solid var(--cyan3);color:var(--cyan);
-  font-family:'Share Tech Mono',monospace;font-size:10px;padding:5px 10px;
-  border-radius:2px;cursor:pointer;letter-spacing:1px;transition:all .2s;
-}
-#cam-btn:hover{background:rgba(0,212,255,.1);border-color:var(--cyan);}
-
-/* Durum çizgisi */
-#status-line{
-  position:absolute;top:14px;left:50%;transform:translateX(-50%);
-  font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--cyan);
-  letter-spacing:2px;text-align:center;text-shadow:var(--glow);
-  transition:all .3s;
-}
-
-/* ===== RIGHT PANEL — CHAT ===== */
-#panel-right{
-  background:var(--panel);display:flex;flex-direction:column;overflow:hidden;
-}
-#chat-header{
-  padding:12px 14px;border-bottom:1px solid var(--border);
-  font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3px;color:var(--cyan2);
-  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;
-}
-#clear-btn{
-  font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2);
-  background:none;border:1px solid var(--border);padding:2px 7px;border-radius:2px;cursor:pointer;
-  transition:all .2s;
-}
-#clear-btn:hover{color:var(--cyan);border-color:var(--cyan3);}
-
-#chat-msgs{
-  flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;
-  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
-}
-#chat-msgs::-webkit-scrollbar{width:3px;}
-#chat-msgs::-webkit-scrollbar-thumb{background:var(--border);}
-
-.msg{
-  display:flex;flex-direction:column;gap:3px;max-width:100%;
-  animation:msgIn .25s ease forwards;
-}
-.msg.user{ align-items:flex-end; }
-.msg.bot { align-items:flex-start; }
-
-.msg-bubble{
-  padding:8px 12px;border-radius:3px;
-  font-family:'Exo 2',sans-serif;font-size:12px;line-height:1.55;
-  max-width:90%;word-break:break-word;
-}
-.msg.user .msg-bubble{
-  background:rgba(0,212,255,.12);border:1px solid var(--cyan3);
-  color:var(--cyan);text-align:right;
-}
-.msg.bot .msg-bubble{
-  background:#061828;border:1px solid var(--border);
-  color:var(--text);border-left:2px solid var(--cyan);
-}
-.msg.bot .msg-bubble.arastirma{border-left-color:var(--gold);}
-.msg.bot .msg-bubble.hata{border-left-color:var(--red);color:#ff8888;}
-
-.msg-time{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2);}
-
-.typing{display:flex;gap:5px;align-items:center;padding:8px 12px;}
-.typing-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);animation:typingDot 1.2s ease-in-out infinite;}
-.typing-dot:nth-child(2){animation-delay:.2s;}
-.typing-dot:nth-child(3){animation-delay:.4s;}
-
-/* ===== FOOTER ===== */
-footer{
-  grid-column:1/-1;background:var(--panel);border-top:1px solid var(--border);
-  display:flex;align-items:center;gap:8px;padding:0 16px;
-}
-#input-wrap{
-  flex:1;display:flex;align-items:center;gap:8px;
-  background:#061828;border:1px solid var(--border);border-radius:3px;
-  padding:0 12px;transition:border-color .2s;
-}
-#input-wrap:focus-within{border-color:var(--cyan3);box-shadow:0 0 8px rgba(0,212,255,.15);}
-#input-prefix{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--cyan2);}
-#msg-input{
-  flex:1;background:none;border:none;outline:none;
-  font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--text);
-  padding:14px 0;caret-color:var(--cyan);
-}
-#msg-input::placeholder{color:var(--text2);}
-#msg-input::-webkit-input-placeholder{color:var(--text2);}
-
-.foot-btn{
-  width:40px;height:40px;border-radius:3px;border:1px solid var(--border);
-  background:transparent;color:var(--text2);font-size:16px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;transition:all .2s;
-  flex-shrink:0;
-}
-.foot-btn:hover{background:rgba(0,212,255,.08);border-color:var(--cyan3);color:var(--cyan);}
-.foot-btn.active{background:rgba(255,61,61,.15);border-color:var(--red);color:var(--red);box-shadow:0 0 10px rgba(255,61,61,.3);}
-.foot-btn.send{background:rgba(0,212,255,.1);border-color:var(--cyan3);color:var(--cyan);}
-.foot-btn.send:hover{background:rgba(0,212,255,.2);}
-
-/* Tasarımcı */
-#credit{
-  position:fixed;bottom:78px;left:50%;transform:translateX(-50%);
-  font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text2);
-  letter-spacing:2px;opacity:.5;pointer-events:none;z-index:10;
-}
-
-/* ===== ANİMASYONLAR ===== */
-@keyframes spin{ to{transform:rotate(360deg);} }
-@keyframes pulse-ring{0%,100%{box-shadow:0 0 6px #00d4ff66;}50%{box-shadow:var(--glow2);}}
-@keyframes pulse-core{0%,100%{transform:scale(1);}50%{transform:scale(1.08);}}
-@keyframes blink{0%,100%{opacity:1;}50%{opacity:.3;}}
-@keyframes scan{0%{top:0;opacity:.8;}50%{opacity:.4;}100%{top:100%;opacity:0;}}
-@keyframes typingDot{0%,60%,100%{transform:translateY(0);}30%{transform:translateY(-5px);}}
-@keyframes msgIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
-@keyframes glitch{
-  0%,100%{clip-path:none;transform:none;}
-  20%{clip-path:polygon(0 15%,100% 15%,100% 30%,0 30%);transform:translateX(-2px);}
-  40%{clip-path:polygon(0 50%,100% 50%,100% 55%,0 55%);transform:translateX(2px);}
-  60%{clip-path:polygon(0 70%,100% 70%,100% 80%,0 80%);transform:translateX(-1px);}
-}
-@keyframes fadeInDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:none;}}
-
-/* Bold formatting in messages */
-.msg-bubble b, .msg-bubble strong{color:var(--cyan);font-weight:600;}
-.msg-bubble em{color:var(--gold);}
-
-/* Scrollbar custom */
-#panel-left::-webkit-scrollbar{width:2px;}
-#panel-left::-webkit-scrollbar-thumb{background:var(--border);}
-</style>
+        /* Connector Lines */
+        .line-h { height: 1px; background: linear-gradient(90deg, theme('colors.cyan.500'), transparent); }
+        .line-h-rev { height: 1px; background: linear-gradient(-90deg, theme('colors.cyan.500'), transparent); }
+    </style>
 </head>
-<body>
-<div id="app">
+<body class="text-slate-200 antialiased selection:bg-cyan-500 selection:text-white">
 
-  <!-- ===== HEADER ===== -->
-  <header>
-    <div class="logo">
-      <div class="logo-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-      </div>
-      <div>
-        <div class="logo-text">TUNCER ZEKA</div>
-        <div class="logo-sub">TÜRKÇE YAPAY ZEKA SİSTEMİ v3.0</div>
-      </div>
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-cyan-900/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center orange-glow">
+                        <span class="font-tech text-xl font-bold text-white">TZ</span>
+                    </div>
+                    <span class="font-tech font-bold text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">TUNCER ZEKA</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#ozellikler" class="hover:text-cyan-400 transition-colors duration-300 font-semibold tracking-wide text-lg">Yetenekler</a>
+                    <a href="#donanim" class="hover:text-orange-400 transition-colors duration-300 font-semibold tracking-wide text-lg">Sistem Şeması</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative pt-32 pb-20 overflow-hidden bg-slate-950 min-h-screen flex items-center blueprint-bg">
+        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/80 to-slate-950 z-0"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Left Text -->
+                <div>
+                    <div class="inline-block px-4 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 font-tech text-sm mb-6">
+                        YENİ NESİL AR GÖZLÜK SİSTEMİ
+                    </div>
+                    <h1 class="font-tech text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+                        <span class="block text-white">GERÇEKLİĞE</span>
+                        <span class="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 holo-text">VERİ EKLEYİN</span>
+                    </h1>
+                    <p class="text-xl text-slate-400 font-medium mb-8 leading-relaxed max-w-lg">
+                        Görüş alanınızdaki dünyayı tarayan, anlayan ve haritalandıran <strong class="text-white">Tuncer Zeka</strong> yapay zeka asistanı. Gücünü buluttan, donanımını endüstri standartlarındaki özel mimariden alır.
+                    </p>
+                    <a href="#donanim" class="inline-flex items-center gap-3 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-full transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)]">
+                        Teknik Şemayı İncele
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+                    </a>
+                </div>
+
+                <!-- Right Hero Visual -->
+                <div class="relative h-[400px] flex items-center justify-center animate-float">
+                    <!-- Holographic Glasses Representation -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-3xl rounded-full"></div>
+                    <div class="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-cyan-500/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
+                        <div class="h-48 border border-cyan-800 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group">
+                            <!-- HUD Elements -->
+                            <div class="absolute top-2 left-2 text-[10px] font-tech text-cyan-500">SYS: ONLINE</div>
+                            <div class="absolute top-2 right-2 text-[10px] font-tech text-cyan-500">AI: CONNECTED</div>
+                            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoNiwgMTgyLCAyMTIsIDAuMSkiLz48L3N2Zz4=')]"></div>
+                            
+                            <svg class="w-24 h-24 text-cyan-400 filter drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                            </svg>
+                            <p class="mt-4 font-tech text-cyan-300 text-sm tracking-[0.2em] animate-pulse">HOLOGRAFİK EKRAN</p>
+                            
+                            <!-- Scanner line -->
+                            <div class="absolute top-0 left-0 w-full h-1 bg-cyan-400 shadow-[0_0_10px_#22d3ee] animate-[bounce_3s_infinite]"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
     </div>
 
-    <div class="header-mid">
-      <div class="hud-pill">NLP <span>AKTİF</span></div>
-      <div class="hud-pill">SES <span id="ses-durum">—</span></div>
-      <div class="hud-pill">HAFIZA <span id="hafiza-durum">0</span> KAYIT</div>
-      <div class="hud-pill">ARAŞTIRMA <span>HAZIR</span></div>
+    <!-- Features Section -->
+    <div id="ozellikler" class="py-20 bg-slate-950 border-t border-slate-900 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="font-tech text-3xl md:text-4xl font-bold text-white mb-4">GÖRÜŞ ALANINIZDAKİ <span class="text-cyan-500">ZEKA</span></h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-slate-900/50 p-8 border border-slate-800 rounded-xl hover:border-cyan-500/50 transition-all">
+                    <div class="text-cyan-400 mb-4"><svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></div>
+                    <h3 class="text-xl font-bold text-white mb-2 font-tech">Gerçek Zamanlı Çevre Tarama</h3>
+                    <p class="text-slate-400">Çift kamera ve derinlik sensörleriyle anında obje tanıma ve mesafe ölçümü.</p>
+                </div>
+                <div class="bg-slate-900/50 p-8 border border-slate-800 rounded-xl hover:border-orange-500/50 transition-all">
+                    <div class="text-orange-400 mb-4"><svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div>
+                    <h3 class="text-xl font-bold text-white mb-2 font-tech">AR Navigasyon</h3>
+                    <p class="text-slate-400">Yere yansıtılan oklar ve güzergah çizgileri ile kaybolmaya son.</p>
+                </div>
+                <div class="bg-slate-900/50 p-8 border border-slate-800 rounded-xl hover:border-purple-500/50 transition-all">
+                    <div class="text-purple-400 mb-4"><svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg></div>
+                    <h3 class="text-xl font-bold text-white mb-2 font-tech">Sunucu Destekli Yapay Zeka</h3>
+                    <p class="text-slate-400">Bulut tabanlı devasa NLP ve görüntü işleme altyapısıyla her sorunuza anında yanıt.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="header-right">
-      <div class="status-dot"></div>
-      <div id="clock">--:--:--</div>
+    <!-- Visual Hardware Infographic Section -->
+    <div id="donanim" class="py-24 bg-[#0a0f1d] relative overflow-hidden">
+        <!-- Background accents -->
+        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-600/10 blur-[120px] rounded-full"></div>
+        <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-600/10 blur-[120px] rounded-full"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center mb-16">
+                <h2 class="font-tech text-4xl font-bold text-white mb-4">MİMARİ <span class="text-orange-500">ŞEMA</span></h2>
+                <p class="text-slate-400 max-w-2xl mx-auto text-lg">Yüksek performanslı özel modülümüz, endüstri standartlarındaki en güncel 64-bit 8-çekirdekli mimariyi temel alır.</p>
+            </div>
+
+            <!-- INFOGRAPHIC CONTAINER -->
+            <div class="relative w-full max-w-5xl mx-auto p-4 md:p-10 border border-slate-800 rounded-3xl bg-slate-900/40 backdrop-blur-md blueprint-bg">
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative">
+                    
+                    <!-- Left Specs -->
+                    <div class="space-y-8 relative z-20">
+                        <!-- Spec 1 -->
+                        <div class="bg-slate-950/80 border border-cyan-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.1)] relative group">
+                            <div class="absolute right-0 top-1/2 w-8 line-h translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="font-tech text-cyan-400 text-xs mb-1">ANA İŞLEMCİ (CPU)</div>
+                            <div class="text-white font-bold text-lg">8-Çekirdek 64-bit SoC</div>
+                            <div class="text-slate-400 text-sm mt-1 font-mono">4x Cortex-A76 @ 2.4GHz <br> 4x Cortex-A55 @ 1.8GHz</div>
+                        </div>
+                        <!-- Spec 2 -->
+                        <div class="bg-slate-950/80 border border-cyan-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.1)] relative group">
+                            <div class="absolute right-0 top-1/2 w-8 line-h translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="font-tech text-cyan-400 text-xs mb-1">GRAFİK BİRİMİ (GPU)</div>
+                            <div class="text-white font-bold text-lg">Mali-G610 MP4</div>
+                            <div class="text-slate-400 text-sm mt-1 font-mono">8K@60fps Video Kod Çözme, 3D Render & Hologram Hazırlığı</div>
+                        </div>
+                        <!-- Spec 3 -->
+                        <div class="bg-slate-950/80 border border-cyan-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.1)] relative group">
+                            <div class="absolute right-0 top-1/2 w-8 line-h translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="font-tech text-cyan-400 text-xs mb-1">KAMERA & SENSÖR ARAYÜZÜ</div>
+                            <div class="text-white font-bold text-lg">MIPI CSI Bağlantısı</div>
+                            <div class="text-slate-400 text-sm mt-1 font-mono">Çift 4K Lens Desteği + Derinlik (LiDAR) Entegrasyonu</div>
+                        </div>
+                    </div>
+
+                    <!-- Center Chip Visual -->
+                    <div class="flex justify-center items-center py-10 relative z-10">
+                        <div class="relative w-48 h-48 ring-anim flex items-center justify-center bg-slate-950 rounded-2xl border-2 border-orange-500/50 shadow-[0_0_40px_rgba(249,115,22,0.2)]">
+                            <!-- Chip Pins -->
+                            <div class="absolute -top-2 left-4 right-4 h-2 flex justify-between px-2">
+                                <div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div>
+                            </div>
+                            <div class="absolute -bottom-2 left-4 right-4 h-2 flex justify-between px-2">
+                                <div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div>
+                            </div>
+                            <div class="absolute -left-2 top-4 bottom-4 w-2 flex flex-col justify-between py-2">
+                                <div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div>
+                            </div>
+                            <div class="absolute -right-2 top-4 bottom-4 w-2 flex flex-col justify-between py-2">
+                                <div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div>
+                            </div>
+
+                            <!-- Core Inner -->
+                            <div class="w-32 h-32 bg-slate-900 border border-slate-700 rounded-lg flex flex-col items-center justify-center p-2 relative overflow-hidden">
+                                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9InRyYW5zcGFyZW50Ii8+PHBhdGggZD0iTTAgMEw4IDhaIiBzdHJva2U9InJnYmEoMjQ5LCAxMTUsIDIyLCAwLjE1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')]"></div>
+                                <span class="font-tech text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 z-10 text-center">TUNCER<br>CORE</span>
+                                <span class="text-[10px] text-slate-500 font-mono mt-1 z-10">TC-2027-RKX</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Specs -->
+                    <div class="space-y-8 relative z-20">
+                        <!-- Spec 4 -->
+                        <div class="bg-slate-950/80 border border-orange-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.1)] relative group">
+                            <div class="absolute left-0 top-1/2 w-8 line-h-rev -translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="font-tech text-orange-400 text-xs mb-1">YAPAY ZEKA (NPU)</div>
+                            <div class="text-white font-bold text-lg">Dahili 6 TOPS NPU</div>
+                            <div class="text-slate-400 text-sm mt-1 font-mono">Sunucuya bağlanmadan önceki lokal nesne tespiti ve veri filtreleme</div>
+                        </div>
+                        <!-- Spec 5 -->
+                        <div class="bg-slate-950/80 border border-orange-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.1)] relative group">
+                            <div class="absolute left-0 top-1/2 w-8 line-h-rev -translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="font-tech text-orange-400 text-xs mb-1">SİSTEM BELLEĞİ</div>
+                            <div class="text-white font-bold text-lg">16GB / 32GB LPDDR4X</div>
+                            <div class="text-slate-400 text-sm mt-1 font-mono">Gecikmesiz yüksek bant genişliği, kesintisiz harita ve veri akışı</div>
+                        </div>
+                        <!-- Spec 6 -->
+                        <div class="bg-slate-950/80 border border-orange-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.1)] relative group">
+                            <div class="absolute left-0 top-1/2 w-8 line-h-rev -translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                            <div class="font-tech text-orange-400 text-xs mb-1">KABLOSUZ İLETİŞİM</div>
+                            <div class="text-white font-bold text-lg">Wi-Fi 6 & Bluetooth 5.2</div>
+                            <div class="text-slate-400 text-sm mt-1 font-mono">Sunucu tabanlı <span class="text-white">Tuncer Core</span> YZ Kütüphanesine milisaniyelik erişim için (802.11ax)</div>
+                        </div>
+                    </div>
+
+                </div>
+                
+                <!-- Cloud Info Bottom -->
+                <div class="mt-12 text-center p-6 border-t border-slate-800/50 bg-slate-900/30 rounded-b-2xl">
+                    <p class="text-sm font-mono text-cyan-500 uppercase mb-2 tracking-widest">Çalışma Prensibi</p>
+                    <p class="text-slate-300">Donanım yüksek çözünürlüklü veriyi toplar ve şifreler. Asıl ağır Doğal Dil İşleme (NLP) ve komplike yapay zeka işlemleri <strong class="text-white">Güçlü Sunucu Kümelerimiz</strong> üzerinde çalıştırılarak sonuç gözlüğe ışık hızında holografik veri olarak gönderilir.</p>
+                </div>
+            </div>
+        </div>
     </div>
-  </header>
 
-  <!-- ===== SOL PANEL ===== -->
-  <div id="panel-left">
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-10">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h2 class="font-tech text-2xl font-bold text-white mb-4">Geleceği Gözlerinizin Önüne Seriyoruz.</h2>
+            <p class="text-slate-500 text-sm">
+                &copy; 2026 Tuncer Intelligence Technologies. Donanım verileri AR-GE aşaması laboratuvar sonuçlarıdır.<br>
+            </p>
+        </div>
+    </footer>
 
-    <div>
-      <div class="section-title">💾 HAFIZA KAYITLARI</div>
-      <div id="hafiza-list"><div class="hafiza-empty">Henüz kayıt yok</div></div>
-    </div>
-
-    <div>
-      <div class="section-title">⚙️ SİSTEM DURUMU</div>
-      <div id="sistem-info">
-        <div class="info-row"><span class="label">NLP Motoru</span><span class="val ok">AKTİF</span></div>
-        <div class="info-row"><span class="label">Ses Tanıma</span><span class="val" id="si-ses">—</span></div>
-        <div class="info-row"><span class="label">Görüntü</span><span class="val" id="si-goruntu">PASIF</span></div>
-        <div class="info-row"><span class="label">Araştırma</span><span class="val ok">HAZIR</span></div>
-        <div class="info-row"><span class="label">Bağlam</span><span class="val ok">TAKİP</span></div>
-        <div class="info-row"><span class="label">Konuşma Turu</span><span class="val" id="si-tur">0</span></div>
-        <div class="info-row"><span class="label">Hafıza Boyutu</span><span class="val" id="si-boyut">0KB</span></div>
-        <div class="pbar"><div class="pbar-fill" id="hafiza-bar" style="width:0%"></div></div>
-      </div>
-    </div>
-
-    <div>
-      <div class="section-title">📡 SON ARAŞTIRMA</div>
-      <div id="arastirma-panel">
-        <div id="arastirma-status" style="color:var(--text2)">Henüz araştırma yapılmadı.</div>
-      </div>
-    </div>
-
-    <div>
-      <div class="section-title">🧠 NLP BAĞLAM</div>
-      <div id="baglamlar" style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text2);display:flex;flex-direction:column;gap:3px;"></div>
-    </div>
-
-    <div>
-      <div class="section-title">ℹ️ TASARIMCI</div>
-      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;line-height:1.8;color:var(--text2);">
-        Ad: <span style="color:var(--cyan)">Ahmet Tuncer</span><br>
-        Proje: <span style="color:var(--cyan)">Tuncer Zeka v3.0</span><br>
-        Dil: <span style="color:var(--cyan)">Türkçe AI Sistemi</span><br>
-        Lisans: <span style="color:var(--cyan)">MIT</span>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ===== CENTER ===== -->
-  <div id="center">
-    <div class="hud-corner tl"></div>
-    <div class="hud-corner tr"></div>
-    <div class="hud-corner bl"></div>
-    <div class="hud-corner br"></div>
-
-    <canvas id="particle-canvas"></canvas>
-
-    <div id="status-line">TUNCER ZEKA — HAZIR</div>
-
-    <!-- Kamera -->
-    <div id="cam-box" style="display:none;">
-      <video id="cam-video" autoplay muted playsinline></video>
-      <canvas id="cam-canvas"></canvas>
-      <div id="cam-overlay">
-        <div class="cam-label">CANLI GÖRÜNTÜ</div>
-        <div class="cam-scan-line"></div>
-      </div>
-    </div>
-    <button id="cam-btn">📷 KAMERAY AÇ</button>
-
-    <!-- Jarvis Hologram -->
-    <div id="hologram">
-      <div class="ring ring1"></div>
-      <div class="ring ring2"></div>
-      <div class="ring ring3"></div>
-      <div class="ring ring4"></div>
-      <div class="ring-dash"></div>
-      <div class="core" id="core-btn" title="Sesli komut ver">
-        <div class="core-icon" id="core-icon">🤖</div>
-        <div class="core-label" id="core-label">MİKROFON İÇİN TIK</div>
-      </div>
-    </div>
-
-    <canvas id="wave-canvas"></canvas>
-  </div>
-
-  <!-- ===== SAĞ PANEL — CHAT ===== -->
-  <div id="panel-right">
-    <div id="chat-header">
-      <span>💬 İLETİŞİM KANALI</span>
-      <button id="clear-btn">TEMIZLE</button>
-    </div>
-    <div id="chat-msgs"></div>
-  </div>
-
-  <!-- ===== FOOTER ===== -->
-  <footer>
-    <div id="input-wrap">
-      <span id="input-prefix">TZ › </span>
-      <input id="msg-input" type="text" placeholder="Mesaj yazın veya sesli komut verin..." autocomplete="off"/>
-    </div>
-    <button class="foot-btn" id="voice-btn" title="Sesli komut">🎤</button>
-    <button class="foot-btn" id="cam-toggle-btn" title="Kamera">📷</button>
-    <button class="foot-btn send" id="send-btn" title="Gönder">➤</button>
-  </footer>
-
-</div>
-
-<div id="credit">TASARIMCI: AHMET TUNCER — TUNCER ZEKA v3.0</div>
-
-<script src="tuncer-zeka.js"></script>
-<script>
-// ═══════════════════════════════════════════════════════════════
-// TUNCER ZEKA — ARAYÜZ KONTROLCÜSÜ
-// ═══════════════════════════════════════════════════════════════
-
-(function(){
-
-// ─────────── DOM REFERANSLARI ───────────
-const $ = id => document.getElementById(id);
-const chatMsgs     = $('chat-msgs');
-const msgInput     = $('msg-input');
-const sendBtn      = $('send-btn');
-const voiceBtn     = $('voice-btn');
-const coreBtn      = $('core-btn');
-const coreIcon     = $('core-icon');
-const coreLabel    = $('core-label');
-const statusLine   = $('status-line');
-const clearBtn     = $('clear-btn');
-const camBtn       = $('cam-btn');
-const camToggle    = $('cam-toggle-btn');
-const camBox       = $('cam-box');
-const camVideo     = $('cam-video');
-const camCanvas    = $('cam-canvas');
-const hafizaList   = $('hafiza-list');
-const waveCanvas   = $('wave-canvas');
-const particleCanvas = $('particle-canvas');
-
-// ─────────── SAAT ───────────
-function saatGuncelle(){
-  const t = TuncerZeka.util.tarihFormat(new Date());
-  $('clock').textContent = `${t.ss}:${t.dk}:${t.sn}`;
-}
-setInterval(saatGuncelle, 1000); saatGuncelle();
-
-// ─────────── PARÇACIK SİSTEMİ ───────────
-const pCtx = particleCanvas.getContext('2d');
-let particles = [];
-
-function resizeParticleCanvas(){
-  particleCanvas.width  = particleCanvas.offsetWidth;
-  particleCanvas.height = particleCanvas.offsetHeight;
-}
-window.addEventListener('resize', resizeParticleCanvas);
-resizeParticleCanvas();
-
-function createParticle(){
-  const W=particleCanvas.width, H=particleCanvas.height;
-  return {
-    x: Math.random()*W, y: Math.random()*H,
-    vx:(Math.random()-.5)*.3, vy:(Math.random()-.5)*.3,
-    r: Math.random()*1.5+.3, life:1,
-    color:`rgba(0,${Math.floor(180+Math.random()*75)},255,`
-  };
-}
-
-for(let i=0;i<60;i++) particles.push(createParticle());
-
-function animateParticles(){
-  const W=particleCanvas.width, H=particleCanvas.height;
-  pCtx.clearRect(0,0,W,H);
-  particles.forEach(p=>{
-    p.x+=p.vx; p.y+=p.vy;
-    if(p.x<0||p.x>W) p.vx*=-1;
-    if(p.y<0||p.y>H) p.vy*=-1;
-    pCtx.beginPath();
-    pCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    pCtx.fillStyle = p.color+'0.5)';
-    pCtx.fill();
-  });
-  // Bağlantı çizgileri
-  for(let i=0;i<particles.length;i++){
-    for(let j=i+1;j<particles.length;j++){
-      const dx=particles[i].x-particles[j].x, dy=particles[i].y-particles[j].y;
-      const d=Math.sqrt(dx*dx+dy*dy);
-      if(d<90){
-        pCtx.beginPath();
-        pCtx.strokeStyle=`rgba(0,212,255,${(1-d/90)*.08})`;
-        pCtx.lineWidth=.5;
-        pCtx.moveTo(particles[i].x,particles[i].y);
-        pCtx.lineTo(particles[j].x,particles[j].y);
-        pCtx.stroke();
-      }
-    }
-  }
-  requestAnimationFrame(animateParticles);
-}
-animateParticles();
-
-// ─────────── DALGA ANİMASYONU ───────────
-const wCtx = waveCanvas.getContext('2d');
-let waveActive = false;
-let wavePhase  = 0;
-let waveAmp    = 4;
-
-function resizeWave(){
-  waveCanvas.width  = waveCanvas.offsetWidth;
-  waveCanvas.height = 60;
-}
-window.addEventListener('resize',resizeWave); resizeWave();
-
-function drawWave(){
-  const W=waveCanvas.width, H=60;
-  wCtx.clearRect(0,0,W,H);
-  wCtx.beginPath();
-  for(let x=0;x<W;x++){
-    const y = H/2 + Math.sin(x*.03 + wavePhase) * waveAmp +
-                    Math.sin(x*.07 + wavePhase*1.3)*(waveAmp*.5) +
-                    Math.sin(x*.015+ wavePhase*.7)*(waveAmp*.3);
-    x===0 ? wCtx.moveTo(x,y) : wCtx.lineTo(x,y);
-  }
-  wCtx.strokeStyle = waveActive ? 'rgba(255,61,61,.7)' : 'rgba(0,212,255,.4)';
-  wCtx.lineWidth   = 1.5;
-  wCtx.stroke();
-  wavePhase += waveActive ? .08 : .02;
-  if(waveActive && waveAmp < 16) waveAmp += .5;
-  if(!waveActive && waveAmp > 4) waveAmp -= .3;
-  requestAnimationFrame(drawWave);
-}
-drawWave();
-
-// ─────────── MESAJ EKLE ───────────
-let turSayaci = 0;
-
-function mesajEkle(metin, tip='bot', ekstra=''){
-  const now = TuncerZeka.util.tarihFormat(new Date());
-  const zaman = `${now.ss}:${now.dk}:${now.sn}`;
-
-  const msgDiv = document.createElement('div');
-  msgDiv.className = `msg ${tip}`;
-
-  const bubble = document.createElement('div');
-  bubble.className = `msg-bubble ${ekstra}`;
-  bubble.innerHTML = formatMesg(metin);
-
-  const timeEl = document.createElement('div');
-  timeEl.className='msg-time';
-  timeEl.textContent = tip==='user' ? `Sen — ${zaman}` : `Tuncer Zeka — ${zaman}`;
-
-  msgDiv.appendChild(bubble);
-  msgDiv.appendChild(timeEl);
-  chatMsgs.appendChild(msgDiv);
-  chatMsgs.scrollTop = chatMsgs.scrollHeight;
-
-  if(tip==='bot'){
-    turSayaci++;
-    $('si-tur').textContent = turSayaci;
-  }
-  return msgDiv;
-}
-
-function formatMesg(txt){
-  return txt
-    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')
-    .replace(/\*(.+?)\*/g,'<em>$1</em>')
-    .replace(/_(.*?)_/g,'<em>$1</em>')
-    .replace(/🔗\s*(https?:\/\/\S+)/g,'🔗 <a href="$1" target="_blank" style="color:var(--gold);word-break:break-all;">$1</a>')
-    .replace(/\n/g,'<br>');
-}
-
-function yaziyorGoster(){
-  const d=document.createElement('div');
-  d.className='msg bot'; d.id='typing-indicator';
-  d.innerHTML='<div class="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
-  chatMsgs.appendChild(d);
-  chatMsgs.scrollTop=chatMsgs.scrollHeight;
-}
-function yaziyorKaldir(){ const t=$('typing-indicator'); if(t) t.remove(); }
-
-// ─────────── DURUM GÜNCELLEMESİ ───────────
-function durumGuncelle(metin, renk='var(--cyan)'){
-  statusLine.textContent = metin;
-  statusLine.style.color = renk;
-}
-
-function hafizaGuncelle(){
-  const kayitlar = TuncerZeka.hafiza.hepsi();
-  const ist      = TuncerZeka.hafiza.istatistik();
-
-  $('hafiza-durum').textContent = ist.kayitSayisi;
-  $('si-tur').textContent       = ist.konusmaSayisi;
-  $('si-boyut').textContent     = ist.boyutKB;
-  $('hafiza-bar').style.width   = Math.min(kayitlar.length*8, 100)+'%';
-
-  if(!kayitlar.length){
-    hafizaList.innerHTML='<div class="hafiza-empty">Henüz kayıt yok</div>';
-    return;
-  }
-  hafizaList.innerHTML = kayitlar.slice(-8).reverse().map(k=>
-    `<div class="hafiza-item"><div class="hkey">${k.anahtar}</div>${String(k.deger).substring(0,60)}</div>`
-  ).join('');
-}
-
-function baglamGuncelle(){
-  const b = TuncerZeka.nlp.sonBaglamlar(4);
-  $('baglamlar').innerHTML = b.map(x=>
-    `<div style="padding:3px 6px;border-left:2px solid var(--border);color:var(--text2)">→ ${x.niyet}</div>`
-  ).join('');
-}
-
-// ─────────── MESAJ GÖNDER ───────────
-async function mesajGonder(metin){
-  if(!metin.trim()) return;
-  msgInput.value='';
-  mesajEkle(metin,'user');
-  yaziyorGoster();
-  durumGuncelle('İŞLENİYOR...','var(--gold)');
-  waveActive=true;
-
-  let arasTip='';
-  if(/\b(araştır|wikipedia|nedir|kimdir)\b/i.test(metin)) arasTip='arastirma';
-
-  try{
-    const cevap = await TuncerZeka.isle(metin);
-    yaziyorKaldir();
-    mesajEkle(cevap,'bot',arasTip);
-    durumGuncelle('HAZIR');
-    waveActive=false;
-
-    // Sesli cevap
-    if(sesliCevapAktif){
-      durumGuncelle('KONUŞUYOR...','var(--green)');
-      coreBtn.classList.add('konuşuyor');
-      coreIcon.textContent='🔊';
-      TuncerZeka.konuş(cevap, ()=>{
-        coreBtn.classList.remove('konuşuyor');
-        coreIcon.textContent='🤖';
-        durumGuncelle('HAZIR');
-      });
-    }
-
-    hafizaGuncelle();
-    baglamGuncelle();
-
-    // Araştırma paneli güncelle
-    if(arasTip==='arastirma'){
-      $('arastirma-status').innerHTML = formatMesg(cevap.substring(0,150)+'...');
-    }
-
-  }catch(e){
-    yaziyorKaldir();
-    mesajEkle('❌ Hata: '+e.message,'bot','hata');
-    durumGuncelle('HATA','var(--red)');
-    waveActive=false;
-  }
-}
-
-// ─────────── OLAY DİNLEYİCİLER (butonlar) ───────────
-sendBtn.addEventListener('click',()=>mesajGonder(msgInput.value));
-msgInput.addEventListener('keydown',e=>{ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); mesajGonder(msgInput.value); }});
-clearBtn.addEventListener('click',()=>{ chatMsgs.innerHTML=''; turSayaci=0; $('si-tur').textContent='0'; mesajEkle('💬 Ekran temizlendi. Tuncer Zeka hazır.','bot'); });
-
-// ─────────── SES ───────────
-let sesliCevapAktif = true;
-let dinliyorMu = false;
-
-function sesliKomutBaslat(){
-  if(!TuncerZeka.ses.aktifMi()){
-    mesajEkle('⚠️ Tarayıcınız ses tanımayı desteklemiyor.','bot','hata');
-    return;
-  }
-  if(dinliyorMu){ TuncerZeka.ses.dur(); return; }
-  dinliyorMu=true;
-  waveActive=true;
-  coreBtn.classList.add('dinliyor');
-  coreIcon.textContent='🎤';
-  coreLabel.textContent='DİNLİYORUM...';
-  voiceBtn.classList.add('active');
-  durumGuncelle('DİNLİYOR — KONUŞUN','var(--red)');
-
-  TuncerZeka.dinle(
-    (metin, guven)=>{
-      dinliyorMu=false;
-      waveActive=false;
-      coreBtn.classList.remove('dinliyor');
-      coreIcon.textContent='🤖';
-      coreLabel.textContent='MİKROFON İÇİN TIK';
-      voiceBtn.classList.remove('active');
-      durumGuncelle('SES TANINDI — İŞLENİYOR','var(--gold)');
-      mesajGonder(metin);
-    },
-    (hata)=>{
-      dinliyorMu=false;
-      waveActive=false;
-      coreBtn.classList.remove('dinliyor');
-      coreIcon.textContent='🤖';
-      coreLabel.textContent='MİKROFON İÇİN TIK';
-      voiceBtn.classList.remove('active');
-      const mesajlar={'no-speech':'Ses algılanamadı. Tekrar deneyin.','not-allowed':'Mikrofon izni reddedildi.','network':'Ağ hatası.'};
-      mesajEkle('⚠️ '+(mesajlar[hata]||'Ses hatası: '+hata),'bot','hata');
-      durumGuncelle('HAZIR');
-    }
-  );
-}
-
-voiceBtn.addEventListener('click', sesliKomutBaslat);
-coreBtn.addEventListener('click', sesliKomutBaslat);
-
-// ─────────── KAMERA ───────────
-let kameraAktif = false;
-async function kameraToggle(){
-  if(kameraAktif){
-    TuncerZeka.goruntu.durdur();
-    camBox.style.display='none';
-    camBtn.textContent='📷 KAMERAY AÇ';
-    camToggle.textContent='📷';
-    $('si-goruntu').textContent='PASIF';
-    $('si-goruntu').className='val err';
-    kameraAktif=false;
-    durumGuncelle('KAMERA KAPATILDI');
-  } else {
-    camBox.style.display='block';
-    durumGuncelle('KAMERA BAŞLATILIYOR...','var(--gold)');
-    const ok = await TuncerZeka.goruntu.baslat(camVideo, camCanvas);
-    if(ok){
-      camBtn.textContent='📷 KAMERAY KAPAT';
-      camToggle.textContent='🔴';
-      $('si-goruntu').textContent='AKTİF';
-      $('si-goruntu').className='val ok';
-      kameraAktif=true;
-      durumGuncelle('KAMERA AKTİF — GÖRÜNTÜ TANIMA HAZIR','var(--green)');
-    } else {
-      camBox.style.display='none';
-      durumGuncelle('KAMERA ERİŞİMİ REDDEDİLDİ','var(--red)');
-      mesajEkle('❌ Kamera erişimi reddedildi. Tarayıcı izinlerini kontrol edin.','bot','hata');
-    }
-  }
-}
-camBtn.addEventListener('click', kameraToggle);
-camToggle.addEventListener('click', kameraToggle);
-
-// ─────────── TUNCER ZEKA OLAY DİNLEYİCİLERİ ───────────
-TuncerZeka.on('ses:tanındı',    ({metin,guven})=> durumGuncelle(`TANINDI (${Math.round(guven*100)}%): "${metin.substring(0,30)}..."`, 'var(--green)'));
-TuncerZeka.on('ses:aralik',     ({metin})       => { durumGuncelle(`'${metin.substring(0,40)}'`,'var(--red)'); });
-TuncerZeka.on('ses:konuşmaBasladı', ()          => { coreBtn.classList.add('konuşuyor'); coreIcon.textContent='🔊'; });
-TuncerZeka.on('ses:konuşmaBitti',   ()          => { coreBtn.classList.remove('konuşuyor'); coreIcon.textContent='🤖'; });
-TuncerZeka.on('hafiza:kayit',  ({anahtar})      => { hafizaGuncelle(); durumGuncelle(`HAFIZAYA KAYDEDİLDİ: ${anahtar}`,'var(--green)'); });
-TuncerZeka.on('arastirma:başladı',({sorgu})     => { $('arastirma-status').textContent=`🔍 Araştırılıyor: "${sorgu}"`; });
-TuncerZeka.on('arastirma:tamam',  ({baslik})    => { durumGuncelle(`ARAŞTIRMA TAMAMLANDI: ${baslik}`,'var(--green)'); });
-TuncerZeka.on('goruntu:başladı',  ()            => { kameraAktif=true; });
-TuncerZeka.on('goruntu:durduruldu',()           => { kameraAktif=false; });
-
-// ─────────── BAŞLAT ───────────
-const sonuc = TuncerZeka.baslat();
-
-// Ses durumu güncelle
-$('ses-durum').textContent   = sonuc.sesAktif ? 'AKTİF' : 'PASIF';
-$('ses-durum').style.color   = sonuc.sesAktif ? 'var(--green)' : 'var(--red)';
-$('si-ses').textContent      = sonuc.sesAktif ? 'AKTİF' : 'PASIF';
-$('si-ses').className        = 'val ' + (sonuc.sesAktif ? 'ok' : 'err');
-
-hafizaGuncelle();
-
-// Karşılama animasyonu
-setTimeout(()=>{
-  durumGuncelle('TUNCER ZEKA — SİSTEM AKTİF','var(--green)');
-  mesajEkle('🤖 **Tuncer Zeka** başlatıldı.\n\nMerhaba! Ben Ahmet Tuncer tarafından tasarlanmış Türkçe yapay zeka sistemiyim. Sesli konuşmak için 🎤 butonuna ya da hologram çekirdeğine tıklayın. Araştırma için **"araştır: konu"** yazın. Yardım için **"yeteneklerin neler"** deyin.','bot');
-}, 400);
-
-setTimeout(()=>{
-  if(sonuc.sesAktif){
-    TuncerZeka.konuş('Tuncer Zeka sistemi aktif. Merhaba! Ben Ahmet Tuncer\'in yapay zekasıyım. Nasıl yardımcı olabilirim?');
-  }
-},800);
-
-// Periyodik hafıza güncelleme
-setInterval(hafizaGuncelle, 5000);
-setInterval(baglamGuncelle, 3000);
-
-})();
-</script>
 </body>
 </html>
+
+
