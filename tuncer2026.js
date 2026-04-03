@@ -1590,4 +1590,4 @@
                 ctx.lineTo(genislik - kenarBosluk, y);
                 ctx.stroke();
 
-                const d
+                const 
