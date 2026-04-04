@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - MULTI-TOUCH AR</title>
+    <title>TUNCER HOLO - STABLE MULTI-HAND</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
@@ -37,24 +37,24 @@
     <div class="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-4">
         <div class="flex justify-between items-start">
             <div class="hud-panel p-2 rounded text-xs">
-                <div class="font-bold text-white mb-1">HOLO MULTI-HAND v2.6</div>
-                <div id="sys-status" class="text-green-400">DÜNYA: SABİT</div>
-                <div id="depth-val" class="text-[9px]">DERİNLİK: 1.2m</div>
+                <div class="font-bold text-white mb-1 uppercase">Holo Stable v2.7</div>
+                <div id="sys-status" class="text-green-400">DÜNYA: KİLİTLİ</div>
+                <div id="depth-val" class="text-[9px]">DERİNLİK: SABİT</div>
             </div>
             <div class="hud-panel p-2 rounded text-center">
-                <div class="text-[9px] text-gray-400 uppercase font-bold">ETKİLEŞİM</div>
-                <div id="interaction-status" class="text-xs text-cyan-400">BEKLENİYOR</div>
+                <div class="text-[9px] text-gray-400 uppercase font-bold">MOD</div>
+                <div id="interaction-status" class="text-xs text-cyan-400">TARANIYOR</div>
             </div>
         </div>
 
         <div class="flex justify-between items-end gap-2">
             <div id="log-console" class="hud-panel p-2 rounded h-20 w-1/2 overflow-hidden flex flex-col justify-end text-[8px] text-cyan-600">
-                <div>> Çoklu el modu aktif.</div>
+                <div>> Sistem stabilizasyonu aktif.</div>
             </div>
             <div class="hud-panel p-2 rounded grid grid-cols-2 gap-1 w-1/2">
                 <button id="btn-cube" class="btn-holo p-2 rounded">KÜP</button>
                 <button id="btn-hole" class="btn-holo p-2 rounded border-red-500">DELİK</button>
-                <button id="btn-merge" class="btn-holo p-2 rounded border-yellow-500 col-span-2 text-[8px]">BİRLEŞTİR (CSG)</button>
+                <button id="btn-merge" class="btn-holo p-2 rounded border-yellow-500 col-span-2 text-[8px]">BİRLEŞTİR</button>
             </div>
         </div>
     </div>
@@ -79,7 +79,7 @@ let velocity = new THREE.Vector3(0, 0, 0);
 let lastUpdate = performance.now();
 let initialAlpha = null;
 
-// Multi-hand states
+// Stabilizasyon değişkenleri
 let initialPinchDist = 0;
 let initialPinchRotation = 0;
 let initialObjectScale = new THREE.Vector3();
@@ -96,14 +96,14 @@ async function init() {
     scene.add(worldGroup);
 
     scene.add(new THREE.AmbientLight(0xffffff, 2));
-    handCursor = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
+    handCursor = new THREE.Mesh(new THREE.SphereGeometry(0.015, 16, 16), new THREE.MeshBasicMaterial({ color: 0x00ffff }));
     scene.add(handCursor);
 
     const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
     video.srcObject = stream;
     
     hands = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-    hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.8, minTrackingConfidence: 0.8 });
+    hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.85, minTrackingConfidence: 0.85 });
     hands.onResults(onResults);
     
     const cameraLoop = async () => { if(!video.paused) await hands.send({image: video}); requestAnimationFrame(cameraLoop); };
@@ -115,6 +115,7 @@ async function init() {
 
 function onResults(results) {
     if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const handCount = results.multiHandLandmarks.length;
         const h1 = results.multiHandLandmarks[0];
         const index1 = h1[8], thumb1 = h1[4], wrist1 = h1[0];
         
@@ -125,8 +126,8 @@ function onResults(results) {
         const handScale = Math.hypot(index1.x - wrist1.x, index1.y - wrist1.y);
         const pinchDist1 = Math.hypot(index1.x - thumb1.x, index1.y - thumb1.y);
 
-        // İKİ EL MODU (Döndürme ve Büyütme)
-        if (results.multiHandLandmarks.length > 1 && selectedObject) {
+        // ÇOKLU EL MODU (SADECE DÖNDÜRME & BÜYÜTME - DERİNLİK DONDU)
+        if (handCount > 1 && selectedObject) {
             interactStatus.textContent = "TRANSFORM";
             const h2 = results.multiHandLandmarks[1];
             const index2 = h2[8];
@@ -140,18 +141,17 @@ function onResults(results) {
                 initialObjectScale.copy(selectedObject.scale);
                 initialObjectRotation.copy(selectedObject.rotation);
             } else {
-                // Büyütme (Scale)
                 const scaleFactor = currentPinchDist / initialPinchDist;
                 selectedObject.scale.copy(initialObjectScale).multiplyScalar(scaleFactor);
                 
-                // Döndürme (Rotation Y)
                 const rotDelta = currentPinchRotation - initialPinchRotation;
                 selectedObject.rotation.y = initialObjectRotation.y - rotDelta * 2;
             }
+            // Çift el varken derinlik asla güncellenmez (Kaçmayı engeller)
         } 
-        // TEK EL MODU (Taşıma ve Derinlik)
+        // TEK EL MODU (TAŞIMA & DERİNLİK)
         else {
-            initialPinchDist = 0; // Reset multi-hand states
+            initialPinchDist = 0; // Durumu sıfırla
             if (pinchDist1 < 0.05) {
                 interactStatus.textContent = "TAŞIMA";
                 if (!isPinching) {
@@ -159,8 +159,9 @@ function onResults(results) {
                     initialHandScale = handScale;
                     startGrab(raycaster);
                 } else {
+                    // Derinlik güncellemesi sadece tutma varken ve tek el varken
                     const ratio = handScale / initialHandScale;
-                    if(Math.abs(1 - ratio) > 0.02) {
+                    if(Math.abs(1 - ratio) > 0.03) { // %3 eşik değeri
                         currentDepth = THREE.MathUtils.clamp(currentDepth / ratio, 0.4, 4.0);
                         initialHandScale = handScale;
                     }
@@ -174,7 +175,7 @@ function onResults(results) {
         }
 
         raycaster.ray.at(currentDepth, handCursor.position);
-        depthLabel.textContent = `DERİNLİK: ${currentDepth.toFixed(2)}m`;
+        depthLabel.textContent = `Z: ${currentDepth.toFixed(2)}m`;
     }
 }
 
@@ -206,9 +207,12 @@ function initSensors() {
             if(!acc.x) return;
             const dt = (performance.now() - lastUpdate) / 1000;
             lastUpdate = performance.now();
-            velocity.x = (velocity.x + acc.x * dt) * 0.85;
-            velocity.y = (velocity.y + acc.y * dt) * 0.85;
-            velocity.z = (velocity.z + acc.z * dt) * 0.85;
+            
+            // Sert sönümleme
+            velocity.x = (velocity.x + acc.x * dt) * 0.8;
+            velocity.y = (velocity.y + acc.y * dt) * 0.8;
+            velocity.z = (velocity.z + acc.z * dt) * 0.8;
+            
             const move = velocity.clone().multiplyScalar(dt);
             move.applyQuaternion(camera.quaternion);
             camera.position.sub(move);
@@ -218,7 +222,7 @@ function initSensors() {
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
         const b = document.createElement('button');
         b.className = "fixed inset-0 z-[100] bg-black text-cyan-400 font-bold text-xl";
-        b.textContent = "BAŞLATMAK İÇİN DOKUN";
+        b.textContent = "KALİBRASYON İÇİN DOKUN";
         b.onclick = () => { DeviceOrientationEvent.requestPermission().then(r => { if(r=='granted'){start(); b.remove();} }); };
         document.body.appendChild(b);
     } else start();
