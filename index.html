@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tuncer Web - Fix AR</title>
+    <title>Tuncer Web OS - Mark 5</title>
     
-    <!-- Kütüphaneler: Sıralama Kritik -->
+    <!-- Gerekli Tüm Kütüphaneler -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r150/three.min.js"></script>
+    <!-- TransformControls'u global script olarak alıyoruz -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.150.1/examples/js/controls/TransformControls.js"></script>
 
     <style>
         body, html {
@@ -17,12 +19,11 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        /* Görünür Video (Arka Plan İçin) */
         #input_video {
             position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
             object-fit: cover; z-index: -1;
-            transform: scaleX(-1); /* Selfie modu */
+            transform: scaleX(-1);
         }
 
         #ui-overlay {
@@ -32,38 +33,37 @@
 
         .hud-panel {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(0, 15, 30, 0.85);
-            backdrop-filter: blur(10px);
-            border-left: 5px solid #00e5ff;
+            background: rgba(0, 20, 40, 0.8);
+            border-left: 4px solid #00e5ff;
             padding: 15px; color: #00e5ff;
-            pointer-events: auto; border-radius: 5px;
+            pointer-events: auto; border-radius: 0 10px 10px 0;
             box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
         }
 
-        h1 { margin: 0; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
-        .status { display: flex; align-items: center; margin-top: 8px; font-size: 11px; }
+        h1 { margin: 0; font-size: 14px; letter-spacing: 2px; }
+        .status { display: flex; align-items: center; margin-top: 5px; font-size: 10px; }
         .indicator { width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; background: #ff3366; }
         .active { background: #00ffcc; box-shadow: 0 0 10px #00ffcc; }
 
-        #console { margin-top: 10px; font-family: monospace; font-size: 10px; color: #a0f0ff; height: 40px; overflow: hidden; }
-
         #start-btn {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #00e5ff; color: #000; border: none; padding: 15px 35px;
-            font-weight: bold; border-radius: 30px; cursor: pointer; pointer-events: auto;
-            box-shadow: 0 0 25px #00e5ff; z-index: 100;
+            background: #00e5ff; color: #000; border: none; padding: 20px 40px;
+            font-weight: bold; border-radius: 50px; cursor: pointer; pointer-events: auto;
+            box-shadow: 0 0 30px #00e5ff; z-index: 100;
         }
 
         #controls {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; pointer-events: auto;
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; pointer-events: auto;
         }
 
         .btn-mode {
-            background: rgba(0, 229, 255, 0.1); border: 1px solid #00e5ff; color: #00e5ff;
-            padding: 8px 16px; border-radius: 5px; cursor: pointer; font-size: 12px;
+            background: rgba(0, 40, 80, 0.8); border: 2px solid #00e5ff; color: #00e5ff;
+            padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;
+            transition: all 0.3s;
         }
-        .btn-mode.active { background: #00e5ff; color: #000; }
+        .btn-mode:active { transform: scale(0.9); }
+        .btn-mode.selected { background: #00e5ff; color: #000; }
     </style>
 </head>
 <body>
@@ -73,35 +73,27 @@
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud-panel">
-            <h1>TUNCER WEB OS</h1>
-            <div class="status"><div id="ind-ar" class="indicator"></div> KAMERA AKTİF</div>
-            <div class="status"><div id="ind-hand" class="indicator"></div> EL TAKİBİ (AI)</div>
-            <div class="status"><div id="ind-voice" class="indicator"></div> SES MODÜLÜ</div>
-            <div id="console">AI Yükleniyor...</div>
+            <h1>TUNCER WEB OS v2.5</h1>
+            <div class="status"><div id="ind-ar" class="indicator"></div> OPTİK SENSÖR</div>
+            <div class="status"><div id="ind-hand" class="indicator"></div> EL İSKELETİ</div>
+            <div class="status"><div id="ind-voice" class="indicator"></div> SESLİ KOMUT</div>
         </div>
 
         <div id="controls">
-            <button class="btn-mode active" data-mode="translate">TAŞI</button>
-            <button class="btn-mode" data-mode="rotate">DÖNDÜR</button>
-            <button class="btn-mode" data-mode="scale">ÖLÇEK</button>
+            <button class="btn-mode selected" id="btn-translate">TAŞI</button>
+            <button class="btn-mode" id="btn-rotate">DÖNDÜR</button>
+            <button class="btn-mode" id="btn-scale">ÖLÇEK</button>
+            <button class="btn-mode" style="border-color: #ff3366; color: #ff3366;" id="btn-delete">SİL</button>
         </div>
     </div>
 
-    <script type="module">
-        import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/TransformControls.js';
-
+    <script>
         let scene, camera, renderer, transformControl;
         let objects = [];
+        let handJoints = [];
         let recognition;
-        let handJoints = []; 
-        let handLines = []; // Eklemleri birbirine bağlayan çizgiler
 
         const videoElement = document.getElementById('input_video');
-        const consoleEl = document.getElementById('console');
-        
-        function sysLog(m) { 
-            consoleEl.innerHTML = `> ${m}<br>` + consoleEl.innerHTML.split('<br>').slice(0,2).join('<br>');
-        }
 
         function init() {
             scene = new THREE.Scene();
@@ -113,12 +105,14 @@
             renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
+            scene.add(new THREE.AmbientLight(0xffffff, 1));
+            const pointLight = new THREE.PointLight(0x00e5ff, 2);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
 
-            // --- EL İSKELETİ (21 NOKTA VE BAĞLANTILAR) ---
-            const jointGeo = new THREE.SphereGeometry(0.012, 8, 8);
+            // El Eklemleri (İskelet)
+            const jointGeo = new THREE.SphereGeometry(0.015, 8, 8);
             const jointMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
-            
             for (let i = 0; i < 21; i++) {
                 const joint = new THREE.Mesh(jointGeo, jointMat);
                 joint.visible = false;
@@ -126,13 +120,121 @@
                 handJoints.push(joint);
             }
 
-            transformControl = new TransformControls(camera, renderer.domElement);
+            // Transform Kontrolü (Global THREE.TransformControls kullanılıyor)
+            transformControl = new THREE.TransformControls(camera, renderer.domElement);
             scene.add(transformControl);
 
-            document.getElementById('start-btn').onclick = startSystem;
-            setupControls();
-            
+            // Buton Dinleyicileri (Direkt ID üzerinden, hata payı yok)
+            document.getElementById('btn-translate').onclick = () => setMode('translate', 'btn-translate');
+            document.getElementById('btn-rotate').onclick = () => setMode('rotate', 'btn-rotate');
+            document.getElementById('btn-scale').onclick = () => setMode('scale', 'btn-scale');
+            document.getElementById('btn-delete').onclick = deleteObject;
+
+            document.getElementById('start-btn').onclick = startAR;
+
             window.addEventListener('resize', onWindowResize);
+            
+            // Dokunarak nesne seçme
+            window.addEventListener('pointerdown', onPointerDown);
+        }
+
+        function setMode(mode, btnId) {
+            transformControl.setMode(mode);
+            document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('selected'));
+            document.getElementById(btnId).classList.add('selected');
+        }
+
+        function deleteObject() {
+            if (transformControl.object) {
+                const target = transformControl.object;
+                transformControl.detach();
+                scene.remove(target);
+                objects = objects.filter(o => o !== target);
+            }
+        }
+
+        function onPointerDown(event) {
+            if (event.target.tagName === 'BUTTON') return;
+            const mouse = new THREE.Vector2(
+                (event.clientX / window.innerWidth) * 2 - 1,
+                -(event.clientY / window.innerHeight) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+            if (intersects.length > 0) {
+                transformControl.attach(intersects[0].object);
+            }
+        }
+
+        async function startAR() {
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('ui-overlay').style.display = 'block';
+            document.getElementById('ind-ar').classList.add('active');
+
+            const hands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
+
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.6,
+                minTrackingConfidence: 0.6
+            });
+
+            hands.onResults((results) => {
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    document.getElementById('ind-hand').classList.add('active');
+                    const landmarks = results.multiHandLandmarks[0];
+                    landmarks.forEach((point, i) => {
+                        const x = -(point.x - 0.5) * 2.5 * camera.aspect;
+                        const y = -(point.y - 0.5) * 2.5;
+                        const z = -point.z * 1.5;
+                        handJoints[i].position.set(x, y, z);
+                        handJoints[i].visible = true;
+                    });
+                } else {
+                    document.getElementById('ind-hand').classList.remove('active');
+                    handJoints.forEach(j => j.visible = false);
+                }
+            });
+
+            const cameraPipe = new Camera(videoElement, {
+                onFrame: async () => { await hands.send({image: videoElement}); },
+                width: 1280, height: 720
+            });
+            cameraPipe.start();
+
+            initVoice();
+            animate();
+        }
+
+        function initVoice() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) return;
+            recognition = new SpeechRec();
+            recognition.lang = 'tr-TR';
+            recognition.continuous = true;
+            recognition.onstart = () => document.getElementById('ind-voice').classList.add('active');
+            recognition.onresult = (e) => {
+                const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                if (text.includes('küp') && text.includes('ekle')) addCube();
+                if (text.includes('sil')) deleteObject();
+            };
+            recognition.onend = () => recognition.start();
+            recognition.start();
+        }
+
+        function addCube() {
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(0.2, 0.2, 0.2),
+                new THREE.MeshStandardMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+            );
+            mesh.position.set(0, 0, 0);
+            scene.add(mesh);
+            objects.push(mesh);
+            transformControl.attach(mesh);
         }
 
         function onWindowResize() {
@@ -141,137 +243,12 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        async function startSystem() {
-            document.getElementById('start-btn').style.display = 'none';
-            document.getElementById('ui-overlay').style.display = 'block';
-            document.getElementById('ind-ar').classList.add('active');
-            sysLog("Kamera ve AI başlatılıyor...");
-
-            // MediaPipe Hands Konfigürasyonu
-            const hands = new window.Hands({
-                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-            });
-
-            hands.setOptions({
-                maxNumHands: 1,
-                modelComplexity: 1,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-
-            hands.onResults(onHandResults);
-
-            const cameraPipe = new window.Camera(videoElement, {
-                onFrame: async () => {
-                    await hands.send({image: videoElement});
-                },
-                width: 1280,
-                height: 720
-            });
-            
-            try {
-                await cameraPipe.start();
-                initVoice();
-                animate();
-                sysLog("Sistem aktif.");
-            } catch (err) {
-                sysLog("Kamera hatası: " + err.message);
-            }
-        }
-
-        function onHandResults(results) {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                document.getElementById('ind-hand').classList.add('active');
-                const landmarks = results.multiHandLandmarks[0];
-
-                landmarks.forEach((point, i) => {
-                    // Kamera selfie modunda olduğu için X eksenini tersliyoruz
-                    // Perspektif ayarı: (point - 0.5) * çarpan
-                    const x = -(point.x - 0.5) * 2.5 * camera.aspect;
-                    const y = -(point.y - 0.5) * 2.5;
-                    const z = -point.z * 1.5;
-
-                    handJoints[i].position.set(x, y, z);
-                    handJoints[i].visible = true;
-                });
-            } else {
-                document.getElementById('ind-hand').classList.remove('active');
-                handJoints.forEach(j => j.visible = false);
-            }
-        }
-
-        function initVoice() {
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRec) return;
-
-            recognition = new SpeechRec();
-            recognition.lang = 'tr-TR';
-            recognition.continuous = true;
-
-            recognition.onstart = () => document.getElementById('ind-voice').classList.add('active');
-            recognition.onresult = (e) => {
-                const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                sysLog(text);
-                
-                if (text.includes('küp') && text.includes('ekle')) addModel('cube');
-                if (text.includes('delik') && text.includes('ekle')) addModel('hole');
-                if (text.includes('sil') || text.includes('kaldır')) deleteSelected();
-            };
-            recognition.onend = () => { if(document.getElementById('ui-overlay').style.display !== 'none') recognition.start(); };
-            recognition.start();
-        }
-
-        function addModel(type) {
-            const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            const mat = type === 'cube' 
-                ? new THREE.MeshStandardMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.7, metalness: 0.5, roughness: 0.1 })
-                : new THREE.MeshBasicMaterial({ color: 0xff0044, wireframe: true });
-            
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(0, 0, 0); 
-            scene.add(mesh);
-            objects.push(mesh);
-            transformControl.attach(mesh);
-            sysLog(type + " oluşturuldu.");
-        }
-
-        function deleteSelected() {
-            if (transformControl.object) {
-                const obj = transformControl.object;
-                transformControl.detach();
-                scene.remove(obj);
-                objects = objects.filter(o => o !== obj);
-                sysLog("Silindi.");
-            }
-        }
-
-        function setupControls() {
-            document.querySelectorAll('.btn-mode').forEach(btn => {
-                btn.onclick = (e) => {
-                    transformControl.setMode(e.target.dataset.mode);
-                    document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
-                    e.target.classList.add('active');
-                    sysLog("Mod: " + e.target.dataset.mode);
-                };
-            });
-
-            // Nesne seçme mantığı
-            window.addEventListener('pointerdown', (e) => {
-                if (e.target.tagName === 'BUTTON') return;
-                const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
-                const raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(mouse, camera);
-                const hits = raycaster.intersectObjects(objects);
-                if (hits.length > 0) transformControl.attach(hits[0].object);
-            });
-        }
-
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
 
-        init();
+        window.onload = init;
     </script>
 </body>
 </html>
