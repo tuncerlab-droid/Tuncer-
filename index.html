@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tuncer Web - MediaPipe AR</title>
+    <title>Tuncer Web - Fix AR</title>
     
-    <!-- MediaPipe ve Three.js Kütüphaneleri -->
+    <!-- Kütüphaneler: Sıralama Kritik -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r150/three.min.js"></script>
@@ -17,8 +17,13 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        /* Kamera görüntüsü gizli işlenecek */
-        #input_video { display: none; }
+        /* Görünür Video (Arka Plan İçin) */
+        #input_video {
+            position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; z-index: -1;
+            transform: scaleX(-1); /* Selfie modu */
+        }
 
         #ui-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -27,12 +32,12 @@
 
         .hud-panel {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(0, 15, 30, 0.8);
+            background: rgba(0, 15, 30, 0.85);
             backdrop-filter: blur(10px);
             border-left: 5px solid #00e5ff;
             padding: 15px; color: #00e5ff;
             pointer-events: auto; border-radius: 5px;
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
         }
 
         h1 { margin: 0; font-size: 16px; letter-spacing: 2px; text-transform: uppercase; }
@@ -63,7 +68,7 @@
 </head>
 <body>
 
-    <video id="input_video"></video>
+    <video id="input_video" autoplay playsinline></video>
     <button id="start-btn">SİSTEMİ BAŞLAT</button>
 
     <div id="ui-overlay" style="display: none;">
@@ -83,13 +88,13 @@
     </div>
 
     <script type="module">
-        // Three.js Addons manuel yükleme (CDN üzerinden)
         import { TransformControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/TransformControls.js';
 
         let scene, camera, renderer, transformControl;
         let objects = [];
         let recognition;
-        let handJoints = []; // El iskeleti için dijital eklemler
+        let handJoints = []; 
+        let handLines = []; // Eklemleri birbirine bağlayan çizgiler
 
         const videoElement = document.getElementById('input_video');
         const consoleEl = document.getElementById('console');
@@ -101,18 +106,19 @@
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 2;
+            camera.position.z = 1.5;
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x000000, 0); // Şeffaf arka plan
+            renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
             scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
-            
-            // El İskeleti için 21 Nokta Oluştur
-            const jointGeo = new THREE.SphereGeometry(0.015, 8, 8);
+
+            // --- EL İSKELETİ (21 NOKTA VE BAĞLANTILAR) ---
+            const jointGeo = new THREE.SphereGeometry(0.012, 8, 8);
             const jointMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
+            
             for (let i = 0; i < 21; i++) {
                 const joint = new THREE.Mesh(jointGeo, jointMat);
                 joint.visible = false;
@@ -123,18 +129,26 @@
             transformControl = new TransformControls(camera, renderer.domElement);
             scene.add(transformControl);
 
-            document.getElementById('start-btn').addEventListener('click', startSystem);
+            document.getElementById('start-btn').onclick = startSystem;
             setupControls();
+            
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
         async function startSystem() {
             document.getElementById('start-btn').style.display = 'none';
             document.getElementById('ui-overlay').style.display = 'block';
             document.getElementById('ind-ar').classList.add('active');
-            sysLog("Kamera açılıyor...");
+            sysLog("Kamera ve AI başlatılıyor...");
 
-            // MediaPipe Hands Ayarları
-            const hands = new Hands({
+            // MediaPipe Hands Konfigürasyonu
+            const hands = new window.Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
             });
 
@@ -147,17 +161,22 @@
 
             hands.onResults(onHandResults);
 
-            const cameraPipe = new Camera(videoElement, {
+            const cameraPipe = new window.Camera(videoElement, {
                 onFrame: async () => {
                     await hands.send({image: videoElement});
                 },
                 width: 1280,
                 height: 720
             });
-            cameraPipe.start();
-
-            initVoice();
-            animate();
+            
+            try {
+                await cameraPipe.start();
+                initVoice();
+                animate();
+                sysLog("Sistem aktif.");
+            } catch (err) {
+                sysLog("Kamera hatası: " + err.message);
+            }
         }
 
         function onHandResults(results) {
@@ -166,10 +185,11 @@
                 const landmarks = results.multiHandLandmarks[0];
 
                 landmarks.forEach((point, i) => {
-                    // MediaPipe koordinatlarını (0-1 arası) Three.js dünyasına çevir
-                    const x = (point.x - 0.5) * 4;
+                    // Kamera selfie modunda olduğu için X eksenini tersliyoruz
+                    // Perspektif ayarı: (point - 0.5) * çarpan
+                    const x = -(point.x - 0.5) * 2.5 * camera.aspect;
                     const y = -(point.y - 0.5) * 2.5;
-                    const z = -point.z * 2;
+                    const z = -point.z * 1.5;
 
                     handJoints[i].position.set(x, y, z);
                     handJoints[i].visible = true;
@@ -192,26 +212,27 @@
             recognition.onresult = (e) => {
                 const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
                 sysLog(text);
+                
                 if (text.includes('küp') && text.includes('ekle')) addModel('cube');
                 if (text.includes('delik') && text.includes('ekle')) addModel('hole');
-                if (text.includes('sil')) deleteSelected();
+                if (text.includes('sil') || text.includes('kaldır')) deleteSelected();
             };
-            recognition.onend = () => recognition.start();
+            recognition.onend = () => { if(document.getElementById('ui-overlay').style.display !== 'none') recognition.start(); };
             recognition.start();
         }
 
         function addModel(type) {
-            const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
             const mat = type === 'cube' 
-                ? new THREE.MeshStandardMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.7 })
+                ? new THREE.MeshStandardMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.7, metalness: 0.5, roughness: 0.1 })
                 : new THREE.MeshBasicMaterial({ color: 0xff0044, wireframe: true });
             
             const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(0, 0, -1); // Ekranın ortasına ekle
+            mesh.position.set(0, 0, 0); 
             scene.add(mesh);
             objects.push(mesh);
             transformControl.attach(mesh);
-            sysLog(type + " eklendi.");
+            sysLog(type + " oluşturuldu.");
         }
 
         function deleteSelected() {
@@ -230,7 +251,18 @@
                     transformControl.setMode(e.target.dataset.mode);
                     document.querySelectorAll('.btn-mode').forEach(b => b.classList.remove('active'));
                     e.target.classList.add('active');
+                    sysLog("Mod: " + e.target.dataset.mode);
                 };
+            });
+
+            // Nesne seçme mantığı
+            window.addEventListener('pointerdown', (e) => {
+                if (e.target.tagName === 'BUTTON') return;
+                const mouse = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, camera);
+                const hits = raycaster.intersectObjects(objects);
+                if (hits.length > 0) transformControl.attach(hits[0].object);
             });
         }
 
