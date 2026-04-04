@@ -3,67 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v10.0</title>
+    <title>Tuncer AR v11.0</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
         #ar-overlay {
-            position: absolute; width: 100%; height: 100%;
-            pointer-events: none; z-index: 10; display: flex; flex-direction: column;
-            justify-content: space-between; padding: 20px; box-sizing: border-box;
+            position: absolute; inset: 0;
+            pointer-events: none; z-index: 10;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 25px;
         }
         .hud-data {
-            align-self: flex-end; background: rgba(0, 20, 40, 0.7);
-            border: 1px solid #00e5ff; border-radius: 8px; padding: 10px;
-            color: #00e5ff; font-family: monospace; font-size: 12px;
+            align-self: flex-end; background: rgba(0, 10, 20, 0.85);
+            border: 2px solid #00e5ff; border-radius: 12px; padding: 12px;
+            color: #00e5ff; font-family: monospace; font-size: 13px;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
         }
-        #start-panel {
-            position: fixed; inset: 0; background: #000; z-index: 100;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        #start-screen {
+            position: fixed; inset: 0; background: radial-gradient(circle, #1a1a1a, #000);
+            z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; color: white;
         }
-        #btn-go {
-            background: #00e5ff; color: #000; font-weight: 900; padding: 20px 50px;
-            border-radius: 15px; border: none; cursor: pointer; font-size: 18px;
-            box-shadow: 0 0 50px rgba(0, 229, 255, 0.4);
+        #btn-activate {
+            background: #00e5ff; color: #000; font-weight: 900; padding: 25px 60px;
+            border-radius: 20px; border: none; cursor: pointer; font-size: 20px;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.5); transform: scale(1);
+            transition: transform 0.2s;
         }
-        #hint {
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            color: white; font-weight: bold; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        #btn-activate:active { transform: scale(0.95); }
+        #hint-text {
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            color: #fff; font-weight: bold; background: rgba(0,0,0,0.5);
+            padding: 10px 20px; border-radius: 50px; border: 1px solid #00e5ff;
         }
     </style>
 </head>
 <body>
 
-    <div id="start-panel">
-        <h1 style="color:#00e5ff; margin-bottom:20px; font-family:sans-serif;">TUNCER CORE v10</h1>
-        <button id="btn-go">SİSTEMİ BAŞLAT</button>
-        <p style="color:#666; margin-top:20px; font-size:12px;">WebXR / Hit-Test Engine</p>
+    <div id="start-screen">
+        <h1 style="color:#00e5ff; font-size: 32px; letter-spacing: -1px; margin-bottom: 10px;">TUNCER CORE <span style="color:#fff">V11</span></h1>
+        <p style="color:#888; margin-bottom: 40px; font-size: 14px;">Kamera, Sensör ve Mikrofon İzinleri İsteniyor...</p>
+        <button id="btn-activate">SİSTEMİ YETKİLENDİR</button>
     </div>
 
-    <div id="ar-overlay">
+    <div id="ar-overlay" style="display:none;">
         <div class="hud-data">
-            X: <span id="x-pos">0.00</span><br>
-            Y: <span id="y-pos">0.00</span><br>
-            Z: <span id="z-pos">0.00</span>
+            WORLD_X: <span id="x-pos">0.00</span><br>
+            WORLD_Y: <span id="y-pos">0.00</span><br>
+            WORLD_Z: <span id="z-pos">0.00</span><br>
+            VOICE: <span id="voice-cmd">...</span>
         </div>
-        <div id="hint">Zemini tarayın ve dokunun.</div>
+        <div id="hint-text">Masa veya Zemin Aranıyor...</div>
     </div>
 
     <script type="module">
         let scene, camera, renderer, reticle, controller;
         let hitTestSource = null, hitTestSourceRequested = false;
+        let objects = [];
 
-        document.getElementById('btn-go').onclick = async () => {
+        const btn = document.getElementById('btn-activate');
+        const overlay = document.getElementById('ar-overlay');
+
+        btn.onclick = async () => {
+            // Önce Mikrofon İzni
+            try {
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                console.log("Mic granted");
+            } catch (e) {
+                console.warn("Mic rejected");
+            }
+
+            // WebXR İzni ve Başlatma
             if (navigator.xr) {
-                const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-                if (isSupported) {
-                    document.getElementById('start-panel').style.display = 'none';
+                const supported = await navigator.xr.isSessionSupported('immersive-ar');
+                if (supported) {
+                    document.getElementById('start-screen').style.display = 'none';
+                    overlay.style.display = 'flex';
                     initAR();
                 } else {
-                    alert("Cihazın WebXR desteklemiyor!");
+                    alert("Cihazınızda WebXR/ARCore desteği bulunamadı.");
                 }
+            } else {
+                alert("Tarayıcınız AR özelliklerini desteklemiyor.");
             }
         };
 
@@ -77,46 +99,69 @@
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Hedef Halka (Masa algılandığında çıkar)
+            // Reticle (Halka)
             reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
+                new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // Işıklar
-            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-            const light = new THREE.DirectionalLight(0xffffff, 0.8);
-            light.position.set(5, 10, 7);
-            scene.add(light);
+            // Işıklandırma
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-            // AR Oturumu Başlat
+            // AR Oturumu - İzinleri burası tetikler
             const session = await navigator.xr.requestSession('immersive-ar', {
                 requiredFeatures: ['hit-test', 'local-floor'],
                 optionalFeatures: ['dom-overlay'],
-                domOverlay: { root: document.getElementById('ar-overlay') }
+                domOverlay: { root: overlay }
             });
 
             renderer.xr.setSession(session);
 
-            // Tıklama ile Obje Koy
+            // Dokunma ile Obje Bırak
             controller = renderer.xr.getController(0);
-            controller.addEventListener('select', () => {
-                if (reticle.visible) {
-                    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-                    const material = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.5, roughness: 0.2 });
-                    const cube = new THREE.Mesh(geometry, material);
-                    
-                    cube.position.setFromMatrixPosition(reticle.matrix);
-                    cube.position.y += 0.05; // Masanın üstünde dursun
-                    scene.add(cube);
-                }
-            });
+            controller.addEventListener('select', onSelect);
             scene.add(controller);
 
+            initVoice();
             renderer.setAnimationLoop(render);
+        }
+
+        function onSelect() {
+            if (reticle.visible) {
+                const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                const material = new THREE.MeshStandardMaterial({ 
+                    color: Math.random() * 0xffffff,
+                    metalness: 0.6,
+                    roughness: 0.1,
+                    emissive: 0x002244
+                });
+                const cube = new THREE.Mesh(geometry, material);
+                cube.position.setFromMatrixPosition(reticle.matrix);
+                cube.position.y += 0.05;
+                scene.add(cube);
+                objects.push(cube);
+            }
+        }
+
+        function initVoice() {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Speech) return;
+            const rec = new Speech();
+            rec.lang = 'tr-TR';
+            rec.continuous = true;
+            rec.onresult = (e) => {
+                const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                document.getElementById('voice-cmd').innerText = cmd.toUpperCase();
+                if (cmd.includes("küp") && reticle.visible) onSelect();
+                if (cmd.includes("temizle")) {
+                    objects.forEach(obj => scene.remove(obj));
+                    objects = [];
+                }
+            };
+            rec.start();
         }
 
         function render(timestamp, frame) {
@@ -146,10 +191,10 @@
                         document.getElementById('x-pos').innerText = pos.x.toFixed(2);
                         document.getElementById('y-pos').innerText = pos.y.toFixed(2);
                         document.getElementById('z-pos').innerText = pos.z.toFixed(2);
-                        document.getElementById('hint').innerText = "YÜZEY BULUNDU - DOKUN";
+                        document.getElementById('hint-text').innerText = "HEDEF KİLİTLENDİ - DOKUN";
                     } else {
                         reticle.visible = false;
-                        document.getElementById('hint').innerText = "MASAYI / ZEMİNİ TARAYIN...";
+                        document.getElementById('hint-text').innerText = "YÜZEY ARANIYOR (ZEMİNE BAK)...";
                     }
                 }
             }
