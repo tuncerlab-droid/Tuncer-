@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - AR Modelleme v2</title>
+    <title>TUNCER HOLO - Gerçek AR Modelleme v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <script type="importmap">
         {
@@ -34,16 +31,6 @@
             touch-action: none;
         }
 
-        #video-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 1;
-        }
-
         #canvas-container {
             position: absolute;
             top: 0;
@@ -51,21 +38,22 @@
             width: 100vw;
             height: 100vh;
             z-index: 10;
-            pointer-events: none;
         }
 
-        .hud-overlay {
+        /* WebXR için HUD katmanı */
+        #ui-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
             z-index: 20;
-            pointer-events: none;
+            pointer-events: none; /* Tıklamaların arkadaki 3D sahneye geçmesi için */
+            display: none; /* AR başlayana kadar gizli */
         }
 
         .hud-panel {
-            pointer-events: auto;
+            pointer-events: auto; /* Paneller tıklanabilir olsun */
             background: rgba(0, 20, 30, 0.7);
             border: 1px solid #0ff;
             box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
@@ -98,19 +86,36 @@
             scrollbar-width: none;
             pointer-events: none;
         }
+
+        /* AR Başlat Ekranı */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: #001; z-index: 50;
+        }
     </style>
 </head>
 <body>
 
-    <video id="video-background" autoplay playsinline muted></video>
     <div id="canvas-container"></div>
 
-    <div class="hud-overlay flex flex-col justify-between p-4">
+    <!-- AR Başlatma Ekranı -->
+    <div id="start-screen">
+        <div class="hud-panel p-6 rounded text-center max-w-sm">
+            <h1 class="text-xl font-bold text-cyan-400 mb-2">TUNCER WEB OS v2</h1>
+            <p class="text-xs text-gray-400 mb-4">Etrafı taramak ve nesneleri sabitlemek için WebXR kullanılıyor. (Android Chrome veya WebXR destekli iOS tarayıcı gerektirir).</p>
+            <div id="ar-button-container"></div>
+        </div>
+    </div>
+
+    <!-- AR Arayüzü (Dom Overlay) -->
+    <div id="ui-overlay" class="flex flex-col justify-between p-4">
         <div class="flex justify-between items-start w-full">
             <div class="hud-panel p-2 rounded text-sm w-1/2 md:w-1/3">
-                <div class="font-bold text-base mb-1 tracking-widest text-white drop-shadow-[0_0_5px_#0ff]">TUNCER WEB OS v2</div>
-                <div id="sys-status" class="text-[10px] text-green-400">Sistem: YÜKLENİYOR...</div>
-                <div id="hand-status" class="text-[10px] text-yellow-400">El Takibi: HAZIRLANIYOR...</div>
+                <div class="font-bold text-base mb-1 tracking-widest text-white drop-shadow-[0_0_5px_#0ff]">TUNCER AR</div>
+                <div id="sys-status" class="text-[10px] text-green-400">Sistem: Zemin Aranıyor...</div>
+                <div id="interaction-status" class="text-[10px] text-yellow-400">Tıkla: Seç, Kaydır: Döndür</div>
             </div>
 
             <div class="hud-panel p-2 rounded text-center" id="voice-status-box">
@@ -133,309 +138,349 @@
         </div>
     </div>
 
-    <!-- Hata Bildirimi -->
-    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-6 hidden">
-        <div class="hud-panel p-6 max-w-sm w-full rounded border-red-500 text-center">
-            <h2 class="text-lg font-bold text-red-500 mb-2">ERİŞİM HATASI</h2>
-            <p id="error-text" class="text-xs mb-4">Kamera başlatılamadı.</p>
-            <button onclick="location.reload()" class="btn-holo w-full py-2 rounded">YENİDEN DENE</button>
-        </div>
-    </div>
-
 <script type="module">
 import * as THREE from 'three';
+import { ARButton } from 'three/addons/webxr/ARButton.js';
 import { SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
 
-const video = document.getElementById('video-background');
 const logConsole = document.getElementById('log-console');
 const sysStatus = document.getElementById('sys-status');
-const handStatus = document.getElementById('hand-status');
 const micStatus = document.getElementById('mic-status');
+const uiOverlay = document.getElementById('ui-overlay');
+const startScreen = document.getElementById('start-screen');
 
-let scene, camera, renderer, hands;
-let objects = [], holeObjects = [], selectedObject = null;
-let handCursor, dragPlane;
-let isPinching = false;
-let pinchStartPos = new THREE.Vector3(), objectStartPos = new THREE.Vector3();
-let initialAlpha = null;
+let scene, camera, renderer;
+let controller, reticle;
+let hitTestSource = null;
+let hitTestSourceRequested = false;
+
+let objects = [], holeObjects = [];
+let selectedObject = null;
+
+// Rotasyon için değişkenler
+let isDragging = false;
+let previousTouchX = 0;
 
 function log(msg, err = false) {
     const d = document.createElement('div');
     d.textContent = `> ${msg}`;
     d.className = err ? 'text-red-500' : 'text-cyan-400';
     logConsole.appendChild(d);
-    if(logConsole.childNodes.length > 5) logConsole.removeChild(logConsole.firstChild);
+    if(logConsole.childNodes.length > 6) logConsole.removeChild(logConsole.firstChild);
 }
 
-// --- KAMERA YÖNETİMİ (Hata Düzeltme Burası) ---
-async function setupCamera() {
-    try {
-        const constraints = {
-            video: {
-                facingMode: "environment", // Arka kamera
-                width: { ideal: 1280 },
-                height: { ideal: 720 }
-            }
-        };
-
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-        
-        return new Promise((resolve) => {
-            video.onloadedmetadata = () => {
-                video.play();
-                resolve(stream);
-            };
-        });
-    } catch (e) {
-        console.error("Kamera hatası:", e);
-        if (e.name === "NotReadableError") {
-            document.getElementById('error-text').textContent = "Kamera şu an başka bir uygulama tarafından kullanılıyor olabilir. Lütfen diğer sekmeleri kapatın.";
-        }
-        document.getElementById('error-modal').classList.remove('hidden');
-        throw e;
-    }
-}
-
-// --- THREE.JS KURULUMU ---
 function initThree() {
+    const container = document.getElementById('canvas-container');
+
     scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
     
+    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+    // Renderer ve WebXR ayarları
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    document.getElementById('canvas-container').appendChild(renderer.domElement);
+    renderer.xr.enabled = true;
+    
+    // Gerçekçi derinlik ve gölgeler için Shadow Map
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    container.appendChild(renderer.domElement);
 
-    const light = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(light);
-    const pointLight = new THREE.PointLight(0x00ffff, 2);
-    pointLight.position.set(5, 5, 5);
-    scene.add(pointLight);
+    // Işıklar (Derinlik algısı için önemli)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    scene.add(ambientLight);
 
-    // İmleç (Parmak ucu noktası)
-    handCursor = new THREE.Mesh(
-        new THREE.SphereGeometry(0.04, 16, 16),
-        new THREE.MeshBasicMaterial({ color: 0x00ffff, depthTest: false, transparent: true, opacity: 0.8 })
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight.position.set(0, 5, 0);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.width = 1024;
+    dirLight.shadow.mapSize.height = 1024;
+    scene.add(dirLight);
+
+    // AR Başlat Butonu (Hit-test ve DOM overlay ile)
+    const arBtn = ARButton.createButton(renderer, {
+        requiredFeatures: ['hit-test'],
+        domOverlay: { root: uiOverlay }
+    });
+    document.getElementById('ar-button-container').appendChild(arBtn);
+
+    arBtn.addEventListener('click', () => {
+        startScreen.style.display = 'none';
+        uiOverlay.style.display = 'flex';
+        initVoice();
+    });
+
+    // AR Hedef İmleci (Zemini tarayıp bulduğunda görünür)
+    reticle = new THREE.Mesh(
+        new THREE.RingGeometry(0.1, 0.12, 32).rotateX(- Math.PI / 2),
+        new THREE.MeshBasicMaterial({ color: 0x00ffff })
     );
-    scene.add(handCursor);
+    reticle.matrixAutoUpdate = false;
+    reticle.visible = false;
+    scene.add(reticle);
 
-    dragPlane = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), new THREE.MeshBasicMaterial({ visible: false }));
-    scene.add(dragPlane);
+    // Kontrolcü (Ekrana dokunma olayları AR oturumunda controller üzerinden alınır)
+    controller = renderer.xr.getController(0);
+    controller.addEventListener('select', onSelect);
+    scene.add(controller);
 
-    window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    window.addEventListener('resize', onWindowResize);
+    
+    // Ekran üzerinde parmak kaydırma (Döndürme için)
+    uiOverlay.addEventListener('touchstart', onTouchStart, { passive: false });
+    uiOverlay.addEventListener('touchmove', onTouchMove, { passive: false });
+    uiOverlay.addEventListener('touchend', onTouchEnd);
 
-    animate();
+    renderer.setAnimationLoop(render);
 }
 
-// --- MEDIAPIPE HANDS (Kamera Akışını Paylaşarak) ---
-async function initAI(stream) {
-    hands = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
+// --- NESNE YERLEŞTİRME VE SEÇME MANTIĞI ---
+function onSelect(event) {
+    if (isDragging) return; // Döndürme işlemi yapılıyorsa tıklamayı yoksay
 
-    hands.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
-    });
+    // Raycast ile tıklanan objeyi bul
+    const tempMatrix = new THREE.Matrix4();
+    tempMatrix.identity().extractRotation(controller.matrixWorld);
+    
+    const raycaster = new THREE.Raycaster();
+    raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
+    raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
 
-    hands.onResults(onResults);
-
-    // Akışı MediaPipe'a gönderen döngü
-    async function detectionLoop() {
-        if (video.paused || video.ended) return;
-        await hands.send({ image: video });
-        requestAnimationFrame(detectionLoop);
-    }
-    detectionLoop();
-    log("AI Takibi başlatıldı.");
-    handStatus.textContent = "El Takibi: AKTİF";
-}
-
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-function onResults(results) {
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmarks = results.multiHandLandmarks[0];
-        const indexTip = landmarks[8];
-        const thumbTip = landmarks[4];
-
-        // Ekran koordinatları
-        mouse.x = (indexTip.x * 2) - 1;
-        mouse.y = -(indexTip.y * 2) + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-        raycaster.ray.at(1.5, handCursor.position);
-
-        // Çimdik Hareketi
-        const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-        if (dist < 0.06) {
-            if (!isPinching) {
-                isPinching = true;
-                handCursor.material.color.set(0xff0000);
-                startGrab();
-            } else {
-                updateGrab();
-            }
-        } else if (isPinching) {
-            isPinching = false;
-            handCursor.material.color.set(0x00ffff);
-            endGrab();
-        }
-    }
-}
-
-// --- ETKİLEŞİM MANTIĞI ---
-function startGrab() {
     const intersects = raycaster.intersectObjects([...objects, ...holeObjects]);
+
     if (intersects.length > 0) {
-        selectedObject = intersects[0].object;
-        dragPlane.position.copy(selectedObject.position);
-        dragPlane.lookAt(camera.position);
+        // Eğer bir objeye tıklandıysa onu seç
+        if (selectedObject) selectedObject.material.emissive.setHex(0x000000); // Eski seçimi temizle
         
-        const planeHit = raycaster.intersectObject(dragPlane);
-        if (planeHit.length > 0) {
-            pinchStartPos.copy(planeHit[0].point);
-            objectStartPos.copy(selectedObject.position);
+        selectedObject = intersects[0].object;
+        selectedObject.material.emissive.setHex(0x004444); // Seçileni parlat
+        log("Nesne seçildi. Döndürmek için ekranı kaydır.");
+    } else {
+        // Boşluğa tıklandıysa seçimi kaldır
+        if (selectedObject) {
+            selectedObject.material.emissive.setHex(0x000000);
+            selectedObject = null;
         }
     }
 }
 
-function updateGrab() {
-    if (selectedObject) {
-        dragPlane.lookAt(camera.position);
-        const planeHit = raycaster.intersectObject(dragPlane);
-        if (planeHit.length > 0) {
-            const offset = new THREE.Vector3().subVectors(planeHit[0].point, pinchStartPos);
-            selectedObject.position.copy(objectStartPos).add(offset);
-        }
+// --- DOKUNMATİK ROTASYON (DÖNDÜRME) ---
+function onTouchStart(e) {
+    if(e.touches.length > 0) {
+        previousTouchX = e.touches[0].pageX;
+        isDragging = false;
     }
 }
 
-function endGrab() {
-    selectedObject = null;
+function onTouchMove(e) {
+    if (!selectedObject || e.touches.length === 0) return;
+    
+    // Hedef panele (butonlara) tıklanıyorsa döndürmeyi engelle
+    if (e.target.tagName === 'BUTTON') return;
+
+    isDragging = true;
+    const touchX = e.touches[0].pageX;
+    const deltaX = touchX - previousTouchX;
+    
+    // Nesneyi Y ekseninde döndür
+    selectedObject.rotation.y += deltaX * 0.01;
+    
+    previousTouchX = touchX;
 }
 
-// --- MODELLEME ---
+function onTouchEnd() {
+    setTimeout(() => { isDragging = false; }, 100);
+}
+
+// --- MODELLEME FONKSİYONLARI ---
 function addObj(isHole = false) {
-    const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+    if (!reticle.visible) {
+        log("Önce kamerayı hareket ettirip zemin bulun!", true);
+        return;
+    }
+
+    const geo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
     const mat = new THREE.MeshStandardMaterial({
-        color: isHole ? 0xff0000 : 0x00aaff,
+        color: isHole ? 0xff3333 : 0x00aaff,
         transparent: true,
-        opacity: isHole ? 0.5 : 0.9,
-        metalness: 0.5,
-        roughness: 0.1
+        opacity: isHole ? 0.6 : 1.0,
+        roughness: 0.3,
+        metalness: 0.7,
+        emissive: 0x000000
     });
+    
     const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    // Nesneyi taranan zemindeki (reticle) konuma ve açıya yerleştir
+    mesh.position.setFromMatrixPosition(reticle.matrix);
+    mesh.quaternion.setFromRotationMatrix(reticle.matrix);
     
-    // Kameranın önüne koy
-    const pos = new THREE.Vector3(0, 0, -1.2).applyQuaternion(camera.quaternion);
-    mesh.position.copy(camera.position).add(pos);
-    
+    // Nesneyi tam zemine oturtmak için yüksekliğinin yarısı kadar yukarı kaydır
+    mesh.translateY(0.1); 
+
     scene.add(mesh);
-    if (isHole) holeObjects.push(mesh); else objects.push(mesh);
-    log(isHole ? "Delik eklendi." : "Küp eklendi.");
+    
+    if (isHole) holeObjects.push(mesh); 
+    else objects.push(mesh);
+    
+    log(isHole ? "Delik masaya yerleştirildi." : "Küp masaya yerleştirildi.");
 }
 
-function merge() {
-    if (objects.length === 0 || holeObjects.length === 0) return;
-    const evaluator = new Evaluator();
-    let base = objects[0];
-    let baseBrush = new Brush(base.geometry, base.material);
-    baseBrush.position.copy(base.position);
-    baseBrush.updateMatrixWorld();
+function mergeObjects() {
+    if (objects.length === 0 || holeObjects.length === 0) {
+        log("Birleştirme için 1 Küp ve 1 Delik gerekli.", true);
+        return;
+    }
+    
+    log("İşleniyor...");
+    try {
+        const evaluator = new Evaluator();
+        
+        let base = objects[0];
+        let baseBrush = new Brush(base.geometry, base.material);
+        baseBrush.position.copy(base.position);
+        baseBrush.quaternion.copy(base.quaternion);
+        baseBrush.updateMatrixWorld();
 
-    holeObjects.forEach(h => {
-        const hBrush = new Brush(h.geometry, h.material);
-        hBrush.position.copy(h.position);
-        hBrush.updateMatrixWorld();
-        baseBrush = evaluator.evaluate(baseBrush, hBrush, SUBTRACTION);
-        scene.remove(h);
-    });
+        holeObjects.forEach(h => {
+            const hBrush = new Brush(h.geometry, h.material);
+            hBrush.position.copy(h.position);
+            hBrush.quaternion.copy(h.quaternion);
+            hBrush.updateMatrixWorld();
+            
+            baseBrush = evaluator.evaluate(baseBrush, hBrush, SUBTRACTION);
+            scene.remove(h);
+        });
 
-    scene.remove(base);
-    const result = new THREE.Mesh(baseBrush.geometry, baseBrush.material);
-    result.position.copy(base.position);
-    scene.add(result);
-    objects = [result];
-    holeObjects = [];
-    log("Birleştirildi.");
+        scene.remove(base);
+        
+        const result = new THREE.Mesh(baseBrush.geometry, baseBrush.material);
+        result.position.copy(base.position);
+        result.quaternion.copy(base.quaternion);
+        result.castShadow = true;
+        result.receiveShadow = true;
+        
+        scene.add(result);
+        objects = [result];
+        holeObjects = [];
+        
+        if(selectedObject) selectedObject = null;
+        log("Birleştirme/Kesme Başarılı.");
+    } catch (e) {
+        log("Geometri hatası!", true);
+        console.error(e);
+    }
 }
 
-// --- SENSÖRLER VE SES ---
-function initSensors() {
-    window.addEventListener('deviceorientation', (e) => {
-        if (initialAlpha === null) initialAlpha = e.alpha;
-        const alpha = THREE.MathUtils.degToRad(e.alpha - initialAlpha);
-        const beta = THREE.MathUtils.degToRad(e.beta);
-        const gamma = THREE.MathUtils.degToRad(e.gamma);
-        camera.rotation.set(beta, alpha, -gamma, 'YXZ');
-    });
-}
-
+// --- SES KONTROLÜ ---
 function initVoice() {
     const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!Rec) return;
+    if (!Rec) {
+        micStatus.textContent = "DESTEKLENMİYOR";
+        return;
+    }
+    
     const recognition = new Rec();
     recognition.lang = 'tr-TR';
     recognition.continuous = true;
+    
     recognition.onstart = () => {
         micStatus.textContent = "DİNLENİYOR";
         micStatus.classList.add('recording-pulse');
     };
+    
     recognition.onresult = (e) => {
         const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
         log(`Ses: ${text}`);
         if (text.includes("küp")) addObj(false);
         if (text.includes("delik")) addObj(true);
-        if (text.includes("birleştir") || text.includes("kes")) merge();
-        if (text.includes("sil")) {
-            const all = [...objects, ...holeObjects];
-            if(all.length > 0) {
-                const target = all[all.length-1];
-                scene.remove(target);
-                objects = objects.filter(o => o !== target);
-                holeObjects = holeObjects.filter(o => o !== target);
-            }
-        }
+        if (text.includes("birleştir") || text.includes("kes")) mergeObjects();
+        if (text.includes("sil")) deleteLastOrSelected();
     };
+    
     recognition.start();
 }
 
-function animate() {
-    requestAnimationFrame(animate);
+function deleteLastOrSelected() {
+    if (selectedObject) {
+        scene.remove(selectedObject);
+        objects = objects.filter(o => o !== selectedObject);
+        holeObjects = holeObjects.filter(o => o !== selectedObject);
+        selectedObject = null;
+        log("Seçili nesne silindi.");
+        return;
+    }
+
+    const all = [...objects, ...holeObjects];
+    if(all.length > 0) {
+        const target = all[all.length-1];
+        scene.remove(target);
+        objects = objects.filter(o => o !== target);
+        holeObjects = holeObjects.filter(o => o !== target);
+        log("Son eklenen silindi.");
+    }
+}
+
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// --- AR RENDER DÖNGÜSÜ (Hit Test ve SLAM) ---
+function render(timestamp, frame) {
+    if (frame) {
+        const referenceSpace = renderer.xr.getReferenceSpace();
+        const session = renderer.xr.getSession();
+
+        if (hitTestSourceRequested === false) {
+            session.requestReferenceSpace('viewer').then(function (referenceSpace) {
+                session.requestHitTestSource({ space: referenceSpace }).then(function (source) {
+                    hitTestSource = source;
+                });
+            });
+            session.addEventListener('end', function () {
+                hitTestSourceRequested = false;
+                hitTestSource = null;
+            });
+            hitTestSourceRequested = true;
+        }
+
+        if (hitTestSource) {
+            const hitTestResults = frame.getHitTestResults(hitTestSource);
+
+            if (hitTestResults.length > 0) {
+                const hit = hitTestResults[0];
+                const pose = hit.getPose(referenceSpace);
+
+                reticle.visible = true;
+                reticle.matrix.fromArray(pose.transform.matrix);
+                sysStatus.textContent = "Sistem: Zemin Bulundu";
+                sysStatus.className = "text-[10px] text-green-400 font-bold";
+            } else {
+                reticle.visible = false;
+                sysStatus.textContent = "Sistem: Zemin Aranıyor...";
+                sysStatus.className = "text-[10px] text-yellow-400";
+            }
+        }
+    }
+
     renderer.render(scene, camera);
 }
 
-// --- START ---
-window.addEventListener('load', async () => {
-    try {
-        const stream = await setupCamera();
-        initThree();
-        await initAI(stream);
-        initSensors();
-        initVoice();
-        sysStatus.textContent = "Sistem: AKTİF";
-        log("Tüm sistemler çevrimiçi.");
-    } catch (e) {
-        log("Başlatma hatası.", true);
-    }
+// --- BUTON BAĞLANTILARI ---
+window.addEventListener('load', () => {
+    initThree();
 });
 
 document.getElementById('btn-cube').onclick = () => addObj(false);
 document.getElementById('btn-hole').onclick = () => addObj(true);
-document.getElementById('btn-merge').onclick = merge;
-document.getElementById('btn-delete').onclick = () => {
-    if(objects.length > 0) scene.remove(objects.pop());
-    else if(holeObjects.length > 0) scene.remove(holeObjects.pop());
-};
+document.getElementById('btn-merge').onclick = mergeObjects;
+document.getElementById('btn-delete').onclick = deleteLastOrSelected;
+
 </script>
 </body>
 </html>
