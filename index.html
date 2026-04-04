@@ -3,146 +3,144 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR Core v6.0</title>
+    <title>Tuncer AR v7.0 - Fiziksel Sabitleme</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <!-- WebXR Destekleyici Kütüphane -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
-        .input_video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
-        #ui-overlay { position: absolute; top: 20px; right: 20px; z-index: 10; pointer-events: none; }
-        
-        #start-btn {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 100; background: #00e5ff; color: #000;
-            font-weight: 900; padding: 20px 40px; border-radius: 12px;
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.4); border: none; cursor: pointer;
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        canvas { display: block; }
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.8); z-index: 100; color: white;
+        }
+        #ar-info {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); padding: 10px 20px; border-radius: 20px;
+            color: #00e5ff; font-size: 12px; font-weight: bold; z-index: 50;
+            pointer-events: none; border: 1px solid rgba(0,229,255,0.3);
+        }
+        #hud {
+            position: fixed; top: 20px; right: 20px; text-align: right;
+            color: #00e5ff; font-family: monospace; font-size: 10px; pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <button id="start-btn">SİSTEMİ KALİBRE ET & BAŞLAT</button>
-
-    <video class="input_video" autoplay playsinline></video>
-    <div id="canvas-container"></div>
-
-    <div id="ui-overlay">
-        <div class="bg-black/70 backdrop-blur-md p-4 rounded-xl border border-cyan-500/30 text-[11px] font-mono text-cyan-400">
-            TUNCER CORE v6.0<br>
-            WORLD_X: <span id="pos-x">0.00</span><br>
-            WORLD_Y: <span id="pos-y">0.00</span><br>
-            WORLD_Z: <span id="pos-z">0.00</span><br>
-            STATUS: <span id="status" class="text-white">STANDBY</span>
-        </div>
+    <div id="overlay">
+        <h1 class="text-2xl font-black mb-2 text-cyan-400">TUNCER CORE v7.0</h1>
+        <p class="text-slate-400 text-sm mb-6 text-center px-10 italic">"Gerçek Dünya Koordinat Sistemi Aktif Ediliyor..."</p>
+        <button id="ar-button" class="bg-cyan-500 hover:bg-cyan-400 text-black font-black py-4 px-8 rounded-full transition-all scale-110">
+            AR MODUNU BAŞLAT
+        </button>
+        <p id="error-msg" class="text-red-500 mt-4 hidden">Tarayıcınız WebXR Hit-Test desteklemiyor.</p>
     </div>
 
-    <script>
-        let scene, camera, renderer, worldGroup, objects = [], selectedObject = null;
-        let isPinching = false, currentDepth = 2.0; 
+    <div id="ar-info">Zemini/Masayı yavaşça tarayın...</div>
+    
+    <div id="hud">
+        X: <span id="x-val">0.00</span><br>
+        Y: <span id="y-val">0.00</span><br>
+        Z: <span id="z-val">0.00</span><br>
+        VOICE: <span id="v-status">HAZIR</span>
+    </div>
 
-        document.getElementById('start-btn').onclick = function() {
-            this.style.display = 'none';
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(permission => {
-                    if (permission === 'granted') initAR();
-                });
-            } else {
-                initAR();
-            }
-        };
+    <script type="module">
+        let container, scene, camera, renderer, controller;
+        let reticle, hitTestSource = null, hitTestSourceRequested = false;
+        let objects = [];
+        let selectedObject = null;
 
-        function initAR() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 1000);
-            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
+        const arButton = document.getElementById('ar-button');
+        const overlay = document.getElementById('overlay');
 
-            worldGroup = new THREE.Group();
-            scene.add(worldGroup);
-
-            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-            const sun = new THREE.DirectionalLight(0xffffff, 0.8);
-            sun.position.set(5, 10, 5);
-            scene.add(sun);
-
-            // Jiroskop ile Kamera Oryantasyonu (Ortamda Sabitlik İçin)
-            window.addEventListener('deviceorientation', (e) => {
-                if (!e.alpha) return;
-                const alpha = THREE.MathUtils.degToRad(e.alpha);
-                const beta = THREE.MathUtils.degToRad(e.beta);
-                const gamma = THREE.MathUtils.degToRad(e.gamma);
-                // Cihazın rotasyonunu kameraya aktar
-                camera.quaternion.setFromEuler(new THREE.Euler(beta, alpha, -gamma, 'YXZ'));
-            }, true);
-
-            initHandTracking();
-            initVoice();
-            animate();
-        }
-
-        function initHandTracking() {
-            const video = document.querySelector('.input_video');
-            const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-            
-            hands.setOptions({ 
-                maxNumHands: 1, 
-                modelComplexity: 1, 
-                minDetectionConfidence: 0.8, 
-                minTrackingConfidence: 0.8 
-            });
-
-            hands.onResults(results => {
-                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    const lm = results.multiHandLandmarks[0];
-                    const index = lm[8];
-                    const thumb = lm[4];
-                    const wrist = lm[0];
-
-                    // Derinlik Hesaplama (Elin kameraya olan uzaklığına göre Z derinliğini belirle)
-                    // El yaklaştıkça obje uzaklaşsın/yaklaşsın (Z kontrolü)
-                    const handSize = Math.hypot(wrist.x - index.x, wrist.y - index.y);
-                    currentDepth = THREE.MathUtils.lerp(currentDepth, 1.0 / (handSize * 3), 0.1);
-
-                    // Elin ekran koordinatlarını 3D Dünya Koordinatlarına Çevir
-                    const vector = new THREE.Vector3((index.x - 0.5) * 2, -(index.y - 0.5) * 2, 0.5);
-                    vector.unproject(camera);
-                    const dir = vector.sub(camera.position).normalize();
-                    const targetPos = new THREE.Vector3().copy(camera.position).add(dir.multiplyScalar(currentDepth));
-
-                    // Pinch (Tutma) Kontrolü
-                    const pinchDist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-                    if (pinchDist < 0.045) {
-                        if (!isPinching) {
-                            isPinching = true;
-                            const ray = new THREE.Raycaster();
-                            ray.setFromCamera(new THREE.Vector2(-(index.x - 0.5) * 2, -(index.y - 0.5) * 2), camera);
-                            const hits = ray.intersectObjects(objects);
-                            if (hits.length > 0) selectedObject = hits[0].object;
-                        }
-                        if (selectedObject) {
-                            selectedObject.position.lerp(targetPos, 0.2);
-                            updateHUD(selectedObject.position);
-                        }
+        arButton.addEventListener('click', () => {
+            if (navigator.xr) {
+                navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                    if (supported) {
+                        startAR();
                     } else {
-                        isPinching = false;
+                        document.getElementById('error-msg').classList.remove('hidden');
                     }
-                }
+                });
+            }
+        });
+
+        async function startAR() {
+            overlay.style.display = 'none';
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+            scene.add(light);
+
+            // Hedefleyici (Reticle) - Masayı bulduğunda görünen halka
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.1, 0.12, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+            );
+            reticle.matrixAutoUpdate = false;
+            reticle.visible = false;
+            scene.add(reticle);
+
+            // WebXR Session
+            const session = await navigator.xr.requestSession('immersive-ar', {
+                requiredFeatures: ['hit-test'],
+                optionalFeatures: ['dom-overlay'],
+                domOverlay: { root: document.body }
             });
 
-            const cam = new Camera(video, {
-                onFrame: async () => { await hands.send({image: video}); },
-                width: 1280, height: 720, facingMode: 'environment'
-            });
-            cam.start();
+            renderer.xr.setSession(session);
+
+            // Ekrana dokunulduğunda objeyi masaya bırak
+            controller = renderer.xr.getController(0);
+            controller.addEventListener('select', onSelect);
+            scene.add(controller);
+
+            initVoiceControl();
+            renderer.setAnimationLoop(render);
         }
 
-        function initVoice() {
+        function onSelect() {
+            if (reticle.visible) {
+                addShapeAtPos(reticle.position, reticle.quaternion);
+            }
+        }
+
+        function addShapeAtPos(position, quaternion, type = 'cube') {
+            const geometry = type === 'cube' 
+                ? new THREE.BoxGeometry(0.15, 0.15, 0.15) 
+                : new THREE.SphereGeometry(0.1, 32, 32);
+                
+            const material = new THREE.MeshStandardMaterial({ 
+                color: Math.random() * 0xffffff,
+                metalness: 0.7,
+                roughness: 0.2
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            position.y += 0.075; // Masanın içine girmemesi için yarı yüksekliği kadar kaldır
+            mesh.position.copy(position);
+            mesh.quaternion.copy(quaternion);
+            
+            scene.add(mesh);
+            objects.push(mesh);
+            selectedObject = mesh;
+        }
+
+        function initVoiceControl() {
             const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!Speech) return;
             const rec = new Speech();
@@ -150,54 +148,58 @@
             rec.continuous = true;
             rec.onresult = (e) => {
                 const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                if (cmd.includes("küp")) addObj('cube');
-                if (cmd.includes("küre")) addObj('sphere');
+                document.getElementById('v-status').innerText = cmd.toUpperCase();
+                
+                if (cmd.includes("küp") && reticle.visible) addShapeAtPos(reticle.position, reticle.quaternion, 'cube');
+                if (cmd.includes("küre") && reticle.visible) addShapeAtPos(reticle.position, reticle.quaternion, 'sphere');
                 if (cmd.includes("sil") && selectedObject) {
-                    worldGroup.remove(selectedObject);
+                    scene.remove(selectedObject);
                     objects = objects.filter(o => o !== selectedObject);
                     selectedObject = null;
                 }
-                if (cmd.includes("büyüt") && selectedObject) selectedObject.scale.multiplyScalar(1.2);
-                if (cmd.includes("küçült") && selectedObject) selectedObject.scale.multiplyScalar(0.8);
             };
             rec.start();
         }
 
-        function addObj(type) {
-            const geo = type === 'cube' ? new THREE.BoxGeometry(0.3, 0.3, 0.3) : new THREE.SphereGeometry(0.2, 32, 32);
-            const mat = new THREE.MeshStandardMaterial({ 
-                color: Math.random() * 0xffffff, 
-                metalness: 0.8, 
-                roughness: 0.2,
-                emissive: 0x000000 
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            
-            // Objeyi tam kameranın baktığı yönde 2 metre ileriye bırak
-            const spawnDir = new THREE.Vector3(0, 0, -2).applyQuaternion(camera.quaternion);
-            mesh.position.copy(camera.position).add(spawnDir);
-            
-            worldGroup.add(mesh);
-            objects.push(mesh);
-            selectedObject = mesh;
-        }
+        function render(timestamp, frame) {
+            if (frame) {
+                const referenceSpace = renderer.xr.getReferenceSpace();
+                const session = renderer.xr.getSession();
 
-        function updateHUD(pos) {
-            document.getElementById('pos-x').innerText = pos.x.toFixed(2);
-            document.getElementById('pos-y').innerText = pos.y.toFixed(2);
-            document.getElementById('pos-z').innerText = pos.z.toFixed(2);
-        }
+                if (hitTestSourceRequested === false) {
+                    session.requestReferenceSpace('viewer').then((referenceSpace) => {
+                        session.requestHitTestSource({ space: referenceSpace }).then((source) => {
+                            hitTestSource = source;
+                        });
+                    });
+                    session.addEventListener('end', () => {
+                        hitTestSourceRequested = false;
+                        hitTestSource = null;
+                    });
+                    hitTestSourceRequested = true;
+                }
 
-        function animate() {
-            requestAnimationFrame(animate);
+                if (hitTestSource) {
+                    const hitTestResults = frame.getHitTestResults(hitTestSource);
+                    if (hitTestResults.length) {
+                        const hit = hitTestResults[0];
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
+                        
+                        // Pozisyonu HUD'a yaz
+                        const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+                        document.getElementById('x-val').innerText = pos.x.toFixed(2);
+                        document.getElementById('y-val').innerText = pos.y.toFixed(2);
+                        document.getElementById('z-val').innerText = pos.z.toFixed(2);
+                        document.getElementById('ar-info').innerText = "Yüzey Bulundu! Dokun veya 'Küp' de.";
+                    } else {
+                        reticle.visible = false;
+                        document.getElementById('ar-info').innerText = "Yüzey aranıyor...";
+                    }
+                }
+            }
             renderer.render(scene, camera);
         }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
