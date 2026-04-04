@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tuncer Web - Stabil AR</title>
+    <title>Tuncer Web - Hand Tracking Pro</title>
     <style>
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
@@ -18,7 +18,7 @@
 
         .hud-panel {
             position: absolute;
-            background: rgba(0, 15, 30, 0.7);
+            background: rgba(0, 15, 30, 0.75);
             backdrop-filter: blur(10px);
             border-left: 5px solid #00e5ff;
             padding: 15px;
@@ -76,9 +76,9 @@
         <div class="hud-panel">
             <h1>TUNCER WEB OS</h1>
             <div class="status"><div id="ind-ar" class="indicator"></div> TARAMA</div>
-            <div class="status"><div id="ind-hand" class="indicator"></div> EL İSKELETİ</div>
+            <div id="hand-status-box" class="status"><div id="ind-hand" class="indicator"></div> EL ALIGILAMA</div>
             <div class="status"><div id="ind-voice" class="indicator"></div> SES MODÜLÜ</div>
-            <div id="console">Hazır...</div>
+            <div id="console">Kamera bekleniyor...</div>
         </div>
 
         <div id="controls">
@@ -108,39 +108,39 @@
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.5));
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
             const light = new THREE.DirectionalLight(0xffffff, 1);
             light.position.set(1, 1, 1);
             scene.add(light);
 
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // --- GELİŞMİŞ EL İSKELETİ ---
+            // --- EL TAKİBİ FABRİKASI ---
             const handModelFactory = new XRHandModelFactory();
-            
-            // Her iki el için döngü
+
+            // Sol ve Sağ el girişleri
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
-                // "mesh" yerine "boxes" veya "spheres" bazen daha stabildir ama iskelet için "mesh" en iyisidir
-                // El modelini oluştururken materyal hatalarını önlemek için özel bir iskelet modeli ekliyoruz
-                const handModel = handModelFactory.createHandModel(hand, "mesh");
-                hand.add(handModel);
+                
+                // El iskeletini "mesh" (deri) ve "boxes" (eklem kutuları) olarak ekliyoruz
+                // Bu elini gördüğü anda üzerine iskelet bindirmesini sağlar
+                hand.add(handModelFactory.createHandModel(hand, "mesh"));
                 scene.add(hand);
 
                 hand.addEventListener('connected', (event) => {
                     document.getElementById('ind-hand').classList.add('active');
-                    sysLog(`${event.data.handedness} el algılandı.`);
+                    sysLog("El algılandı: " + event.data.handedness);
                 });
 
                 hand.addEventListener('disconnected', () => {
@@ -149,8 +149,6 @@
             }
 
             transformControl = new TransformControls(camera, renderer.domElement);
-            // Gizmo boyutu ayarı
-            transformControl.setSize(0.5); 
             scene.add(transformControl);
 
             document.getElementById('start-btn').addEventListener('click', startAR);
@@ -158,14 +156,9 @@
         }
 
         async function startAR() {
-            if (!navigator.xr) {
-                alert("WebXR desteklenmiyor!");
-                return;
-            }
-
             const sessionInit = { 
-                requiredFeatures: ['hit-test'],
-                optionalFeatures: ['dom-overlay', 'hand-tracking', 'layers'],
+                requiredFeatures: ['hit-test', 'hand-tracking'], // Hand-tracking artık zorunlu özellik
+                optionalFeatures: ['dom-overlay', 'layers'],
                 domOverlay: { root: document.getElementById('ui-overlay') }
             };
 
@@ -180,9 +173,11 @@
 
                 initVoice();
                 renderer.setAnimationLoop(render);
-                sysLog("AR Başlatıldı.");
+                sysLog("Sistem Aktif. Elini kameraya göster.");
             } catch (e) {
-                sysLog("AR Hatası: " + e.message);
+                sysLog("Hata: " + e.message);
+                // Eğer hand-tracking zorunlu olduğu için açılmazsa opsiyonel olarak dene
+                alert("El takibi bu cihazda tam desteklenmiyor olabilir.");
             }
         }
 
@@ -198,7 +193,7 @@
             
             recognition.onresult = (event) => {
                 const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                sysLog(`Duyuldu: ${text}`);
+                sysLog(text);
                 
                 if (text.includes('küp') && (text.includes('ekle') || text.includes('oluştur'))) {
                     addModel('cube');
@@ -221,7 +216,7 @@
         }
 
         function addModel(type) {
-            if (!reticle.visible) return sysLog("Zemin yok!");
+            if (!reticle.visible) return sysLog("Zemin aranıyor...");
 
             let geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
             let mat = type === 'cube' 
@@ -233,7 +228,7 @@
             scene.add(mesh);
             objects.push(mesh);
             transformControl.attach(mesh);
-            sysLog(`${type} eklendi.`);
+            sysLog(type + " eklendi.");
         }
 
         function setupControls() {
