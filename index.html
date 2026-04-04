@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v18.0</title>
+    <title>Tuncer AR v18.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -18,7 +18,9 @@
             background: #00e5ff; color: #000; font-weight: 900; padding: 20px 50px; 
             border-radius: 15px; border: none; cursor: pointer; font-size: 18px; 
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); pointer-events: auto;
+            transition: transform 0.1s;
         }
+        #btn-activate:active { transform: scale(0.95); }
         #target-hint { align-self: center; margin-bottom: 120px; background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 20px; color: #fff; border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; }
     </style>
 
@@ -34,8 +36,8 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v18</h1>
-        <p style="color:#666; margin-bottom:40px; font-size:12px;">Taşıma, Döndürme ve Boyutlandırma Aktif.</p>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v18.1</h1>
+        <p style="color:#666; margin-bottom:40px; font-size:12px;">Buton Tetikleme Sorunu Giderildi.</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -57,7 +59,6 @@
         let handModel = null, isProcessing = false;
         let currentSession = null;
         
-        // Etkileşim hafızası
         let initialPinchDist = 0;
         let initialScale = new THREE.Vector3();
 
@@ -87,32 +88,50 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            try {
-                handModel = await handpose.load();
-                document.getElementById('hand-status').innerText = "HAZIR";
-            } catch (e) { console.error(e); }
+            // TensorFlow modelini arka planda yüklemeye başla ama butonu engelleme
+            handpose.load().then(model => {
+                handModel = model;
+                const statusEl = document.getElementById('hand-status');
+                if(statusEl) {
+                    statusEl.innerText = "HAZIR";
+                    statusEl.style.color = "#00e5ff";
+                }
+            }).catch(e => console.error("Model yükleme hatası:", e));
 
             const startBtn = document.getElementById('btn-activate');
-            startBtn.addEventListener('click', async () => {
+            
+            // Kesin çözüm için onclick olayını en temel düzeyde kullanıyoruz
+            startBtn.onclick = async () => {
                 if (currentSession === null) {
                     const sessionInit = { 
                         requiredFeatures: ['hit-test'], 
                         optionalFeatures: ['dom-overlay'],
                         domOverlay: { root: document.getElementById('ui-container') } 
                     };
-                    try {
-                        const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
-                        onSessionStarted(session);
-                    } catch (err) { alert("AR Başlatılamadı: " + err.message); }
+                    
+                    navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+                        if (supported) {
+                            navigator.xr.requestSession('immersive-ar', sessionInit)
+                                .then(onSessionStarted)
+                                .catch(err => {
+                                    console.error(err);
+                                    alert("AR oturumu başlatılamadı.");
+                                });
+                        } else {
+                            alert("Cihazınız AR desteklemiyor olabilir.");
+                        }
+                    });
                 }
-            });
+            };
         }
 
         function onSessionStarted(session) {
             currentSession = session;
             renderer.xr.setSession(session);
+            
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('ui-container').style.display = 'flex';
+            
             renderer.setAnimationLoop(render);
         }
 
@@ -131,13 +150,13 @@
             const modeLabel = document.getElementById('interact-mode');
 
             if (predictions.length > 0) {
-                status.innerText = "ALGILANDI"; status.style.color = "#00ffcc";
+                if(status) { status.innerText = "ALGILANDI"; status.style.color = "#00ffcc"; }
                 fingerCursor.visible = true;
 
                 const landmarks = predictions[0].landmarks;
                 const indexTip = landmarks[8]; 
                 const thumbTip = landmarks[4];
-                const middleTip = landmarks[12]; // Döndürme referansı için orta parmak
+                const middleTip = landmarks[MiddleTipIndex()] || landmarks[12];
 
                 const canvas = renderer.domElement;
                 const x = -((indexTip[0] / canvas.width) - 0.5) * 2;
@@ -147,20 +166,19 @@
                 const dir = vector.sub(camera.position).normalize();
                 fingerCursor.position.copy(camera.position).add(dir.multiplyScalar(0.45));
 
-                // Mesafe ve Pinch Kontrolü
                 const currentPinchDist = Math.sqrt(
                     Math.pow(indexTip[0] - thumbTip[0], 2) + 
                     Math.pow(indexTip[1] - thumbTip[1], 2)
                 );
                 
-                const isPinch = currentPinchDist < 55;
+                const isPinch = currentPinchDist < 60;
                 const raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
                 const hits = raycaster.intersectObjects(objects);
 
                 if (isPinch) {
                     fingerCursor.material.color.setHex(0xff0000);
-                    modeLabel.innerText = "TUTULUYOR";
+                    if(modeLabel) modeLabel.innerText = "TUTULUYOR";
                     
                     if (hits.length > 0 && !selectedObject) {
                         selectedObject = hits[0].object;
@@ -169,19 +187,13 @@
                     }
 
                     if (selectedObject) {
-                        // 1. HAREKET (Lerp ile yumuşak takip)
                         selectedObject.position.lerp(fingerCursor.position, 0.2);
-
-                        // 2. DÖNDÜRME (Elin açısına göre)
-                        // İşaret parmağı ve orta parmak arasındaki eğimi kullanarak Z ekseni dönüşü simülasyonu
                         const angle = Math.atan2(middleTip[1] - indexTip[1], middleTip[0] - indexTip[0]);
-                        selectedObject.rotation.y += 0.05; // Sürekli hafif dönüş
+                        selectedObject.rotation.y += 0.03;
                         selectedObject.rotation.z = angle;
 
-                        // 3. BÜYÜTME/KÜÇÜLTME (Pinch mesafesine göre dinamik scale)
                         if (initialPinchDist > 0) {
                             const scaleFactor = currentPinchDist / initialPinchDist;
-                            // Sınırlandırma (Çok devasa veya yok olmasın)
                             const s = Math.max(0.2, Math.min(5, initialScale.x * scaleFactor));
                             selectedObject.scale.set(s, s, s);
                         }
@@ -189,14 +201,17 @@
                 } else {
                     selectedObject = null;
                     initialPinchDist = 0;
-                    modeLabel.innerText = "GÖZLEM";
+                    if(modeLabel) modeLabel.innerText = "GÖZLEM";
                     fingerCursor.material.color.setHex(hits.length > 0 ? 0xffea00 : 0x00e5ff);
                 }
             } else {
-                status.innerText = "EL YOK"; status.style.color = "#ff3366";
+                if(status) { status.innerText = "EL YOK"; status.style.color = "#ff3366"; }
                 fingerCursor.visible = false;
             }
         }
+
+        // Helper for array safety
+        function MiddleTipIndex() { return 12; }
 
         function render(timestamp, frame) {
             if (frame) {
@@ -215,7 +230,8 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('target-hint').innerText = "YÜZEY HAZIR";
+                        const hint = document.getElementById('target-hint');
+                        if(hint) hint.innerText = "YÜZEY HAZIR";
                     } else { reticle.visible = false; }
                 }
             }
@@ -223,8 +239,7 @@
         }
 
         window.addEventListener('click', (e) => {
-            // Eğer bir buton tıklanmıyorsa küp ekle
-            if (reticle.visible && !isProcessing && e.target.tagName !== 'BUTTON') {
+            if (reticle.visible && !isProcessing && e.target.id !== 'btn-activate') {
                 const mesh = new THREE.Mesh(
                     new THREE.BoxGeometry(0.1, 0.1, 0.1),
                     new THREE.MeshStandardMaterial({ 
