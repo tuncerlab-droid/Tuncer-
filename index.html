@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR Core v4.0</title>
+    <title>Tuncer AR Core v5.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -11,239 +11,186 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; }
         #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
-        .pointer-events-auto { pointer-events: auto; }
-        .input_video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; transform: scaleX(-1); }
+        .input_video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
+        #ui-overlay { position: absolute; top: 20px; right: 20px; z-index: 10; pointer-events: none; }
         
-        .hud-border { border-left: 4px solid #00e5ff; }
-        #loading { transition: opacity 0.5s; z-index: 100; }
-        
-        #gyro-request {
+        #calibration-btn {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 200; background: rgba(15, 23, 42, 0.95); padding: 2rem;
-            border-radius: 1.5rem; border: 1px solid #00e5ff; text-align: center;
+            z-index: 100; background: rgba(0, 229, 255, 0.9); color: #000;
+            font-weight: 900; padding: 20px 40px; border-radius: 50px;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
         }
     </style>
 </head>
 <body>
 
-    <!-- Sensör İzni Paneli -->
-    <div id="gyro-request" class="pointer-events-auto">
-        <h2 class="text-white font-bold mb-4">3D KOORDİNAT SENKRONİZASYONU</h2>
-        <p class="text-slate-400 text-xs mb-6">Objelerin dünyada sabit kalması için jiroskop izni gerekiyor.</p>
-        <button id="enable-gyro" class="bg-cyan-500 text-slate-900 font-black px-6 py-3 rounded-full text-sm">SİSTEMİ KALİBRE ET</button>
-    </div>
-
-    <div id="loading" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center text-white hidden">
-        <div class="w-12 h-12 border-4 border-t-cyan-400 border-slate-800 rounded-full animate-spin mb-4"></div>
-        <p class="text-cyan-400 font-bold tracking-widest text-xs">AI SENSÖR AKTİF</p>
-    </div>
+    <button id="calibration-btn" onclick="initSystem()">SİSTEMİ BAŞLAT (AR)</button>
 
     <video class="input_video" autoplay playsinline></video>
     <div id="canvas-container"></div>
 
-    <div id="ui-layer" class="flex flex-col justify-between p-6">
-        <div class="flex justify-between items-start pointer-events-auto">
-            <div class="bg-slate-900/80 backdrop-blur-md rounded-lg p-4 shadow-2xl hud-border">
-                <h1 class="text-lg font-black text-white tracking-tighter">TUNCER <span class="text-cyan-400">MARK-IV</span></h1>
-                <div class="flex flex-col gap-1 mt-2 text-[9px] font-bold uppercase text-slate-400">
-                    <div class="flex items-center gap-2">
-                        <div id="hand-status" class="w-2 h-2 rounded-full bg-red-500"></div> <span>HAND AI</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div id="gyro-status" class="w-2 h-2 rounded-full bg-red-500"></div> <span>GYRO SYNC</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="bg-slate-900/80 p-3 rounded-lg border border-cyan-500/30 text-[10px] text-cyan-400 font-mono">
-                WORLD POS:<br>
-                X: <span id="coord-x">0.00</span><br>
-                Y: <span id="coord-y">0.00</span><br>
-                Z: <span id="coord-z">0.00</span>
-            </div>
-        </div>
-
-        <div id="properties-panel" class="absolute right-6 top-1/2 -translate-y-1/2 bg-slate-900/90 backdrop-blur-lg rounded-2xl p-5 shadow-2xl border border-slate-700 w-56 pointer-events-auto hidden">
-            <h3 class="font-bold text-white text-xs mb-4">OBJE KONFİGÜRASYONU</h3>
-            <div class="space-y-4">
-                <div class="flex gap-2">
-                    <button id="btn-solid" class="flex-1 bg-cyan-500 text-slate-950 text-[10px] font-black py-2 rounded-lg">KATI</button>
-                    <button id="btn-hole" class="flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg">BOŞLUK</button>
-                </div>
-                <div class="space-y-2">
-                    <input type="range" id="scale-all" min="0.1" max="3" step="0.1" value="1" class="w-full">
-                    <p class="text-[9px] text-center text-slate-500 uppercase font-bold">Global Ölçek</p>
-                </div>
-                <button id="btn-delete" class="w-full bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-black py-2 rounded-lg">SİL</button>
-            </div>
-        </div>
-
-        <div class="pointer-events-auto flex justify-center gap-6 mb-4">
-            <button onclick="addShape('cube')" class="w-14 h-14 bg-slate-900 border-2 border-cyan-500/30 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
-                <div class="w-6 h-6 bg-cyan-400"></div>
-            </button>
-            <button onclick="addShape('sphere')" class="w-14 h-14 bg-slate-900 border-2 border-emerald-500/30 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
-                <div class="w-7 h-7 bg-emerald-400 rounded-full"></div>
-            </button>
+    <div id="ui-overlay">
+        <div class="bg-black/60 backdrop-blur-md p-4 rounded-xl border border-cyan-500/30 text-[11px] font-mono text-cyan-400">
+            TUNCER MARK-V [LIVE]<br>
+            POS_X: <span id="pos-x">0.00</span><br>
+            POS_Y: <span id="pos-y">0.00</span><br>
+            POS_Z: <span id="pos-z">0.00</span><br>
+            VOICE: <span id="voice-status" class="text-red-500">BEKLİYOR</span>
         </div>
     </div>
 
     <script>
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-        const worldGroup = new THREE.Group(); // Tüm objeler bu grubun içinde olacak
-        scene.add(worldGroup);
-
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-        const light = new THREE.PointLight(0x00e5ff, 1);
-        light.position.set(5, 5, 5);
-        scene.add(light);
-
-        const objects = [];
+        let scene, camera, renderer, worldGroup, hands, videoElement;
+        let objects = [];
         let selectedObject = null;
         let isPinching = false;
-        
-        // 3D İmleç
-        const cursor = new THREE.Mesh(
-            new THREE.RingGeometry(0.05, 0.07, 32),
-            new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide })
-        );
-        scene.add(cursor);
+        let cursor;
 
-        // --- JİROSKOP & KAMERA SENKRONİZASYONU ---
-        let baseQuaternion = new THREE.Quaternion();
-        
-        function initSensors() {
+        function initSystem() {
+            document.getElementById('calibration-btn').style.display = 'none';
+            
+            // Sensör İzinleri (iOS ve bazı Androidler için)
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                DeviceOrientationEvent.requestPermission().then(response => {
-                    if (response == 'granted') startGyro();
+                DeviceOrientationEvent.requestPermission().then(res => {
+                    if (res === 'granted') startAR();
                 });
             } else {
-                startGyro();
+                startAR();
             }
         }
 
-        function startGyro() {
-            document.getElementById('gyro-request').style.display = 'none';
-            document.getElementById('loading').style.display = 'flex';
-            document.getElementById('gyro-status').classList.replace('bg-red-500', 'bg-cyan-400');
-            
+        function startAR() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            worldGroup = new THREE.Group();
+            scene.add(worldGroup);
+
+            // Işıklar
+            scene.add(new THREE.AmbientLight(0xffffff, 1));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(5, 10, 7);
+            scene.add(light);
+
+            // Cursor
+            cursor = new THREE.Mesh(
+                new THREE.RingGeometry(0.04, 0.05, 32),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide })
+            );
+            scene.add(cursor);
+
+            // Gyro Sync
             window.addEventListener('deviceorientation', (e) => {
-                const alpha = e.alpha ? THREE.MathUtils.degToRad(e.alpha) : 0;
-                const beta = e.beta ? THREE.MathUtils.degToRad(e.beta) : 0;
-                const gamma = e.gamma ? THREE.MathUtils.degToRad(e.gamma) : 0;
-
-                const euler = new THREE.Euler(beta, alpha, -gamma, 'YXZ');
-                camera.quaternion.setFromEuler(euler);
+                if (!e.alpha) return;
+                const alpha = THREE.MathUtils.degToRad(e.alpha);
+                const beta = THREE.MathUtils.degToRad(e.beta);
+                const gamma = THREE.MathUtils.degToRad(e.gamma);
+                camera.quaternion.setFromEuler(new THREE.Euler(beta, alpha, -gamma, 'YXZ'));
             }, true);
+
+            initHandTracking();
+            initVoiceControl();
+            animate();
         }
 
-        document.getElementById('enable-gyro').onclick = initSensors;
+        function initHandTracking() {
+            videoElement = document.querySelector('.input_video');
+            hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+            hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.8, minTrackingConfidence: 0.8 });
+            
+            hands.onResults(results => {
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    const lms = results.multiHandLandmarks[0];
+                    const index = lms[8];
+                    const thumb = lms[4];
 
-        // --- EL TAKİBİ & 3D MAPPING ---
-        function onResults(results) {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                document.getElementById('hand-status').classList.replace('bg-red-500', 'bg-cyan-400');
-                const landmarks = results.multiHandLandmarks[0];
-                const index = landmarks[8];
-                const thumb = landmarks[4];
+                    // 3D Pointing
+                    const vector = new THREE.Vector3((index.x - 0.5) * 2, -(index.y - 0.5) * 2, 0.5);
+                    vector.unproject(camera);
+                    const dir = vector.sub(camera.position).normalize();
+                    cursor.position.copy(camera.position).add(dir.multiplyScalar(2.5));
+                    cursor.lookAt(camera.position);
 
-                // Screen to World Mapping
-                // Eli kameranın önünde sabit bir derinlikte (-2) tutuyoruz
-                const vector = new THREE.Vector3((index.x - 0.5) * 2, -(index.y - 0.5) * 2, 0.5);
-                vector.unproject(camera);
-                const dir = vector.sub(camera.position).normalize();
-                const distance = 2.5; 
-                cursor.position.copy(camera.position).add(dir.multiplyScalar(distance));
-                cursor.lookAt(camera.position);
+                    document.getElementById('pos-x').innerText = cursor.position.x.toFixed(2);
+                    document.getElementById('pos-y').innerText = cursor.position.y.toFixed(2);
+                    document.getElementById('pos-z').innerText = cursor.position.z.toFixed(2);
 
-                document.getElementById('coord-x').innerText = cursor.position.x.toFixed(2);
-                document.getElementById('coord-y').innerText = cursor.position.y.toFixed(2);
-                document.getElementById('coord-z').innerText = cursor.position.z.toFixed(2);
-
-                // Pinch (Tutma)
-                const d = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-                if (d < 0.05) {
-                    if (!isPinching) {
-                        isPinching = true;
-                        const ray = new THREE.Raycaster();
-                        ray.setFromCamera(new THREE.Vector2(-(index.x - 0.5) * 2, -(index.y - 0.5) * 2), camera);
-                        const hits = ray.intersectObjects(objects);
-                        if (hits.length > 0) selectObject(hits[0].object);
-                    } else if (selectedObject) {
-                        selectedObject.position.lerp(cursor.position, 0.2);
+                    // Pinch logic
+                    const d = Math.hypot(index.x - thumb.x, index.y - thumb.y);
+                    if (d < 0.05) {
+                        if (!isPinching) {
+                            isPinching = true;
+                            cursor.material.color.setHex(0xff0000);
+                            const ray = new THREE.Raycaster();
+                            ray.setFromCamera(new THREE.Vector2(-(index.x - 0.5) * 2, -(index.y - 0.5) * 2), camera);
+                            const hits = ray.intersectObjects(objects);
+                            if (hits.length > 0) selectedObject = hits[0].object;
+                        } else if (selectedObject) {
+                            selectedObject.position.lerp(cursor.position, 0.3);
+                        }
+                    } else {
+                        isPinching = false;
+                        cursor.material.color.setHex(0x00e5ff);
                     }
-                } else {
-                    isPinching = false;
                 }
-            } else {
-                document.getElementById('hand-status').classList.replace('bg-cyan-400', 'bg-red-500');
-            }
+            });
+
+            const cam = new Camera(videoElement, {
+                onFrame: async () => { await hands.send({image: videoElement}); },
+                width: 1280, height: 720, facingMode: 'environment' // Arka Kamera
+            });
+            cam.start();
         }
 
-        window.addShape = function(type) {
-            const geo = type === 'cube' ? new THREE.BoxGeometry(0.5,0.5,0.5) : new THREE.SphereGeometry(0.3,32,32);
-            const mat = new THREE.MeshStandardMaterial({ color: type === 'cube' ? 0x00e5ff : 0x10b981 });
+        function initVoiceControl() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+            const rec = new SpeechRecognition();
+            rec.lang = 'tr-TR';
+            rec.continuous = true;
+
+            rec.onstart = () => document.getElementById('voice-status').innerText = "AKTİF";
+            rec.onresult = (e) => {
+                const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                if (cmd.includes("küp")) addShape('cube');
+                if (cmd.includes("küre")) addShape('sphere');
+                if (cmd.includes("sil")) {
+                    if (selectedObject) {
+                        worldGroup.remove(selectedObject);
+                        objects.splice(objects.indexOf(selectedObject), 1);
+                        selectedObject = null;
+                    }
+                }
+                if (cmd.includes("büyüt") && selectedObject) selectedObject.scale.multiplyScalar(1.5);
+                if (cmd.includes("küçült") && selectedObject) selectedObject.scale.multiplyScalar(0.7);
+            };
+            rec.onend = () => rec.start();
+            rec.start();
+        }
+
+        function addShape(type) {
+            const geo = type === 'cube' ? new THREE.BoxGeometry(0.4, 0.4, 0.4) : new THREE.SphereGeometry(0.25, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff, metalness: 0.7, roughness: 0.2 });
             const mesh = new THREE.Mesh(geo, mat);
             
-            // Objeyi kameranın tam önüne dünyada sabit bir noktaya koy
-            const spawnPos = new THREE.Vector3(0, 0, -2.5);
-            spawnPos.applyQuaternion(camera.quaternion);
-            spawnPos.add(camera.position);
-            
+            const spawnPos = new THREE.Vector3(0, 0, -2);
+            spawnPos.applyQuaternion(camera.quaternion).add(camera.position);
             mesh.position.copy(spawnPos);
-            mesh.userData = { originalMat: mat };
+            
             worldGroup.add(mesh);
             objects.push(mesh);
-            selectObject(mesh);
-        };
-
-        function selectObject(mesh) {
-            if (selectedObject) selectedObject.material = selectedObject.userData.originalMat;
             selectedObject = mesh;
-            if (mesh) {
-                mesh.material = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00e5ff });
-                document.getElementById('properties-panel').classList.remove('hidden');
-            } else {
-                document.getElementById('properties-panel').classList.add('hidden');
-            }
         }
-
-        document.getElementById('btn-delete').onclick = () => {
-            if (selectedObject) {
-                worldGroup.remove(selectedObject);
-                objects.splice(objects.indexOf(selectedObject), 1);
-                selectObject(null);
-            }
-        };
-
-        document.getElementById('scale-all').oninput = (e) => {
-            if (selectedObject) selectedObject.scale.setScalar(e.target.value);
-        };
-
-        const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
-        hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
-        hands.onResults(onResults);
-
-        const videoElement = document.querySelector('.input_video');
-        const cam = new Camera(videoElement, {
-            onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 1280, height: 720
-        });
-        cam.start();
 
         function animate() {
             requestAnimationFrame(animate);
             renderer.render(scene, camera);
         }
-        animate();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
