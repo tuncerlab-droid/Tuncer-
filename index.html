@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - Yerel El Kontrollü AR</title>
+    <title>TUNCER HOLO - El Kontrollü AR v2.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="importmap">
@@ -63,7 +63,6 @@
             background: #001; z-index: 1000;
         }
 
-        /* AR Butonu yerleşimi ve görünürlüğü için kritik düzeltme */
         #ARButton {
             position: fixed !important;
             bottom: 20% !important;
@@ -91,9 +90,7 @@
         <div class="hud-panel p-6 rounded text-center max-w-sm pointer-events-auto border-2 border-cyan-500 shadow-[0_0_20px_rgba(0,255,255,0.3)]">
             <h1 class="text-2xl font-bold text-cyan-400 mb-4 tracking-tighter">TUNCER HOLO v2</h1>
             <p class="text-[11px] text-gray-300 mb-6 leading-relaxed">Yerel El Takibi + AR SLAM.<br>Zemini tarayın ve parmaklarınızla (pinch) nesneleri kontrol edin.</p>
-            <div id="ar-button-placeholder" class="h-16 w-full flex items-center justify-center">
-                <!-- Three.js butonu buraya gelecek -->
-            </div>
+            <div id="ar-button-placeholder" class="h-16 w-full flex items-center justify-center"></div>
         </div>
     </div>
 
@@ -102,7 +99,7 @@
             <div class="hud-panel p-2 rounded text-sm w-1/2">
                 <div class="font-bold text-xs tracking-widest text-white">TUNCER HOLO AR</div>
                 <div id="sys-status" class="text-[9px] text-yellow-400 uppercase tracking-tighter">Zemin Aranıyor...</div>
-                <div id="hand-status" class="text-[9px] text-cyan-400">El Takibi: AKTİF</div>
+                <div id="hand-status" class="text-[9px] text-cyan-400">El Takibi: AKTİF (Joints+)</div>
             </div>
             <div class="hud-panel p-2 rounded text-center">
                 <div class="text-[9px] text-gray-300 uppercase">Durum</div>
@@ -139,6 +136,7 @@ let objects = [], holeObjects = [], selectedObject = null;
 
 let hand0; 
 let isGrabbing = false;
+const handJoints = []; // Görsel noktalar dizisi
 
 function log(msg, err = false) {
     const d = document.createElement('div');
@@ -163,18 +161,28 @@ function initThree() {
     dLight.position.set(0, 2, 1);
     scene.add(dLight);
 
-    // AR Button yapılandırması - Kritik Düzeltme
     const arBtn = ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test'],
-        optionalFeatures: ['dom-overlay', 'hand-tracking'], // Hand tracking isteğe bağlı yapıldı (fallback için)
+        requiredFeatures: ['hit-test', 'hand-tracking'], // Hand tracking zorunlu hale getirildi
+        optionalFeatures: ['dom-overlay'],
         domOverlay: { root: document.body }
     });
-    
-    // Butonu ekranda doğru yere zorla yerleştiriyoruz
     document.body.appendChild(arBtn);
 
-    // El Takibi Grubu
+    // El Takibi ve Joint Görselleştirme
     hand0 = renderer.xr.getHand(0);
+    
+    // Her bir eklem noktası için görsel nokta oluştur
+    const jointGeometry = new THREE.SphereGeometry(0.008, 8, 8);
+    const jointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
+
+    // WebXR Hands API 25 temel eklem sunar
+    for (let i = 0; i < 25; i++) {
+        const jointMesh = new THREE.Mesh(jointGeometry, jointMaterial);
+        jointMesh.visible = false;
+        scene.add(jointMesh);
+        handJoints.push(jointMesh);
+    }
+
     hand0.addEventListener('pinchend', () => {
         isGrabbing = true;
         findObjectToGrab();
@@ -191,13 +199,7 @@ function initThree() {
     renderer.xr.addEventListener('sessionstart', () => {
         startScreen.style.display = 'none';
         uiOverlay.style.display = 'flex';
-        log("AR Oturumu Aktif.");
-    });
-
-    renderer.xr.addEventListener('sessionend', () => {
-        startScreen.style.display = 'flex';
-        uiOverlay.style.display = 'none';
-        log("AR Oturumu Sonlandırıldı.");
+        log("AR & El Takibi Başladı.");
     });
 
     reticle = new THREE.Mesh(
@@ -211,15 +213,47 @@ function initThree() {
     renderer.setAnimationLoop(render);
 }
 
+function updateHandVisuals(frame, referenceSpace) {
+    const session = renderer.xr.getSession();
+    let handVisible = false;
+
+    // inputSources üzerinden el verisini kontrol et
+    for (const inputSource of session.inputSources) {
+        if (inputSource.hand && inputSource.handedness === 'right') { // Genelde sağ el
+            handVisible = true;
+            let i = 0;
+            // Tüm eklem noktalarını (joints) gez
+            for (const [name, joint] of inputSource.hand) {
+                const pose = frame.getJointPose(joint, referenceSpace);
+                if (pose && handJoints[i]) {
+                    handJoints[i].visible = true;
+                    handJoints[i].position.set(
+                        pose.transform.position.x,
+                        pose.transform.position.y,
+                        pose.transform.position.z
+                    );
+                } else if (handJoints[i]) {
+                    handJoints[i].visible = false;
+                }
+                i++;
+                if (i >= 25) break;
+            }
+        }
+    }
+
+    if (!handVisible) {
+        handJoints.forEach(j => j.visible = false);
+    }
+}
+
 function findObjectToGrab() {
-    // İşaret parmağı ucundan konumu al
     const indexTip = hand0.joints['index-finger-tip'];
     if (!indexTip) return;
 
     const handPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
     const all = [...objects, ...holeObjects];
     let closest = null;
-    let minDist = 0.2;
+    let minDist = 0.25;
 
     all.forEach(obj => {
         const d = obj.position.distanceTo(handPos);
@@ -232,7 +266,7 @@ function findObjectToGrab() {
     if (closest) {
         selectedObject = closest;
         selectedObject.material.emissive.setHex(0x006666);
-        log("Obje yakalandı.");
+        log("Nesne kavrandı.");
     }
 }
 
@@ -247,10 +281,7 @@ function updateObjectTransform() {
         const p2 = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
         const midPoint = new THREE.Vector3().lerpVectors(p1, p2, 0.5);
         
-        // Pürüzsüz takip
         selectedObject.position.lerp(midPoint, 0.4);
-        
-        // El rotasyonuna uyum
         const wristRot = new THREE.Quaternion().setFromRotationMatrix(wrist.matrixWorld);
         selectedObject.quaternion.slerp(wristRot, 0.15);
     }
@@ -258,27 +289,23 @@ function updateObjectTransform() {
 
 function addObj(isHole = false) {
     if (!reticle.visible) return log("Zemin bulunamadı!", true);
-    
     const geo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
     const mat = new THREE.MeshStandardMaterial({
         color: isHole ? 0xff4444 : 0x00ddff,
         transparent: true, opacity: isHole ? 0.6 : 1.0,
         metalness: 0.5, roughness: 0.1, emissive: 0x000000
     });
-    
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.setFromMatrixPosition(reticle.matrix);
     mesh.quaternion.setFromRotationMatrix(reticle.matrix);
     mesh.translateY(0.06);
-    
     scene.add(mesh);
     if (isHole) holeObjects.push(mesh); else objects.push(mesh);
     log(isHole ? "Negatif kutu eklendi." : "Pozitif kutu eklendi.");
 }
 
 function merge() {
-    if (objects.length === 0 || holeObjects.length === 0) return log("Birleştirme hatası: Eksik obje!", true);
-    
+    if (objects.length === 0 || holeObjects.length === 0) return log("Birleştirme hatası!", true);
     try {
         const evaluator = new Evaluator();
         let base = objects[0];
@@ -286,7 +313,6 @@ function merge() {
         baseBrush.position.copy(base.position);
         baseBrush.quaternion.copy(base.quaternion);
         baseBrush.updateMatrixWorld();
-
         holeObjects.forEach(h => {
             const hBrush = new Brush(h.geometry, h.material);
             hBrush.position.copy(h.position);
@@ -295,19 +321,14 @@ function merge() {
             baseBrush = evaluator.evaluate(baseBrush, hBrush, SUBTRACTION);
             scene.remove(h);
         });
-
         scene.remove(base);
         const result = new THREE.Mesh(baseBrush.geometry, baseBrush.material);
         result.position.copy(base.position);
         result.quaternion.copy(base.quaternion);
         scene.add(result);
-        
-        objects = [result]; 
-        holeObjects = [];
-        log("CSG işlemi başarılı.");
-    } catch (e) {
-        log("Hesaplama hatası!", true);
-    }
+        objects = [result]; holeObjects = [];
+        log("CSG başarılı.");
+    } catch (e) { log("İşlem hatası!", true); }
 }
 
 function render(timestamp, frame) {
@@ -315,37 +336,34 @@ function render(timestamp, frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
         
+        // Zemin tarama
         if (!hitTestSourceRequested) {
             session.requestReferenceSpace('viewer').then(ref => {
                 session.requestHitTestSource({ space: ref }).then(src => hitTestSource = src);
             });
             hitTestSourceRequested = true;
         }
-        
         if (hitTestSource) {
             const results = frame.getHitTestResults(hitTestSource);
             if (results.length > 0) {
                 reticle.visible = true;
                 reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
                 sysStatus.textContent = "Sistem: Zemin Kilitlendi";
-                sysStatus.classList.replace('text-yellow-400', 'text-green-400');
             } else {
                 reticle.visible = false;
-                sysStatus.textContent = "Sistem: Zemin Aranıyor...";
-                sysStatus.classList.replace('text-green-400', 'text-yellow-400');
             }
         }
         
+        // El Görselleştirme Güncelleme
+        updateHandVisuals(frame, referenceSpace);
+
         if (isGrabbing) updateObjectTransform();
     }
     renderer.render(scene, camera);
 }
 
-window.addEventListener('load', () => {
-    initThree();
-});
+window.addEventListener('load', initThree);
 
-// UI Etkileşimleri
 document.getElementById('btn-cube').onclick = () => addObj(false);
 document.getElementById('btn-hole').onclick = () => addObj(true);
 document.getElementById('btn-merge').onclick = merge;
@@ -356,7 +374,6 @@ document.getElementById('btn-delete').onclick = () => {
         scene.remove(target);
         objects = objects.filter(o => o !== target);
         holeObjects = holeObjects.filter(o => o !== target);
-        log("Son nesne silindi.");
     }
 };
 </script>
