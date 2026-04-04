@@ -1,379 +1,470 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka | Gelecek Gözlerinizin Önünde</title>
-    <style>
-        /* --- CSS STİLLERİ --- */
-        :root {
-            --primary-color: #00f0ff;
-            --bg-color: #0a0a0c;
-            --text-color: #ffffff;
-            --card-bg: #151518;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            scroll-behavior: smooth;
-        }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            overflow-x: hidden;
-        }
-
-        /* Navigasyon */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 20px 50px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(10, 10, 12, 0.9);
-            backdrop-filter: blur(10px);
-            z-index: 1000;
-            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: var(--text-color);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .logo span {
-            color: var(--primary-color);
-            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-        }
-
-        nav ul {
-            list-style: none;
-            display: flex;
-            gap: 30px;
-        }
-
-        nav ul li a {
-            color: var(--text-color);
-            text-decoration: none;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: color 0.3s;
-        }
-
-        nav ul li a:hover {
-            color: var(--primary-color);
-        }
-
-        /* Hero Bölümü */
-        .hero {
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            background: radial-gradient(circle at center, #1a1a24 0%, #0a0a0c 100%);
-            padding: 0 20px;
-            position: relative;
-        }
-
-        .hero h1 {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            letter-spacing: 2px;
-        }
-
-        .hero h1 .highlight {
-            color: var(--primary-color);
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
-        }
-
-        .hero p {
-            font-size: 1.2rem;
-            color: #a0a0a0;
-            max-width: 600px;
-            margin-bottom: 40px;
-            line-height: 1.6;
-        }
-
-        .cta-btn {
-            padding: 15px 40px;
-            font-size: 1.1rem;
-            color: var(--bg-color);
-            background-color: var(--primary-color);
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .cta-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 0 30px rgba(0, 240, 255, 0.8);
-        }
-
-        /* Özellikler & Teknik Detaylar */
-        .section-title {
-            text-align: center;
-            font-size: 2.5rem;
-            margin-bottom: 50px;
-            color: var(--text-color);
-        }
-
-        .section-title span {
-            color: var(--primary-color);
-        }
-
-        .features, .specs {
-            padding: 100px 10%;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-        }
-
-        .card {
-            background-color: var(--card-bg);
-            padding: 40px;
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            transition: transform 0.3s, border-color 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-10px);
-            border-color: rgba(0, 240, 255, 0.3);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-
-        .card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-        }
-
-        .card p {
-            color: #a0a0a0;
-            line-height: 1.6;
-        }
-
-        /* Ön Sipariş Formu */
-        .preorder {
-            background: linear-gradient(to top, #0a0a0c, #111115);
-            padding: 100px 10%;
-            text-align: center;
-        }
-
-        .form-container {
-            max-width: 500px;
-            margin: 0 auto;
-            background-color: var(--card-bg);
-            padding: 40px;
-            border-radius: 15px;
-            border: 1px solid rgba(0, 240, 255, 0.2);
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #ccc;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #333;
-            background-color: #0a0a0c;
-            color: white;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input:focus {
-            border-color: var(--primary-color);
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 15px;
-            margin-top: 10px;
-            background-color: transparent;
-            color: var(--primary-color);
-            border: 2px solid var(--primary-color);
-            border-radius: 8px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-        }
-
-        .submit-btn:hover {
-            background-color: var(--primary-color);
-            color: var(--bg-color);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
-        }
-
-        /* JS Animasyon Sınıfları */
-        .reveal {
-            opacity: 0;
-            transform: translateY(50px);
-            transition: all 0.8s ease-out;
-        }
-
-        .reveal.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        footer {
-            text-align: center;
-            padding: 30px;
-            background-color: #050505;
-            color: #555;
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body>
-
-    <nav>
-        <div class="logo">Tuncer <span>Zeka</span></div>
-        <ul>
-            <li><a href="#hero">Ana Sayfa</a></li>
-            <li><a href="#features">Özellikler</a></li>
-            <li><a href="#specs">Donanım</a></li>
-            <li><a href="#preorder" style="color: var(--primary-color);">Ön Sipariş</a></li>
-        </ul>
-    </nav>
-
-    <section class="hero" id="hero">
-        <h1 id="typewriter">Gerçekliği <span class="highlight">Yeniden Tanımlayın.</span></h1>
-        <p class="reveal">Dışarıdan şık bir güneş gözlüğü, içeriden bulut destekli bir süper bilgisayar. Çift ekran teknolojisi ve Tuncer Core 2027 yapay zekası ile dünya artık sizin oyun alanınız.</p>
-        <a href="#preorder" class="cta-btn reveal">Sınırları Aş - Ön Sipariş Ver</a>
-    </section>
-
-    <section class="features" id="features">
-        <h2 class="section-title reveal">Geleceğin <span>Teknolojisi</span></h2>
-        <div class="grid">
-            <div class="card reveal">
-                <h3>🕶️ Gizli Çift Ekran (Stealth Mode)</h3>
-                <p>Özel tasarlanmış dış cam, dışarıdan bakıldığında premium bir güneş gözlüğü gibi görünür. İçerideki yüksek çözünürlüklü çift ekran ise dijital dünyayı doğrudan göz bebeklerinize yansıtır.</p>
-            </div>
-            <div class="card reveal">
-                <h3>🧠 Tuncer Core 2027 YZ</h3>
-                <p>Ağır işlemler gözlüğünüzü yormaz. Devasa Tuncer Core 2027 kütüphanesi sunucularımızda çalışır, sadece saniyenin binde biri hızında sonuçları gözlüğünüze aktarır.</p>
-            </div>
-            <div class="card reveal">
-                <h3>🗺️ Holografik Navigasyon</h3>
-                <p>Çevrenizi algılayan akıllı kameralar sayesinde, sokakların üzerine çizilen 3 boyutlu mavi okları takip edin. Hedefinize bakarak ulaşın.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="specs" id="specs">
-        <h2 class="section-title reveal">Sistem <span>Mimarisi</span></h2>
-        <div class="grid">
-            <div class="card reveal">
-                <h3>⚡ İşlem Birimi</h3>
-                <p><strong>Özel 64-bit 4-Çekirdekli Cortex-A53 İşlemci (@1GHz):</strong> Minimum enerji, maksimum verim. Bulut ile kusursuz senkronizasyon için özel olarak optimize edildi.</p>
-            </div>
-            <div class="card reveal">
-                <h3>💾 Bellek Yönetimi</h3>
-                <p><strong>512MB LPDDR2 RAM:</strong> Yapay zeka işlemleri sunucuda yapıldığı için, bu ultra hızlı bellek sadece görsel arayüzü ve anlık veri akışını kusursuz şekilde yönetir.</p>
-            </div>
-            <div class="card reveal">
-                <h3>📡 Kesintisiz Bağlantı</h3>
-                <p><strong>WiFi 4 (802.11n) & BT 4.2 BLE:</strong> Telefonunuzla ve Tuncer Sunucularıyla ultra düşük gecikmeli, enerji dostu kablosuz veri aktarımı.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="preorder" id="preorder">
-        <h2 class="section-title reveal">Geleceği <span>Rezerve Et</span></h2>
-        <div class="form-container reveal">
-            <form id="preorderForm">
-                <div class="form-group">
-                    <label for="name">Ad Soyad</label>
-                    <input type="text" id="name" required placeholder="Siber İsim">
-                </div>
-                <div class="form-group">
-                    <label for="email">E-Posta Adresi</label>
-                    <input type="email" id="email" required placeholder="iletişim@gelecek.com">
-                </div>
-                <div class="form-group">
-                    <label for="edition">Gözlük Sürümü</label>
-                    <input type="text" id="edition" value="Tuncer Zeka - Founder's Edition" readonly style="color: var(--primary-color); border-color: var(--primary-color);">
-                </div>
-                <button type="submit" class="submit-btn">Erken Erişim Talebi Gönder</button>
-            </form>
-        </div>
-    </section>
-
-    <footer>
-        <p>&copy; 2026 Tuncer Zeka Teknolojileri. Tüm hakları saklıdır.</p>
-    </footer>
-
+    <title>Tuncer Core 2027 | Geleceğin Akıllı Gözlüğü</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // 1. Scroll Reveal Animasyonu (Aşağı kaydırdıkça elemanların belirmesi)
-        function reveal() {
-            var reveals = document.querySelectorAll(".reveal");
-            for (var i = 0; i < reveals.length; i++) {
-                var windowHeight = window.innerHeight;
-                var elementTop = reveals[i].getBoundingClientRect().top;
-                var elementVisible = 100; // Elemanın ne kadar göründüğünde animasyonun başlayacağı
-
-                if (elementTop < windowHeight - elementVisible) {
-                    reveals[i].classList.add("active");
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyan: { 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2' },
+                        slate: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' }
+                    }
                 }
             }
         }
-        window.addEventListener("scroll", reveal);
-        reveal(); // Sayfa yüklendiğinde ilk elemanları göster
+    </script>
+    <style>
+        /* Custom scrollbar for admin panel */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #334155; }
+        .hidden-view { display: none !important; }
+        .glass-effect { background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(12px); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 font-sans antialiased selection:bg-cyan-500/30 overflow-x-hidden">
 
-        // 2. Ön Sipariş Formu Kontrolü
-        document.getElementById('preorderForm').addEventListener('submit', function(e) {
-            e.preventDefault(); // Sayfanın yenilenmesini engeller
-            
-            // Kullanıcı verilerini alalım (Şimdilik sadece isim)
-            const userName = document.getElementById('name').value;
-            const submitBtn = document.querySelector('.submit-btn');
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 top-0 glass-effect border-b border-slate-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex-shrink-0 flex items-center space-x-2 cursor-pointer" onclick="switchView('home')">
+                    <!-- Eye Icon -->
+                    <svg class="h-8 w-8 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span class="font-bold text-xl tracking-tight text-white">TUNCER <span class="text-cyan-400 font-light">CORE 2027</span></span>
+                </div>
+                <div class="flex space-x-4">
+                    <button id="navAdminBtn" onclick="openAdminModal()" class="text-slate-400 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Admin</button>
+                    <a href="#preorder" id="navOrderBtn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-5 py-2 rounded-full font-semibold transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.4)] text-sm">
+                        Ön Sipariş
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-            // Buton efektini değiştir
-            submitBtn.innerHTML = "İşleniyor...";
-            submitBtn.style.backgroundColor = "var(--primary-color)";
-            submitBtn.style.color = "var(--bg-color)";
+    <!-- ==================== HOME VIEW ==================== -->
+    <main id="view-home" class="block">
+        <!-- Hero Section -->
+        <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-950 to-slate-950"></div>
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                <div class="text-center max-w-4xl mx-auto">
+                    <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight">
+                        Gerçekliği <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Yeniden Tanımlayın</span>
+                    </h1>
+                    <p class="text-xl md:text-2xl text-slate-400 mb-10 leading-relaxed">
+                        Dünyanın en gelişmiş sunucu tabanlı yapay zeka işlem kapasitesine sahip, ultra hafif şeffaf ekranlı akıllı gözlüğü. Gelecek, gözünüzün önünde.
+                    </p>
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <a href="#preorder" class="group bg-cyan-500 text-slate-950 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] flex items-center justify-center">
+                            Hemen Ön Sipariş Ver
+                            <svg class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            // Kısa bir bekleme süresi simülasyonu
-            setTimeout(() => {
-                alert(`Tebrikler ${userName}! Tuncer Zeka Founder's Edition ön sipariş talebin başarıyla alındı. Gelecekte görüşmek üzere.`);
-                submitBtn.innerHTML = "Talep Gönderildi ✔️";
-                document.getElementById('preorderForm').reset(); // Formu temizle
-                document.getElementById('edition').value = "Tuncer Zeka - Founder's Edition"; // Sürüm adını geri getir
-            }, 1500);
+        <!-- Specs Section -->
+        <section class="py-20 bg-slate-900/50 border-y border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Sınırları Zorlayan Donanım</h2>
+                    <p class="text-slate-400 max-w-2xl mx-auto text-lg">Minimalist tasarımın altında devasa bir güç yatıyor. Tuncer Core 2027, günlük yaşamınızı dönüştürmek için tasarlandı.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <!-- Feature 1 -->
+                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
+                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="h-8 w-8 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Şeffaf OLED Ekran</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Görüşünüzü engellemeyen, yüksek kontrastlı ve parlak saydam ekran teknolojisi ile AR deneyimi.</p>
+                    </div>
+                    <!-- Feature 2 -->
+                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
+                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="h-8 w-8 text-blue-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Sıfır Gecikmeli Mimari</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Raspberry Pi Zero 2W tabanlı özel optimize edilmiş donanım ile maksimum verimlilik ve düşük güç tüketimi.</p>
+                    </div>
+                    <!-- Feature 3 -->
+                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
+                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="h-8 w-8 text-purple-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m13 10-3 5h4l-3 5"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Sunucu Tabanlı YZ</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">Ağır yapay zeka işlemleri gözlükte değil, güçlü bulut sunucularımızda anlık olarak işlenip size iletilir.</p>
+                    </div>
+                    <!-- Feature 4 -->
+                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
+                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+                            <svg class="h-8 w-8 text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="6" x2="6" y1="11" y2="13"/><line x1="10" x2="10" y1="11" y2="13"/><line x1="14" x2="14" y1="11" y2="13"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Tüm Gün Performans</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed">İşlemler sunucuya aktarıldığı için gözlüğün pili sadece ekran ve bağlantı için kullanılır. 18 saate varan kullanım.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Preorder Form Section -->
+        <section id="preorder" class="py-24 relative">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+                    
+                    <div class="relative z-10" id="formContainer">
+                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-2">Gelecekteki Yerinizi Ayırtın</h2>
+                        <p class="text-slate-400 mb-8">Üretim bandına girmeden önce erken erişim avantajıyla Tuncer Core 2027'ye sahip olun. Depozito gerekmez.</p>
+
+                        <form id="preorderForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-300">Ad Soyad</label>
+                                    <input required type="text" id="p_name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" placeholder="Örn: Tuncer Yılmaz">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-300">E-posta Adresi</label>
+                                    <input required type="email" id="p_email" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" placeholder="Örn: mail@ornek.com">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-300">Telefon Numarası</label>
+                                    <input required type="tel" id="p_phone" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" placeholder="+90 555 000 00 00">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-sm font-medium text-slate-300">Sipariş Adedi</label>
+                                    <select id="p_quantity" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all">
+                                        <option value="1">1 Adet</option>
+                                        <option value="2">2 Adet</option>
+                                        <option value="3">3 Adet</option>
+                                        <option value="5">5 Adet (Kurumsal Paketi)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div id="formError" class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
+                                Siparişiniz işlenirken bir hata oluştu.
+                            </div>
+
+                            <div class="pt-4">
+                                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all duration-300 flex justify-center items-center group disabled:opacity-70 disabled:cursor-not-allowed">
+                                    <span>Listeye Katıl</span>
+                                    <svg class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center justify-center text-slate-500 text-xs mt-4">
+                                <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                                Bilgileriniz Google Firebase altyapısı ile şifrelenerek korunmaktadır.
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Success Message (Hidden by default) -->
+                    <div id="successContainer" class="hidden relative z-10 text-center py-8">
+                        <svg class="h-20 w-20 text-emerald-400 mx-auto mb-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <h3 class="text-3xl font-bold text-emerald-400 mb-4">Tebrikler! Ön Siparişiniz Alındı.</h3>
+                        <p class="text-emerald-200/80 mb-8 text-lg">Sistemimize başarıyla kaydedildiniz. Gelişmelerden sizi haberdar edeceğiz.</p>
+                        <button onclick="resetForm()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors">Yeni Sipariş Ver</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-slate-950 py-12 border-t border-slate-900 text-center">
+            <div class="max-w-7xl mx-auto px-4">
+                <p class="text-slate-600 text-sm">© 2026 Tuncer Technologies. Tüm hakları saklıdır.</p>
+            </div>
+        </footer>
+    </main>
+
+    <!-- ==================== ADMIN LOGIN MODAL ==================== -->
+    <div id="adminModal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="text-center mb-6">
+                <svg class="h-12 w-12 text-cyan-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <h3 class="text-2xl font-bold text-white">Yönetici Girişi</h3>
+                <p class="text-slate-400 text-sm mt-1">Sipariş verilerine erişmek için şifre girin.</p>
+            </div>
+            <form id="adminLoginForm" class="space-y-4">
+                <input type="password" id="adminPassword" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-center text-xl tracking-[0.2em]" placeholder="******">
+                <div id="adminError" class="hidden text-red-400 text-sm text-center">Hatalı şifre!</div>
+                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all">Giriş Yap</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== ADMIN DASHBOARD VIEW ==================== -->
+    <main id="view-admin" class="hidden-view min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-white flex items-center">
+                    <svg class="h-8 w-8 text-cyan-400 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+                    Ön Sipariş Yönetim Paneli
+                </h1>
+                <p class="text-slate-400 mt-1">Sisteme kayıtlı tüm ön sipariş talepleri aşağıda listelenmektedir.</p>
+            </div>
+            <button onclick="logoutAdmin()" class="bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-white px-4 py-2 rounded-lg border border-slate-700 hover:border-red-500/50 transition-all flex items-center text-sm">
+                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Çıkış Yap
+            </button>
+        </div>
+
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <div class="text-slate-400 text-sm mb-1">Toplam Sipariş Eden</div>
+                <div class="text-3xl font-bold text-white" id="statTotalUsers">0</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <div class="text-slate-400 text-sm mb-1">Toplam Cihaz Talebi</div>
+                <div class="text-3xl font-bold text-cyan-400" id="statTotalDevices">0</div>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
+                <div class="text-slate-400 text-sm mb-1">Sistem Durumu</div>
+                <div class="text-xl font-bold text-emerald-400 flex items-center mt-2">
+                    <span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 animate-pulse"></span> Aktif
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-slate-950/50 text-slate-400 border-b border-slate-800">
+                        <tr>
+                            <th class="px-6 py-4 font-medium">Tarih</th>
+                            <th class="px-6 py-4 font-medium">Ad Soyad</th>
+                            <th class="px-6 py-4 font-medium">İletişim</th>
+                            <th class="px-6 py-4 font-medium text-center">Adet</th>
+                            <th class="px-6 py-4 font-medium text-right">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ordersTableBody" class="divide-y divide-slate-800/50">
+                        <!-- Data will be populated here via JS -->
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
+                                Yükleniyor... Veya henüz sipariş yok.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== FIREBASE & LOGIC ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // 1. Firebase Configuration & Init
+        let firebaseConfig = {};
+        if (typeof __firebase_config !== 'undefined') {
+            try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) { console.error("Config error:", e); }
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-default';
+        let currentUser = null;
+        let adminUnsubscribe = null;
+
+        // 2. Auth Initialization (Crucial for Firestore rules)
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth failed:", error);
+            }
+        }
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
         });
+
+        initAuth(); // Start auth process
+
+        // --- UI VIEW LOGIC ---
+        window.switchView = function(view) {
+            document.getElementById('view-home').classList.add('hidden-view');
+            document.getElementById('view-admin').classList.add('hidden-view');
+            document.getElementById(`view-${view}`).classList.remove('hidden-view');
+            
+            if(view === 'home') {
+                document.getElementById('navAdminBtn').style.display = 'block';
+                document.getElementById('navOrderBtn').style.display = 'block';
+            } else {
+                document.getElementById('navAdminBtn').style.display = 'none';
+                document.getElementById('navOrderBtn').style.display = 'none';
+            }
+        };
+
+        window.openAdminModal = function() {
+            document.getElementById('adminModal').classList.remove('hidden');
+            document.getElementById('adminPassword').value = '';
+            document.getElementById('adminError').classList.add('hidden');
+            document.getElementById('adminPassword').focus();
+        };
+
+        window.closeAdminModal = function() {
+            document.getElementById('adminModal').classList.add('hidden');
+        };
+
+        window.logoutAdmin = function() {
+            if(adminUnsubscribe) {
+                adminUnsubscribe(); // Stop listening to db
+                adminUnsubscribe = null;
+            }
+            switchView('home');
+        };
+
+        window.resetForm = function() {
+            document.getElementById('formContainer').classList.remove('hidden');
+            document.getElementById('successContainer').classList.add('hidden');
+            document.getElementById('preorderForm').reset();
+        };
+
+        // --- PREORDER SUBMIT LOGIC ---
+        document.getElementById('preorderForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!currentUser) return; // Wait for auth
+
+            const btn = document.getElementById('submitBtn');
+            const errorDiv = document.getElementById('formError');
+            
+            const data = {
+                name: document.getElementById('p_name').value,
+                email: document.getElementById('p_email').value,
+                phone: document.getElementById('p_phone').value,
+                quantity: parseInt(document.getElementById('p_quantity').value),
+                createdAt: serverTimestamp(),
+                product: 'Tuncer Core 2027'
+            };
+
+            btn.disabled = true;
+            btn.innerHTML = 'İşleniyor...';
+            errorDiv.classList.add('hidden');
+
+            try {
+                // RULE 1: Saving to PUBLIC data so admin can read all of them easily
+                const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
+                await addDoc(preordersRef, data);
+                
+                // Show Success
+                document.getElementById('formContainer').classList.add('hidden');
+                document.getElementById('successContainer').classList.remove('hidden');
+            } catch (error) {
+                console.error("Order error:", error);
+                errorDiv.classList.remove('hidden');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Listeye Katıl</span><svg class="ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+            }
+        });
+
+        // --- ADMIN LOGIN & DASHBOARD LOGIC ---
+        document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pass = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('adminError');
+
+            if (pass === '175017') {
+                closeAdminModal();
+                switchView('admin');
+                loadAdminData();
+            } else {
+                errorDiv.classList.remove('hidden');
+            }
+        });
+
+        function loadAdminData() {
+            if (!currentUser) return;
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">Veriler buluttan çekiliyor...</td></tr>`;
+
+            const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
+            
+            // RULE 2: No complex queries. Fetch all, sort in JS memory.
+            adminUnsubscribe = onSnapshot(preordersRef, (snapshot) => {
+                let orders = [];
+                let totalDevices = 0;
+
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    orders.push({ id: doc.id, ...data });
+                    totalDevices += data.quantity || 0;
+                });
+
+                // Sort descending by date in memory
+                orders.sort((a, b) => {
+                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
+                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
+                    return timeB - timeA;
+                });
+
+                // Update Stats
+                document.getElementById('statTotalUsers').innerText = orders.length;
+                document.getElementById('statTotalDevices').innerText = totalDevices;
+
+                // Render Table
+                if (orders.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Henüz hiç ön sipariş yok.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                orders.forEach(order => {
+                    const dateStr = order.createdAt ? new Date(order.createdAt.toMillis()).toLocaleString('tr-TR') : 'Şimdi';
+                    
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-800/30 transition-colors";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-slate-400 text-xs">${dateStr}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-medium text-white">${order.name}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-cyan-400 text-sm">${order.email}</div>
+                            <div class="text-slate-400 text-xs">${order.phone}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center font-bold text-white">${order.quantity}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Beklemede</span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+            }, (error) => {
+                console.error("Admin fetch error:", error);
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Veriler yüklenirken bir hata oluştu.</td></tr>`;
+            });
+        }
     </script>
 </body>
 </html>
+
