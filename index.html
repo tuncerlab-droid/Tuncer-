@@ -1,469 +1,442 @@
 <!DOCTYPE html>
-<html lang="tr" class="scroll-smooth">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Core 2027 | Geleceğin Akıllı Gözlüğü</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tuncer 3D Modelleyici (AR)</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        cyan: { 400: '#22d3ee', 500: '#06b6d4', 600: '#0891b2' },
-                        slate: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' }
-                    }
-                }
-            }
-        }
-    </script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- MediaPipe Hands -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
     <style>
-        /* Custom scrollbar for admin panel */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #334155; }
-        .hidden-view { display: none !important; }
-        .glass-effect { background: rgba(2, 6, 23, 0.8); backdrop-filter: blur(12px); }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .pointer-events-auto { pointer-events: auto; }
+        
+        /* Gizli video elementi */
+        .input_video { display: none; }
+        
+        /* Özel Slider Tasarımı */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; rounded: 50%; background: #3b82f6; cursor: pointer; margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
+        
+        #loading { transition: opacity 0.5s; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 font-sans antialiased selection:bg-cyan-500/30 overflow-x-hidden">
+<body>
 
-    <!-- Navbar -->
-    <nav class="fixed w-full z-50 top-0 glass-effect border-b border-slate-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex-shrink-0 flex items-center space-x-2 cursor-pointer" onclick="switchView('home')">
-                    <!-- Eye Icon -->
-                    <svg class="h-8 w-8 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                    <span class="font-bold text-xl tracking-tight text-white">TUNCER <span class="text-cyan-400 font-light">CORE 2027</span></span>
-                </div>
-                <div class="flex space-x-4">
-                    <button id="navAdminBtn" onclick="openAdminModal()" class="text-slate-400 hover:text-white px-3 py-2 text-sm font-medium transition-colors">Admin</button>
-                    <a href="#preorder" id="navOrderBtn" class="bg-cyan-500 hover:bg-cyan-400 text-slate-950 px-5 py-2 rounded-full font-semibold transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.4)] text-sm">
-                        Ön Sipariş
-                    </a>
-                </div>
+    <!-- Yükleme Ekranı -->
+    <div id="loading" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center text-white">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-500 mb-4"></div>
+        <h1 class="text-2xl font-bold mb-2">Tuncer 3D Modelleyici</h1>
+        <p class="text-slate-300">AR ve El Takibi Yükleniyor...</p>
+        <p class="text-sm text-slate-500 mt-2">Lütfen kamera izni verin.</p>
+    </div>
+
+    <!-- Kamera Video Çıktısı (Arka planda gizli, Three.js texture olarak kullanacak) -->
+    <video class="input_video" autoplay playsinline></video>
+
+    <!-- 3D Sahne -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Arayüzü -->
+    <div id="ui-layer" class="flex flex-col justify-between p-4">
+        
+        <!-- Üst Bar -->
+        <div class="flex justify-between items-start pointer-events-auto">
+            <div class="bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg border border-slate-200">
+                <h1 class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">
+                    Tuncer 3D
+                </h1>
+                <p class="text-xs text-slate-500 font-medium">El Takibi ile AR Modelleme</p>
+            </div>
+            
+            <!-- Bilgi Kartı -->
+            <div class="bg-black/50 backdrop-blur rounded-lg p-2 text-white text-xs max-w-[150px] text-right">
+                👆 Başparmak ve işaret parmağını birleştirerek objeleri tut ve taşı.
             </div>
         </div>
-    </nav>
 
-    <!-- ==================== HOME VIEW ==================== -->
-    <main id="view-home" class="block">
-        <!-- Hero Section -->
-        <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-950 to-slate-950"></div>
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                <div class="text-center max-w-4xl mx-auto">
-                    <h1 class="text-5xl md:text-7xl font-extrabold text-white mb-6 tracking-tight">
-                        Gerçekliği <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Yeniden Tanımlayın</span>
-                    </h1>
-                    <p class="text-xl md:text-2xl text-slate-400 mb-10 leading-relaxed">
-                        Dünyanın en gelişmiş sunucu tabanlı yapay zeka işlem kapasitesine sahip, ultra hafif şeffaf ekranlı akıllı gözlüğü. Gelecek, gözünüzün önünde.
-                    </p>
-                    <div class="flex flex-col sm:flex-row justify-center gap-4">
-                        <a href="#preorder" class="group bg-cyan-500 text-slate-950 px-8 py-4 rounded-full font-bold text-lg transition-all duration-300 hover:shadow-[0_0_30px_rgba(6,182,212,0.6)] flex items-center justify-center">
-                            Hemen Ön Sipariş Ver
-                            <svg class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                        </a>
-                    </div>
+        <!-- Seçilen Obje Paneli (Sağ Orta) -->
+        <div id="properties-panel" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur rounded-xl p-4 shadow-xl border border-slate-200 w-48 pointer-events-auto hidden transition-all">
+            <h3 class="font-bold text-slate-800 mb-3 border-b pb-1">Obje Ayarları</h3>
+            
+            <div class="mb-3">
+                <label class="text-xs font-semibold text-slate-600">Tür</label>
+                <div class="flex gap-2 mt-1">
+                    <button id="btn-solid" class="flex-1 bg-blue-500 text-white text-xs py-1 rounded shadow">Katı</button>
+                    <button id="btn-hole" class="flex-1 bg-slate-200 text-slate-700 text-xs py-1 rounded hover:bg-slate-300">Boşluk</button>
                 </div>
             </div>
-        </section>
 
-        <!-- Specs Section -->
-        <section class="py-20 bg-slate-900/50 border-y border-slate-800">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="text-center mb-16">
-                    <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Sınırları Zorlayan Donanım</h2>
-                    <p class="text-slate-400 max-w-2xl mx-auto text-lg">Minimalist tasarımın altında devasa bir güç yatıyor. Tuncer Core 2027, günlük yaşamınızı dönüştürmek için tasarlandı.</p>
+            <div class="space-y-2 mb-3">
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 flex justify-between"><span>Genişlik (X)</span> <span id="val-x">1.0</span></label>
+                    <input type="range" id="scale-x" min="0.2" max="3" step="0.1" value="1">
                 </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                    <!-- Feature 1 -->
-                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
-                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-8 w-8 text-cyan-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Şeffaf OLED Ekran</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">Görüşünüzü engellemeyen, yüksek kontrastlı ve parlak saydam ekran teknolojisi ile AR deneyimi.</p>
-                    </div>
-                    <!-- Feature 2 -->
-                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
-                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-8 w-8 text-blue-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Sıfır Gecikmeli Mimari</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">Raspberry Pi Zero 2W tabanlı özel optimize edilmiş donanım ile maksimum verimlilik ve düşük güç tüketimi.</p>
-                    </div>
-                    <!-- Feature 3 -->
-                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
-                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-8 w-8 text-purple-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><path d="m13 10-3 5h4l-3 5"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Sunucu Tabanlı YZ</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">Ağır yapay zeka işlemleri gözlükte değil, güçlü bulut sunucularımızda anlık olarak işlenip size iletilir.</p>
-                    </div>
-                    <!-- Feature 4 -->
-                    <div class="bg-slate-950 border border-slate-800 p-6 rounded-2xl hover:border-slate-700 transition-colors duration-300 group">
-                        <div class="mb-4 bg-slate-900 w-16 h-16 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <svg class="h-8 w-8 text-green-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="10" x="2" y="7" rx="2" ry="2"/><line x1="22" x2="22" y1="11" y2="13"/><line x1="6" x2="6" y1="11" y2="13"/><line x1="10" x2="10" y1="11" y2="13"/><line x1="14" x2="14" y1="11" y2="13"/></svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Tüm Gün Performans</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">İşlemler sunucuya aktarıldığı için gözlüğün pili sadece ekran ve bağlantı için kullanılır. 18 saate varan kullanım.</p>
-                    </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 flex justify-between"><span>Yükseklik (Y)</span> <span id="val-y">1.0</span></label>
+                    <input type="range" id="scale-y" min="0.2" max="3" step="0.1" value="1">
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-slate-600 flex justify-between"><span>Derinlik (Z)</span> <span id="val-z">1.0</span></label>
+                    <input type="range" id="scale-z" min="0.2" max="3" step="0.1" value="1">
                 </div>
             </div>
-        </section>
 
-        <!-- Preorder Form Section -->
-        <section id="preorder" class="py-24 relative">
-            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
-                    
-                    <div class="relative z-10" id="formContainer">
-                        <h2 class="text-3xl md:text-4xl font-bold text-white mb-2">Gelecekteki Yerinizi Ayırtın</h2>
-                        <p class="text-slate-400 mb-8">Üretim bandına girmeden önce erken erişim avantajıyla Tuncer Core 2027'ye sahip olun. Depozito gerekmez.</p>
-
-                        <form id="preorderForm" class="space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium text-slate-300">Ad Soyad</label>
-                                    <input required type="text" id="p_name" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" placeholder="Örn: Tuncer Yılmaz">
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium text-slate-300">E-posta Adresi</label>
-                                    <input required type="email" id="p_email" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" placeholder="Örn: mail@ornek.com">
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium text-slate-300">Telefon Numarası</label>
-                                    <input required type="tel" id="p_phone" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all" placeholder="+90 555 000 00 00">
-                                </div>
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium text-slate-300">Sipariş Adedi</label>
-                                    <select id="p_quantity" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all">
-                                        <option value="1">1 Adet</option>
-                                        <option value="2">2 Adet</option>
-                                        <option value="3">3 Adet</option>
-                                        <option value="5">5 Adet (Kurumsal Paketi)</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div id="formError" class="hidden p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-                                Siparişiniz işlenirken bir hata oluştu.
-                            </div>
-
-                            <div class="pt-4">
-                                <button type="submit" id="submitBtn" class="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-4 rounded-xl shadow-lg transition-all duration-300 flex justify-center items-center group disabled:opacity-70 disabled:cursor-not-allowed">
-                                    <span>Listeye Katıl</span>
-                                    <svg class="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-                                </button>
-                            </div>
-                            
-                            <div class="flex items-center justify-center text-slate-500 text-xs mt-4">
-                                <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                                Bilgileriniz Google Firebase altyapısı ile şifrelenerek korunmaktadır.
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Success Message (Hidden by default) -->
-                    <div id="successContainer" class="hidden relative z-10 text-center py-8">
-                        <svg class="h-20 w-20 text-emerald-400 mx-auto mb-6" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                        <h3 class="text-3xl font-bold text-emerald-400 mb-4">Tebrikler! Ön Siparişiniz Alındı.</h3>
-                        <p class="text-emerald-200/80 mb-8 text-lg">Sistemimize başarıyla kaydedildiniz. Gelişmelerden sizi haberdar edeceğiz.</p>
-                        <button onclick="resetForm()" class="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-colors">Yeni Sipariş Ver</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="bg-slate-950 py-12 border-t border-slate-900 text-center">
-            <div class="max-w-7xl mx-auto px-4">
-                <p class="text-slate-600 text-sm">© 2026 Tuncer Technologies. Tüm hakları saklıdır.</p>
-            </div>
-        </footer>
-    </main>
-
-    <!-- ==================== ADMIN LOGIN MODAL ==================== -->
-    <div id="adminModal" class="hidden fixed inset-0 z-[100] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <button id="btn-delete" class="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-bold py-2 rounded shadow-md transition-colors">
+                Sil
             </button>
-            <div class="text-center mb-6">
-                <svg class="h-12 w-12 text-cyan-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <h3 class="text-2xl font-bold text-white">Yönetici Girişi</h3>
-                <p class="text-slate-400 text-sm mt-1">Sipariş verilerine erişmek için şifre girin.</p>
-            </div>
-            <form id="adminLoginForm" class="space-y-4">
-                <input type="password" id="adminPassword" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-center text-xl tracking-[0.2em]" placeholder="******">
-                <div id="adminError" class="hidden text-red-400 text-sm text-center">Hatalı şifre!</div>
-                <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all">Giriş Yap</button>
-            </form>
+        </div>
+
+        <!-- Alt Bar (Araçlar) -->
+        <div class="pointer-events-auto flex justify-center gap-4 mt-auto pb-4">
+            <button onclick="addShape('cube')" class="bg-white hover:bg-blue-50 text-blue-600 rounded-2xl p-4 shadow-xl border-2 border-blue-100 flex flex-col items-center transition-transform active:scale-95">
+                <div class="w-8 h-8 bg-blue-500 rounded-sm shadow-inner mb-1"></div>
+                <span class="text-xs font-bold">Küp</span>
+            </button>
+            <button onclick="addShape('sphere')" class="bg-white hover:bg-green-50 text-green-600 rounded-2xl p-4 shadow-xl border-2 border-green-100 flex flex-col items-center transition-transform active:scale-95">
+                <div class="w-8 h-8 bg-green-500 rounded-full shadow-inner mb-1"></div>
+                <span class="text-xs font-bold">Küre</span>
+            </button>
+            <button onclick="addShape('cylinder')" class="bg-white hover:bg-orange-50 text-orange-600 rounded-2xl p-4 shadow-xl border-2 border-orange-100 flex flex-col items-center transition-transform active:scale-95">
+                <div class="w-8 h-8 bg-orange-500 rounded-md shadow-inner mb-1" style="border-radius: 8px 8px 0 0;"></div>
+                <span class="text-xs font-bold">Silindir</span>
+            </button>
         </div>
     </div>
 
-    <!-- ==================== ADMIN DASHBOARD VIEW ==================== -->
-    <main id="view-admin" class="hidden-view min-h-screen pt-24 pb-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
-            <div>
-                <h1 class="text-3xl font-bold text-white flex items-center">
-                    <svg class="h-8 w-8 text-cyan-400 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-                    Ön Sipariş Yönetim Paneli
-                </h1>
-                <p class="text-slate-400 mt-1">Sisteme kayıtlı tüm ön sipariş talepleri aşağıda listelenmektedir.</p>
-            </div>
-            <button onclick="logoutAdmin()" class="bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-white px-4 py-2 rounded-lg border border-slate-700 hover:border-red-500/50 transition-all flex items-center text-sm">
-                <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                Çıkış Yap
-            </button>
-        </div>
+    <script>
+        // --- THREE.JS KURULUMU ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Kamera (Ekran oranına göre)
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.z = 5;
 
-        <!-- Dashboard Stats -->
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <div class="text-slate-400 text-sm mb-1">Toplam Sipariş Eden</div>
-                <div class="text-3xl font-bold text-white" id="statTotalUsers">0</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <div class="text-slate-400 text-sm mb-1">Toplam Cihaz Talebi</div>
-                <div class="text-3xl font-bold text-cyan-400" id="statTotalDevices">0</div>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
-                <div class="text-slate-400 text-sm mb-1">Sistem Durumu</div>
-                <div class="text-xl font-bold text-emerald-400 flex items-center mt-2">
-                    <span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 animate-pulse"></span> Aktif
-                </div>
-            </div>
-        </div>
+        // Render Motoru
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
 
-        <!-- Data Table -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-950/50 text-slate-400 border-b border-slate-800">
-                        <tr>
-                            <th class="px-6 py-4 font-medium">Tarih</th>
-                            <th class="px-6 py-4 font-medium">Ad Soyad</th>
-                            <th class="px-6 py-4 font-medium">İletişim</th>
-                            <th class="px-6 py-4 font-medium text-center">Adet</th>
-                            <th class="px-6 py-4 font-medium text-right">Durum</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersTableBody" class="divide-y divide-slate-800/50">
-                        <!-- Data will be populated here via JS -->
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                                Yükleniyor... Veya henüz sipariş yok.
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </main>
+        // Işıklandırma
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
 
-    <!-- ==================== FIREBASE & LOGIC ==================== -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // Kamera Arka Planı İçin Video Texture
+        const videoElement = document.querySelector('.input_video');
+        const videoTexture = new THREE.VideoTexture(videoElement);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBFormat;
+        // Mobilde ön kamera genellikle aynalıdır, bu yüzden texture'ı çevirebiliriz
+        videoTexture.center.set(0.5, 0.5);
+        videoTexture.rotation = 0; // İhtiyaca göre değiştirilebilir
+        scene.background = videoTexture;
 
-        // 1. Firebase Configuration & Init
-        let firebaseConfig = {};
-        if (typeof __firebase_config !== 'undefined') {
-            try { firebaseConfig = JSON.parse(__firebase_config); } catch (e) { console.error("Config error:", e); }
-        }
+        // --- UYGULAMA DEĞİŞKENLERİ ---
+        const objects = []; // Sahnedeki tüm şekiller
+        let selectedObject = null;
+        let isPinching = false;
+        
+        // El imleci (İşaret parmağının ucundaki küçük küre)
+        const cursorGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+        const cursorMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, wireframe: true });
+        const cursor = new THREE.Mesh(cursorGeometry, cursorMaterial);
+        scene.add(cursor);
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'tuncer-core-default';
-        let currentUser = null;
-        let adminUnsubscribe = null;
+        // Raycaster (3D seçme işlemi için)
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
 
-        // 2. Auth Initialization (Crucial for Firestore rules)
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth failed:", error);
-            }
-        }
+        // Çalışma Düzlemi (Objelerin yerleştirileceği görünmez düzlem)
+        const planeGeometry = new THREE.PlaneGeometry(100, 100);
+        const planeMaterial = new THREE.MeshBasicMaterial({ visible: false });
+        const workingPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+        scene.add(workingPlane);
 
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-        });
+        // --- UI ELEMENTLERİ ---
+        const propertiesPanel = document.getElementById('properties-panel');
+        const btnSolid = document.getElementById('btn-solid');
+        const btnHole = document.getElementById('btn-hole');
+        const scaleX = document.getElementById('scale-x');
+        const scaleY = document.getElementById('scale-y');
+        const scaleZ = document.getElementById('scale-z');
+        const valX = document.getElementById('val-x');
+        const valY = document.getElementById('val-y');
+        const valZ = document.getElementById('val-z');
 
-        initAuth(); // Start auth process
+        // --- MATERYALLER (Katı ve Boşluk/Hole) ---
+        const materials = {
+            cube: new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.4 }),
+            sphere: new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.4 }),
+            cylinder: new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 }),
+            hole: new THREE.MeshStandardMaterial({ 
+                color: 0xff0000, 
+                transparent: true, 
+                opacity: 0.3, 
+                wireframe: true,
+                depthWrite: false
+            }),
+            selected: new THREE.MeshStandardMaterial({ color: 0xeab308, emissive: 0x333300 }) // Seçili obje vurgusu
+        };
 
-        // --- UI VIEW LOGIC ---
-        window.switchView = function(view) {
-            document.getElementById('view-home').classList.add('hidden-view');
-            document.getElementById('view-admin').classList.add('hidden-view');
-            document.getElementById(`view-${view}`).classList.remove('hidden-view');
+        // --- ŞEKİL EKLEME FONKSİYONU ---
+        window.addShape = function(type) {
+            let geometry;
+            let material = materials[type].clone(); // Her objenin kendi materyali olsun
+
+            if (type === 'cube') geometry = new THREE.BoxGeometry(1, 1, 1);
+            else if (type === 'sphere') geometry = new THREE.SphereGeometry(0.6, 32, 32);
+            else if (type === 'cylinder') geometry = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
+
+            const mesh = new THREE.Mesh(geometry, material);
             
-            if(view === 'home') {
-                document.getElementById('navAdminBtn').style.display = 'block';
-                document.getElementById('navOrderBtn').style.display = 'block';
-            } else {
-                document.getElementById('navAdminBtn').style.display = 'none';
-                document.getElementById('navOrderBtn').style.display = 'none';
-            }
-        };
-
-        window.openAdminModal = function() {
-            document.getElementById('adminModal').classList.remove('hidden');
-            document.getElementById('adminPassword').value = '';
-            document.getElementById('adminError').classList.add('hidden');
-            document.getElementById('adminPassword').focus();
-        };
-
-        window.closeAdminModal = function() {
-            document.getElementById('adminModal').classList.add('hidden');
-        };
-
-        window.logoutAdmin = function() {
-            if(adminUnsubscribe) {
-                adminUnsubscribe(); // Stop listening to db
-                adminUnsubscribe = null;
-            }
-            switchView('home');
-        };
-
-        window.resetForm = function() {
-            document.getElementById('formContainer').classList.remove('hidden');
-            document.getElementById('successContainer').classList.add('hidden');
-            document.getElementById('preorderForm').reset();
-        };
-
-        // --- PREORDER SUBMIT LOGIC ---
-        document.getElementById('preorderForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) return; // Wait for auth
-
-            const btn = document.getElementById('submitBtn');
-            const errorDiv = document.getElementById('formError');
+            // Objeyi kameranın önüne, ortaya yerleştir
+            mesh.position.set(0, 0, -2); // Kameradan 2 birim uzaklıkta
             
-            const data = {
-                name: document.getElementById('p_name').value,
-                email: document.getElementById('p_email').value,
-                phone: document.getElementById('p_phone').value,
-                quantity: parseInt(document.getElementById('p_quantity').value),
-                createdAt: serverTimestamp(),
-                product: 'Tuncer Core 2027'
+            // Obje verileri (Tinkercad mantığı)
+            mesh.userData = {
+                type: type,
+                isHole: false,
+                originalMaterial: material
             };
 
-            btn.disabled = true;
-            btn.innerHTML = 'İşleniyor...';
-            errorDiv.classList.add('hidden');
+            scene.add(mesh);
+            objects.push(mesh);
+            selectObject(mesh);
+        };
 
-            try {
-                // RULE 1: Saving to PUBLIC data so admin can read all of them easily
-                const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
-                await addDoc(preordersRef, data);
-                
-                // Show Success
-                document.getElementById('formContainer').classList.add('hidden');
-                document.getElementById('successContainer').classList.remove('hidden');
-            } catch (error) {
-                console.error("Order error:", error);
-                errorDiv.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<span>Listeye Katıl</span><svg class="ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+        // --- OBJE SEÇME VE UI GÜNCELLEME ---
+        function selectObject(mesh) {
+            // Eski seçili objeyi normale döndür
+            if (selectedObject && selectedObject !== mesh) {
+                selectedObject.material = selectedObject.userData.isHole ? materials.hole : selectedObject.userData.originalMaterial;
             }
-        });
 
-        // --- ADMIN LOGIN & DASHBOARD LOGIC ---
-        document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const pass = document.getElementById('adminPassword').value;
-            const errorDiv = document.getElementById('adminError');
+            selectedObject = mesh;
 
-            if (pass === '175017') {
-                closeAdminModal();
-                switchView('admin');
-                loadAdminData();
-            } else {
-                errorDiv.classList.remove('hidden');
-            }
-        });
-
-        function loadAdminData() {
-            if (!currentUser) return;
-            const tbody = document.getElementById('ordersTableBody');
-            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">Veriler buluttan çekiliyor...</td></tr>`;
-
-            const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
-            
-            // RULE 2: No complex queries. Fetch all, sort in JS memory.
-            adminUnsubscribe = onSnapshot(preordersRef, (snapshot) => {
-                let orders = [];
-                let totalDevices = 0;
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    orders.push({ id: doc.id, ...data });
-                    totalDevices += data.quantity || 0;
-                });
-
-                // Sort descending by date in memory
-                orders.sort((a, b) => {
-                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-                    return timeB - timeA;
-                });
-
-                // Update Stats
-                document.getElementById('statTotalUsers').innerText = orders.length;
-                document.getElementById('statTotalDevices').innerText = totalDevices;
-
-                // Render Table
-                if (orders.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Henüz hiç ön sipariş yok.</td></tr>`;
-                    return;
+            if (mesh) {
+                // Yeni seçilen objeyi vurgula (Eğer boşluk değilse sarı yap, boşluksa belirgin kırmızı yap)
+                if(!mesh.userData.isHole) {
+                    mesh.material = materials.selected;
                 }
+                
+                // UI Panelini Göster
+                propertiesPanel.classList.remove('hidden');
+                
+                // Slider değerlerini objeye göre ayarla
+                scaleX.value = mesh.scale.x; valX.innerText = mesh.scale.x.toFixed(1);
+                scaleY.value = mesh.scale.y; valY.innerText = mesh.scale.y.toFixed(1);
+                scaleZ.value = mesh.scale.z; valZ.innerText = mesh.scale.z.toFixed(1);
 
-                tbody.innerHTML = '';
-                orders.forEach(order => {
-                    const dateStr = order.createdAt ? new Date(order.createdAt.toMillis()).toLocaleString('tr-TR') : 'Şimdi';
-                    
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-800/30 transition-colors";
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-slate-400 text-xs">${dateStr}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium text-white">${order.name}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-cyan-400 text-sm">${order.email}</div>
-                            <div class="text-slate-400 text-xs">${order.phone}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center font-bold text-white">${order.quantity}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Beklemede</span>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
-            }, (error) => {
-                console.error("Admin fetch error:", error);
-                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Veriler yüklenirken bir hata oluştu.</td></tr>`;
-            });
+                // Katı/Boşluk buton durumlarını güncelle
+                if (mesh.userData.isHole) {
+                    btnHole.className = "flex-1 bg-red-500 text-white text-xs py-1 rounded shadow";
+                    btnSolid.className = "flex-1 bg-slate-200 text-slate-700 text-xs py-1 rounded hover:bg-slate-300";
+                } else {
+                    btnSolid.className = "flex-1 bg-blue-500 text-white text-xs py-1 rounded shadow";
+                    btnHole.className = "flex-1 bg-slate-200 text-slate-700 text-xs py-1 rounded hover:bg-slate-300";
+                }
+            } else {
+                propertiesPanel.classList.add('hidden');
+            }
         }
+
+        // --- UI OLAY DİNLEYİCİLERİ ---
+        btnSolid.addEventListener('click', () => {
+            if(!selectedObject) return;
+            selectedObject.userData.isHole = false;
+            selectedObject.material = materials.selected; // Seçili olduğu için vurgulu kalsın
+            btnSolid.className = "flex-1 bg-blue-500 text-white text-xs py-1 rounded shadow";
+            btnHole.className = "flex-1 bg-slate-200 text-slate-700 text-xs py-1 rounded hover:bg-slate-300";
+        });
+
+        btnHole.addEventListener('click', () => {
+            if(!selectedObject) return;
+            selectedObject.userData.isHole = true;
+            selectedObject.material = materials.hole;
+            btnHole.className = "flex-1 bg-red-500 text-white text-xs py-1 rounded shadow";
+            btnSolid.className = "flex-1 bg-slate-200 text-slate-700 text-xs py-1 rounded hover:bg-slate-300";
+        });
+
+        function updateScale() {
+            if(!selectedObject) return;
+            const x = parseFloat(scaleX.value);
+            const y = parseFloat(scaleY.value);
+            const z = parseFloat(scaleZ.value);
+            selectedObject.scale.set(x, y, z);
+            valX.innerText = x.toFixed(1);
+            valY.innerText = y.toFixed(1);
+            valZ.innerText = z.toFixed(1);
+        }
+
+        scaleX.addEventListener('input', updateScale);
+        scaleY.addEventListener('input', updateScale);
+        scaleZ.addEventListener('input', updateScale);
+
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            if(!selectedObject) return;
+            scene.remove(selectedObject);
+            objects.splice(objects.indexOf(selectedObject), 1);
+            selectObject(null);
+        });
+
+        // Ekrana tıklayınca boşluğu seçme
+        window.addEventListener('click', (event) => {
+            // UI elementlerine tıklanıyorsa işlem yapma
+            if (event.target.tagName === 'BUTTON' || event.target.tagName === 'INPUT' || event.target.closest('#properties-panel')) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+                selectObject(intersects[0].object);
+            } else {
+                selectObject(null);
+            }
+        });
+
+
+        // --- MEDIAPIPE EL TAKİBİ VE ETKİLEŞİM ---
+        
+        function onResults(results) {
+            // Yükleme ekranını gizle
+            document.getElementById('loading').style.opacity = "0";
+            setTimeout(() => document.getElementById('loading').style.display = "none", 500);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0]; // Sadece ilk eli kullan
+                
+                // İşaret parmağı ucu (8) ve Başparmak ucu (4)
+                const indexFinger = landmarks[8];
+                const thumb = landmarks[4];
+
+                // MediaPipe koordinatlarını (-1 ile 1 arasına) Three.js için dönüştür.
+                // Not: Ön kamera genellikle aynalı olduğu için X eksenini tersine çeviriyoruz (1 - x)
+                const ndcX = ((1 - indexFinger.x) * 2) - 1; 
+                const ndcY = -(indexFinger.y * 2) + 1;
+
+                // 3D İmleci Raycaster ile çalışma düzlemine yerleştir
+                mouse.x = ndcX;
+                mouse.y = ndcY;
+                raycaster.setFromCamera(mouse, camera);
+                
+                // İmleç her zaman kameradan belli bir uzaklıkta (-2 Z ekseni) hareket etsin
+                raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 2), cursor.position);
+
+                // Çimdik Hareketi (Pinch) Algılama
+                // Ekran koordinatları üzerinden mesafe hesapla
+                const dx = indexFinger.x - thumb.x;
+                const dy = indexFinger.y - thumb.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                const pinchThreshold = 0.05; // Bu değer hassasiyeti ayarlar
+
+                if (distance < pinchThreshold) {
+                    if (!isPinching) {
+                        // Çimdikleme yeni başladı -> Obje tutma mantığı
+                        isPinching = true;
+                        cursor.material.color.setHex(0xff0000); // Tutarken imleç kırmızı olsun
+                        cursor.scale.set(1.5, 1.5, 1.5);
+
+                        // Raycaster ile objeye çarpıyor mu kontrol et
+                        const intersects = raycaster.intersectObjects(objects);
+                        if (intersects.length > 0) {
+                            selectObject(intersects[0].object);
+                        }
+                    } else if (selectedObject) {
+                        // Sürükleme işlemi (Pinching devam ediyor ve obje seçili)
+                        // Objeyi imlecin pozisyonuna taşı (X ve Y düzleminde yumuşak geçiş)
+                        selectedObject.position.lerp(cursor.position, 0.5);
+                    }
+                } else {
+                    if (isPinching) {
+                        // Çimdikleme bitti -> Objeyi bırak
+                        isPinching = false;
+                        cursor.material.color.setHex(0xffff00); // Sarıya dön
+                        cursor.scale.set(1, 1, 1);
+                    }
+                }
+            } else {
+                // El görünmüyorsa imleci gizle/kilitli tut
+                isPinching = false;
+                cursor.material.color.setHex(0xffff00);
+            }
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+        
+        hands.setOptions({
+            maxNumHands: 1, // Tek el yeterli
+            modelComplexity: 1, // 0 daha hızlı, 1 daha doğru. Mobilde 1 genelde iyidir.
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+        
+        hands.onResults(onResults);
+
+        // Kamerayı Başlat
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+            },
+            width: 1280,
+            height: 720,
+            facingMode: 'environment' // Arka kamerayı kullanmayı dener, mobilde çok önemlidir. Bulamazsa öne geçer.
+        });
+        cameraUtils.start();
+
+        // --- PENCERE YENİDEN BOYUTLANDIRMA ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- ANİMASYON DÖNGÜSÜ ---
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Eğer varsa seçili objeye hafif bir "nefes alma" veya dönme efekti eklenebilir, 
+            // şimdilik Tinkercad gibi sabit tutuyoruz.
+
+            renderer.render(scene, camera);
+        }
+        
+        // Her şey yüklendiğinde animasyonu başlat
+        window.onload = () => {
+            animate();
+            
+            // Küçük bir intro için varsayılan bir küp ekle
+            setTimeout(() => {
+                addShape('cube');
+            }, 2000);
+        };
+
     </script>
 </body>
 </html>
