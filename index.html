@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v8.0 - Masa Sabitleme</title>
+    <title>Tuncer AR v9.0 - Sabit Dünya</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
     <style>
         body { margin: 0; overflow: hidden; background-color: transparent; }
-        canvas { display: block; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
         
         #overlay-ui {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -21,48 +19,45 @@
         
         .hud-panel {
             position: absolute; top: 20px; right: 20px;
-            background: rgba(0, 20, 40, 0.8); padding: 15px;
-            border-radius: 12px; border: 1px solid #00e5ff;
-            color: #00e5ff; font-family: monospace; font-size: 11px;
+            background: rgba(0, 15, 30, 0.85); padding: 12px;
+            border-radius: 10px; border: 1px solid #00e5ff;
+            color: #00e5ff; font-family: 'Courier New', monospace; font-size: 10px;
         }
 
         #start-btn {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 20px 40px; background: #00e5ff; color: black;
-            font-weight: 900; border-radius: 50px; border: none;
-            cursor: pointer; pointer-events: auto; box-shadow: 0 0 30px rgba(0, 229, 255, 0.6);
+            padding: 18px 36px; background: #00e5ff; color: #000;
+            font-weight: 900; border-radius: 10px; border: none;
+            cursor: pointer; pointer-events: auto; z-index: 200;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.5);
         }
 
         #status-msg {
-            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.6); color: white; padding: 10px 25px;
-            border-radius: 30px; font-size: 12px; font-weight: bold;
+            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #00e5ff; padding: 8px 20px;
+            border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid #00e5ff;
         }
-
-        .input_video { display: none; }
     </style>
 </head>
 <body>
 
-    <video class="input_video" autoplay playsinline></video>
-    <button id="start-btn">TUNCER SİSTEMİNİ BAŞLAT</button>
+    <button id="start-btn">SİSTEMİ UZAYDA SABİTLE</button>
 
     <div id="overlay-ui">
         <div class="hud-panel">
-            CORE_V8.0 [STABLE]<br>
+            CORE_V9.0 [ACTIVE]<br>
             X: <span id="val-x">0.00</span><br>
             Y: <span id="val-y">0.00</span><br>
             Z: <span id="val-z">0.00</span><br>
-            MIC: <span id="val-mic" class="text-white">BEKLENİYOR</span>
+            SYNC: <span id="val-sync" class="text-white">...</span>
         </div>
-        <div id="status-msg">AR Modu Hazırlanıyor...</div>
+        <div id="status-msg">Hazır. Başlat'a dokun.</div>
     </div>
 
     <script type="module">
-        let scene, camera, renderer, controller, reticle;
+        let scene, camera, renderer, reticle, controller;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objects = [], selectedObject = null;
-        let lastTimestamp = 0;
 
         const startBtn = document.getElementById('start-btn');
         const statusMsg = document.getElementById('status-msg');
@@ -74,77 +69,75 @@
                     startBtn.style.display = 'none';
                     initAR();
                 } else {
-                    alert("Cihazınız WebXR desteklemiyor.");
+                    statusMsg.innerText = "HATA: WebXR Desteklenmiyor.";
                 }
             }
         });
 
         async function initAR() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Reticle (Masa tespiti için hedefleyici)
+            // Çevreyi tararken masanın üstünde belirecek halka
             reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2),
+                new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // Işıklandırma
             scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            directionalLight.position.set(5, 10, 5);
-            scene.add(directionalLight);
+            const light = new THREE.PointLight(0xffffff, 1.0);
+            light.position.set(2, 5, 2);
+            scene.add(light);
 
-            // WebXR Session Başlat
+            // WebXR Oturumu - "Kamera Görünmüyor" hatası için dom-overlay root'u önemli
             const session = await navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['hit-test'],
+                requiredFeatures: ['hit-test', 'local-floor'],
                 optionalFeatures: ['dom-overlay'],
                 domOverlay: { root: document.getElementById('overlay-ui') }
             });
 
             renderer.xr.setSession(session);
 
-            // Kontrolcü (Tıklama ile obje bırakma)
+            // Ekrana dokunma ile masaya sabitleme
             controller = renderer.xr.getController(0);
-            controller.addEventListener('select', onPlaceObject);
+            controller.addEventListener('select', () => {
+                if (reticle.visible) {
+                    placeObject(reticle.position, reticle.quaternion);
+                }
+            });
             scene.add(controller);
 
             initVoice();
             renderer.setAnimationLoop(render);
         }
 
-        function onPlaceObject() {
-            if (reticle.visible) {
-                createShape(reticle.position, reticle.quaternion);
-            }
-        }
-
-        function createShape(position, quaternion, type = 'cube') {
-            const geometry = type === 'cube' ? new THREE.BoxGeometry(0.12, 0.12, 0.12) : new THREE.SphereGeometry(0.08, 32, 32);
+        function placeObject(position, quaternion) {
+            // Gerçek 3D koordinatta obje oluştur
+            const geometry = new THREE.BoxGeometry(0.12, 0.12, 0.12);
             const material = new THREE.MeshStandardMaterial({ 
                 color: Math.random() * 0xffffff,
-                metalness: 0.6,
+                metalness: 0.7,
                 roughness: 0.2
             });
             
             const mesh = new THREE.Mesh(geometry, material);
             mesh.position.copy(position);
-            mesh.position.y += 0.06; // Masanın üzerine tam oturması için
+            mesh.position.y += 0.06; // Yüzeyin üstünde durması için
             mesh.quaternion.copy(quaternion);
             
             scene.add(mesh);
             objects.push(mesh);
             selectedObject = mesh;
-            statusMsg.innerText = "Obje Yerleştirildi.";
+            statusMsg.innerText = "Obje Masaya Sabitlendi.";
         }
 
         function initVoice() {
@@ -155,17 +148,15 @@
             rec.continuous = true;
             rec.onresult = (e) => {
                 const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                document.getElementById('val-mic').innerText = cmd.toUpperCase();
+                document.getElementById('val-sync').innerText = "OK";
                 
-                if (cmd.includes("küp") && reticle.visible) createShape(reticle.position, reticle.quaternion, 'cube');
-                if (cmd.includes("küre") && reticle.visible) createShape(reticle.position, reticle.quaternion, 'sphere');
+                if (cmd.includes("küp") && reticle.visible) placeObject(reticle.position, reticle.quaternion);
                 if (cmd.includes("sil") && selectedObject) {
                     scene.remove(selectedObject);
                     objects = objects.filter(o => o !== selectedObject);
                     selectedObject = null;
                 }
                 if (cmd.includes("büyüt") && selectedObject) selectedObject.scale.multiplyScalar(1.2);
-                if (cmd.includes("küçült") && selectedObject) selectedObject.scale.multiplyScalar(0.8);
             };
             rec.start();
         }
@@ -193,16 +184,17 @@
                         reticle.visible = true;
                         reticle.matrix.fromArray(pose.transform.matrix);
                         
-                        // Pozisyonu güncelle
                         const currentPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
                         document.getElementById('val-x').innerText = currentPos.x.toFixed(2);
                         document.getElementById('val-y').innerText = currentPos.y.toFixed(2);
                         document.getElementById('val-z').innerText = currentPos.z.toFixed(2);
                         
                         statusMsg.innerText = "Yüzey Algılandı. Dokun!";
+                        document.getElementById('val-sync').innerText = "LOCK";
                     } else {
                         reticle.visible = false;
-                        statusMsg.innerText = "Yüzey Arıyor (Kamerayı hareket ettir)...";
+                        statusMsg.innerText = "Yüzey aranıyor... (Yere/Masaya doğru tut)";
+                        document.getElementById('val-sync').innerText = "SEARCH";
                     }
                 }
             }
