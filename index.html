@@ -19,7 +19,9 @@
             border-radius: 15px; border: none; cursor: pointer; font-size: 20px; 
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.5); pointer-events: auto;
             text-transform: uppercase; letter-spacing: 2px;
+            transition: transform 0.1s;
         }
+        #btn-activate:active { transform: scale(0.96); }
         #target-hint { align-self: center; margin-bottom: 120px; background: rgba(0,229,255,0.2); padding: 10px 25px; border-radius: 30px; color: #00e5ff; border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; backdrop-filter: blur(4px); }
         canvas { display: block; }
     </style>
@@ -37,7 +39,7 @@
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v19.1</h1>
-        <p style="color:#444; margin-bottom:40px; font-size:11px;">KAMERA ÇAKIŞMA DÜZELTMESİ (STABLE)</p>
+        <p style="color:#444; margin-bottom:40px; font-size:11px;">AÇMA DÜĞMESİ FİX (STABLE)</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -69,10 +71,10 @@
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
                 alpha: true, 
-                preserveDrawingBuffer: true, // Canvas'ın okunabilmesi için şart
+                preserveDrawingBuffer: true,
                 powerPreference: "high-performance"
             });
-            renderer.setPixelRatio(1); // Performans ve okuma hızı için 1 tutuyoruz
+            renderer.setPixelRatio(1);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
@@ -93,30 +95,35 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // TensorFlow'u başlat
-            try {
-                handModel = await handpose.load();
+            // TensorFlow'u arka planda sessizce yükle
+            handpose.load().then(model => {
+                handModel = model;
                 const hStatus = document.getElementById('hand-status');
                 if(hStatus) { hStatus.innerText = "HAZIR"; hStatus.style.color = "#00ffcc"; }
-            } catch (e) { console.error("Handpose Load Error:", e); }
+            }).catch(e => console.error("Model Hatası:", e));
 
             const startBtn = document.getElementById('btn-activate');
-            startBtn.onclick = async () => {
-                if (navigator.xr) {
-                    const sessionInit = { 
-                        requiredFeatures: ['hit-test'], 
-                        optionalFeatures: ['dom-overlay'],
-                        domOverlay: { root: document.getElementById('ui-container') } 
-                    };
-                    
-                    try {
-                        const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
-                        onSessionStarted(session);
-                    } catch (e) {
-                        alert("AR Başlatılamadı: " + e.message);
-                    }
+            
+            // DÜĞME ONARIMI: addEventListener ve senkron tetikleme kullanımı
+            startBtn.addEventListener('click', () => {
+                if (!navigator.xr) {
+                    alert("AR desteklenmiyor.");
+                    return;
                 }
-            };
+
+                const sessionInit = { 
+                    requiredFeatures: ['hit-test'], 
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: document.getElementById('ui-container') } 
+                };
+                
+                navigator.xr.requestSession('immersive-ar', sessionInit)
+                    .then(onSessionStarted)
+                    .catch(e => {
+                        console.error(e);
+                        alert("Sistem başlatılamadı. Lütfen kamera izni verin.");
+                    });
+            });
         }
 
         function onSessionStarted(session) {
@@ -129,17 +136,12 @@
         }
 
         async function detectHand() {
-            // KRİTİK: Kamera akışı yerine doğrudan renderer canvas'ını kullanıyoruz!
             if (!handModel || isProcessing || !renderer.xr.isPresenting) return;
             isProcessing = true;
             try {
-                // NotReadableError'u önlemek için doğrudan video akışı istemiyoruz,
-                // WebGL'in o anki karesini (canvas) analiz ediyoruz.
                 const predictions = await handModel.estimateHands(renderer.domElement);
                 updateHandUI(predictions);
-            } catch (e) { 
-                console.warn("Takip Hatası:", e);
-            }
+            } catch (e) { }
             isProcessing = false;
         }
 
@@ -210,7 +212,6 @@
                 const session = renderer.xr.getSession();
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 
-                // Her 4 karede bir analiz (Performans dengesi için)
                 if (timestamp % 4 === 0) detectHand();
 
                 if (!hitTestSourceRequested) {
