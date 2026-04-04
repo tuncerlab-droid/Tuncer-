@@ -1,268 +1,379 @@
 <!DOCTYPE html>
-<html lang="tr" class="scroll-smooth">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Zeka | Holografik Akıllı Gözlük</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Tuncer Zeka | Gelecek Gözlerinizin Önünde</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@400;500;600;700&display=swap');
-        
-        body { font-family: 'Rajdhani', sans-serif; background-color: #020617; }
-        .font-tech { font-family: 'Orbitron', sans-serif; }
-        
-        /* Holographic Text & Borders */
-        .holo-text { text-shadow: 0 0 8px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.4); }
-        .holo-border { box-shadow: 0 0 15px rgba(6, 182, 212, 0.2); border: 1px solid rgba(6, 182, 212, 0.4); }
-        .orange-glow { box-shadow: 0 0 20px rgba(249, 115, 22, 0.3); border: 1px solid rgba(249, 115, 22, 0.5); }
-        
-        /* Blueprint / Grid Background */
-        .blueprint-bg {
-            background-image: 
-                linear-gradient(rgba(6, 182, 212, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(6, 182, 212, 0.05) 1px, transparent 1px);
-            background-size: 30px 30px;
+        /* --- CSS STİLLERİ --- */
+        :root {
+            --primary-color: #00f0ff;
+            --bg-color: #0a0a0c;
+            --text-color: #ffffff;
+            --card-bg: #151518;
         }
 
-        /* Animations */
-        @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-            100% { transform: translateY(0px); }
-        }
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            100% { transform: scale(1.3); opacity: 0; }
-        }
-        .ring-anim::before {
-            content: '';
-            position: absolute;
-            inset: -10px;
-            border: 2px solid theme('colors.cyan.400');
-            border-radius: inherit;
-            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            scroll-behavior: smooth;
         }
 
-        /* Connector Lines */
-        .line-h { height: 1px; background: linear-gradient(90deg, theme('colors.cyan.500'), transparent); }
-        .line-h-rev { height: 1px; background: linear-gradient(-90deg, theme('colors.cyan.500'), transparent); }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        /* Navigasyon */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 10, 12, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text-color);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .logo span {
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+        nav ul li a {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: color 0.3s;
+        }
+
+        nav ul li a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Hero Bölümü */
+        .hero {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: radial-gradient(circle at center, #1a1a24 0%, #0a0a0c 100%);
+            padding: 0 20px;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        .hero h1 .highlight {
+            color: var(--primary-color);
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            max-width: 600px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .cta-btn {
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            color: var(--bg-color);
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .cta-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.8);
+        }
+
+        /* Özellikler & Teknik Detaylar */
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 50px;
+            color: var(--text-color);
+        }
+
+        .section-title span {
+            color: var(--primary-color);
+        }
+
+        .features, .specs {
+            padding: 100px 10%;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(0, 240, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .card p {
+            color: #a0a0a0;
+            line-height: 1.6;
+        }
+
+        /* Ön Sipariş Formu */
+        .preorder {
+            background: linear-gradient(to top, #0a0a0c, #111115);
+            padding: 100px 10%;
+            text-align: center;
+        }
+
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            background-color: var(--card-bg);
+            padding: 40px;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #ccc;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: #0a0a0c;
+            color: white;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 15px;
+            margin-top: 10px;
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--primary-color);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        /* JS Animasyon Sınıfları */
+        .reveal {
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 0.8s ease-out;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            background-color: #050505;
+            color: #555;
+            font-size: 0.9rem;
+        }
     </style>
 </head>
-<body class="text-slate-200 antialiased selection:bg-cyan-500 selection:text-white">
+<body>
 
-    <!-- Navigation -->
-    <nav class="fixed w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-cyan-900/50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-700 flex items-center justify-center orange-glow">
-                        <span class="font-tech text-xl font-bold text-white">TZ</span>
-                    </div>
-                    <span class="font-tech font-bold text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">TUNCER ZEKA</span>
-                </div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#ozellikler" class="hover:text-cyan-400 transition-colors duration-300 font-semibold tracking-wide text-lg">Yetenekler</a>
-                    <a href="#donanim" class="hover:text-orange-400 transition-colors duration-300 font-semibold tracking-wide text-lg">Sistem Şeması</a>
-                </div>
-            </div>
-        </div>
+    <nav>
+        <div class="logo">Tuncer <span>Zeka</span></div>
+        <ul>
+            <li><a href="#hero">Ana Sayfa</a></li>
+            <li><a href="#features">Özellikler</a></li>
+            <li><a href="#specs">Donanım</a></li>
+            <li><a href="#preorder" style="color: var(--primary-color);">Ön Sipariş</a></li>
+        </ul>
     </nav>
 
-    <!-- Hero Section -->
-    <div class="relative pt-32 pb-20 overflow-hidden bg-slate-950 min-h-screen flex items-center blueprint-bg">
-        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-slate-950/80 to-slate-950 z-0"></div>
-        
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                
-                <!-- Left Text -->
-                <div>
-                    <div class="inline-block px-4 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 font-tech text-sm mb-6">
-                        YENİ NESİL AR GÖZLÜK SİSTEMİ
-                    </div>
-                    <h1 class="font-tech text-5xl md:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-                        <span class="block text-white">GERÇEKLİĞE</span>
-                        <span class="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 holo-text">VERİ EKLEYİN</span>
-                    </h1>
-                    <p class="text-xl text-slate-400 font-medium mb-8 leading-relaxed max-w-lg">
-                        Görüş alanınızdaki dünyayı tarayan, anlayan ve haritalandıran <strong class="text-white">Tuncer Zeka</strong> yapay zeka asistanı. Gücünü buluttan, donanımını endüstri standartlarındaki özel mimariden alır.
-                    </p>
-                    <a href="#donanim" class="inline-flex items-center gap-3 px-8 py-4 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-full transition-all duration-300 shadow-[0_0_20px_rgba(6,182,212,0.4)]">
-                        Teknik Şemayı İncele
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-                    </a>
-                </div>
+    <section class="hero" id="hero">
+        <h1 id="typewriter">Gerçekliği <span class="highlight">Yeniden Tanımlayın.</span></h1>
+        <p class="reveal">Dışarıdan şık bir güneş gözlüğü, içeriden bulut destekli bir süper bilgisayar. Çift ekran teknolojisi ve Tuncer Core 2027 yapay zekası ile dünya artık sizin oyun alanınız.</p>
+        <a href="#preorder" class="cta-btn reveal">Sınırları Aş - Ön Sipariş Ver</a>
+    </section>
 
-                <!-- Right Hero Visual -->
-                <div class="relative h-[400px] flex items-center justify-center animate-float">
-                    <!-- Holographic Glasses Representation -->
-                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 blur-3xl rounded-full"></div>
-                    <div class="relative z-10 w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-cyan-500/50 rounded-2xl p-6 shadow-[0_0_30px_rgba(6,182,212,0.3)]">
-                        <div class="h-48 border border-cyan-800 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group">
-                            <!-- HUD Elements -->
-                            <div class="absolute top-2 left-2 text-[10px] font-tech text-cyan-500">SYS: ONLINE</div>
-                            <div class="absolute top-2 right-2 text-[10px] font-tech text-cyan-500">AI: CONNECTED</div>
-                            <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9InJnYmEoNiwgMTgyLCAyMTIsIDAuMSkiLz48L3N2Zz4=')]"></div>
-                            
-                            <svg class="w-24 h-24 text-cyan-400 filter drop-shadow-[0_0_10px_rgba(6,182,212,0.8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                            </svg>
-                            <p class="mt-4 font-tech text-cyan-300 text-sm tracking-[0.2em] animate-pulse">HOLOGRAFİK EKRAN</p>
-                            
-                            <!-- Scanner line -->
-                            <div class="absolute top-0 left-0 w-full h-1 bg-cyan-400 shadow-[0_0_10px_#22d3ee] animate-[bounce_3s_infinite]"></div>
-                        </div>
-                    </div>
-                </div>
-
+    <section class="features" id="features">
+        <h2 class="section-title reveal">Geleceğin <span>Teknolojisi</span></h2>
+        <div class="grid">
+            <div class="card reveal">
+                <h3>🕶️ Gizli Çift Ekran (Stealth Mode)</h3>
+                <p>Özel tasarlanmış dış cam, dışarıdan bakıldığında premium bir güneş gözlüğü gibi görünür. İçerideki yüksek çözünürlüklü çift ekran ise dijital dünyayı doğrudan göz bebeklerinize yansıtır.</p>
+            </div>
+            <div class="card reveal">
+                <h3>🧠 Tuncer Core 2027 YZ</h3>
+                <p>Ağır işlemler gözlüğünüzü yormaz. Devasa Tuncer Core 2027 kütüphanesi sunucularımızda çalışır, sadece saniyenin binde biri hızında sonuçları gözlüğünüze aktarır.</p>
+            </div>
+            <div class="card reveal">
+                <h3>🗺️ Holografik Navigasyon</h3>
+                <p>Çevrenizi algılayan akıllı kameralar sayesinde, sokakların üzerine çizilen 3 boyutlu mavi okları takip edin. Hedefinize bakarak ulaşın.</p>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Features Section -->
-    <div id="ozellikler" class="py-20 bg-slate-950 border-t border-slate-900 relative">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="font-tech text-3xl md:text-4xl font-bold text-white mb-4">GÖRÜŞ ALANINIZDAKİ <span class="text-cyan-500">ZEKA</span></h2>
+    <section class="specs" id="specs">
+        <h2 class="section-title reveal">Sistem <span>Mimarisi</span></h2>
+        <div class="grid">
+            <div class="card reveal">
+                <h3>⚡ İşlem Birimi</h3>
+                <p><strong>Özel 64-bit 4-Çekirdekli Cortex-A53 İşlemci (@1GHz):</strong> Minimum enerji, maksimum verim. Bulut ile kusursuz senkronizasyon için özel olarak optimize edildi.</p>
             </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="bg-slate-900/50 p-8 border border-slate-800 rounded-xl hover:border-cyan-500/50 transition-all">
-                    <div class="text-cyan-400 mb-4"><svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></div>
-                    <h3 class="text-xl font-bold text-white mb-2 font-tech">Gerçek Zamanlı Çevre Tarama</h3>
-                    <p class="text-slate-400">Çift kamera ve derinlik sensörleriyle anında obje tanıma ve mesafe ölçümü.</p>
-                </div>
-                <div class="bg-slate-900/50 p-8 border border-slate-800 rounded-xl hover:border-orange-500/50 transition-all">
-                    <div class="text-orange-400 mb-4"><svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg></div>
-                    <h3 class="text-xl font-bold text-white mb-2 font-tech">AR Navigasyon</h3>
-                    <p class="text-slate-400">Yere yansıtılan oklar ve güzergah çizgileri ile kaybolmaya son.</p>
-                </div>
-                <div class="bg-slate-900/50 p-8 border border-slate-800 rounded-xl hover:border-purple-500/50 transition-all">
-                    <div class="text-purple-400 mb-4"><svg class="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/></svg></div>
-                    <h3 class="text-xl font-bold text-white mb-2 font-tech">Sunucu Destekli Yapay Zeka</h3>
-                    <p class="text-slate-400">Bulut tabanlı devasa NLP ve görüntü işleme altyapısıyla her sorunuza anında yanıt.</p>
-                </div>
+            <div class="card reveal">
+                <h3>💾 Bellek Yönetimi</h3>
+                <p><strong>512MB LPDDR2 RAM:</strong> Yapay zeka işlemleri sunucuda yapıldığı için, bu ultra hızlı bellek sadece görsel arayüzü ve anlık veri akışını kusursuz şekilde yönetir.</p>
+            </div>
+            <div class="card reveal">
+                <h3>📡 Kesintisiz Bağlantı</h3>
+                <p><strong>WiFi 4 (802.11n) & BT 4.2 BLE:</strong> Telefonunuzla ve Tuncer Sunucularıyla ultra düşük gecikmeli, enerji dostu kablosuz veri aktarımı.</p>
             </div>
         </div>
-    </div>
+    </section>
 
-    <!-- Visual Hardware Infographic Section -->
-    <div id="donanim" class="py-24 bg-[#0a0f1d] relative overflow-hidden">
-        <!-- Background accents -->
-        <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-orange-600/10 blur-[120px] rounded-full"></div>
-        <div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-cyan-600/10 blur-[120px] rounded-full"></div>
-
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div class="text-center mb-16">
-                <h2 class="font-tech text-4xl font-bold text-white mb-4">MİMARİ <span class="text-orange-500">ŞEMA</span></h2>
-                <p class="text-slate-400 max-w-2xl mx-auto text-lg">Yüksek performanslı özel modülümüz, endüstri standartlarındaki en güncel 64-bit 8-çekirdekli mimariyi temel alır.</p>
-            </div>
-
-            <!-- INFOGRAPHIC CONTAINER -->
-            <div class="relative w-full max-w-5xl mx-auto p-4 md:p-10 border border-slate-800 rounded-3xl bg-slate-900/40 backdrop-blur-md blueprint-bg">
-                
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-center relative">
-                    
-                    <!-- Left Specs -->
-                    <div class="space-y-8 relative z-20">
-                        <!-- Spec 1 -->
-                        <div class="bg-slate-950/80 border border-cyan-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.1)] relative group">
-                            <div class="absolute right-0 top-1/2 w-8 line-h translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="font-tech text-cyan-400 text-xs mb-1">ANA İŞLEMCİ (CPU)</div>
-                            <div class="text-white font-bold text-lg">8-Çekirdek 64-bit SoC</div>
-                            <div class="text-slate-400 text-sm mt-1 font-mono">4x Cortex-A76 @ 2.4GHz <br> 4x Cortex-A55 @ 1.8GHz</div>
-                        </div>
-                        <!-- Spec 2 -->
-                        <div class="bg-slate-950/80 border border-cyan-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.1)] relative group">
-                            <div class="absolute right-0 top-1/2 w-8 line-h translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="font-tech text-cyan-400 text-xs mb-1">GRAFİK BİRİMİ (GPU)</div>
-                            <div class="text-white font-bold text-lg">Mali-G610 MP4</div>
-                            <div class="text-slate-400 text-sm mt-1 font-mono">8K@60fps Video Kod Çözme, 3D Render & Hologram Hazırlığı</div>
-                        </div>
-                        <!-- Spec 3 -->
-                        <div class="bg-slate-950/80 border border-cyan-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.1)] relative group">
-                            <div class="absolute right-0 top-1/2 w-8 line-h translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="font-tech text-cyan-400 text-xs mb-1">KAMERA & SENSÖR ARAYÜZÜ</div>
-                            <div class="text-white font-bold text-lg">MIPI CSI Bağlantısı</div>
-                            <div class="text-slate-400 text-sm mt-1 font-mono">Çift 4K Lens Desteği + Derinlik (LiDAR) Entegrasyonu</div>
-                        </div>
-                    </div>
-
-                    <!-- Center Chip Visual -->
-                    <div class="flex justify-center items-center py-10 relative z-10">
-                        <div class="relative w-48 h-48 ring-anim flex items-center justify-center bg-slate-950 rounded-2xl border-2 border-orange-500/50 shadow-[0_0_40px_rgba(249,115,22,0.2)]">
-                            <!-- Chip Pins -->
-                            <div class="absolute -top-2 left-4 right-4 h-2 flex justify-between px-2">
-                                <div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div>
-                            </div>
-                            <div class="absolute -bottom-2 left-4 right-4 h-2 flex justify-between px-2">
-                                <div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div><div class="w-1.5 h-full bg-orange-400/50"></div>
-                            </div>
-                            <div class="absolute -left-2 top-4 bottom-4 w-2 flex flex-col justify-between py-2">
-                                <div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div>
-                            </div>
-                            <div class="absolute -right-2 top-4 bottom-4 w-2 flex flex-col justify-between py-2">
-                                <div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div><div class="w-full h-1.5 bg-orange-400/50"></div>
-                            </div>
-
-                            <!-- Core Inner -->
-                            <div class="w-32 h-32 bg-slate-900 border border-slate-700 rounded-lg flex flex-col items-center justify-center p-2 relative overflow-hidden">
-                                <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPjxyZWN0IHdpZHRoPSI4IiBoZWlnaHQ9IjgiIGZpbGw9InRyYW5zcGFyZW50Ii8+PHBhdGggZD0iTTAgMEw4IDhaIiBzdHJva2U9InJnYmEoMjQ5LCAxMTUsIDIyLCAwLjE1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')]"></div>
-                                <span class="font-tech text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-500 z-10 text-center">TUNCER<br>CORE</span>
-                                <span class="text-[10px] text-slate-500 font-mono mt-1 z-10">TC-2027-RKX</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right Specs -->
-                    <div class="space-y-8 relative z-20">
-                        <!-- Spec 4 -->
-                        <div class="bg-slate-950/80 border border-orange-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.1)] relative group">
-                            <div class="absolute left-0 top-1/2 w-8 line-h-rev -translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="font-tech text-orange-400 text-xs mb-1">YAPAY ZEKA (NPU)</div>
-                            <div class="text-white font-bold text-lg">Dahili 6 TOPS NPU</div>
-                            <div class="text-slate-400 text-sm mt-1 font-mono">Sunucuya bağlanmadan önceki lokal nesne tespiti ve veri filtreleme</div>
-                        </div>
-                        <!-- Spec 5 -->
-                        <div class="bg-slate-950/80 border border-orange-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.1)] relative group">
-                            <div class="absolute left-0 top-1/2 w-8 line-h-rev -translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="font-tech text-orange-400 text-xs mb-1">SİSTEM BELLEĞİ</div>
-                            <div class="text-white font-bold text-lg">16GB / 32GB LPDDR4X</div>
-                            <div class="text-slate-400 text-sm mt-1 font-mono">Gecikmesiz yüksek bant genişliği, kesintisiz harita ve veri akışı</div>
-                        </div>
-                        <!-- Spec 6 -->
-                        <div class="bg-slate-950/80 border border-orange-900/50 p-5 rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.1)] relative group">
-                            <div class="absolute left-0 top-1/2 w-8 line-h-rev -translate-x-full hidden lg:block opacity-50 group-hover:opacity-100 transition-opacity"></div>
-                            <div class="font-tech text-orange-400 text-xs mb-1">KABLOSUZ İLETİŞİM</div>
-                            <div class="text-white font-bold text-lg">Wi-Fi 6 & Bluetooth 5.2</div>
-                            <div class="text-slate-400 text-sm mt-1 font-mono">Sunucu tabanlı <span class="text-white">Tuncer Core</span> YZ Kütüphanesine milisaniyelik erişim için (802.11ax)</div>
-                        </div>
-                    </div>
-
+    <section class="preorder" id="preorder">
+        <h2 class="section-title reveal">Geleceği <span>Rezerve Et</span></h2>
+        <div class="form-container reveal">
+            <form id="preorderForm">
+                <div class="form-group">
+                    <label for="name">Ad Soyad</label>
+                    <input type="text" id="name" required placeholder="Siber İsim">
                 </div>
-                
-                <!-- Cloud Info Bottom -->
-                <div class="mt-12 text-center p-6 border-t border-slate-800/50 bg-slate-900/30 rounded-b-2xl">
-                    <p class="text-sm font-mono text-cyan-500 uppercase mb-2 tracking-widest">Çalışma Prensibi</p>
-                    <p class="text-slate-300">Donanım yüksek çözünürlüklü veriyi toplar ve şifreler. Asıl ağır Doğal Dil İşleme (NLP) ve komplike yapay zeka işlemleri <strong class="text-white">Güçlü Sunucu Kümelerimiz</strong> üzerinde çalıştırılarak sonuç gözlüğe ışık hızında holografik veri olarak gönderilir.</p>
+                <div class="form-group">
+                    <label for="email">E-Posta Adresi</label>
+                    <input type="email" id="email" required placeholder="iletişim@gelecek.com">
                 </div>
-            </div>
+                <div class="form-group">
+                    <label for="edition">Gözlük Sürümü</label>
+                    <input type="text" id="edition" value="Tuncer Zeka - Founder's Edition" readonly style="color: var(--primary-color); border-color: var(--primary-color);">
+                </div>
+                <button type="submit" class="submit-btn">Erken Erişim Talebi Gönder</button>
+            </form>
         </div>
-    </div>
+    </section>
 
-    <!-- Footer -->
-    <footer class="bg-slate-950 border-t border-slate-900 py-10">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <h2 class="font-tech text-2xl font-bold text-white mb-4">Geleceği Gözlerinizin Önüne Seriyoruz.</h2>
-            <p class="text-slate-500 text-sm">
-                &copy; 2026 Tuncer Intelligence Technologies. Donanım verileri AR-GE aşaması laboratuvar sonuçlarıdır.<br>
-            </p>
-        </div>
+    <footer>
+        <p>&copy; 2026 Tuncer Zeka Teknolojileri. Tüm hakları saklıdır.</p>
     </footer>
 
+    <script>
+        // 1. Scroll Reveal Animasyonu (Aşağı kaydırdıkça elemanların belirmesi)
+        function reveal() {
+            var reveals = document.querySelectorAll(".reveal");
+            for (var i = 0; i < reveals.length; i++) {
+                var windowHeight = window.innerHeight;
+                var elementTop = reveals[i].getBoundingClientRect().top;
+                var elementVisible = 100; // Elemanın ne kadar göründüğünde animasyonun başlayacağı
+
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+        reveal(); // Sayfa yüklendiğinde ilk elemanları göster
+
+        // 2. Ön Sipariş Formu Kontrolü
+        document.getElementById('preorderForm').addEventListener('submit', function(e) {
+            e.preventDefault(); // Sayfanın yenilenmesini engeller
+            
+            // Kullanıcı verilerini alalım (Şimdilik sadece isim)
+            const userName = document.getElementById('name').value;
+            const submitBtn = document.querySelector('.submit-btn');
+
+            // Buton efektini değiştir
+            submitBtn.innerHTML = "İşleniyor...";
+            submitBtn.style.backgroundColor = "var(--primary-color)";
+            submitBtn.style.color = "var(--bg-color)";
+
+            // Kısa bir bekleme süresi simülasyonu
+            setTimeout(() => {
+                alert(`Tebrikler ${userName}! Tuncer Zeka Founder's Edition ön sipariş talebin başarıyla alındı. Gelecekte görüşmek üzere.`);
+                submitBtn.innerHTML = "Talep Gönderildi ✔️";
+                document.getElementById('preorderForm').reset(); // Formu temizle
+                document.getElementById('edition').value = "Tuncer Zeka - Founder's Edition"; // Sürüm adını geri getir
+            }, 1500);
+        });
+    </script>
 </body>
 </html>
-
-
