@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v17.0</title>
+    <title>Tuncer AR v18.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -34,16 +34,16 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v17</h1>
-        <p style="color:#666; margin-bottom:40px; font-size:12px;">Başlatma ve El Motoru Onarıldı.</p>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v18</h1>
+        <p style="color:#666; margin-bottom:40px; font-size:12px;">Taşıma, Döndürme ve Boyutlandırma Aktif.</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-container" style="display: none;">
         <div class="hud-panel">
             SİSTEM: <span style="color:#fff;">AKTİF</span><br>
-            TF_HAND_AI: <span id="hand-status" style="color:#ff3366;">YÜKLENİYOR</span><br>
-            X: <span id="pos-x">0.00</span> | Y: <span id="pos-y">0.00</span><br>
+            HAND_AI: <span id="hand-status" style="color:#ff3366;">YÜKLENİYOR</span><br>
+            MOD: <span id="interact-mode" style="color:#fff;">GÖZLEM</span><br>
         </div>
         <div id="target-hint">Yüzey aranıyor...</div>
     </div>
@@ -56,6 +56,10 @@
         let objects = [], selectedObject = null;
         let handModel = null, isProcessing = false;
         let currentSession = null;
+        
+        // Etkileşim hafızası
+        let initialPinchDist = 0;
+        let initialScale = new THREE.Vector3();
 
         async function init() {
             scene = new THREE.Scene();
@@ -69,7 +73,6 @@
 
             scene.add(new THREE.AmbientLight(0xffffff, 2));
 
-            // Masa Halkası
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.06, 0.07, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
@@ -77,7 +80,6 @@
             reticle.matrixAutoUpdate = false; reticle.visible = false;
             scene.add(reticle);
 
-            // Parmak İmleci
             fingerCursor = new THREE.Mesh(
                 new THREE.SphereGeometry(0.015, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
@@ -85,13 +87,11 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // TFJS Yükle
             try {
                 handModel = await handpose.load();
                 document.getElementById('hand-status').innerText = "HAZIR";
             } catch (e) { console.error(e); }
 
-            // BUTON DÜZELTMESİ: WebXR Oturumunu Manuel Başlat
             const startBtn = document.getElementById('btn-activate');
             startBtn.addEventListener('click', async () => {
                 if (currentSession === null) {
@@ -103,9 +103,7 @@
                     try {
                         const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
                         onSessionStarted(session);
-                    } catch (err) {
-                        alert("AR Başlatılamadı: " + err.message);
-                    }
+                    } catch (err) { alert("AR Başlatılamadı: " + err.message); }
                 }
             });
         }
@@ -130,11 +128,16 @@
 
         function updateHandUI(predictions) {
             const status = document.getElementById('hand-status');
+            const modeLabel = document.getElementById('interact-mode');
+
             if (predictions.length > 0) {
                 status.innerText = "ALGILANDI"; status.style.color = "#00ffcc";
                 fingerCursor.visible = true;
+
                 const landmarks = predictions[0].landmarks;
-                const indexTip = landmarks[8]; const thumbTip = landmarks[4];
+                const indexTip = landmarks[8]; 
+                const thumbTip = landmarks[4];
+                const middleTip = landmarks[12]; // Döndürme referansı için orta parmak
 
                 const canvas = renderer.domElement;
                 const x = -((indexTip[0] / canvas.width) - 0.5) * 2;
@@ -144,19 +147,50 @@
                 const dir = vector.sub(camera.position).normalize();
                 fingerCursor.position.copy(camera.position).add(dir.multiplyScalar(0.45));
 
-                const dist = Math.sqrt(Math.pow(indexTip[0] - thumbTip[0], 2) + Math.pow(indexTip[1] - thumbTip[1], 2));
-                const isPinch = dist < 50;
+                // Mesafe ve Pinch Kontrolü
+                const currentPinchDist = Math.sqrt(
+                    Math.pow(indexTip[0] - thumbTip[0], 2) + 
+                    Math.pow(indexTip[1] - thumbTip[1], 2)
+                );
+                
+                const isPinch = currentPinchDist < 55;
                 const raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
                 const hits = raycaster.intersectObjects(objects);
 
                 if (isPinch) {
-                    fingerCursor.material.color.setHex(0xff0000); // Kırmızı
-                    if (hits.length > 0 && !selectedObject) selectedObject = hits[0].object;
-                    if (selectedObject) selectedObject.position.lerp(fingerCursor.position, 0.2);
+                    fingerCursor.material.color.setHex(0xff0000);
+                    modeLabel.innerText = "TUTULUYOR";
+                    
+                    if (hits.length > 0 && !selectedObject) {
+                        selectedObject = hits[0].object;
+                        initialPinchDist = currentPinchDist;
+                        initialScale.copy(selectedObject.scale);
+                    }
+
+                    if (selectedObject) {
+                        // 1. HAREKET (Lerp ile yumuşak takip)
+                        selectedObject.position.lerp(fingerCursor.position, 0.2);
+
+                        // 2. DÖNDÜRME (Elin açısına göre)
+                        // İşaret parmağı ve orta parmak arasındaki eğimi kullanarak Z ekseni dönüşü simülasyonu
+                        const angle = Math.atan2(middleTip[1] - indexTip[1], middleTip[0] - indexTip[0]);
+                        selectedObject.rotation.y += 0.05; // Sürekli hafif dönüş
+                        selectedObject.rotation.z = angle;
+
+                        // 3. BÜYÜTME/KÜÇÜLTME (Pinch mesafesine göre dinamik scale)
+                        if (initialPinchDist > 0) {
+                            const scaleFactor = currentPinchDist / initialPinchDist;
+                            // Sınırlandırma (Çok devasa veya yok olmasın)
+                            const s = Math.max(0.2, Math.min(5, initialScale.x * scaleFactor));
+                            selectedObject.scale.set(s, s, s);
+                        }
+                    }
                 } else {
                     selectedObject = null;
-                    fingerCursor.material.color.setHex(hits.length > 0 ? 0xffea00 : 0x00e5ff); // Sarı/Mavi
+                    initialPinchDist = 0;
+                    modeLabel.innerText = "GÖZLEM";
+                    fingerCursor.material.color.setHex(hits.length > 0 ? 0xffea00 : 0x00e5ff);
                 }
             } else {
                 status.innerText = "EL YOK"; status.style.color = "#ff3366";
@@ -181,17 +215,23 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
+                        document.getElementById('target-hint').innerText = "YÜZEY HAZIR";
                     } else { reticle.visible = false; }
                 }
             }
             renderer.render(scene, camera);
         }
 
-        window.addEventListener('click', () => {
-            if (reticle.visible && !isProcessing) {
+        window.addEventListener('click', (e) => {
+            // Eğer bir buton tıklanmıyorsa küp ekle
+            if (reticle.visible && !isProcessing && e.target.tagName !== 'BUTTON') {
                 const mesh = new THREE.Mesh(
                     new THREE.BoxGeometry(0.1, 0.1, 0.1),
-                    new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8, roughness: 0.2 })
+                    new THREE.MeshStandardMaterial({ 
+                        color: Math.random() * 0xffffff, 
+                        metalness: 0.8, 
+                        roughness: 0.2 
+                    })
                 );
                 mesh.position.setFromMatrixPosition(reticle.matrix);
                 mesh.position.y += 0.05;
