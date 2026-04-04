@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v16.0</title>
+    <title>Tuncer AR v17.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- TensorFlow.js ve Handpose Model Kütüphaneleri -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/handpose"></script>
 
@@ -15,8 +14,11 @@
         #ui-container { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .hud-panel { background: rgba(0, 15, 30, 0.85); border-left: 4px solid #00e5ff; padding: 15px; border-radius: 10px; color: #00e5ff; font-size: 11px; align-self: flex-end; backdrop-filter: blur(5px); }
         #start-screen { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
-        #btn-activate { background: #00e5ff; color: #000; font-weight: 900; padding: 20px 50px; border-radius: 15px; border: none; cursor: pointer; font-size: 18px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); }
-        #ARButton { background: #00e5ff !important; color: #000 !important; font-weight: 900 !important; border-radius: 30px !important; bottom: 40px !important; z-index: 1001 !important; }
+        #btn-activate { 
+            background: #00e5ff; color: #000; font-weight: 900; padding: 20px 50px; 
+            border-radius: 15px; border: none; cursor: pointer; font-size: 18px; 
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); pointer-events: auto;
+        }
         #target-hint { align-self: center; margin-bottom: 120px; background: rgba(0,0,0,0.5); padding: 8px 20px; border-radius: 20px; color: #fff; border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; }
     </style>
 
@@ -32,8 +34,8 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v16</h1>
-        <p style="color:#666; margin-bottom:40px; font-size:12px;">TensorFlow.js El Takibi Motoru Aktif.</p>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v17</h1>
+        <p style="color:#666; margin-bottom:40px; font-size:12px;">Başlatma ve El Motoru Onarıldı.</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -48,13 +50,12 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { ARButton } from 'three/addons/webxr/ARButton.js';
 
         let scene, camera, renderer, reticle, fingerCursor;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objects = [], selectedObject = null;
-        let handModel = null;
-        let isProcessing = false;
+        let handModel = null, isProcessing = false;
+        let currentSession = null;
 
         async function init() {
             scene = new THREE.Scene();
@@ -68,7 +69,7 @@
 
             scene.add(new THREE.AmbientLight(0xffffff, 2));
 
-            // Reticle
+            // Masa Halkası
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.06, 0.07, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
@@ -76,7 +77,7 @@
             reticle.matrixAutoUpdate = false; reticle.visible = false;
             scene.add(reticle);
 
-            // PARMAK İMLECİ
+            // Parmak İmleci
             fingerCursor = new THREE.Mesh(
                 new THREE.SphereGeometry(0.015, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
@@ -84,60 +85,57 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // TensorFlow Handpose Modelini Yükle
+            // TFJS Yükle
             try {
                 handModel = await handpose.load();
                 document.getElementById('hand-status').innerText = "HAZIR";
-                document.getElementById('hand-status').style.color = "#00e5ff";
-            } catch (e) {
-                console.error("TF Model Yüklenemedi:", e);
-                document.getElementById('hand-status').innerText = "HATA";
-            }
+            } catch (e) { console.error(e); }
 
-            const ui = document.getElementById('ui-container');
-            const button = ARButton.createButton(renderer, { 
-                requiredFeatures: ['hit-test'], 
-                optionalFeatures: ['dom-overlay'], 
-                domOverlay: { root: ui } 
+            // BUTON DÜZELTMESİ: WebXR Oturumunu Manuel Başlat
+            const startBtn = document.getElementById('btn-activate');
+            startBtn.addEventListener('click', async () => {
+                if (currentSession === null) {
+                    const sessionInit = { 
+                        requiredFeatures: ['hit-test'], 
+                        optionalFeatures: ['dom-overlay'],
+                        domOverlay: { root: document.getElementById('ui-container') } 
+                    };
+                    try {
+                        const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+                        onSessionStarted(session);
+                    } catch (err) {
+                        alert("AR Başlatılamadı: " + err.message);
+                    }
+                }
             });
-            document.body.appendChild(button);
+        }
 
-            renderer.xr.addEventListener('sessionstart', () => {
-                document.getElementById('start-screen').style.display = 'none';
-                ui.style.display = 'flex';
-            });
-
+        function onSessionStarted(session) {
+            currentSession = session;
+            renderer.xr.setSession(session);
+            document.getElementById('start-screen').style.display = 'none';
+            document.getElementById('ui-container').style.display = 'flex';
             renderer.setAnimationLoop(render);
         }
 
         async function detectHand() {
             if (!handModel || isProcessing) return;
             isProcessing = true;
-
             try {
-                // Renderer canvas'ından tahminde bulun
                 const predictions = await handModel.estimateHands(renderer.domElement);
                 updateHandUI(predictions);
-            } catch (e) {
-                // Sessiz hata yönetimi
-            }
-            
+            } catch (e) {}
             isProcessing = false;
         }
 
         function updateHandUI(predictions) {
             const status = document.getElementById('hand-status');
-            
             if (predictions.length > 0) {
-                status.innerText = "ALGILANDI";
-                status.style.color = "#00ffcc";
+                status.innerText = "ALGILANDI"; status.style.color = "#00ffcc";
                 fingerCursor.visible = true;
-
                 const landmarks = predictions[0].landmarks;
-                const indexTip = landmarks[8]; // İşaret parmağı ucu [x, y, z]
-                const thumbTip = landmarks[4]; // Başparmak ucu
+                const indexTip = landmarks[8]; const thumbTip = landmarks[4];
 
-                // Koordinat Normalizasyonu
                 const canvas = renderer.domElement;
                 const x = -((indexTip[0] / canvas.width) - 0.5) * 2;
                 const y = -((indexTip[1] / canvas.height) * 2) + 1;
@@ -146,15 +144,8 @@
                 const dir = vector.sub(camera.position).normalize();
                 fingerCursor.position.copy(camera.position).add(dir.multiplyScalar(0.45));
 
-                // CIMDIK (PINCH) HESABI
-                const dist = Math.sqrt(
-                    Math.pow(indexTip[0] - thumbTip[0], 2) + 
-                    Math.pow(indexTip[1] - thumbTip[1], 2)
-                );
-                
-                // TensorFlow piksel bazlı çalıştığı için eşik değeri yaklaşık 40-60 pikseldir
+                const dist = Math.sqrt(Math.pow(indexTip[0] - thumbTip[0], 2) + Math.pow(indexTip[1] - thumbTip[1], 2));
                 const isPinch = dist < 50;
-
                 const raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
                 const hits = raycaster.intersectObjects(objects);
@@ -167,13 +158,8 @@
                     selectedObject = null;
                     fingerCursor.material.color.setHex(hits.length > 0 ? 0xffea00 : 0x00e5ff); // Sarı/Mavi
                 }
-
-                document.getElementById('pos-x').innerText = indexTip[0].toFixed(0);
-                document.getElementById('pos-y').innerText = indexTip[1].toFixed(0);
-
             } else {
-                status.innerText = "EL YOK";
-                status.style.color = "#ff3366";
+                status.innerText = "EL YOK"; status.style.color = "#ff3366";
                 fingerCursor.visible = false;
             }
         }
@@ -182,11 +168,7 @@
             if (frame) {
                 const session = renderer.xr.getSession();
                 const referenceSpace = renderer.xr.getReferenceSpace();
-
-                // Her 4 karede bir el tara (Performans dengesi)
-                if (timestamp % 4 === 0) {
-                    detectHand();
-                }
+                if (timestamp % 4 === 0) detectHand();
 
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
@@ -194,25 +176,19 @@
                     });
                     hitTestSourceRequested = true;
                 }
-
                 if (hitTestSource) {
                     const results = frame.getHitTestResults(hitTestSource);
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('target-hint').innerText = "HEDEF HAZIR";
-                    } else {
-                        reticle.visible = false;
-                        document.getElementById('target-hint').innerText = "YÜZEY TARANIYOR...";
-                    }
+                    } else { reticle.visible = false; }
                 }
             }
             renderer.render(scene, camera);
         }
 
-        // Tıklama ile Obje Ekleme
         window.addEventListener('click', () => {
-            if (reticle.visible) {
+            if (reticle.visible && !isProcessing) {
                 const mesh = new THREE.Mesh(
                     new THREE.BoxGeometry(0.1, 0.1, 0.1),
                     new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8, roughness: 0.2 })
