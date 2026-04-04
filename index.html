@@ -3,162 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v9.0 - Sabit Dünya</title>
+    <title>Tuncer AR v10.0</title>
     
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; background-color: transparent; }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        #overlay-ui {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; z-index: 100;
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #ar-overlay {
+            position: absolute; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10; display: flex; flex-direction: column;
+            justify-content: space-between; padding: 20px; box-sizing: border-box;
         }
-        
-        .hud-panel {
-            position: absolute; top: 20px; right: 20px;
-            background: rgba(0, 15, 30, 0.85); padding: 12px;
-            border-radius: 10px; border: 1px solid #00e5ff;
-            color: #00e5ff; font-family: 'Courier New', monospace; font-size: 10px;
+        .hud-data {
+            align-self: flex-end; background: rgba(0, 20, 40, 0.7);
+            border: 1px solid #00e5ff; border-radius: 8px; padding: 10px;
+            color: #00e5ff; font-family: monospace; font-size: 12px;
         }
-
-        #start-btn {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            padding: 18px 36px; background: #00e5ff; color: #000;
-            font-weight: 900; border-radius: 10px; border: none;
-            cursor: pointer; pointer-events: auto; z-index: 200;
-            box-shadow: 0 0 40px rgba(0, 229, 255, 0.5);
+        #start-panel {
+            position: fixed; inset: 0; background: #000; z-index: 100;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
         }
-
-        #status-msg {
-            position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.7); color: #00e5ff; padding: 8px 20px;
-            border-radius: 20px; font-size: 11px; font-weight: bold; border: 1px solid #00e5ff;
+        #btn-go {
+            background: #00e5ff; color: #000; font-weight: 900; padding: 20px 50px;
+            border-radius: 15px; border: none; cursor: pointer; font-size: 18px;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.4);
+        }
+        #hint {
+            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+            color: white; font-weight: bold; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
     </style>
 </head>
 <body>
 
-    <button id="start-btn">SİSTEMİ UZAYDA SABİTLE</button>
+    <div id="start-panel">
+        <h1 style="color:#00e5ff; margin-bottom:20px; font-family:sans-serif;">TUNCER CORE v10</h1>
+        <button id="btn-go">SİSTEMİ BAŞLAT</button>
+        <p style="color:#666; margin-top:20px; font-size:12px;">WebXR / Hit-Test Engine</p>
+    </div>
 
-    <div id="overlay-ui">
-        <div class="hud-panel">
-            CORE_V9.0 [ACTIVE]<br>
-            X: <span id="val-x">0.00</span><br>
-            Y: <span id="val-y">0.00</span><br>
-            Z: <span id="val-z">0.00</span><br>
-            SYNC: <span id="val-sync" class="text-white">...</span>
+    <div id="ar-overlay">
+        <div class="hud-data">
+            X: <span id="x-pos">0.00</span><br>
+            Y: <span id="y-pos">0.00</span><br>
+            Z: <span id="z-pos">0.00</span>
         </div>
-        <div id="status-msg">Hazır. Başlat'a dokun.</div>
+        <div id="hint">Zemini tarayın ve dokunun.</div>
     </div>
 
     <script type="module">
         let scene, camera, renderer, reticle, controller;
         let hitTestSource = null, hitTestSourceRequested = false;
-        let objects = [], selectedObject = null;
 
-        const startBtn = document.getElementById('start-btn');
-        const statusMsg = document.getElementById('status-msg');
-
-        startBtn.addEventListener('click', async () => {
+        document.getElementById('btn-go').onclick = async () => {
             if (navigator.xr) {
-                const supported = await navigator.xr.isSessionSupported('immersive-ar');
-                if (supported) {
-                    startBtn.style.display = 'none';
+                const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
+                if (isSupported) {
+                    document.getElementById('start-panel').style.display = 'none';
                     initAR();
                 } else {
-                    statusMsg.innerText = "HATA: WebXR Desteklenmiyor.";
+                    alert("Cihazın WebXR desteklemiyor!");
                 }
             }
-        });
+        };
 
         async function initAR() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Çevreyi tararken masanın üstünde belirecek halka
+            // Hedef Halka (Masa algılandığında çıkar)
             reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.06, 0.08, 32).rotateX(-Math.PI / 2),
+                new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
+            // Işıklar
             scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-            const light = new THREE.PointLight(0xffffff, 1.0);
-            light.position.set(2, 5, 2);
+            const light = new THREE.DirectionalLight(0xffffff, 0.8);
+            light.position.set(5, 10, 7);
             scene.add(light);
 
-            // WebXR Oturumu - "Kamera Görünmüyor" hatası için dom-overlay root'u önemli
+            // AR Oturumu Başlat
             const session = await navigator.xr.requestSession('immersive-ar', {
                 requiredFeatures: ['hit-test', 'local-floor'],
                 optionalFeatures: ['dom-overlay'],
-                domOverlay: { root: document.getElementById('overlay-ui') }
+                domOverlay: { root: document.getElementById('ar-overlay') }
             });
 
             renderer.xr.setSession(session);
 
-            // Ekrana dokunma ile masaya sabitleme
+            // Tıklama ile Obje Koy
             controller = renderer.xr.getController(0);
             controller.addEventListener('select', () => {
                 if (reticle.visible) {
-                    placeObject(reticle.position, reticle.quaternion);
+                    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+                    const material = new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.5, roughness: 0.2 });
+                    const cube = new THREE.Mesh(geometry, material);
+                    
+                    cube.position.setFromMatrixPosition(reticle.matrix);
+                    cube.position.y += 0.05; // Masanın üstünde dursun
+                    scene.add(cube);
                 }
             });
             scene.add(controller);
 
-            initVoice();
             renderer.setAnimationLoop(render);
-        }
-
-        function placeObject(position, quaternion) {
-            // Gerçek 3D koordinatta obje oluştur
-            const geometry = new THREE.BoxGeometry(0.12, 0.12, 0.12);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: Math.random() * 0xffffff,
-                metalness: 0.7,
-                roughness: 0.2
-            });
-            
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.copy(position);
-            mesh.position.y += 0.06; // Yüzeyin üstünde durması için
-            mesh.quaternion.copy(quaternion);
-            
-            scene.add(mesh);
-            objects.push(mesh);
-            selectedObject = mesh;
-            statusMsg.innerText = "Obje Masaya Sabitlendi.";
-        }
-
-        function initVoice() {
-            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Speech) return;
-            const rec = new Speech();
-            rec.lang = 'tr-TR';
-            rec.continuous = true;
-            rec.onresult = (e) => {
-                const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                document.getElementById('val-sync').innerText = "OK";
-                
-                if (cmd.includes("küp") && reticle.visible) placeObject(reticle.position, reticle.quaternion);
-                if (cmd.includes("sil") && selectedObject) {
-                    scene.remove(selectedObject);
-                    objects = objects.filter(o => o !== selectedObject);
-                    selectedObject = null;
-                }
-                if (cmd.includes("büyüt") && selectedObject) selectedObject.scale.multiplyScalar(1.2);
-            };
-            rec.start();
         }
 
         function render(timestamp, frame) {
@@ -184,17 +142,14 @@
                         reticle.visible = true;
                         reticle.matrix.fromArray(pose.transform.matrix);
                         
-                        const currentPos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
-                        document.getElementById('val-x').innerText = currentPos.x.toFixed(2);
-                        document.getElementById('val-y').innerText = currentPos.y.toFixed(2);
-                        document.getElementById('val-z').innerText = currentPos.z.toFixed(2);
-                        
-                        statusMsg.innerText = "Yüzey Algılandı. Dokun!";
-                        document.getElementById('val-sync').innerText = "LOCK";
+                        const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
+                        document.getElementById('x-pos').innerText = pos.x.toFixed(2);
+                        document.getElementById('y-pos').innerText = pos.y.toFixed(2);
+                        document.getElementById('z-pos').innerText = pos.z.toFixed(2);
+                        document.getElementById('hint').innerText = "YÜZEY BULUNDU - DOKUN";
                     } else {
                         reticle.visible = false;
-                        statusMsg.innerText = "Yüzey aranıyor... (Yere/Masaya doğru tut)";
-                        document.getElementById('val-sync').innerText = "SEARCH";
+                        document.getElementById('hint').innerText = "MASAYI / ZEMİNİ TARAYIN...";
                     }
                 }
             }
