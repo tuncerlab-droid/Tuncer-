@@ -62,6 +62,23 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             background: #001; z-index: 1000;
         }
+
+        /* AR Butonu özel stili */
+        #ARButton {
+            position: relative !important;
+            bottom: auto !important;
+            left: auto !important;
+            margin-top: 20px !important;
+            border: 1px solid #0ff !important;
+            background: rgba(0, 255, 255, 0.2) !important;
+            color: #0ff !important;
+            font-family: 'Share Tech Mono', monospace !important;
+            padding: 12px 24px !important;
+            border-radius: 4px !important;
+            text-transform: uppercase !important;
+            cursor: pointer !important;
+            z-index: 2000 !important;
+        }
     </style>
 </head>
 <body>
@@ -117,8 +134,7 @@ let scene, camera, renderer, reticle;
 let hitTestSource = null, hitTestSourceRequested = false;
 let objects = [], holeObjects = [], selectedObject = null;
 
-// El Takibi Değişkenleri
-let hand0; // Birinci el (Genellikle sağ el olarak algılanır)
+let hand0; 
 let isGrabbing = false;
 
 function log(msg, err = false) {
@@ -144,18 +160,20 @@ function initThree() {
     dLight.position.set(0, 2, 1);
     scene.add(dLight);
 
-    // DÜZELTME: WebXR Hand-Input özelliğini aktif ediyoruz
+    // AR Butonu oluşturma ve DOM Overlay bağlama
     const arBtn = ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test', 'hand-tracking'], // El takibi özelliği burada isteniyor
+        requiredFeatures: ['hit-test', 'hand-tracking'],
         optionalFeatures: ['dom-overlay'],
         domOverlay: { root: document.body }
     });
-    document.getElementById('ar-button-container').appendChild(arBtn);
-
-    // El Kontrolcüsü 0
-    hand0 = renderer.xr.getHand(0);
     
-    // Pinch (Kıskaç) başlangıcı ve bitişi için yerel XR olayları
+    // Konteynerı temizle ve yeni butonu ekle
+    const btnContainer = document.getElementById('ar-button-container');
+    btnContainer.innerHTML = '';
+    btnContainer.appendChild(arBtn);
+
+    // El Takibi
+    hand0 = renderer.xr.getHand(0);
     hand0.addEventListener('pinchend', () => {
         isGrabbing = true;
         findObjectToGrab();
@@ -167,13 +185,19 @@ function initThree() {
             selectedObject = null;
         }
     });
-    
     scene.add(hand0);
 
+    // Oturum Başlangıç Yönetimi
     renderer.xr.addEventListener('sessionstart', () => {
         startScreen.style.display = 'none';
         uiOverlay.style.display = 'flex';
         initVoice();
+        log("AR Oturumu Başlatıldı.");
+    });
+
+    renderer.xr.addEventListener('sessionend', () => {
+        startScreen.style.display = 'flex';
+        uiOverlay.style.display = 'none';
     });
 
     reticle = new THREE.Mesh(
@@ -188,15 +212,13 @@ function initThree() {
 }
 
 function findObjectToGrab() {
-    // Elin (işaret parmağı ucunun) dünya koordinatlarını al
     const indexTip = hand0.joints['index-finger-tip'];
     if (!indexTip) return;
 
     const handPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
-    
     const all = [...objects, ...holeObjects];
     let closest = null;
-    let minDist = 0.15; // Etkileşim mesafesi
+    let minDist = 0.15;
 
     all.forEach(obj => {
         const d = obj.position.distanceTo(handPos);
@@ -215,8 +237,6 @@ function findObjectToGrab() {
 
 function updateObjectTransform() {
     if (!selectedObject) return;
-
-    // İşaret parmağı ve baş parmak arasındaki orta noktayı baz alalım
     const indexTip = hand0.joints['index-finger-tip'];
     const thumbTip = hand0.joints['thumb-tip'];
     const wrist = hand0.joints['wrist'];
@@ -225,11 +245,7 @@ function updateObjectTransform() {
         const p1 = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
         const p2 = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
         const midPoint = new THREE.Vector3().lerpVectors(p1, p2, 0.5);
-
-        // Nesneyi elin konumuna yumuşakça taşı
         selectedObject.position.lerp(midPoint, 0.3);
-
-        // Rotasyonu elin bilek açısına göre uyarla
         const wristRot = new THREE.Quaternion().setFromRotationMatrix(wrist.matrixWorld);
         selectedObject.quaternion.slerp(wristRot, 0.1);
     }
@@ -237,19 +253,16 @@ function updateObjectTransform() {
 
 function addObj(isHole = false) {
     if (!reticle.visible) return log("Zemin bulunamadı!", true);
-    
     const geo = new THREE.BoxGeometry(0.15, 0.15, 0.15);
     const mat = new THREE.MeshStandardMaterial({
         color: isHole ? 0xff3333 : 0x00aaff,
         transparent: true, opacity: isHole ? 0.6 : 1.0,
         metalness: 0.6, roughness: 0.2, emissive: 0x000000
     });
-    
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.setFromMatrixPosition(reticle.matrix);
     mesh.quaternion.setFromRotationMatrix(reticle.matrix);
     mesh.translateY(0.075);
-    
     scene.add(mesh);
     if (isHole) holeObjects.push(mesh); else objects.push(mesh);
     log(isHole ? "Delik eklendi." : "Küp eklendi.");
@@ -296,7 +309,12 @@ function initVoice() {
         if (text.includes("birleştir")) merge();
         if (text.includes("sil")) {
             const all = [...objects, ...holeObjects];
-            if(all.length) scene.remove(all.pop());
+            if(all.length) {
+                const target = all.pop();
+                scene.remove(target);
+                objects = objects.filter(o => o !== target);
+                holeObjects = holeObjects.filter(o => o !== target);
+            }
         }
     };
     try { recognition.start(); } catch(e){}
@@ -306,8 +324,6 @@ function render(timestamp, frame) {
     if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
-        
-        // Hit-test işlemleri
         if (!hitTestSourceRequested) {
             session.requestReferenceSpace('viewer').then(ref => {
                 session.requestHitTestSource({ space: ref }).then(src => hitTestSource = src);
@@ -325,11 +341,7 @@ function render(timestamp, frame) {
                 sysStatus.textContent = "Sistem: Zemin Aranıyor...";
             }
         }
-
-        // El Takibi Güncelleme (Pinch kontrolü)
-        if (isGrabbing) {
-            updateObjectTransform();
-        }
+        if (isGrabbing) updateObjectTransform();
     }
     renderer.render(scene, camera);
 }
