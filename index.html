@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v19.0</title>
+    <title>Tuncer AR v19.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
@@ -36,8 +36,8 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v19</h1>
-        <p style="color:#444; margin-bottom:40px; font-size:11px;">HATA DÜZELTME PAKETİ (STABLE)</p>
+        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v19.1</h1>
+        <p style="color:#444; margin-bottom:40px; font-size:11px;">KAMERA ÇAKIŞMA DÜZELTMESİ (STABLE)</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -63,25 +63,22 @@
         let initialScale = new THREE.Vector3();
 
         async function init() {
-            // Scene & Camera
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // Renderer Setup
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
                 alpha: true, 
-                preserveDrawingBuffer: true,
+                preserveDrawingBuffer: true, // Canvas'ın okunabilmesi için şart
                 powerPreference: "high-performance"
             });
-            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setPixelRatio(1); // Performans ve okuma hızı için 1 tutuyoruz
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 2.5));
 
-            // Reticle (Placement Helper)
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.06, 0.07, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
@@ -89,7 +86,6 @@
             reticle.matrixAutoUpdate = false; reticle.visible = false;
             scene.add(reticle);
 
-            // Finger Tracking Cursor
             fingerCursor = new THREE.Mesh(
                 new THREE.SphereGeometry(0.015, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true, transparent: true, opacity: 0.6 })
@@ -97,15 +93,15 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // Pre-load TensorFlow
+            // TensorFlow'u başlat
             try {
                 handModel = await handpose.load();
                 const hStatus = document.getElementById('hand-status');
                 if(hStatus) { hStatus.innerText = "HAZIR"; hStatus.style.color = "#00ffcc"; }
-            } catch (e) { console.error("Model Error:", e); }
+            } catch (e) { console.error("Handpose Load Error:", e); }
 
             const startBtn = document.getElementById('btn-activate');
-            startBtn.addEventListener('click', async () => {
+            startBtn.onclick = async () => {
                 if (navigator.xr) {
                     const sessionInit = { 
                         requiredFeatures: ['hit-test'], 
@@ -117,31 +113,33 @@
                         const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
                         onSessionStarted(session);
                     } catch (e) {
-                        alert("Kamera/AR Erişimi Sağlanamadı. Lütfen izin verin.");
+                        alert("AR Başlatılamadı: " + e.message);
                     }
                 }
-            });
+            };
         }
 
         function onSessionStarted(session) {
             currentSession = session;
             renderer.xr.setSession(session);
-            
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('ui-container').style.display = 'flex';
             document.getElementById('sys-status').innerText = "AKTİF";
-            
             renderer.setAnimationLoop(render);
         }
 
         async function detectHand() {
-            // Renderer domElement'in XR modunda güncel olduğundan emin ol
+            // KRİTİK: Kamera akışı yerine doğrudan renderer canvas'ını kullanıyoruz!
             if (!handModel || isProcessing || !renderer.xr.isPresenting) return;
             isProcessing = true;
             try {
+                // NotReadableError'u önlemek için doğrudan video akışı istemiyoruz,
+                // WebGL'in o anki karesini (canvas) analiz ediyoruz.
                 const predictions = await handModel.estimateHands(renderer.domElement);
                 updateHandUI(predictions);
-            } catch (e) { }
+            } catch (e) { 
+                console.warn("Takip Hatası:", e);
+            }
             isProcessing = false;
         }
 
@@ -167,7 +165,7 @@
                 fingerCursor.position.copy(camera.position).add(dir.multiplyScalar(0.4));
 
                 const currentPinchDist = Math.hypot(indexTip[0] - thumbTip[0], indexTip[1] - thumbTip[1]);
-                const isPinch = currentPinchDist < 50;
+                const isPinch = currentPinchDist < 55;
                 
                 const raycaster = new THREE.Raycaster();
                 raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
@@ -175,7 +173,7 @@
 
                 if (isPinch) {
                     fingerCursor.material.color.setHex(0xff3366);
-                    if(modeLabel) modeLabel.innerText = "ETKİLEŞİM";
+                    if(modeLabel) modeLabel.innerText = "TUTULUYOR";
                     
                     if (hits.length > 0 && !selectedObject) {
                         selectedObject = hits[0].object;
@@ -184,15 +182,11 @@
                     }
 
                     if (selectedObject) {
-                        // Taşıma
                         selectedObject.position.lerp(fingerCursor.position, 0.15);
-                        
-                        // Döndürme
                         const angle = Math.atan2(middleTip[1] - indexTip[1], middleTip[0] - indexTip[0]);
                         selectedObject.rotation.y += 0.02;
                         selectedObject.rotation.z = angle;
 
-                        // Boyutlandırma
                         if (initialPinchDist > 0) {
                             const scaleFactor = currentPinchDist / initialPinchDist;
                             const s = Math.max(0.1, Math.min(6, initialScale.x * scaleFactor));
@@ -216,8 +210,8 @@
                 const session = renderer.xr.getSession();
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 
-                // Her 3 karede bir tarama (Daha akıcı el takibi)
-                if (timestamp % 3 === 0) detectHand();
+                // Her 4 karede bir analiz (Performans dengesi için)
+                if (timestamp % 4 === 0) detectHand();
 
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
@@ -232,7 +226,7 @@
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
                         const hint = document.getElementById('target-hint');
-                        if(hint) hint.innerText = "YÜZEY BULUNDU";
+                        if(hint) hint.innerText = "YÜZEY HAZIR";
                     } else { 
                         reticle.visible = false; 
                     }
@@ -241,7 +235,6 @@
             renderer.render(scene, camera);
         }
 
-        // Küp Ekleme
         window.addEventListener('click', (e) => {
             if (reticle.visible && !isProcessing && e.target.tagName !== 'BUTTON') {
                 const mesh = new THREE.Mesh(
