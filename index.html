@@ -3,332 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Tuncer Web - AR Modelleme</title>
+    <title>Tuncer Web - Mark 2 AR</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            overflow: hidden; background-color: transparent;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
 
-        /* Glassmorphism Arayüzü */
-        #ui-container {
+        #ui-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+
+        .hud-panel {
             position: absolute;
-            top: 20px;
-            left: 20px;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            padding: 15px 25px;
+            background: rgba(0, 20, 40, 0.6);
+            backdrop-filter: blur(12px);
+            border-left: 4px solid #00e5ff;
+            padding: 20px;
             color: #00e5ff;
-            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        h1 {
-            margin: 0 0 10px 0;
-            font-size: 24px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-        }
-
-        #log {
-            font-family: monospace;
-            font-size: 14px;
-            max-width: 300px;
-            white-space: pre-wrap;
-            color: #a0f0ff;
-        }
-
-        .status-dot {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background-color: #ff3366;
-            border-radius: 50%;
-            margin-right: 10px;
-            box-shadow: 0 0 10px #ff3366;
-            animation: pulse 1.5s infinite;
-        }
-
-        .active-dot { background-color: #00ffcc; box-shadow: 0 0 10px #00ffcc; }
-
-        @keyframes pulse {
-            0% { transform: scale(0.95); opacity: 0.7; }
-            50% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0.95); opacity: 0.7; }
-        }
-
-        #ar-button-container {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-        }
-
-        button {
             pointer-events: auto;
-            background: rgba(0, 229, 255, 0.1);
-            border: 1px solid #00e5ff;
-            color: #00e5ff;
-            padding: 15px 30px;
-            border-radius: 30px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+            top: 20px; left: 20px;
+            border-radius: 0 15px 15px 0;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
         }
 
-        button:hover {
-            background: rgba(0, 229, 255, 0.3);
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
-            transform: scale(1.05);
+        h1 { margin: 0; font-size: 18px; letter-spacing: 3px; text-transform: uppercase; }
+        
+        .status { display: flex; align-items: center; margin-top: 10px; font-size: 12px; }
+        .indicator { width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; background: #ff3366; }
+        .active { background: #00ffcc; box-shadow: 0 0 10px #00ffcc; }
+
+        #console {
+            margin-top: 15px; font-family: 'Courier New', monospace;
+            font-size: 11px; color: #fff; height: 100px; overflow-y: auto;
+            border-top: 1px solid rgba(0, 229, 255, 0.3); padding-top: 10px;
+        }
+
+        #start-btn {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #00e5ff; color: #000; border: none; padding: 20px 40px;
+            font-weight: bold; border-radius: 50px; cursor: pointer; pointer-events: auto;
+            font-size: 16px; box-shadow: 0 0 20px #00e5ff;
+        }
+
+        #controls {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; pointer-events: auto;
+        }
+
+        .btn-mode {
+            background: rgba(0,0,0,0.5); border: 1px solid #00e5ff; color: #00e5ff;
+            padding: 10px 20px; border-radius: 10px; cursor: pointer;
         }
     </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
 
-    <div id="ui-container">
-        <div class="glass-panel">
-            <h1>Tuncer Web</h1>
-            <div style="display: flex; align-items: center;">
-                <span id="voice-dot" class="status-dot"></span>
-                <span>Sesli Asistan: <span id="voice-status">Bekleniyor...</span></span>
-            </div>
-            <p id="log">Sistem başlatılıyor...<br>Komutlar: "Küp ekle", "Sil", "Delik ekle", "Birleştir"</p>
+    <button id="start-btn">SİSTEMİ BAŞLAT (AR)</button>
+
+    <div id="ui-overlay" style="display: none;">
+        <div class="hud-panel">
+            <h1>TUNCER WEB v2.0</h1>
+            <div class="status"><div id="ind-ar" class="indicator"></div> UZAMSAL TAKİP</div>
+            <div class="status"><div id="ind-hand" class="indicator"></div> EL İSKELETİ</div>
+            <div class="status"><div id="ind-voice" class="indicator"></div> SESLİ KOMUT</div>
+            <div id="console">Komut bekleniyor...</div>
+        </div>
+
+        <div id="controls">
+            <button class="btn-mode" id="m-trans">TAŞI</button>
+            <button class="btn-mode" id="m-rot">DÖNDÜR</button>
+            <button class="btn-mode" id="m-scale">ÖLÇEK</button>
         </div>
     </div>
 
-    <div id="ar-button-container">
-        <button id="start-ar">AR Sistemini Başlat</button>
-    </div>
+    <script type="module">
+        import * as THREE from 'three';
+        import { TransformControls } from 'three/addons/controls/TransformControls.js';
+        import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three-csg-ts@3.1.11/lib/index.min.js"></script>
-
-    <script>
-        // --- 1. SİSTEM KURULUMU (Three.js & WebXR) ---
-        let scene, camera, renderer, reticle;
+        let scene, camera, renderer, transformControl;
+        let reticle, hitTestSource = null, hitTestSourceRequested = false;
         let objects = [];
-        let hitTestSource = null;
-        let hitTestSourceRequested = false;
-        let selectedObject = null;
+        let recognition;
 
-        const logEl = document.getElementById('log');
-        function systemLog(msg) {
-            logEl.innerHTML = msg + "<br>" + logEl.innerHTML.split("<br>").slice(0, 4).join("<br>");
+        const consoleEl = document.getElementById('console');
+        function sysLog(m) { 
+            consoleEl.innerHTML = `> ${m}<br>` + consoleEl.innerHTML;
+            console.log(m);
         }
 
         function init() {
             scene = new THREE.Scene();
-
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // WebXR için alfa kanalı (kamera arkaplanı) açık render
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.xr.enabled = true; // Tony Stark vizörü aktif
+            renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
             // Işıklandırma
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-            light.position.set(0.5, 1, 0.25);
+            scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(1, 1, 1);
             scene.add(light);
 
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-            dirLight.position.set(0, 2, 0);
-            scene.add(dirLight);
-
-            // Hedef İmleci (Eklenecek yeri gösterir)
-            const ringGeo = new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
-            reticle = new THREE.Mesh(ringGeo, ringMat);
+            // Hedef Noktası (İmleç)
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+            );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // AR Başlatma Butonu
-            document.getElementById('start-ar').addEventListener('click', onStartAR);
-            window.addEventListener('resize', onWindowResize, false);
+            // --- EL İSKELETİ KURULUMU ---
+            const handModelFactory = new XRHandModelFactory();
             
-            initVoiceControl();
+            // El 1 (Sol/Sağ farketmez)
+            const hand1 = renderer.xr.getHand(0);
+            hand1.add(handModelFactory.createHandModel(hand1, "mesh")); // "mesh" veya "spheres" seçilebilir
+            scene.add(hand1);
+            hand1.addEventListener('connected', () => document.getElementById('ind-hand').classList.add('active'));
+
+            // El 2
+            const hand2 = renderer.xr.getHand(1);
+            hand2.add(handModelFactory.createHandModel(hand2, "mesh"));
+            scene.add(hand2);
+
+            // Koordinat Sistemi (Gizmo)
+            transformControl = new TransformControls(camera, renderer.domElement);
+            scene.add(transformControl);
+
+            // AR Başlatma
+            document.getElementById('start-btn').addEventListener('click', startAR);
+
+            setupControls();
         }
 
-        // --- 2. AR / SLAM (Uzamsal Sabitleme) ---
-        async function onStartAR() {
-            if (navigator.xr) {
-                const sessionInit = { requiredFeatures: ['hit-test'] };
-                try {
-                    const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
-                    renderer.xr.setReferenceSpaceType('local');
-                    await renderer.xr.setSession(session);
-                    document.getElementById('ar-button-container').style.display = 'none';
-                    systemLog("AR Mimarisi devrede. Yüzey taranıyor...");
-                    renderer.setAnimationLoop(render);
-                } catch (e) {
-                    systemLog("Hata: AR desteklenmiyor veya izin reddedildi.");
-                }
-            } else {
-                systemLog("Cihazınız WebXR desteklemiyor.");
-            }
+        async function startAR() {
+            const sessionInit = { 
+                requiredFeatures: ['hit-test'],
+                optionalFeatures: ['dom-overlay', 'hand-tracking', 'depth-sensing'],
+                domOverlay: { root: document.getElementById('ui-overlay') }
+            };
+
+            const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+            renderer.xr.setReferenceSpaceType('local');
+            await renderer.xr.setSession(session);
+
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('ui-overlay').style.display = 'block';
+            document.getElementById('ind-ar').classList.add('active');
+
+            initVoice();
+            renderer.setAnimationLoop(render);
+            sysLog("Sistem aktif. Yüzey aranıyor...");
         }
 
-        // --- 3. SESLİ KONTROL (J.A.R.V.I.S. Entegrasyonu) ---
-        function initVoiceControl() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                systemLog("Hata: Tarayıcı ses tanıma desteklemiyor.");
-                return;
-            }
+        // --- SESLİ KOMUT SİSTEMİ (Gelişmiş) ---
+        function initVoice() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) return sysLog("Hata: Ses desteği yok.");
 
-            const recognition = new SpeechRecognition();
+            recognition = new SpeechRec();
             recognition.lang = 'tr-TR';
             recognition.continuous = true;
             recognition.interimResults = false;
 
-            recognition.onstart = function() {
-                document.getElementById('voice-dot').classList.add('active-dot');
-                document.getElementById('voice-status').innerText = "Dinleniyor...";
+            recognition.onstart = () => document.getElementById('ind-voice').classList.add('active');
+            
+            recognition.onresult = (event) => {
+                const text = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                sysLog(`Komut: ${text}`);
+                handleVoiceCommand(text);
             };
 
-            recognition.onresult = function(event) {
-                const command = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
-                systemLog("Ses Algılandı: " + command);
-                processCommand(command);
+            recognition.onerror = () => {
+                setTimeout(() => recognition.start(), 500); // Hata durumunda otomatik restart
             };
-
-            recognition.onerror = function(event) {
-                systemLog("Ses hatası düzeltiliyor... " + event.error);
-                setTimeout(() => recognition.start(), 1000); // Hata düzeltme/otomatik yeniden başlatma
-            };
-
-            recognition.onend = function() {
-                setTimeout(() => recognition.start(), 1000); // Sürekli dinleme
+            
+            recognition.onend = () => {
+                recognition.start(); // Sürekli dinleme
             };
 
             recognition.start();
         }
 
-        // --- 4. MODELLEME VE KOMUT İŞLEME ---
-        function processCommand(cmd) {
-            if (!reticle.visible && (cmd.includes('ekle') || cmd.includes('yarat'))) {
-                systemLog("Lütfen önce kamerayı bir yüzeye sabitleyin.");
-                return;
-            }
-
-            if (cmd.includes('küp ekle') || cmd.includes('model ekle')) {
-                const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-                const material = new THREE.MeshPhongMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.setFromMatrixPosition(reticle.matrix);
-                scene.add(mesh);
-                objects.push(mesh);
-                selectedObject = mesh;
-                systemLog("Katı küp eklendi.");
-            }
-            else if (cmd.includes('delik küpü') || cmd.includes('delik ekle')) {
-                const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-                const material = new THREE.MeshBasicMaterial({ color: 0xff3366, wireframe: true });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.setFromMatrixPosition(reticle.matrix);
-                mesh.isHole = true; // Delik olduğunu işaretle
-                scene.add(mesh);
-                objects.push(mesh);
-                selectedObject = mesh;
-                systemLog("Delik modeli eklendi. (Birleştir komutu bekleniyor)");
-            }
-            else if (cmd.includes('sil') || cmd.includes('kaldır')) {
-                if (selectedObject) {
-                    scene.remove(selectedObject);
-                    objects = objects.filter(obj => obj !== selectedObject);
-                    selectedObject = objects.length > 0 ? objects[objects.length - 1] : null;
-                    systemLog("Hedef nesne silindi.");
-                }
-            }
-            else if (cmd.includes('birleştir') || cmd.includes('kes')) {
-                // CSG İşlemi (Katı - Delik)
-                systemLog("Modeller işleniyor...");
-                const solids = objects.filter(o => !o.isHole);
-                const holes = objects.filter(o => o.isHole);
-                
-                if (solids.length > 0 && holes.length > 0) {
-                    // Gerçek bir CSG kütüphanesi ile çalışma mantığı (three-csg-ts)
-                    try {
-                        // Not: Tarayıcı tabanlı CSG işlemleri için nesnelerin BSP ağaçlarına çevrilmesi gerekir.
-                        // Bu basit simülasyondur. Gerçek projede CSG.fromMesh() kullanılır.
-                        scene.remove(holes[0]);
-                        objects = objects.filter(o => o !== holes[0]);
-                        systemLog("Birleştirme başarılı. Modifiye edildi.");
-                    } catch (e) {
-                        systemLog("Geometri hatası düzeltildi.");
-                    }
-                } else {
-                    systemLog("Birleştirmek için en az 1 katı ve 1 delik model lazım.");
-                }
+        function handleVoiceCommand(cmd) {
+            // "Küp ekle" veya "model ekle" gibi esnek kontrol
+            if (cmd.includes('küp') && (cmd.includes('ekle') || cmd.includes('oluştur'))) {
+                addModel('cube');
+            } else if (cmd.includes('delik') && cmd.includes('ekle')) {
+                addModel('hole');
+            } else if (cmd.includes('sil') || cmd.includes('kaldır')) {
+                deleteModel();
+            } else if (cmd.includes('birleştir')) {
+                sysLog("Birleştirme işlemi simüle ediliyor...");
             }
         }
 
-        // --- 5. RENDER VE DÖNGÜ ---
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
+        function addModel(type) {
+            if (!reticle.visible) return sysLog("Hata: Yüzey algılanmadı!");
+
+            let geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+            let mat;
+
+            if (type === 'cube') {
+                mat = new THREE.MeshPhongMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.7 });
+            } else {
+                mat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+            }
+
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.setFromMatrixPosition(reticle.matrix);
+            scene.add(mesh);
+            objects.push(mesh);
+            transformControl.attach(mesh);
+            sysLog(`${type === 'cube' ? 'Küp' : 'Delik'} eklendi.`);
+        }
+
+        function deleteModel() {
+            if (transformControl.object) {
+                const obj = transformControl.object;
+                transformControl.detach();
+                scene.remove(obj);
+                objects = objects.filter(o => o !== obj);
+                sysLog("Nesne silindi.");
+            }
+        }
+
+        function setupControls() {
+            document.getElementById('m-trans').onclick = () => transformControl.setMode('translate');
+            document.getElementById('m-rot').onclick = () => transformControl.setMode('rotate');
+            document.getElementById('m-scale').onclick = () => transformControl.setMode('scale');
+
+            // Dokunarak nesne seçme
+            window.addEventListener('pointerdown', (e) => {
+                if (e.target.tagName === 'BUTTON') return;
+                const mouse = new THREE.Vector2(
+                    (e.clientX / window.innerWidth) * 2 - 1,
+                    -(e.clientY / window.innerHeight) * 2 + 1
+                );
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(mouse, camera);
+                const hits = raycaster.intersectObjects(objects);
+                if (hits.length > 0) transformControl.attach(hits[0].object);
+            });
         }
 
         function render(timestamp, frame) {
             if (frame) {
-                const referenceSpace = renderer.xr.getReferenceSpace();
+                const refSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
-                // Hit Test (Yüzey Algılama - Nesnenin havada kalmaması için)
-                if (hitTestSourceRequested === false) {
-                    session.requestReferenceSpace('viewer').then(function(referenceSpace) {
-                        session.requestHitTestSource({ space: referenceSpace }).then(function(source) {
-                            hitTestSource = source;
-                        });
-                    });
-                    session.addEventListener('end', function() {
-                        hitTestSourceRequested = false;
-                        hitTestSource = null;
+                if (!hitTestSourceRequested) {
+                    session.requestReferenceSpace('viewer').then(ref => {
+                        session.requestHitTestSource({ space: ref }).then(src => hitTestSource = src);
                     });
                     hitTestSourceRequested = true;
                 }
 
                 if (hitTestSource) {
-                    const hitTestResults = frame.getHitTestResults(hitTestSource);
-                    if (hitTestResults.length > 0) {
-                        const hit = hitTestResults[0];
+                    const hits = frame.getHitTestResults(hitTestSource);
+                    if (hits.length > 0) {
                         reticle.visible = true;
-                        reticle.matrix.fromArray(hit.getPose(referenceSpace).transform.matrix);
+                        reticle.matrix.fromArray(hits[0].getPose(refSpace).transform.matrix);
                     } else {
                         reticle.visible = false;
                     }
                 }
             }
-
-            // Nesneler kendi eksenlerinde dönüp estetik dursun
-            objects.forEach(obj => {
-                if(obj.isHole) {
-                    obj.rotation.x += 0.02;
-                    obj.rotation.y += 0.02;
-                }
-            });
-
             renderer.render(scene, camera);
         }
 
@@ -336,3 +293,4 @@
     </script>
 </body>
 </html>
+
