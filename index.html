@@ -3,11 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - El Kontrollü AR v2</title>
+    <title>TUNCER HOLO - Yerel El Kontrollü AR</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- MediaPipe Hands -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <script type="importmap">
         {
@@ -65,23 +62,16 @@
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             background: #001; z-index: 1000;
         }
-
-        /* Gizli Video Elementi (MediaPipe için) */
-        #ar-video-feed {
-            position: fixed;
-            top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none;
-        }
     </style>
 </head>
 <body>
 
-    <video id="ar-video-feed" playsinline></video>
     <div id="canvas-container"></div>
 
     <div id="start-screen">
         <div class="hud-panel p-6 rounded text-center max-w-sm pointer-events-auto">
             <h1 class="text-xl font-bold text-cyan-400 mb-2">TUNCER HOLO v2</h1>
-            <p class="text-[10px] text-gray-400 mb-4">El Takibi + AR SLAM Hibrit Sistem. Odayı tarayın, nesneyi yerleştirin ve elinizle (pinch) kontrol edin.</p>
+            <p class="text-[10px] text-gray-400 mb-4">Yerel El Takibi + AR SLAM. Elinizi kameraya gösterin, parmaklarınızla nesneyi kavrayın ve döndürün.</p>
             <div id="ar-button-container"></div>
         </div>
     </div>
@@ -91,7 +81,7 @@
             <div class="hud-panel p-2 rounded text-sm w-1/2">
                 <div class="font-bold text-xs tracking-widest text-white">TUNCER HOLO AR</div>
                 <div id="sys-status" class="text-[9px] text-yellow-400">Zemin Aranıyor...</div>
-                <div id="hand-status" class="text-[9px] text-cyan-400">El: Bekleniyor...</div>
+                <div id="hand-status" class="text-[9px] text-cyan-400">El Takibi: HAZIR</div>
             </div>
             <div class="hud-panel p-2 rounded text-center">
                 <div class="text-[9px] text-gray-300 uppercase">Ses Kontrol</div>
@@ -122,17 +112,14 @@ const sysStatus = document.getElementById('sys-status');
 const handStatus = document.getElementById('hand-status');
 const uiOverlay = document.getElementById('ui-overlay');
 const startScreen = document.getElementById('start-screen');
-const videoElement = document.getElementById('ar-video-feed');
 
-let scene, camera, renderer, controller, reticle;
+let scene, camera, renderer, reticle;
 let hitTestSource = null, hitTestSourceRequested = false;
 let objects = [], holeObjects = [], selectedObject = null;
 
-// MediaPipe State
-let handsDetector;
-let isPinching = false;
-let lastHandPos = new THREE.Vector3();
-let lastHandRot = new THREE.Euler();
+// El Takibi Değişkenleri
+let hand0; // Birinci el (Genellikle sağ el olarak algılanır)
+let isGrabbing = false;
 
 function log(msg, err = false) {
     const d = document.createElement('div');
@@ -140,100 +127,6 @@ function log(msg, err = false) {
     d.className = err ? 'text-red-500' : 'text-cyan-400';
     logConsole.appendChild(d);
     if(logConsole.childNodes.length > 5) logConsole.removeChild(logConsole.firstChild);
-}
-
-async function initHands() {
-    handsDetector = new Hands({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-    });
-    handsDetector.setOptions({
-        maxNumHands: 1,
-        modelComplexity: 1,
-        minDetectionConfidence: 0.7,
-        minTrackingConfidence: 0.7
-    });
-    handsDetector.onResults(onHandResults);
-}
-
-function onHandResults(results) {
-    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-        const landmarks = results.multiHandLandmarks[0];
-        handStatus.textContent = "El: TAKİP EDİLİYOR";
-        
-        // İşaret ve Baş parmak ucu
-        const indexTip = landmarks[8];
-        const thumbTip = landmarks[4];
-        const midPoint = {
-            x: (indexTip.x + thumbTip.x) / 2,
-            y: (indexTip.y + thumbTip.y) / 2,
-            z: (indexTip.z + thumbTip.z) / 2
-        };
-
-        // Kıskaç Mesafesi (Pinch)
-        const distance = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-        
-        // 3D Pozisyon Dönüşümü (Normalized Device Coordinates to World Space)
-        const vector = new THREE.Vector3((midPoint.x * 2) - 1, -(midPoint.y * 2) + 1, 0.5);
-        vector.unproject(camera);
-        const dir = vector.sub(camera.position).normalize();
-        const distanceToTarget = 0.5 + (midPoint.z * -2); // Derinlik takibi
-        const worldPos = camera.position.clone().add(dir.multiplyScalar(distanceToTarget));
-
-        if (distance < 0.05) { // Çimdik yapıldı
-            if (!isPinching) {
-                isPinching = true;
-                findObjectToGrab(worldPos);
-            }
-            if (selectedObject) {
-                updateObjectTransform(worldPos, landmarks);
-            }
-        } else {
-            if (isPinching) {
-                isPinching = false;
-                if (selectedObject) {
-                    selectedObject.material.emissive.setHex(0x000000);
-                    selectedObject = null;
-                }
-            }
-        }
-    } else {
-        handStatus.textContent = "El: GÖRÜLMEDİ";
-    }
-}
-
-function findObjectToGrab(pos) {
-    const all = [...objects, ...holeObjects];
-    let closest = null;
-    let minDist = 0.2; // Yakalama eşiği
-
-    all.forEach(obj => {
-        const d = obj.position.distanceTo(pos);
-        if (d < minDist) {
-            minDist = d;
-            closest = obj;
-        }
-    });
-
-    if (closest) {
-        selectedObject = closest;
-        selectedObject.material.emissive.setHex(0x004444);
-        log("Nesne kavrandı.");
-    }
-}
-
-function updateObjectTransform(newPos, landmarks) {
-    // Pozisyonu güncelle
-    selectedObject.position.lerp(newPos, 0.2);
-
-    // Rotasyonu güncelle (El bilek ve orta parmak hattına göre basit rotasyon)
-    const wrist = landmarks[0];
-    const middleBase = landmarks[9];
-    
-    const angleY = Math.atan2(middleBase.x - wrist.x, middleBase.z - wrist.z);
-    const angleX = Math.atan2(middleBase.y - wrist.y, middleBase.z - wrist.z);
-    
-    selectedObject.rotation.y = angleY * 2;
-    selectedObject.rotation.x = -angleX * 2;
 }
 
 function initThree() {
@@ -251,32 +144,36 @@ function initThree() {
     dLight.position.set(0, 2, 1);
     scene.add(dLight);
 
+    // DÜZELTME: WebXR Hand-Input özelliğini aktif ediyoruz
     const arBtn = ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test'],
+        requiredFeatures: ['hit-test', 'hand-tracking'], // El takibi özelliği burada isteniyor
         optionalFeatures: ['dom-overlay'],
         domOverlay: { root: document.body }
     });
     document.getElementById('ar-button-container').appendChild(arBtn);
 
-    renderer.xr.addEventListener('sessionstart', async () => {
+    // El Kontrolcüsü 0
+    hand0 = renderer.xr.getHand(0);
+    
+    // Pinch (Kıskaç) başlangıcı ve bitişi için yerel XR olayları
+    hand0.addEventListener('pinchend', () => {
+        isGrabbing = true;
+        findObjectToGrab();
+    });
+    hand0.addEventListener('pinchstart', () => {
+        isGrabbing = false;
+        if (selectedObject) {
+            selectedObject.material.emissive.setHex(0x000000);
+            selectedObject = null;
+        }
+    });
+    
+    scene.add(hand0);
+
+    renderer.xr.addEventListener('sessionstart', () => {
         startScreen.style.display = 'none';
         uiOverlay.style.display = 'flex';
-        
-        // MediaPipe için video akışını yakala (Gizli elemente yönlendir)
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-            videoElement.srcObject = stream;
-            videoElement.play();
-            
-            // MediaPipe Döngüsü
-            const processVideo = async () => {
-                if (renderer.xr.isPresenting) {
-                    await handsDetector.send({ image: videoElement });
-                    requestAnimationFrame(processVideo);
-                }
-            };
-            processVideo();
-        } catch(e) { log("Kamera erişim hatası!", true); }
+        initVoice();
     });
 
     reticle = new THREE.Mesh(
@@ -288,6 +185,54 @@ function initThree() {
     scene.add(reticle);
 
     renderer.setAnimationLoop(render);
+}
+
+function findObjectToGrab() {
+    // Elin (işaret parmağı ucunun) dünya koordinatlarını al
+    const indexTip = hand0.joints['index-finger-tip'];
+    if (!indexTip) return;
+
+    const handPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
+    
+    const all = [...objects, ...holeObjects];
+    let closest = null;
+    let minDist = 0.15; // Etkileşim mesafesi
+
+    all.forEach(obj => {
+        const d = obj.position.distanceTo(handPos);
+        if (d < minDist) {
+            minDist = d;
+            closest = obj;
+        }
+    });
+
+    if (closest) {
+        selectedObject = closest;
+        selectedObject.material.emissive.setHex(0x004444);
+        log("Nesne tutuldu.");
+    }
+}
+
+function updateObjectTransform() {
+    if (!selectedObject) return;
+
+    // İşaret parmağı ve baş parmak arasındaki orta noktayı baz alalım
+    const indexTip = hand0.joints['index-finger-tip'];
+    const thumbTip = hand0.joints['thumb-tip'];
+    const wrist = hand0.joints['wrist'];
+
+    if (indexTip && thumbTip && wrist) {
+        const p1 = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
+        const p2 = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
+        const midPoint = new THREE.Vector3().lerpVectors(p1, p2, 0.5);
+
+        // Nesneyi elin konumuna yumuşakça taşı
+        selectedObject.position.lerp(midPoint, 0.3);
+
+        // Rotasyonu elin bilek açısına göre uyarla
+        const wristRot = new THREE.Quaternion().setFromRotationMatrix(wrist.matrixWorld);
+        selectedObject.quaternion.slerp(wristRot, 0.1);
+    }
 }
 
 function addObj(isHole = false) {
@@ -337,10 +282,32 @@ function merge() {
     log("Birleştirildi.");
 }
 
+function initVoice() {
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!Rec) return;
+    const recognition = new Rec();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = true;
+    recognition.onstart = () => { micStatus.textContent = "AKTİF"; };
+    recognition.onresult = (e) => {
+        const text = e.results[e.results.length - 1][0].transcript.toLowerCase();
+        if (text.includes("küp")) addObj(false);
+        if (text.includes("delik")) addObj(true);
+        if (text.includes("birleştir")) merge();
+        if (text.includes("sil")) {
+            const all = [...objects, ...holeObjects];
+            if(all.length) scene.remove(all.pop());
+        }
+    };
+    try { recognition.start(); } catch(e){}
+}
+
 function render(timestamp, frame) {
     if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
+        
+        // Hit-test işlemleri
         if (!hitTestSourceRequested) {
             session.requestReferenceSpace('viewer').then(ref => {
                 session.requestHitTestSource({ space: ref }).then(src => hitTestSource = src);
@@ -358,12 +325,16 @@ function render(timestamp, frame) {
                 sysStatus.textContent = "Sistem: Zemin Aranıyor...";
             }
         }
+
+        // El Takibi Güncelleme (Pinch kontrolü)
+        if (isGrabbing) {
+            updateObjectTransform();
+        }
     }
     renderer.render(scene, camera);
 }
 
-window.addEventListener('load', async () => {
-    await initHands();
+window.addEventListener('load', () => {
     initThree();
 });
 
@@ -372,7 +343,12 @@ document.getElementById('btn-hole').onclick = () => addObj(true);
 document.getElementById('btn-merge').onclick = merge;
 document.getElementById('btn-delete').onclick = () => {
     const all = [...objects, ...holeObjects];
-    if(all.length) scene.remove(all.pop());
+    if(all.length) {
+        const target = all.pop();
+        scene.remove(target);
+        objects = objects.filter(o => o !== target);
+        holeObjects = holeObjects.filter(o => o !== target);
+    }
 };
 </script>
 </body>
