@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - El Kontrollü AR v2.1</title>
+    <title>TUNCER HOLO - El Kontrollü AR v2.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="importmap">
@@ -60,25 +60,28 @@
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: #001; z-index: 1000;
+            background: #001; z-index: 500;
         }
 
+        /* AR Butonu için mutlak çözüm stili */
         #ARButton {
             position: fixed !important;
-            bottom: 20% !important;
+            bottom: 100px !important;
             left: 50% !important;
             transform: translateX(-50%) !important;
             border: 2px solid #0ff !important;
-            background: rgba(0, 255, 255, 0.2) !important;
+            background: rgba(0, 255, 255, 0.3) !important;
             color: #0ff !important;
             font-family: 'Share Tech Mono', monospace !important;
-            padding: 15px 30px !important;
-            border-radius: 8px !important;
+            padding: 20px 40px !important;
+            border-radius: 12px !important;
             text-transform: uppercase !important;
             cursor: pointer !important;
-            z-index: 9999 !important;
+            z-index: 10000 !important; /* En üstte olmasını garanti eder */
             font-weight: bold !important;
-            letter-spacing: 2px !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
     </style>
 </head>
@@ -87,10 +90,10 @@
     <div id="canvas-container"></div>
 
     <div id="start-screen">
-        <div class="hud-panel p-6 rounded text-center max-w-sm pointer-events-auto border-2 border-cyan-500 shadow-[0_0_20px_rgba(0,255,255,0.3)]">
+        <div class="hud-panel p-6 rounded text-center max-w-sm pointer-events-none border-2 border-cyan-500 shadow-[0_0_20px_rgba(0,255,255,0.3)]">
             <h1 class="text-2xl font-bold text-cyan-400 mb-4 tracking-tighter">TUNCER HOLO v2</h1>
             <p class="text-[11px] text-gray-300 mb-6 leading-relaxed">Yerel El Takibi + AR SLAM.<br>Zemini tarayın ve parmaklarınızla (pinch) nesneleri kontrol edin.</p>
-            <div id="ar-button-placeholder" class="h-16 w-full flex items-center justify-center"></div>
+            <div class="h-20 w-full"></div> <!-- Butonun geleceği boşluk -->
         </div>
     </div>
 
@@ -99,7 +102,7 @@
             <div class="hud-panel p-2 rounded text-sm w-1/2">
                 <div class="font-bold text-xs tracking-widest text-white">TUNCER HOLO AR</div>
                 <div id="sys-status" class="text-[9px] text-yellow-400 uppercase tracking-tighter">Zemin Aranıyor...</div>
-                <div id="hand-status" class="text-[9px] text-cyan-400">El Takibi: AKTİF (Joints+)</div>
+                <div id="hand-status" class="text-[9px] text-cyan-400">El Takibi: AKTİF</div>
             </div>
             <div class="hud-panel p-2 rounded text-center">
                 <div class="text-[9px] text-gray-300 uppercase">Durum</div>
@@ -136,7 +139,7 @@ let objects = [], holeObjects = [], selectedObject = null;
 
 let hand0; 
 let isGrabbing = false;
-const handJoints = []; // Görsel noktalar dizisi
+const handJoints = []; 
 
 function log(msg, err = false) {
     const d = document.createElement('div');
@@ -161,21 +164,21 @@ function initThree() {
     dLight.position.set(0, 2, 1);
     scene.add(dLight);
 
+    // Buton oluşturma - DOM Overlay body olarak set edildi
     const arBtn = ARButton.createButton(renderer, {
-        requiredFeatures: ['hit-test', 'hand-tracking'], // Hand tracking zorunlu hale getirildi
+        requiredFeatures: ['hit-test', 'hand-tracking'],
         optionalFeatures: ['dom-overlay'],
         domOverlay: { root: document.body }
     });
+    
+    // Butonu doğrudan body'ye ekliyoruz ki her şeyin üstünde olsun
     document.body.appendChild(arBtn);
 
-    // El Takibi ve Joint Görselleştirme
+    // El Takibi Görselleştirme Hazırlığı
     hand0 = renderer.xr.getHand(0);
-    
-    // Her bir eklem noktası için görsel nokta oluştur
     const jointGeometry = new THREE.SphereGeometry(0.008, 8, 8);
     const jointMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 });
 
-    // WebXR Hands API 25 temel eklem sunar
     for (let i = 0; i < 25; i++) {
         const jointMesh = new THREE.Mesh(jointGeometry, jointMaterial);
         jointMesh.visible = false;
@@ -199,7 +202,12 @@ function initThree() {
     renderer.xr.addEventListener('sessionstart', () => {
         startScreen.style.display = 'none';
         uiOverlay.style.display = 'flex';
-        log("AR & El Takibi Başladı.");
+        log("AR Oturumu Başlatıldı.");
+    });
+
+    renderer.xr.addEventListener('sessionend', () => {
+        startScreen.style.display = 'flex';
+        uiOverlay.style.display = 'none';
     });
 
     reticle = new THREE.Mesh(
@@ -217,12 +225,10 @@ function updateHandVisuals(frame, referenceSpace) {
     const session = renderer.xr.getSession();
     let handVisible = false;
 
-    // inputSources üzerinden el verisini kontrol et
     for (const inputSource of session.inputSources) {
-        if (inputSource.hand && inputSource.handedness === 'right') { // Genelde sağ el
+        if (inputSource.hand) {
             handVisible = true;
             let i = 0;
-            // Tüm eklem noktalarını (joints) gez
             for (const [name, joint] of inputSource.hand) {
                 const pose = frame.getJointPose(joint, referenceSpace);
                 if (pose && handJoints[i]) {
@@ -266,7 +272,6 @@ function findObjectToGrab() {
     if (closest) {
         selectedObject = closest;
         selectedObject.material.emissive.setHex(0x006666);
-        log("Nesne kavrandı.");
     }
 }
 
@@ -280,7 +285,6 @@ function updateObjectTransform() {
         const p1 = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
         const p2 = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
         const midPoint = new THREE.Vector3().lerpVectors(p1, p2, 0.5);
-        
         selectedObject.position.lerp(midPoint, 0.4);
         const wristRot = new THREE.Quaternion().setFromRotationMatrix(wrist.matrixWorld);
         selectedObject.quaternion.slerp(wristRot, 0.15);
@@ -301,11 +305,11 @@ function addObj(isHole = false) {
     mesh.translateY(0.06);
     scene.add(mesh);
     if (isHole) holeObjects.push(mesh); else objects.push(mesh);
-    log(isHole ? "Negatif kutu eklendi." : "Pozitif kutu eklendi.");
+    log(isHole ? "Delik eklendi." : "Küp eklendi.");
 }
 
 function merge() {
-    if (objects.length === 0 || holeObjects.length === 0) return log("Birleştirme hatası!", true);
+    if (objects.length === 0 || holeObjects.length === 0) return log("Obje eksik!", true);
     try {
         const evaluator = new Evaluator();
         let base = objects[0];
@@ -327,8 +331,8 @@ function merge() {
         result.quaternion.copy(base.quaternion);
         scene.add(result);
         objects = [result]; holeObjects = [];
-        log("CSG başarılı.");
-    } catch (e) { log("İşlem hatası!", true); }
+        log("CSG tamamlandı.");
+    } catch (e) { log("Hata oluştu!", true); }
 }
 
 function render(timestamp, frame) {
@@ -336,7 +340,6 @@ function render(timestamp, frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
         
-        // Zemin tarama
         if (!hitTestSourceRequested) {
             session.requestReferenceSpace('viewer').then(ref => {
                 session.requestHitTestSource({ space: ref }).then(src => hitTestSource = src);
@@ -348,15 +351,12 @@ function render(timestamp, frame) {
             if (results.length > 0) {
                 reticle.visible = true;
                 reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                sysStatus.textContent = "Sistem: Zemin Kilitlendi";
+                sysStatus.textContent = "Sistem: Zemin Hazır";
             } else {
                 reticle.visible = false;
             }
         }
-        
-        // El Görselleştirme Güncelleme
         updateHandVisuals(frame, referenceSpace);
-
         if (isGrabbing) updateObjectTransform();
     }
     renderer.render(scene, camera);
