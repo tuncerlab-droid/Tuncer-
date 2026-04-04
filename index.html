@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - AR Modelleme v3</title>
+    <title>TUNCER HOLO - AR Modelleme v4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
@@ -108,7 +108,7 @@
     <div class="hud-overlay flex flex-col justify-between p-4">
         <div class="flex justify-between items-start w-full">
             <div class="hud-panel p-2 rounded text-sm w-1/2 md:w-1/3">
-                <div class="font-bold text-base mb-1 tracking-widest text-white drop-shadow-[0_0_5px_#0ff]">TUNCER WEB OS v3</div>
+                <div class="font-bold text-base mb-1 tracking-widest text-white drop-shadow-[0_0_5px_#0ff]">TUNCER WEB OS v4</div>
                 <div id="sys-status" class="text-[10px] text-green-400">Sistem: YÜKLENİYOR...</div>
                 <div id="hand-status" class="text-[10px] text-yellow-400">El Takibi: HAZIRLANIYOR...</div>
             </div>
@@ -159,10 +159,11 @@ let handCursor, dragPlane;
 let isPinching = false;
 let pinchStartPos = new THREE.Vector3(), objectStartPos = new THREE.Vector3();
 let pinchStartMouse = new THREE.Vector2();
+let objectStartScale = new THREE.Vector3(); // Büyütme işlemi için başlangıç boyutu
 
 // Yeni Özellik Değişkenleri
-let interactionMode = 0; // 0: TAŞI, 1: DÖNDÜR, 2: DERİNLİK
-const modes = ["MOD: TAŞI", "MOD: DÖNDÜR", "MOD: DERİNLİK"];
+let interactionMode = 0; // 0: TAŞI, 1: DÖNDÜR, 2: DERİNLİK, 3: BÜYÜT
+const modes = ["MOD: TAŞI", "MOD: DÖNDÜR", "MOD: DERİNLİK", "MOD: BÜYÜT"];
 let deviceOrientation = null;
 let screenOrientation = 0;
 
@@ -221,6 +222,11 @@ function initThree() {
     const pointLight = new THREE.PointLight(0x00ffff, 2);
     pointLight.position.set(5, 5, 5);
     scene.add(pointLight);
+
+    // SLAM Kordinat Sistemi / Zemin Izgarası (Dünyaya sabitlenmiş hissi verir)
+    const gridHelper = new THREE.GridHelper(50, 50, 0x00ffff, 0x003333);
+    gridHelper.position.set(0, -1.5, 0); // Tahmini zemin hizası
+    scene.add(gridHelper);
 
     // İmleç (Parmak ucu noktası)
     handCursor = new THREE.Mesh(
@@ -311,7 +317,7 @@ function onResults(results) {
 
 // --- ETKİLEŞİM VE YENİ ÖZELLİKLER ---
 document.getElementById('btn-mode').onclick = (e) => {
-    interactionMode = (interactionMode + 1) % 3;
+    interactionMode = (interactionMode + 1) % 4; // Büyütme modunu da dahil et
     e.target.textContent = modes[interactionMode];
     log(modes[interactionMode] + " aktif.");
 };
@@ -328,6 +334,7 @@ function startGrab() {
         if (planeHit.length > 0) {
             pinchStartPos.copy(planeHit[0].point);
             objectStartPos.copy(selectedObject.position);
+            objectStartScale.copy(selectedObject.scale); // Boyutu hafızaya al
             pinchStartMouse.copy(mouse);
         }
     }
@@ -370,6 +377,18 @@ function updateGrab() {
              selectedObject.position.copy(newPos);
         }
     }
+    else if (interactionMode === 3) {
+        // BÜYÜT / KÜÇÜLT (Scale)
+        const deltaY = mouse.y - pinchStartMouse.y;
+        const scaleMult = 1 + (deltaY * 3); // Hassasiyet çarpanı
+        
+        let newScale = objectStartScale.x * scaleMult;
+        
+        // Çok küçülmesini ve çok büyümesini sınırla
+        newScale = Math.max(0.1, Math.min(newScale, 10.0));
+        
+        selectedObject.scale.set(newScale, newScale, newScale);
+    }
 }
 
 function endGrab() {
@@ -407,12 +426,14 @@ function merge() {
     let baseBrush = new Brush(base.geometry, base.material);
     baseBrush.position.copy(base.position);
     baseBrush.rotation.copy(base.rotation);
+    baseBrush.scale.copy(base.scale); // Boyutları da al
     baseBrush.updateMatrixWorld();
 
     holeObjects.forEach(h => {
         const hBrush = new Brush(h.geometry, h.material);
         hBrush.position.copy(h.position);
         hBrush.rotation.copy(h.rotation);
+        hBrush.scale.copy(h.scale); // Boyutları da al
         hBrush.updateMatrixWorld();
         baseBrush = evaluator.evaluate(baseBrush, hBrush, SUBTRACTION);
         scene.remove(h);
@@ -422,6 +443,7 @@ function merge() {
     const result = new THREE.Mesh(baseBrush.geometry, baseBrush.material);
     result.position.copy(base.position);
     result.rotation.copy(base.rotation);
+    result.scale.copy(base.scale);
     scene.add(result);
     objects = [result];
     holeObjects = [];
@@ -533,4 +555,5 @@ document.getElementById('btn-delete').onclick = () => {
 </script>
 </body>
 </html>
+
 
