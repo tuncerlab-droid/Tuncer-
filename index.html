@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer 3D OS - Sesli AR</title>
+    <title>Tuncer AR Core v4.0</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -15,356 +15,241 @@
         #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
         .pointer-events-auto { pointer-events: auto; }
-        .input_video { display: none; }
-        
-        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; background: #00e5ff; cursor: pointer; margin-top: -7px; border: 2px solid #fff; }
-        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #334155; border-radius: 2px; }
+        .input_video { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; transform: scaleX(-1); }
         
         .hud-border { border-left: 4px solid #00e5ff; }
-        #loading { transition: opacity 0.5s; }
+        #loading { transition: opacity 0.5s; z-index: 100; }
         
-        .voice-active { animation: pulse-red 1.5s infinite; }
-        @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        #gyro-request {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 200; background: rgba(15, 23, 42, 0.95); padding: 2rem;
+            border-radius: 1.5rem; border: 1px solid #00e5ff; text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div id="loading" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center text-white">
-        <div class="w-16 h-16 border-4 border-t-cyan-400 border-slate-800 rounded-full animate-spin mb-4"></div>
-        <h1 class="text-xl font-black tracking-widest text-cyan-400">TUNCER CORE v3.0</h1>
-        <p class="text-slate-500 text-sm mt-2">Kamera ve Ses Modülü Başlatılıyor...</p>
+    <!-- Sensör İzni Paneli -->
+    <div id="gyro-request" class="pointer-events-auto">
+        <h2 class="text-white font-bold mb-4">3D KOORDİNAT SENKRONİZASYONU</h2>
+        <p class="text-slate-400 text-xs mb-6">Objelerin dünyada sabit kalması için jiroskop izni gerekiyor.</p>
+        <button id="enable-gyro" class="bg-cyan-500 text-slate-900 font-black px-6 py-3 rounded-full text-sm">SİSTEMİ KALİBRE ET</button>
+    </div>
+
+    <div id="loading" class="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center text-white hidden">
+        <div class="w-12 h-12 border-4 border-t-cyan-400 border-slate-800 rounded-full animate-spin mb-4"></div>
+        <p class="text-cyan-400 font-bold tracking-widest text-xs">AI SENSÖR AKTİF</p>
     </div>
 
     <video class="input_video" autoplay playsinline></video>
     <div id="canvas-container"></div>
 
     <div id="ui-layer" class="flex flex-col justify-between p-6">
-        <!-- Header -->
         <div class="flex justify-between items-start pointer-events-auto">
             <div class="bg-slate-900/80 backdrop-blur-md rounded-lg p-4 shadow-2xl hud-border">
-                <h1 class="text-lg font-black text-white tracking-tighter">TUNCER <span class="text-cyan-400 text-xs">MARK-III</span></h1>
-                <div class="flex flex-col gap-1 mt-2">
+                <h1 class="text-lg font-black text-white tracking-tighter">TUNCER <span class="text-cyan-400">MARK-IV</span></h1>
+                <div class="flex flex-col gap-1 mt-2 text-[9px] font-bold uppercase text-slate-400">
                     <div class="flex items-center gap-2">
-                        <div id="hand-status" class="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">EL TAKİBİ</span>
+                        <div id="hand-status" class="w-2 h-2 rounded-full bg-red-500"></div> <span>HAND AI</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <div id="voice-status" class="w-2 h-2 rounded-full bg-red-500"></div>
-                        <span class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">SESLİ KOMUT</span>
+                        <div id="gyro-status" class="w-2 h-2 rounded-full bg-red-500"></div> <span>GYRO SYNC</span>
                     </div>
                 </div>
             </div>
             
-            <!-- Koordinat Göstergesi -->
-            <div class="bg-slate-900/80 p-3 rounded-lg border border-cyan-500/30 text-[10px] text-cyan-400 font-mono pointer-events-auto">
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-cyan-500/30 text-[10px] text-cyan-400 font-mono">
+                WORLD POS:<br>
                 X: <span id="coord-x">0.00</span><br>
                 Y: <span id="coord-y">0.00</span><br>
                 Z: <span id="coord-z">0.00</span>
             </div>
         </div>
 
-        <!-- Properties Panel -->
         <div id="properties-panel" class="absolute right-6 top-1/2 -translate-y-1/2 bg-slate-900/90 backdrop-blur-lg rounded-2xl p-5 shadow-2xl border border-slate-700 w-56 pointer-events-auto hidden">
-            <h3 class="font-bold text-white text-sm mb-4 flex items-center gap-2">
-                <span class="w-2 h-4 bg-cyan-400 rounded-full"></span> OBJE AYARLARI
-            </h3>
-            
+            <h3 class="font-bold text-white text-xs mb-4">OBJE KONFİGÜRASYONU</h3>
             <div class="space-y-4">
-                <div>
-                    <label class="text-[10px] font-bold text-slate-400 block mb-2 uppercase">Materyal Modu</label>
-                    <div class="flex gap-2">
-                        <button id="btn-solid" class="flex-1 bg-cyan-500 text-slate-950 text-[10px] font-black py-2 rounded-lg transition-all">KATI</button>
-                        <button id="btn-hole" class="flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg transition-all">BOŞLUK</button>
-                    </div>
+                <div class="flex gap-2">
+                    <button id="btn-solid" class="flex-1 bg-cyan-500 text-slate-950 text-[10px] font-black py-2 rounded-lg">KATI</button>
+                    <button id="btn-hole" class="flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg">BOŞLUK</button>
                 </div>
-
-                <div class="space-y-3">
-                    <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>ÖLÇEK (X)</span><span id="val-x" class="text-cyan-400">1.0</span></div>
-                        <input type="range" id="scale-x" min="0.2" max="5" step="0.1" value="1">
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>ÖLÇEK (Y)</span><span id="val-y" class="text-cyan-400">1.0</span></div>
-                        <input type="range" id="scale-y" min="0.2" max="5" step="0.1" value="1">
-                    </div>
-                    <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>ÖLÇEK (Z)</span><span id="val-z" class="text-cyan-400">1.0</span></div>
-                        <input type="range" id="scale-z" min="0.2" max="5" step="0.1" value="1">
-                    </div>
+                <div class="space-y-2">
+                    <input type="range" id="scale-all" min="0.1" max="3" step="0.1" value="1" class="w-full">
+                    <p class="text-[9px] text-center text-slate-500 uppercase font-bold">Global Ölçek</p>
                 </div>
-
-                <button id="btn-delete" class="w-full bg-red-500/20 border border-red-500/50 text-red-500 text-xs font-black py-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">
-                    SİSTEMDEN SİL
-                </button>
+                <button id="btn-delete" class="w-full bg-red-500/20 border border-red-500/50 text-red-500 text-[10px] font-black py-2 rounded-lg">SİL</button>
             </div>
         </div>
 
-        <!-- Bottom Toolbar -->
         <div class="pointer-events-auto flex justify-center gap-6 mb-4">
-            <button onclick="addShape('cube')" class="group flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-slate-900 border-2 border-cyan-500/30 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-all">
-                    <div class="w-6 h-6 bg-cyan-400 rounded-sm"></div>
-                </div>
-                <span class="text-[9px] font-black text-cyan-400 tracking-widest">KÜP</span>
+            <button onclick="addShape('cube')" class="w-14 h-14 bg-slate-900 border-2 border-cyan-500/30 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+                <div class="w-6 h-6 bg-cyan-400"></div>
             </button>
-            <button onclick="addShape('sphere')" class="group flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-slate-900 border-2 border-emerald-500/30 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-all">
-                    <div class="w-7 h-7 bg-emerald-400 rounded-full"></div>
-                </div>
-                <span class="text-[9px] font-black text-emerald-400 tracking-widest">KÜRE</span>
-            </button>
-            <button onclick="addShape('cylinder')" class="group flex flex-col items-center gap-2">
-                <div class="w-14 h-14 bg-slate-900 border-2 border-orange-500/30 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-all">
-                    <div class="w-6 h-7 bg-orange-400 rounded-md"></div>
-                </div>
-                <span class="text-[9px] font-black text-orange-400 tracking-widest">TÜP</span>
+            <button onclick="addShape('sphere')" class="w-14 h-14 bg-slate-900 border-2 border-emerald-500/30 rounded-xl flex items-center justify-center active:scale-90 transition-transform">
+                <div class="w-7 h-7 bg-emerald-400 rounded-full"></div>
             </button>
         </div>
     </div>
 
     <script>
-        // --- THREE.JS ENGINE ---
-        const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-        camera.position.set(0, 0, 5);
-
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-        const dLight = new THREE.DirectionalLight(0xffffff, 1);
-        dLight.position.set(5, 10, 7);
-        scene.add(dLight);
+        const worldGroup = new THREE.Group(); // Tüm objeler bu grubun içinde olacak
+        scene.add(worldGroup);
 
-        // Video Background (Texture)
-        const videoElement = document.querySelector('.input_video');
-        const videoTexture = new THREE.VideoTexture(videoElement);
-        scene.background = videoTexture;
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const light = new THREE.PointLight(0x00e5ff, 1);
+        light.position.set(5, 5, 5);
+        scene.add(light);
 
         const objects = [];
         let selectedObject = null;
         let isPinching = false;
         
-        // 3D Cursor (Hologram Style)
-        const cursor = new THREE.Group();
-        const ring = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.12, 32), new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide }));
-        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-        cursor.add(ring, dot);
+        // 3D İmleç
+        const cursor = new THREE.Mesh(
+            new THREE.RingGeometry(0.05, 0.07, 32),
+            new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide })
+        );
         scene.add(cursor);
 
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+        // --- JİROSKOP & KAMERA SENKRONİZASYONU ---
+        let baseQuaternion = new THREE.Quaternion();
+        
+        function initSensors() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response == 'granted') startGyro();
+                });
+            } else {
+                startGyro();
+            }
+        }
 
-        // UI Selectors
-        const panel = document.getElementById('properties-panel');
-        const btnSolid = document.getElementById('btn-solid');
-        const btnHole = document.getElementById('btn-hole');
-        const scales = { x: document.getElementById('scale-x'), y: document.getElementById('scale-y'), z: document.getElementById('scale-z') };
-        const vals = { x: document.getElementById('val-x'), y: document.getElementById('val-y'), z: document.getElementById('val-z') };
-        const coords = { x: document.getElementById('coord-x'), y: document.getElementById('coord-y'), z: document.getElementById('coord-z') };
+        function startGyro() {
+            document.getElementById('gyro-request').style.display = 'none';
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('gyro-status').classList.replace('bg-red-500', 'bg-cyan-400');
+            
+            window.addEventListener('deviceorientation', (e) => {
+                const alpha = e.alpha ? THREE.MathUtils.degToRad(e.alpha) : 0;
+                const beta = e.beta ? THREE.MathUtils.degToRad(e.beta) : 0;
+                const gamma = e.gamma ? THREE.MathUtils.degToRad(e.gamma) : 0;
 
-        const materials = {
-            cube: new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.6, roughness: 0.1 }),
-            sphere: new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.6, roughness: 0.1 }),
-            cylinder: new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.1 }),
-            hole: new THREE.MeshStandardMaterial({ color: 0xff3366, transparent: true, opacity: 0.4, wireframe: true }),
-            selected: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00e5ff, emissiveIntensity: 0.8 })
-        };
+                const euler = new THREE.Euler(beta, alpha, -gamma, 'YXZ');
+                camera.quaternion.setFromEuler(euler);
+            }, true);
+        }
 
-        // --- CORE FUNCTIONS ---
+        document.getElementById('enable-gyro').onclick = initSensors;
+
+        // --- EL TAKİBİ & 3D MAPPING ---
+        function onResults(results) {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                document.getElementById('hand-status').classList.replace('bg-red-500', 'bg-cyan-400');
+                const landmarks = results.multiHandLandmarks[0];
+                const index = landmarks[8];
+                const thumb = landmarks[4];
+
+                // Screen to World Mapping
+                // Eli kameranın önünde sabit bir derinlikte (-2) tutuyoruz
+                const vector = new THREE.Vector3((index.x - 0.5) * 2, -(index.y - 0.5) * 2, 0.5);
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const distance = 2.5; 
+                cursor.position.copy(camera.position).add(dir.multiplyScalar(distance));
+                cursor.lookAt(camera.position);
+
+                document.getElementById('coord-x').innerText = cursor.position.x.toFixed(2);
+                document.getElementById('coord-y').innerText = cursor.position.y.toFixed(2);
+                document.getElementById('coord-z').innerText = cursor.position.z.toFixed(2);
+
+                // Pinch (Tutma)
+                const d = Math.hypot(index.x - thumb.x, index.y - thumb.y);
+                if (d < 0.05) {
+                    if (!isPinching) {
+                        isPinching = true;
+                        const ray = new THREE.Raycaster();
+                        ray.setFromCamera(new THREE.Vector2(-(index.x - 0.5) * 2, -(index.y - 0.5) * 2), camera);
+                        const hits = ray.intersectObjects(objects);
+                        if (hits.length > 0) selectObject(hits[0].object);
+                    } else if (selectedObject) {
+                        selectedObject.position.lerp(cursor.position, 0.2);
+                    }
+                } else {
+                    isPinching = false;
+                }
+            } else {
+                document.getElementById('hand-status').classList.replace('bg-cyan-400', 'bg-red-500');
+            }
+        }
+
         window.addShape = function(type) {
-            let geo;
-            if (type === 'cube') geo = new THREE.BoxGeometry(1, 1, 1);
-            else if (type === 'sphere') geo = new THREE.SphereGeometry(0.6, 32, 32);
-            else if (type === 'cylinder') geo = new THREE.CylinderGeometry(0.5, 0.5, 1, 32);
-
-            const mesh = new THREE.Mesh(geo, materials[type].clone());
-            mesh.position.set(0, 0, 0);
-            mesh.userData = { type, isHole: false, originalMat: mesh.material };
-            scene.add(mesh);
+            const geo = type === 'cube' ? new THREE.BoxGeometry(0.5,0.5,0.5) : new THREE.SphereGeometry(0.3,32,32);
+            const mat = new THREE.MeshStandardMaterial({ color: type === 'cube' ? 0x00e5ff : 0x10b981 });
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            // Objeyi kameranın tam önüne dünyada sabit bir noktaya koy
+            const spawnPos = new THREE.Vector3(0, 0, -2.5);
+            spawnPos.applyQuaternion(camera.quaternion);
+            spawnPos.add(camera.position);
+            
+            mesh.position.copy(spawnPos);
+            mesh.userData = { originalMat: mat };
+            worldGroup.add(mesh);
             objects.push(mesh);
             selectObject(mesh);
         };
 
         function selectObject(mesh) {
-            if (selectedObject && selectedObject !== mesh) {
-                selectedObject.material = selectedObject.userData.isHole ? materials.hole : selectedObject.userData.originalMat;
-            }
+            if (selectedObject) selectedObject.material = selectedObject.userData.originalMat;
             selectedObject = mesh;
             if (mesh) {
-                if(!mesh.userData.isHole) mesh.material = materials.selected;
-                panel.classList.remove('hidden');
-                scales.x.value = mesh.scale.x; vals.x.innerText = mesh.scale.x.toFixed(1);
-                scales.y.value = mesh.scale.y; vals.y.innerText = mesh.scale.y.toFixed(1);
-                scales.z.value = mesh.scale.z; vals.z.innerText = mesh.scale.z.toFixed(1);
-                updatePanelButtons();
+                mesh.material = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00e5ff });
+                document.getElementById('properties-panel').classList.remove('hidden');
             } else {
-                panel.classList.add('hidden');
+                document.getElementById('properties-panel').classList.add('hidden');
             }
         }
-
-        function updatePanelButtons() {
-            if (selectedObject.userData.isHole) {
-                btnHole.className = "flex-1 bg-red-500 text-white text-[10px] font-black py-2 rounded-lg";
-                btnSolid.className = "flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg";
-            } else {
-                btnSolid.className = "flex-1 bg-cyan-500 text-slate-950 text-[10px] font-black py-2 rounded-lg";
-                btnHole.className = "flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg";
-            }
-        }
-
-        btnSolid.onclick = () => { if(selectedObject){ selectedObject.userData.isHole = false; selectedObject.material = materials.selected; updatePanelButtons(); }};
-        btnHole.onclick = () => { if(selectedObject){ selectedObject.userData.isHole = true; selectedObject.material = materials.hole; updatePanelButtons(); }};
-
-        ['x','y','z'].forEach(axis => {
-            scales[axis].oninput = (e) => {
-                if(!selectedObject) return;
-                const v = parseFloat(e.target.value);
-                selectedObject.scale[axis] = v;
-                vals[axis].innerText = v.toFixed(1);
-            };
-        });
 
         document.getElementById('btn-delete').onclick = () => {
-            if(!selectedObject) return;
-            scene.remove(selectedObject);
-            objects.splice(objects.indexOf(selectedObject), 1);
-            selectObject(null);
+            if (selectedObject) {
+                worldGroup.remove(selectedObject);
+                objects.splice(objects.indexOf(selectedObject), 1);
+                selectObject(null);
+            }
         };
 
-        // --- VOICE ENGINE (Web Speech API) ---
-        function initVoice() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) return;
-
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'tr-TR';
-            recognition.continuous = true;
-            recognition.interimResults = false;
-
-            recognition.onstart = () => {
-                document.getElementById('voice-status').className = "w-2 h-2 rounded-full bg-cyan-400 voice-active";
-            };
-
-            recognition.onresult = (event) => {
-                const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                console.log("Voice Command:", command);
-
-                if (command.includes("küp") || command.includes("kutu")) addShape('cube');
-                else if (command.includes("küre") || command.includes("top")) addShape('sphere');
-                else if (command.includes("tüp") || command.includes("silindir")) addShape('cylinder');
-                else if (command.includes("sil") || command.includes("kaldır")) document.getElementById('btn-delete').click();
-                else if (command.includes("büyüt")) {
-                    if(selectedObject) {
-                        selectedObject.scale.multiplyScalar(1.2);
-                        updatePanelValues();
-                    }
-                }
-                else if (command.includes("küçült")) {
-                    if(selectedObject) {
-                        selectedObject.scale.multiplyScalar(0.8);
-                        updatePanelValues();
-                    }
-                }
-                else if (command.includes("boşluk yap")) btnHole.click();
-                else if (command.includes("katı yap")) btnSolid.click();
-            };
-
-            recognition.onerror = () => {
-                document.getElementById('voice-status').className = "w-2 h-2 rounded-full bg-red-500";
-                setTimeout(() => recognition.start(), 1000);
-            };
-
-            recognition.onend = () => recognition.start();
-            recognition.start();
-        }
-
-        function updatePanelValues() {
-            if(!selectedObject) return;
-            scales.x.value = selectedObject.scale.x; vals.x.innerText = selectedObject.scale.x.toFixed(1);
-            scales.y.value = selectedObject.scale.y; vals.y.innerText = selectedObject.scale.y.toFixed(1);
-            scales.z.value = selectedObject.scale.z; vals.z.innerText = selectedObject.scale.z.toFixed(1);
-        }
-
-        // --- HAND TRACKING ENGINE ---
-        function onResults(results) {
-            document.getElementById('loading').style.opacity = "0";
-            setTimeout(() => document.getElementById('loading').style.display = "none", 500);
-
-            const handStatus = document.getElementById('hand-status');
-
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                handStatus.className = "w-2 h-2 rounded-full bg-cyan-400";
-                const landmarks = results.multiHandLandmarks[0];
-                const index = landmarks[8];
-                const thumb = landmarks[4];
-
-                // Coordinate Mapping (Inversed X for Mirror)
-                mouse.x = -((index.x - 0.5) * 2); 
-                mouse.y = -(index.y * 2) + 1;
-
-                raycaster.setFromCamera(mouse, camera);
-                // Move cursor on a virtual plane at Z=0
-                raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), cursor.position);
-                
-                // Update Coordinates HUD
-                coords.x.innerText = cursor.position.x.toFixed(2);
-                coords.y.innerText = cursor.position.y.toFixed(2);
-                coords.z.innerText = cursor.position.z.toFixed(2);
-
-                // Pinch Detection
-                const dist = Math.sqrt(Math.pow(index.x-thumb.x, 2) + Math.pow(index.y-thumb.y, 2));
-                if (dist < 0.055) {
-                    if (!isPinching) {
-                        isPinching = true;
-                        cursor.children[0].material.color.setHex(0xff3366); // Color change when grasping
-                        const hits = raycaster.intersectObjects(objects);
-                        if (hits.length > 0) selectObject(hits[0].object);
-                    } else if (selectedObject) {
-                        selectedObject.position.lerp(cursor.position, 0.4);
-                    }
-                } else {
-                    isPinching = false;
-                    cursor.children[0].material.color.setHex(0x00e5ff);
-                }
-            } else {
-                handStatus.className = "w-2 h-2 rounded-full bg-red-500";
-                isPinching = false;
-            }
-        }
+        document.getElementById('scale-all').oninput = (e) => {
+            if (selectedObject) selectedObject.scale.setScalar(e.target.value);
+        };
 
         const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
         hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
         hands.onResults(onResults);
 
+        const videoElement = document.querySelector('.input_video');
         const cam = new Camera(videoElement, {
             onFrame: async () => { await hands.send({image: videoElement}); },
-            width: 1280, height: 720, facingMode: 'environment'
+            width: 1280, height: 720
         });
         cam.start();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
-
-        function animate() {
-            requestAnimationFrame(animate);
-            cursor.rotation.z += 0.05; // Rotating HUD Cursor
-            renderer.render(scene, camera);
-        }
-        
-        animate();
-        initVoice();
     </script>
 </body>
 </html>
