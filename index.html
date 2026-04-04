@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer 3D Modelleyici - Mark 7</title>
+    <title>Tuncer 3D OS - Sesli AR</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -23,14 +23,21 @@
         
         .hud-border { border-left: 4px solid #00e5ff; }
         #loading { transition: opacity 0.5s; }
+        
+        .voice-active { animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
     </style>
 </head>
 <body>
 
     <div id="loading" class="fixed inset-0 bg-slate-950 z-50 flex flex-col items-center justify-center text-white">
         <div class="w-16 h-16 border-4 border-t-cyan-400 border-slate-800 rounded-full animate-spin mb-4"></div>
-        <h1 class="text-xl font-black tracking-widest text-cyan-400">TUNCER OS CORE</h1>
-        <p class="text-slate-500 text-sm mt-2">Sensörler ve AI Kalibre Ediliyor...</p>
+        <h1 class="text-xl font-black tracking-widest text-cyan-400">TUNCER CORE v3.0</h1>
+        <p class="text-slate-500 text-sm mt-2">Kamera ve Ses Modülü Başlatılıyor...</p>
     </div>
 
     <video class="input_video" autoplay playsinline></video>
@@ -40,14 +47,24 @@
         <!-- Header -->
         <div class="flex justify-between items-start pointer-events-auto">
             <div class="bg-slate-900/80 backdrop-blur-md rounded-lg p-4 shadow-2xl hud-border">
-                <h1 class="text-lg font-black text-white tracking-tighter">TUNCER 3D <span class="text-cyan-400">AR</span></h1>
-                <div class="flex items-center gap-2 mt-1">
-                    <div id="hand-status" class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]"></div>
-                    <span class="text-[10px] text-slate-300 font-bold uppercase tracking-widest">El Takibi Aktif</span>
+                <h1 class="text-lg font-black text-white tracking-tighter">TUNCER <span class="text-cyan-400 text-xs">MARK-III</span></h1>
+                <div class="flex flex-col gap-1 mt-2">
+                    <div class="flex items-center gap-2">
+                        <div id="hand-status" class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">EL TAKİBİ</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="voice-status" class="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span class="text-[9px] text-slate-300 font-bold uppercase tracking-widest">SESLİ KOMUT</span>
+                    </div>
                 </div>
             </div>
-            <div class="bg-slate-900/50 p-2 rounded text-[10px] text-cyan-300 border border-cyan-500/30">
-                SİSTEM: GALAXY A26 OPTİMİZED
+            
+            <!-- Koordinat Göstergesi -->
+            <div class="bg-slate-900/80 p-3 rounded-lg border border-cyan-500/30 text-[10px] text-cyan-400 font-mono pointer-events-auto">
+                X: <span id="coord-x">0.00</span><br>
+                Y: <span id="coord-y">0.00</span><br>
+                Z: <span id="coord-z">0.00</span>
             </div>
         </div>
 
@@ -59,30 +76,30 @@
             
             <div class="space-y-4">
                 <div>
-                    <label class="text-[10px] font-bold text-slate-400 block mb-2">MOD</label>
+                    <label class="text-[10px] font-bold text-slate-400 block mb-2 uppercase">Materyal Modu</label>
                     <div class="flex gap-2">
-                        <button id="btn-solid" class="flex-1 bg-cyan-500 text-slate-950 text-[10px] font-black py-2 rounded-lg">KATI</button>
-                        <button id="btn-hole" class="flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg">BOŞLUK</button>
+                        <button id="btn-solid" class="flex-1 bg-cyan-500 text-slate-950 text-[10px] font-black py-2 rounded-lg transition-all">KATI</button>
+                        <button id="btn-hole" class="flex-1 bg-slate-800 text-slate-400 text-[10px] font-black py-2 rounded-lg transition-all">BOŞLUK</button>
                     </div>
                 </div>
 
                 <div class="space-y-3">
                     <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>GENİŞLİK (X)</span><span id="val-x" class="text-cyan-400">1.0</span></div>
-                        <input type="range" id="scale-x" min="0.2" max="3" step="0.1" value="1">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>ÖLÇEK (X)</span><span id="val-x" class="text-cyan-400">1.0</span></div>
+                        <input type="range" id="scale-x" min="0.2" max="5" step="0.1" value="1">
                     </div>
                     <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>YÜKSEKLİK (Y)</span><span id="val-y" class="text-cyan-400">1.0</span></div>
-                        <input type="range" id="scale-y" min="0.2" max="3" step="0.1" value="1">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>ÖLÇEK (Y)</span><span id="val-y" class="text-cyan-400">1.0</span></div>
+                        <input type="range" id="scale-y" min="0.2" max="5" step="0.1" value="1">
                     </div>
                     <div>
-                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>DERİNLİK (Z)</span><span id="val-z" class="text-cyan-400">1.0</span></div>
-                        <input type="range" id="scale-z" min="0.2" max="3" step="0.1" value="1">
+                        <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1"><span>ÖLÇEK (Z)</span><span id="val-z" class="text-cyan-400">1.0</span></div>
+                        <input type="range" id="scale-z" min="0.2" max="5" step="0.1" value="1">
                     </div>
                 </div>
 
                 <button id="btn-delete" class="w-full bg-red-500/20 border border-red-500/50 text-red-500 text-xs font-black py-3 rounded-xl hover:bg-red-500 hover:text-white transition-all">
-                    SİSTEMDEN KALDIR
+                    SİSTEMDEN SİL
                 </button>
             </div>
         </div>
@@ -91,26 +108,27 @@
         <div class="pointer-events-auto flex justify-center gap-6 mb-4">
             <button onclick="addShape('cube')" class="group flex flex-col items-center gap-2">
                 <div class="w-14 h-14 bg-slate-900 border-2 border-cyan-500/30 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-all">
-                    <div class="w-6 h-6 bg-cyan-400 rounded-sm shadow-[0_0_15px_#22d3ee]"></div>
+                    <div class="w-6 h-6 bg-cyan-400 rounded-sm"></div>
                 </div>
-                <span class="text-[10px] font-black text-cyan-400 tracking-widest">KÜP</span>
+                <span class="text-[9px] font-black text-cyan-400 tracking-widest">KÜP</span>
             </button>
             <button onclick="addShape('sphere')" class="group flex flex-col items-center gap-2">
                 <div class="w-14 h-14 bg-slate-900 border-2 border-emerald-500/30 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-all">
-                    <div class="w-7 h-7 bg-emerald-400 rounded-full shadow-[0_0_15px_#34d399]"></div>
+                    <div class="w-7 h-7 bg-emerald-400 rounded-full"></div>
                 </div>
-                <span class="text-[10px] font-black text-emerald-400 tracking-widest">KÜRE</span>
+                <span class="text-[9px] font-black text-emerald-400 tracking-widest">KÜRE</span>
             </button>
             <button onclick="addShape('cylinder')" class="group flex flex-col items-center gap-2">
                 <div class="w-14 h-14 bg-slate-900 border-2 border-orange-500/30 rounded-2xl flex items-center justify-center shadow-lg group-active:scale-90 transition-all">
-                    <div class="w-6 h-7 bg-orange-400 rounded-md shadow-[0_0_15px_#fb923c]"></div>
+                    <div class="w-6 h-7 bg-orange-400 rounded-md"></div>
                 </div>
-                <span class="text-[10px] font-black text-orange-400 tracking-widest">TÜP</span>
+                <span class="text-[9px] font-black text-orange-400 tracking-widest">TÜP</span>
             </button>
         </div>
     </div>
 
     <script>
+        // --- THREE.JS ENGINE ---
         const container = document.getElementById('canvas-container');
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -121,12 +139,12 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         container.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.9));
         const dLight = new THREE.DirectionalLight(0xffffff, 1);
         dLight.position.set(5, 10, 7);
         scene.add(dLight);
 
-        // Video Background
+        // Video Background (Texture)
         const videoElement = document.querySelector('.input_video');
         const videoTexture = new THREE.VideoTexture(videoElement);
         scene.background = videoTexture;
@@ -135,31 +153,33 @@
         let selectedObject = null;
         let isPinching = false;
         
-        // Cursor
-        const cursor = new THREE.Mesh(
-            new THREE.SphereGeometry(0.08, 16, 16),
-            new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
-        );
+        // 3D Cursor (Hologram Style)
+        const cursor = new THREE.Group();
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.1, 0.12, 32), new THREE.MeshBasicMaterial({ color: 0x00e5ff, side: THREE.DoubleSide }));
+        const dot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+        cursor.add(ring, dot);
         scene.add(cursor);
 
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
 
-        // UI Refs
+        // UI Selectors
         const panel = document.getElementById('properties-panel');
         const btnSolid = document.getElementById('btn-solid');
         const btnHole = document.getElementById('btn-hole');
         const scales = { x: document.getElementById('scale-x'), y: document.getElementById('scale-y'), z: document.getElementById('scale-z') };
         const vals = { x: document.getElementById('val-x'), y: document.getElementById('val-y'), z: document.getElementById('val-z') };
+        const coords = { x: document.getElementById('coord-x'), y: document.getElementById('coord-y'), z: document.getElementById('coord-z') };
 
         const materials = {
-            cube: new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.5, roughness: 0.2 }),
-            sphere: new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.5, roughness: 0.2 }),
-            cylinder: new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.5, roughness: 0.2 }),
-            hole: new THREE.MeshStandardMaterial({ color: 0xff3366, transparent: true, opacity: 0.3, wireframe: true }),
-            selected: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00e5ff, emissiveIntensity: 0.5 })
+            cube: new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.6, roughness: 0.1 }),
+            sphere: new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.6, roughness: 0.1 }),
+            cylinder: new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.6, roughness: 0.1 }),
+            hole: new THREE.MeshStandardMaterial({ color: 0xff3366, transparent: true, opacity: 0.4, wireframe: true }),
+            selected: new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x00e5ff, emissiveIntensity: 0.8 })
         };
 
+        // --- CORE FUNCTIONS ---
         window.addShape = function(type) {
             let geo;
             if (type === 'cube') geo = new THREE.BoxGeometry(1, 1, 1);
@@ -220,43 +240,103 @@
             selectObject(null);
         };
 
-        // MediaPipe Integration
+        // --- VOICE ENGINE (Web Speech API) ---
+        function initVoice() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return;
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                document.getElementById('voice-status').className = "w-2 h-2 rounded-full bg-cyan-400 voice-active";
+            };
+
+            recognition.onresult = (event) => {
+                const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                console.log("Voice Command:", command);
+
+                if (command.includes("küp") || command.includes("kutu")) addShape('cube');
+                else if (command.includes("küre") || command.includes("top")) addShape('sphere');
+                else if (command.includes("tüp") || command.includes("silindir")) addShape('cylinder');
+                else if (command.includes("sil") || command.includes("kaldır")) document.getElementById('btn-delete').click();
+                else if (command.includes("büyüt")) {
+                    if(selectedObject) {
+                        selectedObject.scale.multiplyScalar(1.2);
+                        updatePanelValues();
+                    }
+                }
+                else if (command.includes("küçült")) {
+                    if(selectedObject) {
+                        selectedObject.scale.multiplyScalar(0.8);
+                        updatePanelValues();
+                    }
+                }
+                else if (command.includes("boşluk yap")) btnHole.click();
+                else if (command.includes("katı yap")) btnSolid.click();
+            };
+
+            recognition.onerror = () => {
+                document.getElementById('voice-status').className = "w-2 h-2 rounded-full bg-red-500";
+                setTimeout(() => recognition.start(), 1000);
+            };
+
+            recognition.onend = () => recognition.start();
+            recognition.start();
+        }
+
+        function updatePanelValues() {
+            if(!selectedObject) return;
+            scales.x.value = selectedObject.scale.x; vals.x.innerText = selectedObject.scale.x.toFixed(1);
+            scales.y.value = selectedObject.scale.y; vals.y.innerText = selectedObject.scale.y.toFixed(1);
+            scales.z.value = selectedObject.scale.z; vals.z.innerText = selectedObject.scale.z.toFixed(1);
+        }
+
+        // --- HAND TRACKING ENGINE ---
         function onResults(results) {
             document.getElementById('loading').style.opacity = "0";
             setTimeout(() => document.getElementById('loading').style.display = "none", 500);
 
-            const handIndicator = document.getElementById('hand-status');
+            const handStatus = document.getElementById('hand-status');
 
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                handIndicator.className = "w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]";
+                handStatus.className = "w-2 h-2 rounded-full bg-cyan-400";
                 const landmarks = results.multiHandLandmarks[0];
                 const index = landmarks[8];
                 const thumb = landmarks[4];
 
-                // Coordinate Mapping
+                // Coordinate Mapping (Inversed X for Mirror)
                 mouse.x = -((index.x - 0.5) * 2); 
                 mouse.y = -(index.y * 2) + 1;
 
                 raycaster.setFromCamera(mouse, camera);
+                // Move cursor on a virtual plane at Z=0
                 raycaster.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), cursor.position);
+                
+                // Update Coordinates HUD
+                coords.x.innerText = cursor.position.x.toFixed(2);
+                coords.y.innerText = cursor.position.y.toFixed(2);
+                coords.z.innerText = cursor.position.z.toFixed(2);
 
-                // Pinch detection
+                // Pinch Detection
                 const dist = Math.sqrt(Math.pow(index.x-thumb.x, 2) + Math.pow(index.y-thumb.y, 2));
-                if (dist < 0.06) {
+                if (dist < 0.055) {
                     if (!isPinching) {
                         isPinching = true;
-                        cursor.scale.set(1.5, 1.5, 1.5);
+                        cursor.children[0].material.color.setHex(0xff3366); // Color change when grasping
                         const hits = raycaster.intersectObjects(objects);
                         if (hits.length > 0) selectObject(hits[0].object);
                     } else if (selectedObject) {
-                        selectedObject.position.lerp(cursor.position, 0.3);
+                        selectedObject.position.lerp(cursor.position, 0.4);
                     }
                 } else {
                     isPinching = false;
-                    cursor.scale.set(1, 1, 1);
+                    cursor.children[0].material.color.setHex(0x00e5ff);
                 }
             } else {
-                handIndicator.className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]";
+                handStatus.className = "w-2 h-2 rounded-full bg-red-500";
                 isPinching = false;
             }
         }
@@ -279,10 +359,12 @@
 
         function animate() {
             requestAnimationFrame(animate);
+            cursor.rotation.z += 0.05; // Rotating HUD Cursor
             renderer.render(scene, camera);
         }
         
         animate();
+        initVoice();
     </script>
 </body>
 </html>
