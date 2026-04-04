@@ -3,12 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer 3D - Sabit Uzay Modelleme</title>
-    
+    <title>Tuncer 3D - Sabit AR</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DeviceOrientationControls.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
@@ -18,185 +16,154 @@
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
         .pointer-events-auto { pointer-events: auto; }
         .input_video { display: none; }
-        
-        #scan-overlay {
-            position: fixed; inset: 0; background: rgba(15, 23, 42, 0.9);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 100; transition: opacity 0.5s;
-        }
-
-        .scanning-line {
-            width: 80%; height: 2px; background: #3b82f6;
-            box-shadow: 0 0 15px #3b82f6;
-            animation: scan 2s infinite ease-in-out;
-        }
-
-        @keyframes scan {
-            0%, 100% { transform: translateY(-100px); }
-            50% { transform: translateY(100px); }
-        }
-
-        .mic-active { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.5); }
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -6px; }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #cbd5e1; border-radius: 2px; }
     </style>
 </head>
 <body>
 
-    <div id="scan-overlay">
-        <h1 class="text-2xl font-bold text-white mb-2">TUNCER 3D AR</h1>
-        <p class="text-blue-400 mb-8 px-6 text-center italic">Telefonu yavaşça etrafta gezdirerek alanı tarayın...</p>
-        <div class="relative w-64 h-64 border-2 border-blue-500/30 rounded-xl flex items-center justify-center overflow-hidden">
-            <div class="scanning-line"></div>
-            <div class="absolute inset-0 bg-gradient-to-b from-transparent via-blue-500/10 to-transparent"></div>
-        </div>
-        <button id="btn-calibrate" class="mt-10 bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-2xl pointer-events-auto transition-transform active:scale-95">
-            TARAMAYI TAMAMLA & BAŞLA
+    <div id="loading" class="fixed inset-0 bg-slate-900 z-50 flex flex-col items-center justify-center text-white text-center p-6">
+        <h1 class="text-3xl font-bold mb-4 text-blue-400">Tuncer 3D Sabit AR</h1>
+        <p class="mb-6">Objelerin uzayda sabit kalması için sensör ve kamera izni gereklidir.</p>
+        <button id="btn-start" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-10 rounded-full shadow-lg pointer-events-auto transition-transform active:scale-95">
+            BAŞLAT
         </button>
     </div>
 
     <video class="input_video" autoplay playsinline></video>
     <div id="canvas-container"></div>
 
-    <div id="ui-layer" class="flex flex-col justify-between p-6">
+    <div id="ui-layer" class="flex flex-col justify-between p-4">
         <div class="flex justify-between items-start pointer-events-auto">
-            <div class="bg-black/60 backdrop-blur-md rounded-2xl p-4 border border-white/10">
-                <h1 class="text-white font-bold tracking-tight">AR DÜNYASI AKTİF</h1>
-                <p class="text-[10px] text-blue-400 font-mono mt-1" id="coord-info">XYZ: 0.00, 0.00, 0.00</p>
-            </div>
-            <div id="mic-indicator" class="w-12 h-12 rounded-full flex items-center justify-center bg-blue-500 transition-all">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"></path><path d="M19 10v1a7 7 0 01-14 0v-1M12 19v4M8 23h8"></path></svg>
+            <div class="bg-white/90 backdrop-blur rounded-xl p-3 shadow-lg border border-slate-200">
+                <h1 class="text-xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-500">Tuncer 3D</h1>
+                <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Sabit Uzay Modu</p>
             </div>
         </div>
 
-        <div class="text-center mb-10">
-            <div id="voice-log" class="inline-block bg-black/80 backdrop-blur text-white px-6 py-3 rounded-full text-sm font-medium opacity-0 transition-opacity duration-300 border border-white/5">
-                Komut bekleniyor...
+        <!-- Özellikler Paneli -->
+        <div id="properties-panel" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 backdrop-blur rounded-xl p-4 shadow-xl border border-slate-200 w-48 pointer-events-auto hidden">
+            <h3 class="font-bold text-slate-800 mb-3 border-b pb-1">Ayarlar</h3>
+            <div class="mb-3">
+                <div class="flex gap-2">
+                    <button id="btn-solid" class="flex-1 bg-blue-500 text-white text-[10px] py-1 rounded shadow">KATI</button>
+                    <button id="btn-hole" class="flex-1 bg-slate-200 text-slate-700 text-[10px] py-1 rounded">BOŞLUK</button>
+                </div>
             </div>
+            <div class="space-y-2 mb-3">
+                <input type="range" id="scale-all" min="0.2" max="3" step="0.1" value="1">
+                <label class="text-[10px] font-bold text-slate-500 text-center block">ÖLÇEK</label>
+            </div>
+            <button id="btn-delete" class="w-full bg-red-500 text-white text-xs font-bold py-2 rounded shadow">SİL</button>
+        </div>
+
+        <!-- Alt Araçlar -->
+        <div class="pointer-events-auto flex justify-center gap-4 mt-auto pb-4">
+            <button onclick="addShape('cube')" class="bg-white rounded-2xl p-4 shadow-xl border-2 border-blue-100 flex flex-col items-center active:scale-95 transition-transform">
+                <div class="w-6 h-6 bg-blue-500 rounded-sm mb-1"></div>
+                <span class="text-[10px] font-bold">KÜP</span>
+            </button>
+            <button onclick="addShape('sphere')" class="bg-white rounded-2xl p-4 shadow-xl border-2 border-green-100 flex flex-col items-center active:scale-95 transition-transform">
+                <div class="w-6 h-6 bg-green-500 rounded-full mb-1"></div>
+                <span class="text-[10px] font-bold">KÜRE</span>
+            </button>
+            <button onclick="addShape('cylinder')" class="bg-white rounded-2xl p-4 shadow-xl border-2 border-orange-100 flex flex-col items-center active:scale-95 transition-transform">
+                <div class="w-6 h-6 bg-orange-500 rounded-sm mb-1" style="border-radius: 50% 50% 0 0"></div>
+                <span class="text-[10px] font-bold">SİLİNDİR</span>
+            </button>
         </div>
     </div>
 
     <script>
         let scene, camera, renderer, controls, videoTexture;
-        let objects = [], selectedObject = null, isPinching = false, cursor;
+        let objects = [], selectedObject = null, isPinching = false;
         let raycaster = new THREE.Raycaster();
-        let hands, cameraPipe;
+        let cursor;
 
-        const colors = { 'kırmızı': 0xff3b3b, 'mavi': 0x3b82f6, 'yeşil': 0x22c55e, 'sarı': 0xfacc15, 'beyaz': 0xffffff, 'siyah': 0x0f172a };
         const mats = {
-            solid: new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1 }),
-            hole: new THREE.MeshStandardMaterial({ color: 0xff4444, transparent: true, opacity: 0.4, wireframe: true }),
-            selected: new THREE.MeshStandardMaterial({ emissive: 0x222200, color: 0xfacc15 })
+            cube: new THREE.MeshStandardMaterial({ color: 0x3b82f6 }),
+            sphere: new THREE.MeshStandardMaterial({ color: 0x22c55e }),
+            cylinder: new THREE.MeshStandardMaterial({ color: 0xf97316 }),
+            hole: new THREE.MeshStandardMaterial({ color: 0xff4444, transparent: true, opacity: 0.3, wireframe: true }),
+            selected: new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0x444400 })
         };
 
-        document.getElementById('btn-calibrate').addEventListener('click', async () => {
-            // İzinler ve Başlatma
+        document.getElementById('btn-start').addEventListener('click', async () => {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                const res = await DeviceOrientationEvent.requestPermission();
-                if (res !== 'granted') return alert("Sensör izni gerekiyor!");
+                const permission = await DeviceOrientationEvent.requestPermission();
+                if (permission !== 'granted') return alert("Sensör izni şart!");
             }
-            
-            document.getElementById('scan-overlay').style.opacity = '0';
-            setTimeout(() => document.getElementById('scan-overlay').style.display = 'none', 500);
-            
-            initWorld();
-            initVoice();
-            initHands();
+            document.getElementById('loading').style.display = 'none';
+            init();
         });
 
-        function initWorld() {
+        function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
             
-            // Dünya merkezini belirle
-            camera.position.set(0, 0, 0);
-
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setPixelRatio(window.devicePixelRatio);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-            // Arka Plan Kamera
             const video = document.querySelector('.input_video');
             videoTexture = new THREE.VideoTexture(video);
             scene.background = videoTexture;
 
-            // Işıklar
-            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
             const sun = new THREE.DirectionalLight(0xffffff, 0.8);
             sun.position.set(5, 10, 7);
             scene.add(sun);
 
-            // Device Orientation (Sabitleme için kritik)
+            // JİROSKOP KONTROLÜ (Uzayda sabitleme için en kritik nokta)
             controls = new THREE.DeviceOrientationControls(camera);
 
-            // El İmleci (Daha görünür sarı nokta)
+            // EL İMLECİ (Sarı Nokta)
             cursor = new THREE.Mesh(
-                new THREE.SphereGeometry(0.04, 24, 24),
-                new THREE.MeshBasicMaterial({ color: 0xfacc15, depthTest: false })
+                new THREE.SphereGeometry(0.05, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0xffff00, depthTest: false })
             );
             scene.add(cursor);
 
+            initHands();
             animate();
         }
 
-        function createShape(type) {
-            // Kameranın o anki bakış yönüne 3 metre ileriye ÇAPA AT
-            const direction = new THREE.Vector3(0, 0, -3).applyQuaternion(camera.quaternion);
-            const pos = camera.position.clone().add(direction);
-
+        window.addShape = function(type) {
             let geo;
-            if (type === 'küp') geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-            else if (type === 'küre') geo = new THREE.SphereGeometry(0.3, 32, 32);
-            else geo = new THREE.CylinderGeometry(0.3, 0.3, 0.7, 32);
+            if (type === 'cube') geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+            else if (type === 'sphere') geo = new THREE.SphereGeometry(0.3, 32, 32);
+            else geo = new THREE.CylinderGeometry(0.3, 0.3, 0.6, 32);
 
-            const mat = mats.solid.clone();
-            mat.color.setHex(0x3b82f6);
-            
+            const mat = mats[type].clone();
             const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.copy(pos);
-            mesh.userData = { type, originalMat: mat, isHole: false };
             
+            // Objeyi tam karşına, dünyaya sabitle
+            const dir = new THREE.Vector3(0, 0, -2.5).applyQuaternion(camera.quaternion);
+            mesh.position.copy(camera.position.clone().add(dir));
+            mesh.userData = { type, originalMat: mat, isHole: false };
+
             scene.add(mesh);
             objects.push(mesh);
             select(mesh);
-            log(`Yeni ${type} uzayda sabitlendi.`);
-        }
+        };
 
         function select(obj) {
             if (selectedObject && selectedObject !== obj) {
                 selectedObject.material = selectedObject.userData.isHole ? mats.hole : selectedObject.userData.originalMat;
             }
             selectedObject = obj;
-            if (obj && !obj.userData.isHole) obj.material = mats.selected;
-        }
-
-        function initVoice() {
-            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!Speech) return;
-            const rec = new Speech();
-            rec.lang = 'tr-TR';
-            rec.continuous = true;
-            rec.onstart = () => document.getElementById('mic-indicator').classList.add('mic-active');
-            rec.onresult = (e) => {
-                const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                log(`🎤 ${cmd}`);
-                
-                if (cmd.includes('küp')) createShape('küp');
-                else if (cmd.includes('küre')) createShape('küre');
-                else if (cmd.includes('silindir')) createShape('silindir');
-                else if (selectedObject) {
-                    if (cmd.includes('sil')) { scene.remove(selectedObject); objects = objects.filter(o => o !== selectedObject); selectedObject = null; }
-                    if (cmd.includes('büyüt')) selectedObject.scale.multiplyScalar(1.3);
-                    if (cmd.includes('küçült')) selectedObject.scale.multiplyScalar(0.7);
-                    if (cmd.includes('döndür')) selectedObject.rotation.y += Math.PI/4;
-                    if (cmd.includes('boşluk')) { selectedObject.userData.isHole = true; selectedObject.material = mats.hole; }
-                    for (let c in colors) if (cmd.includes(c)) selectedObject.userData.originalMat.color.setHex(colors[c]);
-                }
-            };
-            rec.start();
+            if (obj) {
+                if(!obj.userData.isHole) obj.material = mats.selected;
+                document.getElementById('properties-panel').classList.remove('hidden');
+            } else {
+                document.getElementById('properties-panel').classList.add('hidden');
+            }
         }
 
         function initHands() {
-            hands = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
+            const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
             hands.setOptions({ maxNumHands: 1, minDetectionConfidence: 0.7, minTrackingConfidence: 0.7 });
             
             hands.onResults(results => {
@@ -205,51 +172,48 @@
                     const index = lm[8];
                     const thumb = lm[4];
 
-                    // ARKA KAMERA DÜZELTMESİ (Aynalama kaldırıldı)
-                    // Koordinatları ekrana tam oturtmak için offset ve scale ayarı
-                    const nx = (index.x * 2.2) - 1.1; 
-                    const ny = -(index.y * 2.2) + 1.1;
+                    // ESKİ KODUN EL TAKİBİ MANTIĞI (Arka kamera için optimize edildi)
+                    // Arka kamerada X'i ters çevirmiyoruz (1 - x yapmıyoruz)
+                    const ndcX = (index.x * 2) - 1; 
+                    const ndcY = -(index.y * 2) + 1;
 
-                    raycaster.setFromCamera({ x: nx, y: ny }, camera);
-                    raycaster.ray.at(3, cursor.position); // İmleç 3 metre ileride elin ucunda
+                    raycaster.setFromCamera({ x: ndcX, y: ndcY }, camera);
+                    
+                    // İmleci kameradan 2.5 birim uzağa yansıt
+                    raycaster.ray.at(2.5, cursor.position);
 
-                    // Çimdik mesafesi
-                    const d = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-                    if (d < 0.05) {
+                    const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
+                    if (dist < 0.05) { // Pinch (Çimdik)
                         if (!isPinching) {
                             isPinching = true;
+                            cursor.scale.set(1.5, 1.5, 1.5);
                             const hits = raycaster.intersectObjects(objects);
                             if (hits.length > 0) select(hits[0].object);
                         } else if (selectedObject) {
-                            selectedObject.position.lerp(cursor.position, 0.15);
+                            selectedObject.position.lerp(cursor.position, 0.2);
                         }
-                    } else { isPinching = false; }
+                    } else {
+                        isPinching = false;
+                        cursor.scale.set(1, 1, 1);
+                    }
                 }
             });
 
-            cameraPipe = new Camera(document.querySelector('.input_video'), {
+            new Camera(document.querySelector('.input_video'), {
                 onFrame: async () => await hands.send({ image: document.querySelector('.input_video') }),
                 facingMode: 'environment'
-            });
-            cameraPipe.start();
+            }).start();
         }
 
-        function log(t) {
-            const el = document.getElementById('voice-log');
-            el.innerText = t; el.style.opacity = '1';
-            setTimeout(() => el.style.opacity = '0', 3000);
-        }
+        // UI Eventleri
+        document.getElementById('btn-delete').onclick = () => { if(selectedObject) { scene.remove(selectedObject); objects = objects.filter(o => o !== selectedObject); select(null); }};
+        document.getElementById('scale-all').oninput = (e) => { if(selectedObject) { const s = parseFloat(e.target.value); selectedObject.scale.set(s,s,s); }};
+        document.getElementById('btn-hole').onclick = () => { if(selectedObject) { selectedObject.userData.isHole = true; selectedObject.material = mats.hole; }};
+        document.getElementById('btn-solid').onclick = () => { if(selectedObject) { selectedObject.userData.isHole = false; selectedObject.material = mats.selected; }};
 
         function animate() {
             requestAnimationFrame(animate);
-            if (controls) controls.update();
-            
-            // Pozisyon bilgisini UI'a yaz
-            if (camera) {
-                const p = camera.position;
-                document.getElementById('coord-info').innerText = `XYZ: ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}`;
-            }
-
+            if (controls) controls.update(); // Dünyada sabitlemeyi sağlayan döngü
             renderer.render(scene, camera);
         }
 
