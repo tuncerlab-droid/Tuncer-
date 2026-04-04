@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v12.0 - Stabil Sistem</title>
+    <title>Tuncer AR v13.0 - Parmak İzi</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MediaPipe El Takibi Kütüphaneleri -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
         body { 
             margin: 0; overflow: hidden; 
-            background-color: transparent !important; /* Beyaz ekranı önlemek için kritik */
+            background-color: transparent !important;
             font-family: 'Courier New', Courier, monospace;
         }
         
@@ -39,7 +42,6 @@
             text-transform: uppercase; font-size: 11px;
         }
 
-        /* Three.js ARButton Stillerini Ezmek İçin */
         #ARButton {
             background: #00e5ff !important; color: #000 !important;
             font-weight: 900 !important; border-radius: 30px !important;
@@ -47,9 +49,11 @@
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.5) !important;
             bottom: 40px !important; z-index: 1001 !important;
         }
+
+        /* Gizli kamera akışı (Sadece yapay zeka okuyacak) */
+        .input_video { display: none; }
     </style>
 
-    <!-- Modern Three.js Module Import -->
     <script type="importmap">
         {
             "imports": {
@@ -61,19 +65,20 @@
 </head>
 <body>
 
-    <!-- Başlangıç Ekranı -->
+    <video class="input_video" autoplay playsinline></video>
+
     <div id="startup-screen">
-        <h1 style="color:#00e5ff; font-size: 28px; font-family: sans-serif; font-weight: 900; margin-bottom: 5px;">TUNCER CORE <span style="color:#fff;">v12</span></h1>
-        <p style="color:#666; font-size: 12px; margin-bottom: 20px;">Ortam Tarayıcı ve Yapay Zeka Başlatılıyor...</p>
-        <p style="color:#ff3366; font-size: 10px; max-width: 80%; text-align: center; margin-bottom: 30px;">
-            Not: Beyaz ekran alırsanız Google Play'den "Google Play Services for AR" uygulamasını güncelleyin.
+        <h1 style="color:#00e5ff; font-size: 28px; font-family: sans-serif; font-weight: 900; margin-bottom: 5px;">TUNCER CORE <span style="color:#fff;">v13</span></h1>
+        <p style="color:#666; font-size: 12px; margin-bottom: 20px;">AR Motoru ve Parmak İzi Sensörü Yükleniyor...</p>
+        <p style="color:#00ffcc; font-size: 10px; max-width: 80%; text-align: center; margin-bottom: 30px;" id="ai-status">
+            Yapay Zeka Hazırlanıyor...
         </p>
     </div>
 
-    <!-- AR Arayüzü (Kamera Açılınca Görünür) -->
     <div id="ui-container" style="display: none;">
         <div class="hud-panel">
             SİSTEM: <span style="color:#fff;">AKTİF</span><br>
+            HAND_AI: <span id="hand-status" style="color:#ff3366;">BEKLİYOR</span><br>
             X: <span id="pos-x">0.00</span><br>
             Y: <span id="pos-y">0.00</span><br>
             Z: <span id="pos-z">0.00</span><br>
@@ -89,6 +94,11 @@
         let scene, camera, renderer, reticle, controller;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objects = [];
+        
+        // Parmak İmleci Değişkenleri
+        let fingerCursor;
+        let isPinching = false;
+        let selectedObject = null; // Pinch ile tutulan obje
 
         function init() {
             const container = document.createElement('div');
@@ -97,30 +107,36 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // BEYAZ EKRAN ÇÖZÜMÜ: alpha: true ZORUNLUDUR!
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            // Three.js arka planını tamamen şeffaf yapmaya zorla
             renderer.setClearColor(0x000000, 0); 
             renderer.xr.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Işıklandırma
             scene.add(new THREE.AmbientLight(0xffffff, 1.2));
             const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
             directionalLight.position.set(2, 5, 2);
             scene.add(directionalLight);
 
-            // Hedefleme Halkası (Masa yüzeyi bulununca çıkacak)
-            const ringGeo = new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
-            reticle = new THREE.Mesh(ringGeo, ringMat);
+            // WebXR Yüzey Halkası (Masa)
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+            );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // Güvenli AR Başlatma Butonu (DOM Overlay yetkileri ile)
+            // --- PARMAK İMLECİ (FINGER CURSOR) ---
+            const cursorGeo = new THREE.SphereGeometry(0.015, 16, 16);
+            // Standart renk: Camgöbeği (Cyan)
+            const cursorMat = new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true });
+            fingerCursor = new THREE.Mesh(cursorGeo, cursorMat);
+            fingerCursor.visible = false; // El algılanana kadar gizli
+            scene.add(fingerCursor);
+
+            // AR Butonu
             const uiContainer = document.getElementById('ui-container');
             const button = ARButton.createButton(renderer, { 
                 requiredFeatures: ['hit-test'],
@@ -129,11 +145,11 @@
             });
             document.body.appendChild(button);
 
-            // AR Başladığında yapılacaklar
             renderer.xr.addEventListener('sessionstart', () => {
                 document.getElementById('startup-screen').style.display = 'none';
                 uiContainer.style.display = 'flex';
-                initVoice(); // Sesli asistanı AR başlayınca aç (izin hatası almamak için)
+                initVoice();
+                initHandAI(); // Kamerayı ve yapay zekayı AR başlayınca tetikle
             });
 
             renderer.xr.addEventListener('sessionend', () => {
@@ -141,16 +157,112 @@
                 uiContainer.style.display = 'none';
             });
 
-            // Dokunma / Tıklama Kontrolcüsü
             controller = renderer.xr.getController(0);
             controller.addEventListener('select', onSelect);
             scene.add(controller);
 
             window.addEventListener('resize', onWindowResize);
             renderer.setAnimationLoop(render);
+            
+            document.getElementById('ai-status').innerText = "Hazır. 'START AR' butonuna basın.";
         }
 
-        // Obje Yerleştirme
+        // --- MEDIAPIPE EL YAPAY ZEKASI ---
+        function initHandAI() {
+            const videoElement = document.querySelector('.input_video');
+            const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+            
+            hands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
+            });
+
+            hands.onResults(onHandResults);
+
+            const cameraPipe = new Camera(videoElement, {
+                onFrame: async () => { await hands.send({image: videoElement}); },
+                width: 1280, height: 720, facingMode: 'environment' // Arka kamerayı zorla
+            });
+            
+            cameraPipe.start().catch(err => console.log("Kamera Hatası:", err));
+        }
+
+        function onHandResults(results) {
+            const statusEl = document.getElementById('hand-status');
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                statusEl.innerText = "AKTİF";
+                statusEl.style.color = "#00ffcc";
+                fingerCursor.visible = true;
+
+                const landmarks = results.multiHandLandmarks[0];
+                const indexTip = landmarks[8]; // İşaret parmağı ucu
+                const thumbTip = landmarks[4]; // Başparmak ucu
+
+                // 1. Ekran koordinatlarını 3D uzaya çevir (-1 ile +1 arası)
+                // Telefon kamerası aynalı olabileceği için X'i ters çeviriyoruz
+                const mouseX = -((indexTip.x - 0.5) * 2); 
+                const mouseY = -(indexTip.y * 2) + 1;
+
+                // İmleci kameranın önüne (Z= -0.5 gibi sabit bir derinliğe) yerleştir
+                const vector = new THREE.Vector3(mouseX, mouseY, 0.5);
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const distance = 0.5; // Ekrana olan uzaklık hissi
+                fingerCursor.position.copy(camera.position).add(dir.multiplyScalar(distance));
+                fingerCursor.lookAt(camera.position);
+
+                // 2. Etkileşim ve Renk Mantığı
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(new THREE.Vector2(mouseX, mouseY), camera);
+                const intersects = raycaster.intersectObjects(objects);
+
+                // Çimdik mesafesini hesapla
+                const pinchDist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+                const isPinchNow = pinchDist < 0.05;
+
+                if (isPinchNow) {
+                    // ÇİMDİK ATILMIŞSA -> KIRMIZI (Sarımsı veya mavi farketmez, pinch olunca hep kırmızı)
+                    fingerCursor.material.color.setHex(0xff3366); // Kırmızı
+                    
+                    if (!isPinching) {
+                        // Yeni çimdiklendi
+                        isPinching = true;
+                        if (intersects.length > 0) {
+                            selectedObject = intersects[0].object;
+                        }
+                    } else if (selectedObject) {
+                        // Sürükleme işlemi (çimdik basılı ve obje var)
+                        // Objeyi parmağın gösterdiği yöne doğru yavaşça taşı (Zemin izlemesi iptal, havaya kalkar)
+                        const dragPos = new THREE.Vector3().copy(camera.position).add(dir.multiplyScalar(1.5));
+                        selectedObject.position.lerp(dragPos, 0.2);
+                    }
+                } else {
+                    // ÇİMDİK YOK (PARMAK SERBEST)
+                    isPinching = false;
+                    selectedObject = null;
+
+                    if (intersects.length > 0) {
+                        // BİR NESNEYE BAKIYOR -> SARI
+                        fingerCursor.material.color.setHex(0xffea00); // Sarı
+                    } else {
+                        // BOŞLUĞA BAKIYOR -> MAVİ (STANDART)
+                        fingerCursor.material.color.setHex(0x00e5ff); // Camgöbeği (Mavi)
+                    }
+                }
+
+            } else {
+                statusEl.innerText = "BEKLİYOR";
+                statusEl.style.color = "#ff3366";
+                fingerCursor.visible = false;
+                isPinching = false;
+                selectedObject = null;
+            }
+        }
+
+        // WebXR Tıklama (Veya "Küp" komutu) ile masaya obje bırakma
         function onSelect() {
             if (reticle.visible) {
                 const geometry = new THREE.BoxGeometry(0.12, 0.12, 0.12);
@@ -161,9 +273,8 @@
                 });
                 const cube = new THREE.Mesh(geometry, material);
                 
-                // Objeyi halkanın olduğu yere (masaya) yerleştir
                 cube.position.setFromMatrixPosition(reticle.matrix);
-                cube.position.y += 0.06; // Merkez noktasını yukarı al ki masaya gömülmesin
+                cube.position.y += 0.06; 
                 
                 scene.add(cube);
                 objects.push(cube);
@@ -173,7 +284,6 @@
             }
         }
 
-        // Sesli Komut Modülü
         function initVoice() {
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRec) {
@@ -197,9 +307,7 @@
                 }
             };
             
-            rec.onerror = (e) => console.log("Ses Hatası: ", e.error);
             rec.onend = () => { if(renderer.xr.getSession()) rec.start(); };
-            
             try { rec.start(); } catch(e){}
         }
 
@@ -209,7 +317,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // AR Render Döngüsü (Yüzey Tarama)
         function render(timestamp, frame) {
             if (frame) {
                 const referenceSpace = renderer.xr.getReferenceSpace();
@@ -239,7 +346,6 @@
                         reticle.visible = true;
                         reticle.matrix.fromArray(pose.transform.matrix);
                         
-                        // HUD Verilerini Güncelle
                         const pos = new THREE.Vector3().setFromMatrixPosition(reticle.matrix);
                         document.getElementById('pos-x').innerText = pos.x.toFixed(2);
                         document.getElementById('pos-y').innerText = pos.y.toFixed(2);
@@ -254,10 +360,16 @@
                     }
                 }
             }
+            
+            // İmleci yavaşça kendi etrafında döndür (estetik)
+            if (fingerCursor.visible) {
+                fingerCursor.rotation.y += 0.02;
+                fingerCursor.rotation.x += 0.01;
+            }
+
             renderer.render(scene, camera);
         }
 
-        // Sistemi Yükle
         init();
     </script>
 </body>
