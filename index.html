@@ -3,97 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v22.1</title>
-    
+    <title>Tuncer AR v22.2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-
     <style>
-        /* KAMERA FIX: html ve body mutlaka transparent olmalı */
         html, body { 
-            margin: 0; 
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; 
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
             background: transparent !important; 
-            background-color: transparent !important;
         }
-        
         #ui-container { 
-            position: absolute; 
-            inset: 0; 
-            pointer-events: none; 
-            z-index: 10; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: space-between; 
-            padding: 20px; 
+            position: absolute; inset: 0; pointer-events: none; z-index: 10; 
+            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; 
         }
-
         .hud-panel { 
-            background: rgba(0, 15, 30, 0.8); 
-            border-left: 4px solid #00e5ff; 
-            padding: 15px; 
-            border-radius: 10px; 
-            color: #00e5ff; 
-            font-family: monospace; 
-            font-size: 11px; 
-            align-self: flex-end; 
-            backdrop-filter: blur(8px); 
-            text-transform: uppercase;
+            background: rgba(0, 15, 30, 0.85); border-left: 4px solid #00e5ff; 
+            padding: 15px; border-radius: 10px; color: #00e5ff; 
+            font-family: monospace; font-size: 11px; align-self: flex-end; 
+            backdrop-filter: blur(10px); text-transform: uppercase;
         }
-
         #start-screen { 
-            position: fixed; 
-            inset: 0; 
-            background: #000; 
-            z-index: 1000; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
-            color: white; 
-            font-family: monospace;
+            position: fixed; inset: 0; background: #000; z-index: 1000; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: white; font-family: monospace;
         }
-
         #btn-activate { 
-            background: #00e5ff; 
-            color: #000; 
-            font-weight: 900; 
-            padding: 20px 50px; 
-            border-radius: 12px; 
-            border: none; 
-            cursor: pointer; 
-            font-size: 18px; 
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
-            pointer-events: auto;
-            text-transform: uppercase;
+            background: #00e5ff; color: #000; font-weight: 900; padding: 20px 50px; 
+            border-radius: 12px; border: none; cursor: pointer; font-size: 18px; 
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); pointer-events: auto;
         }
-
         #target-hint { 
-            align-self: center; 
-            margin-bottom: 60px; 
-            background: rgba(0, 229, 255, 0.2); 
-            padding: 10px 25px; 
-            border-radius: 30px; 
-            color: #00e5ff; 
-            border: 1px solid #00e5ff; 
-            font-size: 10px; 
-            text-transform: uppercase; 
-            backdrop-filter: blur(4px); 
-            font-family: monospace;
+            align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
+            padding: 10px 25px; border-radius: 30px; color: #00e5ff; 
+            border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; 
+            backdrop-filter: blur(4px);
         }
-        
-        /* Canvas arkasındaki her şeyi göstermeli */
-        canvas { 
-            display: block; 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            z-index: 1; 
-        }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
     </style>
-
     <script type="importmap">
         {
             "imports": {
@@ -104,10 +48,9 @@
     </script>
 </head>
 <body>
-
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v22.1</h1>
-        <p style="color:#666; margin-bottom:40px; font-size:10px;">KAMERA VE ETKILEŞIM ONARILDI</p>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v22.2</h1>
+        <p style="color:#666; margin-bottom:40px; font-size:10px;">TÜM SİSTEMLER ENTEGRE EDİLDİ</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -136,15 +79,10 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // KAMERA İÇİN KRİTİK AYARLAR: alpha:true ve setClearColor(0,0)
-            renderer = new THREE.WebGLRenderer({ 
-                antialias: true, 
-                alpha: true, 
-                preserveDrawingBuffer: true 
-            });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x000000, 0); // Tam şeffaflık
+            renderer.setClearColor(0x000000, 0);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
@@ -153,16 +91,16 @@
             light.position.set(2, 5, 2);
             scene.add(light);
 
-            // Hedef Halka
+            // Hedefleme Halkası
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
             );
-            reticle.matrixAutoUpdate = false; 
+            reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // Parmak İmleci
+            // Parmak ucu görseli
             fingerCursor = new THREE.Mesh(
                 new THREE.SphereGeometry(0.015, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
@@ -170,7 +108,7 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // El Takibi Modelleri
+            // El Modelleri Hazırlığı
             const handModelFactory = new XRHandModelFactory();
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
@@ -179,13 +117,12 @@
                 hands.push(hand);
 
                 hand.addEventListener('connected', () => {
-                    document.getElementById('hand-status').innerText = "AKTİF";
+                    document.getElementById('hand-status').innerText = "BAĞLI";
                     document.getElementById('hand-status').style.color = "#00ffcc";
                 });
             }
 
-            const startBtn = document.getElementById('btn-activate');
-            startBtn.addEventListener('click', async () => {
+            document.getElementById('btn-activate').addEventListener('click', async () => {
                 const sessionInit = { 
                     requiredFeatures: ['hit-test'], 
                     optionalFeatures: ['dom-overlay', 'hand-tracking'], 
@@ -195,14 +132,12 @@
                 try {
                     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
                     renderer.xr.setSession(session);
-                    
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-container').style.display = 'flex';
-                    
                     initVoice(); 
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("Kamera/AR başlatılamadı. Lütfen izinleri kontrol edin.");
+                    alert("AR başlatılamadı. Cihazınızın ARCore ve el takibi desteğini kontrol edin.");
                 }
             });
         }
@@ -225,29 +160,29 @@
                     selectedObject = null;
                 }
             };
-            rec.onend = () => { if (renderer.xr.isPresenting) rec.start(); };
+            rec.onend = () => { if (renderer.xr.isPresenting) try { rec.start(); } catch(e) {} };
             try { rec.start(); } catch(e){}
         }
 
         function createObject(type) {
             const geo = type === 'cube' ? new THREE.BoxGeometry(0.1, 0.1, 0.1) : new THREE.SphereGeometry(0.06, 32, 32);
             const mat = new THREE.MeshStandardMaterial({ 
-                color: new THREE.Color(`hsl(${Math.random() * 360}, 80%, 50%)`), 
-                metalness: 0.7, 
-                roughness: 0.2 
+                color: new THREE.Color(`hsl(${Math.random() * 360}, 70%, 50%)`), 
+                metalness: 0.6, roughness: 0.2 
             });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.setFromMatrixPosition(reticle.matrix);
-            mesh.position.y += 0.05; 
+            mesh.position.y += 0.05;
             scene.add(mesh);
             objects.push(mesh);
         }
 
         function render(timestamp, frame) {
             if (frame) {
-                const session = renderer.xr.getSession();
                 const referenceSpace = renderer.xr.getReferenceSpace();
+                const session = renderer.xr.getSession();
 
+                // Yüzey Algılama (Hit-Test)
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
                         session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
@@ -259,59 +194,51 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('target-hint').innerText = "YÜZEY HAZIR";
-                    } else { 
-                        reticle.visible = false; 
-                    }
+                        document.getElementById('target-hint').innerText = "YÜZEY BULUNDU";
+                    } else { reticle.visible = false; }
                 }
 
-                // El Takibi Mantığı
+                // El Takibi ve Etkileşim
+                let anyHandActive = false;
                 for (const hand of hands) {
-                    if (hand.joints && hand.joints['index-finger-tip']) {
-                        const indexTip = hand.joints['index-finger-tip'];
-                        const thumbTip = hand.joints['thumb-tip'];
+                    const indexFinger = hand.joints['index-finger-tip'];
+                    const thumbFinger = hand.joints['thumb-tip'];
 
-                        if (indexTip && thumbTip) {
-                            fingerCursor.visible = true;
-                            const indexPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
-                            const thumbPos = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
-                            fingerCursor.position.copy(indexPos);
+                    if (indexFinger && thumbFinger && indexFinger.matrixWorld) {
+                        anyHandActive = true;
+                        fingerCursor.visible = true;
+                        const indexPos = new THREE.Vector3().setFromMatrixPosition(indexFinger.matrixWorld);
+                        const thumbPos = new THREE.Vector3().setFromMatrixPosition(thumbFinger.matrixWorld);
+                        fingerCursor.position.copy(indexPos);
 
-                            const pinchDist = indexPos.distanceTo(thumbPos);
-                            const isPinchNow = pinchDist < 0.03; 
-
-                            if (isPinchNow) {
-                                fingerCursor.material.color.setHex(0xff3366); 
-                                document.getElementById('interact-mode').innerText = "TUTULUYOR";
-                                if (!isPinching) {
-                                    isPinching = true;
-                                    for (let obj of objects) {
-                                        if (obj.position.distanceTo(indexPos) < 0.15) { 
-                                            selectedObject = obj; 
-                                            break; 
-                                        }
-                                    }
-                                }
-                                if (selectedObject) {
-                                    selectedObject.position.lerp(indexPos, 0.2);
-                                }
-                            } else {
-                                isPinching = false;
-                                document.getElementById('interact-mode').innerText = "GÖZLEM";
-                                fingerCursor.material.color.setHex(0x00e5ff); 
-                                selectedObject = null;
+                        const distance = indexPos.distanceTo(thumbPos);
+                        if (distance < 0.03) { // Pinch (Tutma)
+                            fingerCursor.material.color.setHex(0xff3366);
+                            document.getElementById('interact-mode').innerText = "NESNE TUTULUYOR";
+                            if (!isPinching) {
+                                isPinching = true;
+                                objects.forEach(obj => {
+                                    if (obj.position.distanceTo(indexPos) < 0.1) selectedObject = obj;
+                                });
                             }
+                            if (selectedObject) {
+                                selectedObject.position.lerp(indexPos, 0.2);
+                            }
+                        } else {
+                            isPinching = false;
+                            selectedObject = null;
+                            fingerCursor.material.color.setHex(0x00e5ff);
+                            document.getElementById('interact-mode').innerText = "GÖZLEM";
                         }
                     }
                 }
+                if (!anyHandActive) fingerCursor.visible = false;
             }
             renderer.render(scene, camera);
         }
 
         window.addEventListener('pointerdown', (e) => {
-            if (reticle.visible && e.target.tagName !== 'BUTTON') {
-                createObject('cube');
-            }
+            if (reticle.visible && e.target.tagName !== 'BUTTON') createObject('cube');
         });
 
         init();
