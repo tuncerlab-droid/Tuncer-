@@ -2,8 +2,8 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - Stable WebXR v3.1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>TUNCER HOLO - WebXR GUI Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="importmap">
@@ -22,42 +22,54 @@
         body { 
             margin: 0; overflow: hidden; background: #000; 
             font-family: 'Share Tech Mono', monospace; color: #0ff; 
-            touch-action: none; /* Mobilde kaydırmayı engeller */
+            touch-action: none; /* Dokunmatik kaydırmaları engeller */
         }
         
         #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
         
-        /* WebXR Özel DOM Arayüzü */
+        /* GUI DÜZELTMESİ: pointer-events: auto yapıldı. Tüm ekran dokunmatik alan oldu. */
         #xr-overlay { 
             position: absolute; inset: 0; z-index: 10; 
-            pointer-events: none; /* Dokunmaların arkaya geçmesine izin ver */
+            pointer-events: auto; /* DİKKAT: Artık dokunmaları bu katman yakalayacak */
             display: none; flex-direction: column; justify-content: space-between; padding: 1rem; 
+            background: transparent;
         }
         
-        /* Sadece panellerin dokunulabilir olması için */
         .interactive-panel { 
-            pointer-events: auto; 
             background: rgba(0, 20, 30, 0.75); border: 1px solid #0ff; 
             backdrop-filter: blur(4px); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); 
+            pointer-events: auto;
         }
         
         .btn-holo { 
             background: rgba(0, 255, 255, 0.1); border: 1px solid #0ff; 
             color: #0ff; font-size: 11px; font-weight: bold; transition: all 0.2s; 
+            pointer-events: auto;
         }
         .btn-holo:active { background: #0ff; color: #000; }
+        
+        /* AR Başlatma Butonunu Özelleştirme */
+        #ar-start-container {
+            position: absolute; inset: 0; z-index: 50; 
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.8);
+        }
     </style>
 </head>
 <body>
 
     <div id="canvas-container"></div>
+    
+    <div id="ar-start-container">
+        <!-- ARButton buraya eklenecek -->
+    </div>
 
-    <!-- WebXR DOM Overlay Alanı -->
+    <!-- WebXR AR Arayüzü (Sadece AR başlarken görünür) -->
     <div id="xr-overlay">
         <div class="flex justify-between items-start">
             <div class="interactive-panel p-3 rounded text-xs w-[48%]">
-                <div class="font-bold text-white mb-1 uppercase tracking-widest">HOLO XR v3.1</div>
-                <div id="sys-status" class="text-[10px] text-yellow-400 font-bold">YÜZEY TARANIYOR...</div>
+                <div class="font-bold text-white mb-1 uppercase tracking-widest">HOLO XR v3.2</div>
+                <div id="sys-status" class="text-[10px] text-yellow-400 font-bold">KAMERAYI YERE TUTUN...</div>
             </div>
             <div class="interactive-panel p-2 rounded text-center w-[30%]">
                 <div class="text-[9px] text-gray-400 uppercase font-bold">DURUM</div>
@@ -67,7 +79,7 @@
 
         <div class="flex justify-between items-end gap-2">
             <div id="log-console" class="interactive-panel p-2 rounded h-24 w-[48%] overflow-hidden flex flex-col justify-end text-[9px] text-cyan-600 font-bold">
-                <div>> AR Motoru aktif.</div>
+                <div>> Sistem Başlatıldı.</div>
             </div>
             <div class="interactive-panel p-2 rounded grid grid-cols-2 gap-2 w-[48%]">
                 <button id="btn-cube" class="btn-holo py-2 rounded">KÜP</button>
@@ -87,12 +99,13 @@ const logConsole = document.getElementById('log-console');
 const sysStatus = document.getElementById('sys-status');
 const interactStatus = document.getElementById('interact-status');
 const xrOverlay = document.getElementById('xr-overlay');
+const arStartContainer = document.getElementById('ar-start-container');
 
 let scene, camera, renderer;
 let reticle, hitTestSource = null, hitTestSourceRequested = false;
 let objects = [], holeObjects = [], selectedObject = null;
 
-// Multi-touch değişkenleri
+// Etkileşim değişkenleri
 let isDragging = false;
 let dragPlane = new THREE.Plane();
 let dragIntersection = new THREE.Vector3();
@@ -111,7 +124,6 @@ function log(msg, err = false) {
 }
 
 function init() {
-    // Sahne Kurulumu
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
@@ -121,13 +133,11 @@ function init() {
     renderer.xr.enabled = true;
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-    // Işıklandırma
     scene.add(new THREE.AmbientLight(0xffffff, 1.2));
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dirLight.position.set(2, 5, 2);
     scene.add(dirLight);
 
-    // Zemin İşaretçisi (Reticle)
     reticle = new THREE.Mesh(
         new THREE.RingGeometry(0.12, 0.16, 32).rotateX(-Math.PI / 2),
         new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 })
@@ -136,27 +146,31 @@ function init() {
     reticle.visible = false;
     scene.add(reticle);
 
-    // AR Başlatma Butonu (DOM Overlay Bağlantısı ile)
     const arButton = ARButton.createButton(renderer, { 
         requiredFeatures: ['hit-test'], 
         optionalFeatures: ['dom-overlay'],
         domOverlay: { root: xrOverlay } 
     });
-    arButton.style.position = 'absolute';
-    arButton.style.bottom = '50%';
-    arButton.style.left = '50%';
-    arButton.style.transform = 'translate(-50%, 50%)';
-    arButton.style.zIndex = '100';
-    document.body.appendChild(arButton);
+    // Buton tasarımını düzenle
+    arButton.style.position = 'relative';
+    arButton.style.padding = '15px 30px';
+    arButton.style.fontSize = '16px';
+    arButton.style.fontWeight = 'bold';
+    arButton.style.color = '#000';
+    arButton.style.background = '#0ff';
+    arButton.style.border = 'none';
+    arButton.style.borderRadius = '5px';
+    arStartContainer.appendChild(arButton);
 
     renderer.xr.addEventListener('sessionstart', () => {
-        xrOverlay.style.display = 'flex';
-        arButton.style.display = 'none';
-        log("AR aktif. Kamerayı zemine tutun.");
+        arStartContainer.style.display = 'none'; // Başlatma ekranını gizle
+        xrOverlay.style.display = 'flex'; // Arayüzü göster
+        log("AR aktif. Zemin bekleniyor.");
     });
     
     renderer.xr.addEventListener('sessionend', () => {
         xrOverlay.style.display = 'none';
+        arStartContainer.style.display = 'flex';
         hitTestSourceRequested = false;
         hitTestSource = null;
     });
@@ -166,11 +180,16 @@ function init() {
     renderer.setAnimationLoop(render);
 }
 
-// --- DOKUNMATİK ETKİLEŞİM & RAYCASTING ---
+// --- DOM OVERLAY DOKUNMATİK DÜZELTMESİ ---
 function setupInteraction() {
-    window.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button')) return; // Butonlara basıldıysa 3D işlemi yoksay
-        
+    // Tüm dokunmatik olayları xr-overlay (arayüz) üzerinden yakalıyoruz
+    xrOverlay.addEventListener('touchstart', (e) => {
+        // Eğer tıklanan şey bir buton veya panel ise, 3D etkileşimi atla (GUI ÇALIŞSIN)
+        if (e.target.tagName === 'BUTTON' || e.target.closest('.interactive-panel')) {
+            return; 
+        }
+
+        e.preventDefault(); // Ekranın kaymasını engelle
         const activeCamera = renderer.xr.isPresenting ? renderer.xr.getCamera(camera) : camera;
 
         if (e.touches.length === 1) {
@@ -184,7 +203,6 @@ function setupInteraction() {
                 isDragging = true;
                 interactStatus.textContent = "SÜRÜKLENİYOR";
                 
-                // Sürükleme düzlemini kameraya bakacak şekilde oluştur
                 const camDir = new THREE.Vector3();
                 activeCamera.getWorldDirection(camDir);
                 dragPlane.setFromNormalAndCoplanarPoint(camDir.negate(), selectedObject.position);
@@ -204,8 +222,9 @@ function setupInteraction() {
         }
     }, { passive: false });
 
-    window.addEventListener('touchmove', (e) => {
-        if (!selectedObject || e.target.closest('button')) return;
+    xrOverlay.addEventListener('touchmove', (e) => {
+        if (!selectedObject || e.target.tagName === 'BUTTON' || e.target.closest('.interactive-panel')) return;
+        e.preventDefault();
 
         const activeCamera = renderer.xr.isPresenting ? renderer.xr.getCamera(camera) : camera;
 
@@ -215,7 +234,10 @@ function setupInteraction() {
             raycaster.setFromCamera(mouse, activeCamera);
             
             if (raycaster.ray.intersectPlane(dragPlane, dragIntersection)) {
+                // Zemine kilitli kalması için Y eksenini sabitle
+                const fixedY = selectedObject.position.y;
                 selectedObject.position.copy(dragIntersection);
+                selectedObject.position.y = fixedY; 
             }
         } 
         else if (e.touches.length === 2) {
@@ -225,17 +247,15 @@ function setupInteraction() {
             const currentDist = Math.hypot(dx, dy);
             const currentAngle = Math.atan2(dy, dx);
 
-            // Büyütme
             const scaleFactor = currentDist / initialPinchDist;
             selectedObject.scale.copy(initialScale).multiplyScalar(scaleFactor);
 
-            // Döndürme
             const angleDelta = currentAngle - initialPinchAngle;
             selectedObject.rotation.y = initialRotationY - angleDelta * 2;
         }
     }, { passive: false });
 
-    window.addEventListener('touchend', (e) => {
+    xrOverlay.addEventListener('touchend', (e) => {
         if (e.touches.length === 0) {
             isDragging = false;
             interactStatus.textContent = selectedObject ? "SEÇİLİ" : "BOŞTA";
@@ -243,11 +263,10 @@ function setupInteraction() {
     });
 }
 
-// --- NESNE YÖNETİMİ ---
 function selectObject(obj) {
     if (selectedObject) selectedObject.material.emissive.setHex(0x000000);
     selectedObject = obj;
-    selectedObject.material.emissive.setHex(0x224422); // Seçileni parlat
+    selectedObject.material.emissive.setHex(0x224422);
     interactStatus.textContent = "SEÇİLİ";
 }
 
@@ -261,7 +280,7 @@ function deselectObject() {
 
 function addObj(isHole) {
     if (!reticle.visible) {
-        log("Hata: Önce yüzey bulunmalı!", true);
+        log("Hata: Mavi halka çıkmalı!", true);
         return;
     }
 
@@ -275,7 +294,6 @@ function addObj(isHole) {
         })
     );
     
-    // Reticle (Mavi halka) pozisyonuna koy, yarısı kadar yukarı kaldır ki yere batsın
     mesh.position.setFromMatrixPosition(reticle.matrix);
     mesh.position.y += size / 2;
     
@@ -316,7 +334,6 @@ function merge() {
     } catch(e) { log("CSG Hatası!", true); }
 }
 
-// --- WEBXR YÜZEY TARAMA DÖNGÜSÜ ---
 function render(timestamp, frame) {
     if (frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
@@ -362,7 +379,6 @@ function onWindowResize() {
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// Buton Etkileşimleri
 document.getElementById('btn-cube').addEventListener('click', () => addObj(false));
 document.getElementById('btn-hole').addEventListener('click', () => addObj(true));
 document.getElementById('btn-merge').addEventListener('click', merge);
@@ -376,6 +392,13 @@ document.getElementById('btn-delete').addEventListener('click', () => {
     } else {
         log("Önce nesne seçin.", true);
     }
+});
+
+// Arayüz dışına tıklamaları engellememek için `xr-overlay` içindeki buton tıklamalarını yönetiyoruz
+document.querySelectorAll('#xr-overlay button').forEach(btn => {
+    btn.addEventListener('touchstart', (e) => {
+        e.stopPropagation(); // 3D ekrana dokunma sinyalini engeller, butona tıklanmasını sağlar
+    });
 });
 
 init();
