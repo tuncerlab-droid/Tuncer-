@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v26.0</title>
+    <title>Tuncer AR v26.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        /* KRİTİK: Siyah ekranı önlemek için tüm katmanlar şeffaf olmalı */
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
             background: transparent !important; 
+            background-color: transparent !important;
         }
         #ui-overlay { 
             position: absolute; inset: 0; pointer-events: none; z-index: 10; 
@@ -34,7 +36,10 @@
             padding: 8px 15px; border-radius: 20px; color: #00e5ff; border: 1px solid #00e5ff;
             font-size: 10px; font-family: monospace;
         }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        canvas { 
+            display: block; position: absolute; top: 0; left: 0; z-index: 1;
+            background: transparent !important;
+        }
     </style>
     <script type="importmap">
         {
@@ -48,8 +53,8 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 24px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v26.0</h1>
-        <p style="color:#666; margin-bottom:30px; font-size:10px;">WEBXR NATIVE - ÇİMDİK TAKİBİ</p>
+        <h1 style="color:#00e5ff; font-size: 24px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v26.1</h1>
+        <p style="color:#666; margin-bottom:30px; font-size:10px;">SİYAH EKRAN HATASI GİDERİLDİ</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -77,11 +82,15 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // KRİTİK: Kamera görüntüsü için renderer ayarları
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            // Siyah ekranı önlemek için alpha:true ve premultipliedAlpha:false kritik
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true, 
+                premultipliedAlpha: false 
+            });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearAlpha(0); // Arka planı şeffaf yapar
+            renderer.setClearAlpha(0); // Arka planı %100 şeffaf yapar
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
@@ -90,7 +99,6 @@
             light.position.set(1, 1, 1).normalize();
             scene.add(light);
 
-            // Zemin Halkası
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
@@ -99,7 +107,6 @@
             reticle.visible = false;
             scene.add(reticle);
 
-            // Çimdik İmleci
             pinchCursor = new THREE.Mesh(
                 new THREE.SphereGeometry(0.01, 12, 12),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
@@ -107,7 +114,6 @@
             pinchCursor.visible = false;
             scene.add(pinchCursor);
 
-            // El Modelleri (WebXR Native)
             const handModelFactory = new XRHandModelFactory();
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
@@ -131,11 +137,15 @@
                 try {
                     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
                     renderer.xr.setSession(session);
+                    
+                    // KRİTİK: Session başladıktan sonra ekran rengini zorla temizle
+                    renderer.setClearColor(0x000000, 0); 
+                    
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-overlay').style.display = 'flex';
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("AR başlatılamadı. Chrome'da WebXR ayarlarını ve kamera iznini kontrol et.");
+                    alert("AR başlatılamadı. Chrome ayarlarını kontrol edin.");
                 }
             });
         }
@@ -154,7 +164,6 @@
                 const session = renderer.xr.getSession();
                 const referenceSpace = renderer.xr.getReferenceSpace();
 
-                // 1. Zemin Algılama
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
                         session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
@@ -172,7 +181,6 @@
                     }
                 }
 
-                // 2. Çimdik (Pinch) Takibi
                 let handActive = false;
                 for (const hand of hands) {
                     const indexFinger = hand.joints['index-finger-tip'];
@@ -181,29 +189,22 @@
                     if (indexFinger && thumbFinger && indexFinger.matrixWorld) {
                         handActive = true;
                         pinchCursor.visible = true;
-                        
                         const iPos = new THREE.Vector3().setFromMatrixPosition(indexFinger.matrixWorld);
                         const tPos = new THREE.Vector3().setFromMatrixPosition(thumbFinger.matrixWorld);
-                        
                         pinchCursor.position.copy(iPos);
 
                         const distance = iPos.distanceTo(tPos);
-                        
-                        if (distance < 0.03) { // Çimdik yapıldı
+                        if (distance < 0.03) { 
                             document.getElementById('pinch-text').innerText = "TUTULUYOR";
                             document.getElementById('pinch-text').style.color = "#ff3366";
                             pinchCursor.material.color.setHex(0xff3366);
-
                             if (!isPinching) {
                                 isPinching = true;
-                                // En yakın objeyi seç
                                 objects.forEach(obj => {
                                     if (obj.position.distanceTo(iPos) < 0.1) selectedObject = obj;
                                 });
                             }
-                            if (selectedObject) {
-                                selectedObject.position.lerp(iPos, 0.2);
-                            }
+                            if (selectedObject) selectedObject.position.lerp(iPos, 0.2);
                         } else {
                             isPinching = false;
                             selectedObject = null;
@@ -219,9 +220,7 @@
         }
 
         window.addEventListener('pointerdown', (e) => {
-            if (reticle.visible && e.target.tagName !== 'BUTTON') {
-                createCube();
-            }
+            if (reticle.visible && e.target.tagName !== 'BUTTON') createCube();
         });
 
         init();
