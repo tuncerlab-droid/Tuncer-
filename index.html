@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO AR v4.6</title>
+    <title>TUNCER HOLO AR v4.7</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MediaPipe Hands (Sadece Core) -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
     <script type="importmap">
         {
@@ -24,43 +24,42 @@
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Share Tech Mono', monospace; color: #0ff; }
         #ar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
         .interactive { pointer-events: auto !important; }
-        #overlay-start { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #000; z-index: 1001; pointer-events: auto; }
+        #overlay-start { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #111; z-index: 1001; pointer-events: auto; }
         #overlay-ui { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: space-between; padding: 20px; box-sizing: border-box; }
-        .hud-border { background: rgba(0, 20, 30, 0.85); border: 1px solid #0ff; box-shadow: 0 0 10px rgba(0, 255, 255, 0.3); }
+        .hud-border { background: rgba(0, 20, 30, 0.9); border: 1px solid #0ff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.2); }
         .btn-holo { background: rgba(0, 40, 40, 0.9); border: 1px solid #0ff; color: #0ff; padding: 12px 5px; font-weight: bold; font-size: 11px; text-transform: uppercase; }
         .btn-holo:active { background: #0ff; color: #000; }
-        #video-feed { position: fixed; bottom: 10px; right: 10px; width: 80px; height: 60px; border: 1px solid #0ff; opacity: 0.5; z-index: 500; transform: scaleX(-1); display: none; }
+        #ARButton { position: static !important; background: #004444 !important; border: 1px solid #0ff !important; color: #0ff !important; padding: 15px 30px !important; font-family: 'Share Tech Mono' !important; margin-top: 20px !important;}
     </style>
 </head>
 <body>
 
-    <video id="video-feed" autoplay playsinline></video>
     <div id="canvas-container"></div>
 
     <div id="ar-overlay">
         <div id="overlay-start">
             <div class="text-center border border-cyan-500 p-8 bg-black/90">
-                <h1 class="text-3xl font-bold mb-2 text-cyan-400 italic">TUNCER v4.6</h1>
-                <p class="text-[10px] tracking-widest text-cyan-700 mb-6 font-bold uppercase">Dual-Stream Stability Patch</p>
-                <div id="status-init" class="text-[10px] mb-4 text-yellow-500 italic font-bold">KAMERA ERİŞİMİ BEKLENİYOR...</div>
-                <div id="button-container" class="interactive opacity-30 pointer-events-none"></div>
+                <h1 class="text-3xl font-bold mb-2 text-cyan-400 italic">TUNCER v4.7</h1>
+                <p class="text-[10px] tracking-widest text-cyan-700 mb-6 font-bold uppercase text-center">Unified Stream Engine - No Camera Conflict</p>
+                <div id="button-container" class="interactive"></div>
             </div>
         </div>
 
         <div id="overlay-ui" class="flex flex-col h-full pointer-events-none">
             <div class="flex justify-between w-full interactive mt-2">
                 <div class="hud-border p-2 w-48">
-                    <div id="status-text" class="text-yellow-500 text-[10px] font-bold">SYSTEM: SCANNING...</div>
-                    <div id="hand-text" class="text-red-500 text-[9px] mt-1 font-bold italic underline">EL ALGILANMADI</div>
+                    <div id="status-text" class="text-yellow-500 text-[10px] font-bold italic">ZEMİN TARANIYOR...</div>
+                    <div id="hand-text" class="text-gray-500 text-[9px] mt-1 font-bold">AI: ANALİZ BEKLENİYOR</div>
                 </div>
                 <div class="hud-border px-3 py-1 flex items-center">
-                    <span id="rotation-text" class="text-cyan-500 text-[10px] font-bold italic">ROT: 0°</span>
+                    <span id="rotation-text" class="text-cyan-500 text-[10px] font-bold italic underline">ROT: 0°</span>
                 </div>
             </div>
 
             <div class="mt-auto mb-6 flex flex-col gap-3 w-full">
                 <div class="hud-border p-2 h-16 w-full overflow-hidden text-[9px] opacity-80" id="console">
-                    <div class="text-green-400 font-bold">> Kamera akışı bağlandı.</div>
+                    <div class="text-green-400 font-bold">> Kamera cakismasi engellendi (Single Stream).</div>
+                    <div class="text-cyan-300">> WebGL texture analizi aktif.</div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2 w-full interactive">
@@ -83,13 +82,13 @@ let hitTestSource = null, hitTestSourceRequested = false;
 let objects = [], holeObjects = [];
 let isGrabbing = false, selectedObject = null;
 
-// El Takip ve Rotasyon
+// El Takip Verileri
 let handLandmarks = null;
 const pinchPointWorld = new THREE.Vector3();
 let initialHandRotation = 0;
 let initialObjRotation = 0;
+let lastProcessTime = 0;
 
-const videoElement = document.getElementById('video-feed');
 const hands = new Hands({
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
 });
@@ -97,7 +96,7 @@ const hands = new Hands({
 hands.setOptions({
     maxNumHands: 1,
     modelComplexity: 0,
-    minDetectionConfidence: 0.6,
+    minDetectionConfidence: 0.5,
     minTrackingConfidence: 0.5
 });
 
@@ -105,33 +104,18 @@ hands.onResults((results) => {
     handLandmarks = (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) ? results.multiHandLandmarks[0] : null;
     const hText = document.getElementById('hand-text');
     if (handLandmarks) {
-        hText.textContent = "EL: AKTİF";
+        hText.textContent = "AI: EL ALGILANDI";
         hText.className = "text-green-400 text-[9px] mt-1 font-bold";
     } else {
-        hText.textContent = "EL: BEKLENİYOR";
-        hText.className = "text-red-500 text-[9px] mt-1";
+        hText.textContent = "AI: EL ARANIYOR...";
+        hText.className = "text-yellow-500 text-[9px] mt-1 font-bold";
     }
-});
-
-// Kamera Başlatma (AR Başlamadan Önce)
-const mpCamera = new Camera(videoElement, {
-    onFrame: async () => { await hands.send({image: videoElement}); },
-    width: 640, height: 480
-});
-
-mpCamera.start().then(() => {
-    document.getElementById('status-init').textContent = "KAMERA HAZIR. AR BAŞLATILABİLİR.";
-    document.getElementById('status-init').className = "text-[10px] mb-4 text-green-500 font-bold";
-    document.getElementById('button-container').classList.remove('opacity-30', 'pointer-events-none');
-}).catch(err => {
-    document.getElementById('status-init').textContent = "KAMERA HATASI: " + err.name;
-    document.getElementById('status-init').className = "text-[10px] mb-4 text-red-500";
 });
 
 function log(m, err = false) {
     const d = document.createElement('div');
     d.textContent = `> ${m}`;
-    d.className = err ? 'text-red-500 font-bold' : 'text-cyan-400';
+    d.className = err ? 'text-red-500 font-bold' : 'text-cyan-400 font-bold';
     const consoleDiv = document.getElementById('console');
     consoleDiv.appendChild(d);
     if(consoleDiv.childNodes.length > 5) consoleDiv.removeChild(consoleDiv.firstChild);
@@ -141,15 +125,19 @@ function init() {
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true,
+        preserveDrawingBuffer: true // KRİTİK: MediaPipe'ın canvas'ı okuyabilmesi için
+    });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const dl = new THREE.DirectionalLight(0xffffff, 1.0);
-    dl.position.set(1, 5, 1);
+    scene.add(new THREE.AmbientLight(0xffffff, 2.0));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.2);
+    dl.position.set(1, 10, 1);
     scene.add(dl);
 
     const arBtn = ARButton.createButton(renderer, {
@@ -170,73 +158,87 @@ function init() {
     renderer.xr.addEventListener('sessionstart', () => {
         document.getElementById('overlay-start').style.display = 'none';
         document.getElementById('overlay-ui').style.display = 'flex';
-        log("AR Modu Başladı.");
+        log("Holografik Sistem Baslatildi.");
     });
 
     renderer.setAnimationLoop(render);
 }
 
-function updateHandLogic() {
+// AR Kamerasından Görüntü Çalma ve AI'ya Gönderme
+async function runAI() {
+    if (!renderer.xr.isPresenting) return;
+    
+    const now = performance.now();
+    if (now - lastProcessTime < 100) return; // 10 FPS AI Takibi (Performans için)
+    lastProcessTime = now;
+
+    try {
+        // İkinci bir kamera açmak yerine, o an render edilen canvas'ı MediaPipe'a gönderiyoruz.
+        // Bu sayede donanım çakışması (NotReadableError) oluşmaz.
+        await hands.send({ image: renderer.domElement });
+    } catch (e) {
+        // Hataları görmezden gel, sistem durmasın
+    }
+}
+
+function updateHandInteractions() {
     if (!handLandmarks) return;
 
-    // Koordinatlar
     const wrist = handLandmarks[0];
     const thumb = handLandmarks[4];
     const index = handLandmarks[8];
     const middleRoot = handLandmarks[9];
 
-    // Pinch mesafesi
-    const dx = thumb.x - index.x;
-    const dy = thumb.y - index.y;
-    const pinchDist = Math.sqrt(dx*dx + dy*dy);
+    // Pinch (Tutma) tespiti
+    const dist = Math.sqrt(Math.pow(thumb.x - index.x, 2) + Math.pow(thumb.y - index.y, 2));
 
-    // Three.js koordinatına çevir (Hassaslaştırma)
-    const midX = ( (thumb.x + index.x) / 2 ) * 2 - 1;
-    const midY = -( (thumb.y + index.y) / 2 ) * 2 - 1;
-    pinchPointWorld.set(midX, midY, 0.5).unproject(camera);
+    // Koordinat Dönüşümü
+    const nx = ((thumb.x + index.x) / 2) * 2 - 1;
+    const ny = -(((thumb.y + index.y) / 2) * 2 - 1);
+    pinchPointWorld.set(nx, ny, 0.5).unproject(camera);
 
-    // Rotasyon (Bilek-Orta Parmak Kökü açısı)
+    // El Rotasyonu
     const angle = Math.atan2(middleRoot.y - wrist.y, middleRoot.x - wrist.x);
     document.getElementById('rotation-text').textContent = `ROT: ${Math.round(angle * (180/Math.PI))}°`;
 
     if (!isGrabbing) {
         let nearest = null;
-        let minDist = 0.2;
+        let minDist = 0.25;
         [...objects, ...holeObjects].forEach(obj => {
             const d = obj.position.distanceTo(pinchPointWorld);
             if (d < minDist) { minDist = d; nearest = obj; }
         });
 
-        if (nearest && pinchDist < 0.08) {
+        if (nearest && dist < 0.08) {
             isGrabbing = true;
             selectedObject = nearest;
             initialHandRotation = angle;
             initialObjRotation = selectedObject.rotation.y;
-            log("Obje Yakalandı.");
+            log("Obje Yakalandi.");
         }
     } else {
-        if (pinchDist > 0.15) {
+        if (dist > 0.15) {
             isGrabbing = false;
             selectedObject = null;
-            log("Obje Bırakıldı.");
+            log("Obje Birakildi.");
         } else if (selectedObject) {
-            // Hareket ve Dönüş
             selectedObject.position.lerp(pinchPointWorld, 0.2);
-            const rotDiff = angle - initialHandRotation;
-            selectedObject.rotation.y = initialObjRotation - rotDiff * 2.5;
+            const rDiff = angle - initialHandRotation;
+            selectedObject.rotation.y = initialObjRotation - rDiff * 2.5;
         }
     }
 }
 
 function spawn(isHole) {
-    if(!reticle.visible) return;
-    const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const mat = new THREE.MeshStandardMaterial({
-        color: isHole ? 0xff3333 : 0x00ffff,
-        transparent: true, opacity: isHole ? 0.7 : 1.0,
-        emissive: 0x000000
-    });
-    const mesh = new THREE.Mesh(geo, mat);
+    if(!reticle.visible) return log("Zemin bulunamadi!", true);
+    const mesh = new THREE.Mesh(
+        new THREE.BoxGeometry(0.1, 0.1, 0.1),
+        new THREE.MeshStandardMaterial({
+            color: isHole ? 0xff4444 : 0x00ffff,
+            transparent: true, opacity: isHole ? 0.7 : 1.0,
+            emissive: 0x000000
+        })
+    );
     mesh.position.setFromMatrixPosition(reticle.matrix);
     mesh.translateY(0.05);
     scene.add(mesh);
@@ -244,7 +246,7 @@ function spawn(isHole) {
 }
 
 function mergeCSG() {
-    if(!objects.length || !holeObjects.length) return;
+    if(!objects.length || !holeObjects.length) return log("Obje/Delik eksik!", true);
     try {
         const evaluator = new Evaluator();
         let mainObj = objects[0];
@@ -269,8 +271,8 @@ function mergeCSG() {
         scene.add(result);
         objects = [result];
         holeObjects = [];
-        log("Birleştirme Tamam.");
-    } catch(e) { log("CSG Hatası!", true); }
+        log("Kesme islemi tamam.");
+    } catch(e) { log("CSG Hatasi!", true); }
 }
 
 function render(t, frame) {
@@ -288,13 +290,15 @@ function render(t, frame) {
                 const pose = hits[0].getPose(refSpace);
                 reticle.visible = true;
                 reticle.matrix.fromArray(pose.transform.matrix);
-                document.getElementById('status-text').textContent = "SYSTEM: READY";
+                document.getElementById('status-text').textContent = "SİSTEM: HAZIR";
                 document.getElementById('status-text').className = "text-green-400 text-[10px] font-bold";
             } else {
                 reticle.visible = false;
             }
         }
-        updateHandLogic();
+        // AI ve Etkileşim Döngüsü
+        runAI();
+        updateHandInteractions();
     }
     renderer.render(scene, camera);
 }
@@ -306,7 +310,7 @@ document.getElementById('do-merge').onclick = mergeCSG;
 document.getElementById('do-clear').onclick = () => {
     [...objects, ...holeObjects].forEach(o => scene.remove(o));
     objects = []; holeObjects = [];
-    log("Temizlendi.");
+    log("Ekran temizlendi.");
 };
 </script>
 </body>
