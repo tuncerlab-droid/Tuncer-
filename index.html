@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v30.0</title>
+    <title>Tuncer AR v31.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         html, body { 
@@ -52,8 +52,8 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER CORE v30.0</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">CAMERA RENDERING FIX</p>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">ADVANCED HAND TRACKING</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -75,7 +75,9 @@
         let objects = [], selectedObject = null;
         let hands = [];
         let isPinching = false;
-        let pinchCursor;
+        
+        // Mark-III El İşaretçisi Grubu
+        let handCursorGroup, cursorDot, cursorRing;
 
         function init() {
             scene = new THREE.Scene();
@@ -83,7 +85,7 @@
 
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
-                alpha: true, // Şeffaflık önemli
+                alpha: true,
                 stencil: false,
                 depth: true
             });
@@ -92,33 +94,45 @@
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Işıklandırma
             scene.add(new THREE.AmbientLight(0xffffff, 1.0));
             const light = new THREE.DirectionalLight(0xffffff, 1.2);
             light.position.set(2, 4, 3);
             scene.add(light);
 
-            // Takip Halkası
+            // Zemin Reticle (Mark-III Stili)
             reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+                new THREE.RingGeometry(0.03, 0.04, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // Çimdik Göstergesi
-            pinchCursor = new THREE.Mesh(
-                new THREE.SphereGeometry(0.015, 16, 16),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.9 })
+            // --- MARK-III EL İŞARETÇİSİ TASARIMI ---
+            handCursorGroup = new THREE.Group();
+            
+            // Merkez Mavi Nokta
+            cursorDot = new THREE.Mesh(
+                new THREE.SphereGeometry(0.006, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
-            pinchCursor.visible = false;
-            scene.add(pinchCursor);
+            
+            // Dış Kırmızı Halka
+            cursorRing = new THREE.Mesh(
+                new THREE.RingGeometry(0.012, 0.015, 32),
+                new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide })
+            );
+            
+            handCursorGroup.add(cursorDot);
+            handCursorGroup.add(cursorRing);
+            handCursorGroup.visible = false;
+            scene.add(handCursorGroup);
 
             // El Takibi
             const handModelFactory = new XRHandModelFactory();
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
+                // El modelini şeffaf yaparak sadece parmak ucuna odaklanıyoruz (veya isteğe bağlı gizlenebilir)
                 hand.add(handModelFactory.createHandModel(hand, "mesh"));
                 scene.add(hand);
                 hands.push(hand);
@@ -138,7 +152,6 @@
                 
                 try {
                     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
-                    // KRİTİK: Kamera görüntüsünün gelmesi için renderer ayarını session başladıktan sonra zorluyoruz
                     renderer.xr.setReferenceSpaceType('local');
                     renderer.xr.setSession(session);
                     
@@ -153,13 +166,13 @@
         }
 
         function createCube() {
-            const geometry = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
             const material = new THREE.MeshStandardMaterial({ 
-                color: 0x00e5ff, 
+                color: 0x0088aa, 
                 metalness: 0.8, 
                 roughness: 0.2,
                 transparent: true,
-                opacity: 0.85
+                opacity: 0.7
             });
             const cube = new THREE.Mesh(geometry, material);
             cube.position.setFromMatrixPosition(reticle.matrix);
@@ -192,7 +205,7 @@
                     }
                 }
 
-                // El Takibi ve Pinch
+                // El Takibi ve Mark-III İşaretçi Mantığı
                 let anyHandVisible = false;
                 for (const hand of hands) {
                     const indexFinger = hand.joints['index-finger-tip'];
@@ -200,25 +213,31 @@
 
                     if (indexFinger && thumbFinger && indexFinger.matrixWorld) {
                         anyHandVisible = true;
-                        pinchCursor.visible = true;
+                        handCursorGroup.visible = true;
                         
                         const iPos = new THREE.Vector3().setFromMatrixPosition(indexFinger.matrixWorld);
                         const tPos = new THREE.Vector3().setFromMatrixPosition(thumbFinger.matrixWorld);
                         
-                        pinchCursor.position.copy(iPos);
+                        // İşaretçiyi iki parmak ucunun tam ortasına yerleştiriyoruz
+                        const midPos = new THREE.Vector3().lerpVectors(iPos, tPos, 0.5);
+                        handCursorGroup.position.copy(midPos);
+                        
+                        // İşaretçinin her zaman kameraya bakmasını sağla
+                        handCursorGroup.lookAt(camera.position);
                         
                         const distance = iPos.distanceTo(tPos);
-                        if (distance < 0.045) { 
+                        if (distance < 0.04) { 
                             document.getElementById('pinch-text').innerText = "TUTUYOR";
                             document.getElementById('pinch-text').style.color = "#ff3366";
-                            pinchCursor.material.color.setHex(0xff3366);
+                            cursorRing.material.color.setHex(0x00ffcc); // Tutunca halka renk değiştirsin
+                            cursorRing.scale.set(0.8, 0.8, 0.8); // Küçülsün
                             
                             if (!isPinching) {
                                 isPinching = true;
                                 let minDistance = Infinity;
                                 objects.forEach(obj => {
-                                    const d = obj.position.distanceTo(iPos);
-                                    if (d < 0.2 && d < minDistance) {
+                                    const d = obj.position.distanceTo(midPos);
+                                    if (d < 0.15 && d < minDistance) {
                                         minDistance = d;
                                         selectedObject = obj;
                                     }
@@ -226,18 +245,19 @@
                             }
                             
                             if (selectedObject) {
-                                selectedObject.position.lerp(iPos, 0.35);
+                                selectedObject.position.lerp(midPos, 0.3);
                             }
                         } else {
                             isPinching = false;
                             selectedObject = null;
                             document.getElementById('pinch-text').innerText = "BOŞTA";
                             document.getElementById('pinch-text').style.color = "#fff";
-                            pinchCursor.material.color.setHex(0x00e5ff);
+                            cursorRing.material.color.setHex(0xff3366); // Boştayken kırmızı
+                            cursorRing.scale.set(1.2, 1.2, 1.2);
                         }
                     }
                 }
-                if (!anyHandVisible) pinchCursor.visible = false;
+                if (!anyHandVisible) handCursorGroup.visible = false;
             }
             renderer.render(scene, camera);
         }
