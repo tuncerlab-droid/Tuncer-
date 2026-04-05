@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v29.0</title>
+    <title>Tuncer AR v30.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Şeffaflık için kritik CSS */
         html, body { 
             margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
-            background: transparent !important; 
+            background: #000; 
         }
         canvas { 
             display: block; position: absolute; top: 0; left: 0; z-index: 1;
-            background: transparent !important;
         }
         #ui-overlay { 
             position: absolute; inset: 0; pointer-events: none; z-index: 10; 
@@ -40,7 +38,6 @@
             align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
             padding: 10px 20px; border-radius: 25px; color: #00e5ff; border: 1px solid #00e5ff;
             font-size: 12px; font-family: monospace; font-weight: bold;
-            text-shadow: 0 0 10px rgba(0,229,255,0.5);
         }
     </style>
     <script type="importmap">
@@ -55,14 +52,14 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER CORE v29.0</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">NATIVE XR INTEGRATION</p>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER CORE v30.0</h1>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">CAMERA RENDERING FIX</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
-            SİSTEM: <span id="status-text" style="color:#fff;">NATIVE_XR</span><br>
+            SİSTEM: <span id="status-text" style="color:#fff;">STABLE_XR</span><br>
             EL_MOTORU: <span id="hand-text" style="color:#ff3366;">TARANIYOR</span><br>
             ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
@@ -84,20 +81,18 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // NATIVE ŞEFFAFLIK AYARLARI
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
-                alpha: true, 
-                preserveDrawingBuffer: false,
-                powerPreference: "high-performance"
+                alpha: true, // Şeffaflık önemli
+                stencil: false,
+                depth: true
             });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearAlpha(0);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Gelişmiş Işıklandırma
+            // Işıklandırma
             scene.add(new THREE.AmbientLight(0xffffff, 1.0));
             const light = new THREE.DirectionalLight(0xffffff, 1.2);
             light.position.set(2, 4, 3);
@@ -106,7 +101,7 @@
             // Takip Halkası
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 1 })
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
@@ -120,7 +115,7 @@
             pinchCursor.visible = false;
             scene.add(pinchCursor);
 
-            // El Takibi Fabrikası
+            // El Takibi
             const handModelFactory = new XRHandModelFactory();
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
@@ -143,6 +138,8 @@
                 
                 try {
                     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+                    // KRİTİK: Kamera görüntüsünün gelmesi için renderer ayarını session başladıktan sonra zorluyoruz
+                    renderer.xr.setReferenceSpaceType('local');
                     renderer.xr.setSession(session);
                     
                     document.getElementById('start-screen').style.display = 'none';
@@ -150,7 +147,7 @@
                     
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("Cihaz WebXR desteklemiyor veya izin reddedildi.");
+                    alert("AR Başlatılamadı: " + e.message);
                 }
             });
         }
@@ -175,7 +172,7 @@
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
-                // Hit-Test (Zemin Algılama)
+                // Hit-Test
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
                         session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
@@ -189,19 +186,19 @@
                         reticle.visible = true;
                         const pose = results[0].getPose(referenceSpace);
                         reticle.matrix.fromArray(pose.transform.matrix);
-                        document.getElementById('status-hint').innerText = "ZEMİN BULUNDU - DOKUN VE EKLE";
+                        document.getElementById('status-hint').innerText = "ZEMİN HAZIR - DOKUN";
                     } else {
                         reticle.visible = false;
                     }
                 }
 
-                // El Takibi ve Çimdik (Pinch) - YÜKSEK HASSASİYET
+                // El Takibi ve Pinch
                 let anyHandVisible = false;
                 for (const hand of hands) {
                     const indexFinger = hand.joints['index-finger-tip'];
                     const thumbFinger = hand.joints['thumb-tip'];
 
-                    if (indexFinger && thumbFinger && indexFinger.matrixWorld && thumbFinger.matrixWorld) {
+                    if (indexFinger && thumbFinger && indexFinger.matrixWorld) {
                         anyHandVisible = true;
                         pinchCursor.visible = true;
                         
