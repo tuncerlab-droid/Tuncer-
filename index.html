@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO AR v4.2</title>
+    <title>TUNCER HOLO AR v4.3</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
     <!-- MediaPipe Hands -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
     <script type="importmap">
         {
@@ -37,9 +36,6 @@
             width: 100%; height: 100%;
             pointer-events: none;
             z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
         }
 
         .interactive { pointer-events: auto !important; }
@@ -63,9 +59,9 @@
         }
 
         .hud-border {
-            background: rgba(0, 20, 30, 0.85);
+            background: rgba(0, 20, 30, 0.8);
             border: 1px solid #0ff;
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.2);
         }
 
         .btn-holo {
@@ -92,42 +88,53 @@
             pointer-events: auto !important;
         }
 
-        /* Gizli video elementi */
-        #input_video { 
-            position: absolute;
-            width: 1px; height: 1px;
-            opacity: 0;
+        /* Hata mesajı kutusu */
+        #error-popup {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background: #900;
+            color: #fff;
+            padding: 20px;
+            border: 2px solid white;
+            z-index: 2000;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <video id="input_video" playsinline></video>
+    <div id="error-popup">
+        <p id="error-msg"></p>
+        <button onclick="location.reload()" class="mt-4 border p-2">YENİDEN DENE</button>
+    </div>
+
     <div id="canvas-container"></div>
 
     <div id="ar-overlay">
         <div id="overlay-start">
             <div class="text-center border border-cyan-500 p-8 bg-black/80">
-                <h1 class="text-3xl font-bold mb-2 text-cyan-400">TUNCER v4.2</h1>
-                <p class="text-[10px] tracking-widest text-cyan-700 mb-4 font-bold">KAMERA ÇAKIŞMA ÖNLEYİCİ AKTİF</p>
+                <h1 class="text-3xl font-bold mb-2 text-cyan-400 italic">TUNCER v4.3</h1>
+                <p class="text-[10px] tracking-widest text-cyan-700 mb-6 font-bold uppercase">No-Conflict AI Engine</p>
                 <div id="button-container" class="interactive"></div>
             </div>
         </div>
 
-        <div id="overlay-ui">
+        <div id="overlay-ui" class="flex flex-col h-full pointer-events-none">
             <div class="flex justify-between w-full interactive mt-2">
                 <div class="hud-border p-2 w-44">
-                    <div id="status-text" class="text-yellow-500 text-[10px]">SİSTEM: BAŞLIYOR...</div>
-                    <div id="hand-text" class="text-red-500 text-[9px] mt-1 italic">EL VERİSİ: YOK</div>
+                    <div id="status-text" class="text-yellow-500 text-[10px]">SİSTEM: BAŞLATILIYOR</div>
+                    <div id="hand-text" class="text-red-500 text-[9px] mt-1 italic">EL VERİSİ: BEKLENİYOR</div>
                 </div>
                 <div class="hud-border px-3 py-1 flex items-center">
-                    <span class="text-green-500 text-[10px] font-bold">HYBRID AI ENGINE</span>
+                    <span class="text-green-500 text-[10px] font-bold tracking-tighter">SAFE MODE ACTIVE</span>
                 </div>
             </div>
 
-            <div class="w-full mb-6 flex flex-col gap-3">
+            <div class="mt-auto mb-6 flex flex-col gap-3 w-full">
                 <div class="hud-border p-2 h-16 w-full overflow-hidden text-[9px] opacity-70" id="console">
-                    <div>> AI Modülü hazırlandı.</div>
+                    <div>> Kamera cakismasi giderildi.</div>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-2 w-full interactive">
@@ -150,26 +157,11 @@ let hitTestSource = null, hitTestSourceRequested = false;
 let objects = [], holeObjects = [];
 let isGrabbing = false, selectedObject = null;
 
-// MediaPipe
-const videoElement = document.getElementById('input_video');
+// MediaPipe & AI
 let handData = null;
 const pinchPointWorld = new THREE.Vector3();
-let cameraPipe = null;
+let lastVideoFrameTime = 0;
 
-const overlayStart = document.getElementById('overlay-start');
-const overlayUI = document.getElementById('overlay-ui');
-const arOverlay = document.getElementById('ar-overlay');
-const consoleDiv = document.getElementById('console');
-
-function log(m, err = false) {
-    const d = document.createElement('div');
-    d.textContent = `> ${m}`;
-    d.className = err ? 'text-red-500 font-bold' : 'text-cyan-400';
-    consoleDiv.appendChild(d);
-    if(consoleDiv.childNodes.length > 5) consoleDiv.removeChild(consoleDiv.firstChild);
-}
-
-// MediaPipe Ayarları
 const hands = new Hands({
     locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
 });
@@ -177,15 +169,15 @@ const hands = new Hands({
 hands.setOptions({
     maxNumHands: 1,
     modelComplexity: 1,
-    minDetectionConfidence: 0.6,
-    minTrackingConfidence: 0.6
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
 });
 
 hands.onResults((results) => {
     handData = results.multiHandLandmarks && results.multiHandLandmarks.length > 0 ? results.multiHandLandmarks[0] : null;
     const hText = document.getElementById('hand-text');
     if (handData) {
-        hText.textContent = "EL VERİSİ: ALINDI";
+        hText.textContent = "EL VERİSİ: OK";
         hText.className = "text-green-400 text-[9px] mt-1";
     } else {
         hText.textContent = "EL VERİSİ: YOK";
@@ -193,22 +185,18 @@ hands.onResults((results) => {
     }
 });
 
-async function startHybridCamera() {
-    log("Kamera akisi senkronize ediliyor...");
-    try {
-        // Kamerayı önce MediaPipe için başlatıyoruz
-        cameraPipe = new Camera(videoElement, {
-            onFrame: async () => {
-                await hands.send({image: videoElement});
-            },
-            width: 640, height: 480
-        });
-        await cameraPipe.start();
-        log("AI Kamera Baglantisi Kuruldu.");
-    } catch (err) {
-        log("Kamera Hatasi: " + err.name, true);
-        console.error(err);
-    }
+function log(m, err = false) {
+    const d = document.createElement('div');
+    d.textContent = `> ${m}`;
+    d.className = err ? 'text-red-500 font-bold' : 'text-cyan-400';
+    const consoleDiv = document.getElementById('console');
+    consoleDiv.appendChild(d);
+    if(consoleDiv.childNodes.length > 5) consoleDiv.removeChild(consoleDiv.firstChild);
+}
+
+function showError(msg) {
+    document.getElementById('error-popup').style.display = 'block';
+    document.getElementById('error-msg').textContent = msg;
 }
 
 function init() {
@@ -229,7 +217,7 @@ function init() {
     const btn = ARButton.createButton(renderer, {
         requiredFeatures: ['hit-test'],
         optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: arOverlay }
+        domOverlay: { root: document.getElementById('ar-overlay') }
     });
     document.getElementById('button-container').appendChild(btn);
 
@@ -242,13 +230,30 @@ function init() {
     scene.add(reticle);
 
     renderer.xr.addEventListener('sessionstart', () => {
-        overlayStart.style.display = 'none';
-        overlayUI.style.display = 'flex';
-        startHybridCamera(); // AR oturumu başladıktan sonra kamerayı AI'ya bağla
+        document.getElementById('overlay-start').style.display = 'none';
+        document.getElementById('overlay-ui').style.display = 'flex';
+        log("Hologram Sistemi Hazir.");
     });
 
     renderer.xr.addEventListener('sessionend', () => { window.location.reload(); });
     renderer.setAnimationLoop(render);
+}
+
+// AR Kamerasını MediaPipe'a Besleyen Yeni Fonksiyon
+async function processARCameraFrame() {
+    // AR modunda kamera görüntüsü renderer'ın içinden geçer.
+    // DOM üzerindeki video elementini kullanmak yerine,
+    // Ekran görüntüsünü MediaPipe'a gizlice gönderiyoruz.
+    if (renderer.xr.isPresenting) {
+        const gl = renderer.getContext();
+        const canvas = renderer.domElement;
+        
+        // Bu yöntem kamera akışını bozmaz çünkü mevcut canvası okur
+        if (performance.now() - lastVideoFrameTime > 66) { // ~15 FPS yeterli
+            await hands.send({image: canvas});
+            lastVideoFrameTime = performance.now();
+        }
+    }
 }
 
 function updateAIInteraction() {
@@ -257,22 +262,18 @@ function updateAIInteraction() {
     const thumb = handData[4]; 
     const index = handData[8]; 
 
-    // Mesafe hesapla
     const dx = thumb.x - index.x;
     const dy = thumb.y - index.y;
-    const dz = thumb.z - index.z;
-    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+    const dist = Math.sqrt(dx*dx + dy*dy);
 
-    // Ekran koordinatlarına çevir
     const midX = ((thumb.x + index.x) / 2) * 2 - 1;
     const midY = -(((thumb.y + index.y) / 2) * 2 - 1);
 
-    // 3D dünyadaki yaklaşık pozisyon (Bakış yönüne göre derinlik)
     pinchPointWorld.set(midX, midY, 0.5).unproject(camera);
 
     if (!isGrabbing) {
         let hoverTarget = null;
-        let minD = 0.2;
+        let minD = 0.25;
 
         [...objects, ...holeObjects].forEach(o => {
             const d = o.position.distanceTo(pinchPointWorld);
@@ -282,7 +283,7 @@ function updateAIInteraction() {
 
         if (hoverTarget) {
             hoverTarget.material.emissive.setHex(0x333333);
-            if (dist < 0.06) { 
+            if (dist < 0.08) { 
                 isGrabbing = true;
                 selectedObject = hoverTarget;
                 selectedObject.material.emissive.setHex(0x00ffff);
@@ -290,25 +291,25 @@ function updateAIInteraction() {
             }
         }
     } else {
-        if (dist > 0.12) { 
+        if (dist > 0.15) { 
             isGrabbing = false;
             if (selectedObject) selectedObject.material.emissive.setHex(0x000000);
             selectedObject = null;
-            log("Obje Birakildi.");
+            log("Obje Serbest.");
         } else if (selectedObject) {
-            selectedObject.position.lerp(pinchPointWorld, 0.3);
+            selectedObject.position.lerp(pinchPointWorld, 0.2);
         }
     }
 }
 
 function spawn(isHole) {
-    if(!reticle.visible) return log("Zemin Bulunamadi!", true);
+    if(!reticle.visible) return log("Zemin Bekleniyor...", true);
     const mesh = new THREE.Mesh(
         new THREE.BoxGeometry(0.1, 0.1, 0.1),
         new THREE.MeshStandardMaterial({ 
-            color: isHole ? 0xff4444 : 0x00ffff, 
+            color: isHole ? 0xff3333 : 0x00ffff, 
             transparent: true, opacity: isHole ? 0.6 : 1,
-            emissive: 0x000000, roughness: 0.4, metalness: 0.1
+            emissive: 0x000000, roughness: 0.3, metalness: 0.1
         })
     );
     mesh.position.setFromMatrixPosition(reticle.matrix);
@@ -316,7 +317,7 @@ function spawn(isHole) {
     mesh.translateY(0.05);
     scene.add(mesh);
     if(isHole) holeObjects.push(mesh); else objects.push(mesh);
-    log(isHole ? "Hole Eklendi." : "Kup Eklendi.");
+    log(isHole ? "Delik Olusturuldu." : "Kup Olusturuldu.");
 }
 
 function mergeCSG() {
@@ -344,8 +345,8 @@ function mergeCSG() {
         res.quaternion.copy(base.quaternion);
         scene.add(res);
         objects = [res]; holeObjects = [];
-        log("Birlestirme Tamamlandi.");
-    } catch(e) { log("CSG Hatasi!", true); }
+        log("Islem Basarili.");
+    } catch(e) { log("Islem Hatasi!", true); }
 }
 
 function render(t, frame) {
@@ -366,15 +367,17 @@ function render(t, frame) {
                 const pose = hits[0].getPose(ref);
                 reticle.visible = true;
                 reticle.matrix.fromArray(pose.transform.matrix);
-                document.getElementById('status-text').textContent = "ZEMİN: OK";
+                document.getElementById('status-text').textContent = "ZEMİN: HAZIR";
                 document.getElementById('status-text').style.color = "#0f0";
             } else {
                 reticle.visible = false;
-                document.getElementById('status-text').textContent = "ZEMİN ARANIYOR...";
+                document.getElementById('status-text').textContent = "ZEMİN TARANIYOR";
                 document.getElementById('status-text').style.color = "#ff0";
             }
         }
         
+        // AR Akışını MediaPipe'a besle
+        processARCameraFrame();
         updateAIInteraction();
     }
     renderer.render(scene, camera);
@@ -387,7 +390,7 @@ document.getElementById('do-merge').onclick = mergeCSG;
 document.getElementById('do-clear').onclick = () => {
     [...objects, ...holeObjects].forEach(o => scene.remove(o));
     objects = []; holeObjects = [];
-    log("Sistem Sifirlandi.");
+    log("Temizlendi.");
 };
 </script>
 </body>
