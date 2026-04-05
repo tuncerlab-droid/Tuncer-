@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v39.1</title>
+    <title>Tuncer AR v40.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     
@@ -101,7 +101,7 @@
                 handCursorGroup.lookAt(camera.position);
 
                 const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                if (dist < 0.06) {
+                if (dist < 0.05) {
                     document.getElementById('pinch-text').innerText = "TUTUYOR";
                     cursorRing.material.color.setHex(0x00ffcc);
                     cursorRing.scale.set(0.7, 0.7, 0.7);
@@ -127,8 +127,12 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // preserveDrawingBuffer kritik: MediaPipe'ın canvas'tan veri okuyabilmesi için
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            // preserveDrawingBuffer: true -> MediaPipe'ın canvas'ı okuyabilmesi için zorunlu
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true, 
+                preserveDrawingBuffer: true 
+            });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
@@ -186,9 +190,9 @@
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
-                // ÇAKIŞMAYI ÖNLEYEN DÜZELTME: 
-                // Ayrı video kanalı açmak yerine, render edilen canvası MediaPipe'a gönderiyoruz.
-                // Bu sayede kamera görüntüsü WebXR tarafından sağlanırken el takibi de çalışır.
+                // ANA DÜZELTME: Kamerayı MediaPipe için tekrar açmak yerine,
+                // WebXR'ın zaten kamerayı gösterdiği canvas'ı MediaPipe'a gönderiyoruz.
+                // Bu sayede kamera görüntüsü arkada akarken el takibi de çalışır.
                 if (timestamp - lastHandProcess > 60) {
                     hands.send({ image: renderer.domElement });
                     lastHandProcess = timestamp;
@@ -205,8 +209,10 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
+                        document.getElementById('status-hint').innerText = "ZEMİN HAZIR";
                     } else {
                         reticle.visible = false;
+                        document.getElementById('status-hint').innerText = "YÜZEY TARANIYOR...";
                     }
                 }
             }
