@@ -2,376 +2,290 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - WebXR AR Modelleme v3.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tuncer AR v20.0</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: monospace; }
+        #ui-container { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
+        .hud-panel { background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; padding: 15px; border-radius: 10px; color: #00e5ff; font-size: 11px; align-self: flex-end; backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(0,0,0,0.5); text-transform: uppercase; }
+        #start-screen { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        #btn-activate { 
+            background: #00e5ff; color: #000; font-weight: 900; padding: 22px 60px; 
+            border-radius: 15px; border: none; cursor: pointer; font-size: 20px; 
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.5); pointer-events: auto;
+            text-transform: uppercase; letter-spacing: 2px; transition: transform 0.1s;
+        }
+        #btn-activate:active { transform: scale(0.95); }
+        #target-hint { align-self: center; margin-bottom: 60px; background: rgba(0,229,255,0.2); padding: 10px 25px; border-radius: 30px; color: #00e5ff; border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; backdrop-filter: blur(4px); }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+    </style>
 
     <script type="importmap">
         {
             "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-                "three-mesh-bvh": "https://unpkg.com/three-mesh-bvh@0.7.0/build/index.module.js",
-                "three-bvh-csg": "https://unpkg.com/three-bvh-csg@0.0.16/build/index.module.js"
+                "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/"
             }
         }
     </script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Share Tech Mono', monospace; color: #0ff; touch-action: none; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
-        
-        /* WebXR DOM Overlay UI */
-        #overlay-ui { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem; }
-        
-        .hud-panel { pointer-events: auto; background: rgba(0, 20, 30, 0.7); border: 1px solid #0ff; backdrop-filter: blur(5px); box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
-        .btn-holo { background: rgba(0, 255, 255, 0.1); border: 1px solid #0ff; color: #0ff; font-size: 12px; font-weight: bold; transition: all 0.2s; }
-        .btn-holo:active { background: #0ff; color: #000; }
-        
-        #ar-button-container { position: absolute; bottom: 50%; left: 50%; transform: translate(-50%, 50%); z-index: 50; }
-        
-        /* Seçili Nesne Efekti İçin Görünmez Katman */
-        #touch-layer { position: absolute; inset: 0; pointer-events: auto; z-index: 5; }
-    </style>
 </head>
 <body>
 
-    <div id="canvas-container"></div>
-    <div id="touch-layer"></div>
-
-    <!-- WebXR DOM Overlay -->
-    <div id="overlay-ui" style="display: none;">
-        <div class="flex justify-between items-start">
-            <div class="hud-panel p-3 rounded text-xs w-1/2">
-                <div class="font-bold text-white mb-1 uppercase tracking-widest drop-shadow-[0_0_5px_#0ff]">HOLO XR v3.0</div>
-                <div id="sys-status" class="text-[10px] text-green-400 font-bold">YÜZEY TARANIYOR...</div>
-            </div>
-            <div class="hud-panel p-2 rounded text-center">
-                <div class="text-[9px] text-gray-400 uppercase font-bold">ETKİLEŞİM</div>
-                <div id="interact-status" class="text-[10px] text-cyan-400 font-bold">BOŞTA</div>
-            </div>
-        </div>
-
-        <div class="flex justify-between items-end gap-2">
-            <div id="log-console" class="hud-panel p-2 rounded h-24 w-1/2 overflow-hidden flex flex-col justify-end text-[9px] text-cyan-600 font-bold">
-                <div>> WebXR Motoru Başlatıldı.</div>
-            </div>
-            <div class="hud-panel p-2 rounded grid grid-cols-2 gap-2 w-1/2">
-                <button id="btn-cube" class="btn-holo py-2 rounded">KÜP</button>
-                <button id="btn-hole" class="btn-holo py-2 rounded border-red-500 text-red-400">DELİK</button>
-                <button id="btn-merge" class="btn-holo py-2 rounded border-yellow-500 text-yellow-400 col-span-2">BİRLEŞTİR</button>
-                <button id="btn-delete" class="btn-holo py-2 rounded border-red-700 text-red-600 col-span-2">SİL</button>
-            </div>
-        </div>
+    <div id="start-screen">
+        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v20</h1>
+        <p style="color:#444; margin-bottom:40px; font-size:11px;">WEBXR NATIVE EL TAKİBİ AKTİF (STABLE)</p>
+        <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
-<script type="module">
-import * as THREE from 'three';
-import { ARButton } from 'three/addons/webxr/ARButton.js';
-import { SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
+    <div id="ui-container" style="display: none;">
+        <div class="hud-panel">
+            SİSTEM: <span id="sys-status" style="color:#fff;">BEKLİYOR</span><br>
+            EL_AI: <span id="hand-status" style="color:#ff3366;">ARANIYOR</span><br>
+            MOD: <span id="interact-mode" style="color:#fff;">GÖZLEM</span><br>
+            SES: <span id="voice-cmd" style="color:#fff;">BEKLENİYOR</span>
+        </div>
+        <div id="target-hint">Yüzey aranıyor...</div>
+    </div>
 
-const logConsole = document.getElementById('log-console');
-const sysStatus = document.getElementById('sys-status');
-const interactStatus = document.getElementById('interact-status');
-const overlayUI = document.getElementById('overlay-ui');
-const touchLayer = document.getElementById('touch-layer');
+    <script type="module">
+        import * as THREE from 'three';
+        import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 
-let scene, camera, renderer;
-let reticle, hitTestSource = null, hitTestSourceRequested = false;
-let objects = [], holeObjects = [];
-let selectedObject = null;
-
-// Dokunmatik etkileşim değişkenleri
-let initialPinchDist = 0;
-let initialPinchAngle = 0;
-let initialScale = new THREE.Vector3();
-let initialRotationY = 0;
-let isDragging = false;
-let dragPlane = new THREE.Plane();
-let dragIntersection = new THREE.Vector3();
-
-function log(msg, err = false) {
-    const d = document.createElement('div');
-    d.textContent = `> ${msg}`;
-    d.className = err ? 'text-red-500' : 'text-cyan-400';
-    logConsole.appendChild(d);
-    if(logConsole.childNodes.length > 4) logConsole.removeChild(logConsole.firstChild);
-}
-
-function init() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.xr.enabled = true; // WebXR Aktif
-    document.getElementById('canvas-container').appendChild(renderer.domElement);
-
-    // Işıklar
-    scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    directionalLight.position.set(2, 5, 2);
-    scene.add(directionalLight);
-
-    // Reticle (Zemin İşaretçisi)
-    reticle = new THREE.Mesh(
-        new THREE.RingGeometry(0.15, 0.2, 32).rotateX(-Math.PI / 2),
-        new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.8 })
-    );
-    reticle.matrixAutoUpdate = false;
-    reticle.visible = false;
-    scene.add(reticle);
-
-    // AR Başlatma Butonu (DOM Overlay desteği ile)
-    const arButton = ARButton.createButton(renderer, { 
-        requiredFeatures: ['hit-test'], 
-        optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: document.body } 
-    });
-    arButton.style.position = 'absolute';
-    arButton.style.bottom = '50%';
-    arButton.style.left = '50%';
-    arButton.style.transform = 'translate(-50%, 50%)';
-    arButton.style.zIndex = '100';
-    document.body.appendChild(arButton);
-
-    renderer.xr.addEventListener('sessionstart', () => {
-        overlayUI.style.display = 'flex';
-        arButton.style.display = 'none';
-        log("AR Oturumu Başladı. Yeri tarayın.");
-    });
-    
-    renderer.xr.addEventListener('sessionend', () => {
-        overlayUI.style.display = 'none';
-        hitTestSourceRequested = false;
-        hitTestSource = null;
-    });
-
-    setupTouchEvents();
-
-    window.addEventListener('resize', onWindowResize);
-    renderer.setAnimationLoop(render);
-}
-
-// --- NESNE YÖNETİMİ ---
-function addObj(isHole) {
-    if (!reticle.visible) {
-        log("Önce yüzey bulunmalı!", true);
-        return;
-    }
-
-    const size = 0.2;
-    const mesh = new THREE.Mesh(
-        new THREE.BoxGeometry(size, size, size),
-        new THREE.MeshStandardMaterial({ 
-            color: isHole ? 0xff3333 : 0x00aaff, 
-            transparent: true, 
-            opacity: isHole ? 0.6 : 0.9,
-            roughness: 0.2,
-            metalness: 0.5
-        })
-    );
-    
-    // Nesneyi reticle (işaretçi) pozisyonuna yerleştir
-    mesh.position.setFromMatrixPosition(reticle.matrix);
-    // Nesnenin alt yüzeyinin yere tam oturması için Y ekseninde boyutun yarısı kadar yukarı kaldır
-    mesh.position.y += size / 2;
-    
-    scene.add(mesh);
-    if(isHole) holeObjects.push(mesh); else objects.push(mesh);
-    
-    selectObject(mesh);
-    log(isHole ? "Delik nesnesi yerleştirildi." : "Küp yerleştirildi.");
-}
-
-function merge() {
-    if (objects.length === 0 || holeObjects.length === 0) {
-        log("Birleştirilecek nesne yok.", true);
-        return;
-    }
-    
-    try {
-        const ev = new Evaluator();
-        let base = objects[objects.length - 1];
-        let bB = new Brush(base.geometry, base.material);
-        bB.position.copy(base.position); bB.rotation.copy(base.rotation); bB.scale.copy(base.scale); bB.updateMatrixWorld();
+        let scene, camera, renderer, reticle;
+        let hitTestSource = null, hitTestSourceRequested = false;
+        let objects = [], selectedObject = null;
+        let hands = [];
+        let isPinching = false;
         
-        holeObjects.forEach(h => {
-            const hB = new Brush(h.geometry, h.material);
-            hB.position.copy(h.position); hB.rotation.copy(h.rotation); hB.scale.copy(h.scale); hB.updateMatrixWorld();
-            bB = ev.evaluate(bB, hB, SUBTRACTION);
-            scene.remove(h);
-        });
-        
-        scene.remove(base);
-        const res = new THREE.Mesh(bB.geometry, bB.material);
-        res.position.copy(bB.position); res.rotation.copy(bB.rotation); res.scale.copy(bB.scale);
-        scene.add(res);
-        objects = [res]; holeObjects = [];
-        
-        selectObject(res);
-        log("Hologram CSG ile birleştirildi.");
-    } catch(e) { log("Birleştirme hatası!", true); }
-}
+        let fingerCursor;
 
-// --- DOKUNMATİK KONTROLLER (MULTI-TOUCH) ---
-function setupTouchEvents() {
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-    touchLayer.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) {
-            // Nesne Seçimi ve Sürükleme Başlangıcı
-            mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
+            // Alpha: true ile arka planı şeffaf yapıp kameranın görünmesini sağlıyoruz
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.xr.enabled = true;
+            document.body.appendChild(renderer.domElement);
 
-            const intersects = raycaster.intersectObjects([...objects, ...holeObjects]);
-            if (intersects.length > 0) {
-                selectObject(intersects[0].object);
-                isDragging = true;
-                interactStatus.textContent = "SÜRÜKLENİYOR";
-                
-                // Sürükleme için kameraya bakan görünmez bir düzlem oluştur
-                dragPlane.setFromNormalAndCoplanarPoint(
-                    camera.getWorldDirection(dragPlane.normal).clone().negate(),
-                    selectedObject.position
-                );
-            } else {
-                deselectObject();
-            }
-        } 
-        else if (e.touches.length === 2 && selectedObject) {
-            // İki Parmak (Pinch & Rotate) Başlangıcı
-            isDragging = false;
-            interactStatus.textContent = "DÖNDÜR/BÜYÜT";
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            initialPinchDist = Math.hypot(dx, dy);
-            initialPinchAngle = Math.atan2(dy, dx);
-            initialScale.copy(selectedObject.scale);
-            initialRotationY = selectedObject.rotation.y;
-        }
-    });
+            scene.add(new THREE.AmbientLight(0xffffff, 2.0));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(2, 5, 2);
+            scene.add(light);
 
-    touchLayer.addEventListener('touchmove', (e) => {
-        if (!selectedObject) return;
+            // Zemin Hedefleyicisi
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+            );
+            reticle.matrixAutoUpdate = false; 
+            reticle.visible = false;
+            scene.add(reticle);
 
-        if (e.touches.length === 1 && isDragging) {
-            // Tek parmakla sürükleme
-            mouse.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            
-            raycaster.ray.intersectPlane(dragPlane, dragIntersection);
-            selectedObject.position.copy(dragIntersection);
-        } 
-        else if (e.touches.length === 2) {
-            // İki parmakla Büyütme ve Döndürme
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            
-            const currentPinchDist = Math.hypot(dx, dy);
-            const currentPinchAngle = Math.atan2(dy, dx);
+            // Parmak Ucu İmleci
+            fingerCursor = new THREE.Mesh(
+                new THREE.SphereGeometry(0.015, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
+            );
+            fingerCursor.visible = false;
+            scene.add(fingerCursor);
 
-            // Ölçekleme (Scale)
-            const scaleFactor = currentPinchDist / initialPinchDist;
-            selectedObject.scale.copy(initialScale).multiplyScalar(scaleFactor);
+            // WebXR Native El Takibi Modelleri
+            const handModelFactory = new XRHandModelFactory();
+            for (let i = 0; i < 2; i++) {
+                const hand = renderer.xr.getHand(i);
+                hand.add(handModelFactory.createHandModel(hand, "mesh"));
+                scene.add(hand);
+                hands.push(hand);
 
-            // Döndürme (Rotation Y)
-            const angleDelta = currentPinchAngle - initialPinchAngle;
-            selectedObject.rotation.y = initialRotationY - angleDelta * 2;
-        }
-    });
-
-    touchLayer.addEventListener('touchend', (e) => {
-        if (e.touches.length === 0) {
-            isDragging = false;
-            initialPinchDist = 0;
-            interactStatus.textContent = selectedObject ? "SEÇİLİ" : "BOŞTA";
-        }
-    });
-}
-
-function selectObject(obj) {
-    if (selectedObject) selectedObject.material.emissive.setHex(0x000000);
-    selectedObject = obj;
-    selectedObject.material.emissive.setHex(0x224422); // Seçili nesne hafif parlar
-    interactStatus.textContent = "SEÇİLİ";
-}
-
-function deselectObject() {
-    if (selectedObject) {
-        selectedObject.material.emissive.setHex(0x000000);
-        selectedObject = null;
-        interactStatus.textContent = "BOŞTA";
-    }
-}
-
-// --- WEBXR ANA DÖNGÜ (Hit Test) ---
-function render(timestamp, frame) {
-    if (frame) {
-        const referenceSpace = renderer.xr.getReferenceSpace();
-        const session = renderer.xr.getSession();
-
-        if (hitTestSourceRequested === false) {
-            session.requestReferenceSpace('viewer').then((refSpace) => {
-                session.requestHitTestSource({ space: refSpace }).then((source) => {
-                    hitTestSource = source;
+                hand.addEventListener('connected', () => {
+                    document.getElementById('hand-status').innerText = "AKTİF";
+                    document.getElementById('hand-status').style.color = "#00ffcc";
                 });
-            });
-            session.requestReferenceSpace('local').then((refSpace) => {
-                hitTestSourceRequested = true;
-            });
-        }
-
-        if (hitTestSource) {
-            const hitTestResults = frame.getHitTestResults(hitTestSource);
-            if (hitTestResults.length > 0) {
-                const hit = hitTestResults[0];
-                const pose = hit.getPose(referenceSpace);
-                
-                reticle.visible = true;
-                reticle.matrix.fromArray(pose.transform.matrix);
-                sysStatus.textContent = "ZEMİN BULUNDU";
-                sysStatus.className = "text-[10px] text-cyan-400 font-bold";
-            } else {
-                reticle.visible = false;
-                sysStatus.textContent = "YÜZEY TARANIYOR...";
-                sysStatus.className = "text-[10px] text-yellow-400 font-bold";
+                hand.addEventListener('disconnected', () => {
+                    document.getElementById('hand-status').innerText = "ARANIYOR";
+                    document.getElementById('hand-status').style.color = "#ff3366";
+                });
             }
+
+            // Başlatma Düğmesi
+            const startBtn = document.getElementById('btn-activate');
+            startBtn.addEventListener('click', async () => {
+                if (!navigator.xr) {
+                    alert("Cihazınız AR desteklemiyor.");
+                    return;
+                }
+
+                // Kamera çakışmasını önleyen "native" WebXR ayarları
+                const sessionInit = { 
+                    requiredFeatures: ['hit-test'], 
+                    optionalFeatures: ['dom-overlay', 'hand-tracking'], 
+                    domOverlay: { root: document.getElementById('ui-container') } 
+                };
+                
+                try {
+                    const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+                    renderer.xr.setSession(session);
+                    
+                    document.getElementById('start-screen').style.display = 'none';
+                    document.getElementById('ui-container').style.display = 'flex';
+                    document.getElementById('sys-status').innerText = "AKTİF";
+                    
+                    initVoice(); // Sesli komutları başlat
+                    renderer.setAnimationLoop(render);
+                } catch (e) {
+                    alert("AR Başlatılamadı. Lütfen kamera izinlerini kontrol edin.");
+                }
+            });
         }
-    }
 
-    renderer.render(scene, camera);
-}
+        // Sesli Komut Modülü
+        function initVoice() {
+            const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!Speech) return;
+            const rec = new Speech();
+            rec.lang = 'tr-TR';
+            rec.continuous = true;
+            rec.onresult = (e) => {
+                const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                document.getElementById('voice-cmd').innerText = cmd.toUpperCase();
+                
+                if (cmd.includes("küp") && reticle.visible) createObject('cube');
+                if (cmd.includes("küre") && reticle.visible) createObject('sphere');
+                if (cmd.includes("sil") && selectedObject) {
+                    scene.remove(selectedObject);
+                    objects = objects.filter(o => o !== selectedObject);
+                    selectedObject = null;
+                }
+                if (cmd.includes("büyüt") && selectedObject) selectedObject.scale.multiplyScalar(1.2);
+                if (cmd.includes("küçült") && selectedObject) selectedObject.scale.multiplyScalar(0.8);
+            };
+            rec.onend = () => { if (renderer.xr.isPresenting) rec.start(); };
+            try { rec.start(); } catch(e){}
+        }
 
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
+        function createObject(type) {
+            const geo = type === 'cube' ? new THREE.BoxGeometry(0.1, 0.1, 0.1) : new THREE.SphereGeometry(0.06, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: new THREE.Color(`hsl(${Math.random() * 360}, 80%, 50%)`), 
+                metalness: 0.6, 
+                roughness: 0.2 
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.setFromMatrixPosition(reticle.matrix);
+            mesh.position.y += 0.05; // Yüzeyin üstüne oturt
+            scene.add(mesh);
+            objects.push(mesh);
+        }
 
-// UI Butonları
-document.getElementById('btn-cube').addEventListener('click', () => addObj(false));
-document.getElementById('btn-hole').addEventListener('click', () => addObj(true));
-document.getElementById('btn-merge').addEventListener('click', merge);
-document.getElementById('btn-delete').addEventListener('click', () => {
-    if (selectedObject) {
-        scene.remove(selectedObject);
-        objects = objects.filter(o => o !== selectedObject);
-        holeObjects = holeObjects.filter(o => o !== selectedObject);
-        deselectObject();
-        log("Seçili nesne silindi.");
-    } else {
-        log("Önce silinecek nesneyi seçin.", true);
-    }
-});
+        function render(timestamp, frame) {
+            if (frame) {
+                const session = renderer.xr.getSession();
+                const referenceSpace = renderer.xr.getReferenceSpace();
 
-init();
-</script>
+                // YÜZEY TARAMA (Hit-Test)
+                if (!hitTestSourceRequested) {
+                    session.requestReferenceSpace('viewer').then(s => {
+                        session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
+                    });
+                    hitTestSourceRequested = true;
+                }
+                if (hitTestSource) {
+                    const results = frame.getHitTestResults(hitTestSource);
+                    if (results.length > 0) {
+                        reticle.visible = true;
+                        reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
+                        document.getElementById('target-hint').innerText = "YÜZEY HAZIR - EKRANA DOKUN VEYA KÜP DE";
+                    } else { 
+                        reticle.visible = false; 
+                        document.getElementById('target-hint').innerText = "YÜZEY ARANIYOR (ZEMİNE BAK)...";
+                    }
+                }
+
+                // YERLEŞİK EL ETKİLEŞİMİ (NATIVE HAND TRACKING)
+                let handDetected = false;
+                for (const hand of hands) {
+                    if (hand.joints && Object.keys(hand.joints).length > 0) {
+                        handDetected = true;
+                        const indexTip = hand.joints['index-finger-tip'];
+                        const thumbTip = hand.joints['thumb-tip'];
+
+                        if (indexTip && thumbTip) {
+                            fingerCursor.visible = true;
+                            
+                            const indexPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
+                            const thumbPos = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
+                            
+                            fingerCursor.position.copy(indexPos);
+
+                            // Gerçek Dünya 3D Mesafe Hesaplama (Cimdik için)
+                            const pinchDist = indexPos.distanceTo(thumbPos);
+                            const isPinchNow = pinchDist < 0.03; // 3 santimetreden yakınsa
+
+                            if (isPinchNow) {
+                                fingerCursor.material.color.setHex(0xff3366); // Kırmızı
+                                document.getElementById('interact-mode').innerText = "TUTULUYOR";
+                                
+                                if (!isPinching) {
+                                    isPinching = true;
+                                    // Obje Yakalama
+                                    for (let obj of objects) {
+                                        if (obj.position.distanceTo(indexPos) < 0.15) { // 15 cm yakındaysa tut
+                                            selectedObject = obj;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                // Taşıma ve Döndürme
+                                if (selectedObject) {
+                                    // Objeyi parmağın pozisyonuna taşı
+                                    selectedObject.position.lerp(indexPos, 0.2);
+                                    // Objeyi elin rotasyonuna göre döndür
+                                    selectedObject.quaternion.slerp(hand.quaternion, 0.1);
+                                }
+                            } else {
+                                isPinching = false;
+                                document.getElementById('interact-mode').innerText = "GÖZLEM";
+                                fingerCursor.material.color.setHex(0x00e5ff); // Mavi
+                                
+                                // Yaklaşım Algısı (Sarı Renk)
+                                let isHovering = false;
+                                for (let obj of objects) {
+                                    if (obj.position.distanceTo(indexPos) < 0.15) {
+                                        isHovering = true;
+                                        break;
+                                    }
+                                }
+                                if (isHovering && !selectedObject) {
+                                    fingerCursor.material.color.setHex(0xffea00); // Sarı
+                                } else {
+                                    selectedObject = null;
+                                }
+                            }
+                        }
+                        break; // Sadece ilk algılanan eli kullan
+                    }
+                }
+                if (!handDetected) fingerCursor.visible = false;
+            }
+            renderer.render(scene, camera);
+        }
+
+        // Tıklama Yedeği (El kullanmak istemezsen)
+        window.addEventListener('pointerdown', (e) => {
+            if (reticle.visible && e.target.id !== 'btn-activate') {
+                createObject('cube');
+            }
+        });
+
+        init();
+    </script>
 </body>
 </html>
 
