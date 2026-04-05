@@ -1,76 +1,536 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Sahne - Kamera Düzenlemesi</title>
-    <style>
-        body { margin: 0; overflow: hidden; background-color: #000; }
-        canvas { display: block; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>TUNCER HOLO</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --c:#00e5ff; --c2:#0077ff; --gold:#ffd700;
+  --red:#ff1744; --org:#ff6d00; --grn:#00e676; --prp:#ea80fc;
+  --bg:#020a14; --panel:rgba(1,12,30,0.93);
+  --glow:0 0 18px rgba(0,229,255,.65);
+  --glow2:0 0 40px rgba(0,229,255,.28);
+  --mono:'Share Tech Mono',monospace;
+  --orb:'Orbitron',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;touch-action:none;}
+body{font-family:var(--mono);color:var(--c);}
+
+/* ─── CANVAS LAYERS ─── */
+#gl-canvas{position:fixed;inset:0;z-index:1;}
+#bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;display:none;transform: scaleX(-1);} /* Ayna efekti eklendi */
+
+/* ─── OVERLAY ROOT ─── */
+#overlay{position:fixed;inset:0;z-index:10;pointer-events:none;}
+#hand-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:11;}
+
+/* scanlines */
+#sl{position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,
+  rgba(0,229,255,.014) 3px,rgba(0,229,255,.014) 4px);}
+
+/* ─── HUD ─── */
+#hud{position:absolute;inset:0;display:none;}
+#hud.vis{display:block;}
+#hud>*{pointer-events:auto;}
+
+.hco{position:absolute;width:34px;height:34px;border-color:rgba(0,229,255,.55);border-style:solid;}
+.hco.tl{top:6px;left:6px;border-width:2px 0 0 2px;}
+.hco.tr{top:6px;right:6px;border-width:2px 2px 0 0;}
+.hco.bl{bottom:6px;left:6px;border-width:0 0 2px 2px;}
+.hco.br{bottom:6px;right:6px;border-width:0 2px 2px 0;}
+
+#topbar{
+  position:absolute;top:0;left:0;right:0;height:54px;
+  background:linear-gradient(to bottom,rgba(0,15,40,.96),transparent);
+  border-bottom:1px solid rgba(0,229,255,.1);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;pointer-events:none;
+}
+#logo{font-family:var(--orb);font-size:17px;font-weight:900;letter-spacing:6px;
+  color:var(--c);text-shadow:var(--glow);}
+#logo em{color:var(--gold);font-style:normal;}
+#tstat{text-align:right;font-size:9px;line-height:1.9;opacity:.7;}
+#fps-el{color:var(--gold);}
+#xr-el{color:var(--grn);}
+#mp-el{color:var(--prp);}
+
+.cbtn{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  border:1px solid rgba(0,229,255,.32);background:rgba(0,25,65,.75);
+  color:var(--c);cursor:pointer;font-family:var(--mono);
+  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
+  transition:all .16s;touch-action:manipulation;
+}
+.cbtn:hover,.cbtn:active{background:rgba(0,229,255,.18);box-shadow:var(--glow);}
+.cbtn.act{background:rgba(0,229,255,.22);border-color:var(--c);box-shadow:var(--glow);}
+.cbtn .ci{font-size:18px;line-height:1;}
+.cbtn .cl{font-size:7px;opacity:.72;letter-spacing:.4px;}
+.cbtn.hole{border-color:rgba(255,109,0,.45);color:var(--org);}
+.cbtn.hole:hover{background:rgba(255,109,0,.15);box-shadow:0 0 14px rgba(255,109,0,.5);}
+.cbtn.del{border-color:rgba(255,23,68,.45);color:var(--red);}
+.cbtn.del:hover{background:rgba(255,23,68,.15);box-shadow:0 0 14px rgba(255,23,68,.5);}
+
+#lp{
+  position:absolute;left:0;top:58px;bottom:84px;width:56px;
+  background:var(--panel);border-right:1px solid rgba(0,229,255,.13);
+  display:flex;flex-direction:column;align-items:center;
+  padding:6px 0;gap:3px;overflow-y:auto;pointer-events:auto;
+}
+.psec{width:44px;text-align:center;font-size:7.5px;color:var(--c);opacity:.4;
+  letter-spacing:1.5px;border-top:1px solid rgba(0,229,255,.1);padding-top:4px;margin-top:2px;}
+.lbtn{width:46px;height:44px;flex-shrink:0;}
+
+#rp{
+  position:absolute;right:0;top:58px;bottom:84px;width:56px;
+  background:var(--panel);border-left:1px solid rgba(0,229,255,.13);
+  display:flex;flex-direction:column;align-items:center;
+  padding:6px 0;gap:3px;overflow-y:auto;pointer-events:auto;
+}
+
+#botbar{
+  position:absolute;bottom:0;left:0;right:0;height:82px;
+  background:linear-gradient(to top,rgba(0,15,40,.96),transparent);
+  border-top:1px solid rgba(0,229,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  gap:14px;padding:0 14px;pointer-events:auto;
+}
+#vbtn{
+  width:52px;height:52px;border-radius:50%;
+  border:2px solid var(--c);background:rgba(0,40,100,.75);
+  color:var(--c);font-size:20px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 18px rgba(0,229,255,.3);
+}
+#vbtn.on{background:rgba(0,229,255,.22);box-shadow:0 0 30px rgba(0,229,255,.7);animation:vp 1.2s infinite;}
+@keyframes vp{0%,100%{box-shadow:0 0 18px rgba(0,229,255,.4)}50%{box-shadow:0 0 44px rgba(0,229,255,.9)}}
+#vtxt{flex:1;max-width:200px;text-align:center;font-size:11px;color:var(--c);opacity:0;transition:opacity .25s;}
+#vtxt.v{opacity:1;}
+#mlbl{text-align:right;font-size:9px;opacity:.5;letter-spacing:1px;line-height:1.6;max-width:74px;}
+
+#xfp{
+  position:absolute;right:60px;bottom:88px;
+  background:var(--panel);border:1px solid rgba(0,229,255,.2);
+  padding:8px;display:none;flex-direction:column;gap:4px;pointer-events:auto;
+}
+#xfp.vis{display:flex;}
+.xrow{display:flex;align-items:center;gap:3px;}
+.xax{font-size:9px;color:var(--c);opacity:.45;width:12px;}
+.xb{width:26px;height:26px;border:1px solid rgba(0,229,255,.28);
+  background:rgba(0,25,65,.7);color:var(--c);font-size:14px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+#clrp{
+  position:absolute;left:60px;bottom:88px;
+  display:none;flex-direction:column;gap:5px;pointer-events:auto;
+}
+#clrp.vis{display:flex;}
+.csw{width:32px;height:32px;border-radius:50%;border:2px solid transparent;cursor:pointer;}
+.csw.act{border-color:#fff;transform:scale(1.18);}
+
+#objlist{
+  position:absolute;top:58px;right:60px;max-height:175px;max-width:155px;
+  background:rgba(0,10,26,.92);border:1px solid rgba(0,229,255,.18);overflow-y:auto;pointer-events:auto;
+}
+.olit{padding:5px 9px;font-size:9px;color:var(--c);cursor:pointer;border-bottom:1px solid rgba(0,229,255,.07);}
+.olit.s{background:rgba(0,229,255,.17);color:#fff;}
+
+#toast{
+  position:absolute;top:60px;left:50%;transform:translateX(-50%);
+  background:rgba(0,12,32,.96);border:1px solid var(--c);color:var(--c);
+  padding:6px 16px;font-size:11px;opacity:0;transition:opacity .22s;
+  pointer-events:none;z-index:30;
+}
+#toast.on{opacity:1;}
+#toast.e{border-color:var(--red);color:var(--red);}
+
+#perm{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 40% 40%,rgba(0,40,100,.97),rgba(0,0,0,.99));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px;text-align:center;pointer-events:auto;z-index:100;
+}
+#loading{
+  position:absolute;inset:0;background:#000;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:auto;z-index:101;
+}
+.lbar{width:200px;height:1.5px;background:rgba(0,229,255,.12);overflow:hidden;margin-bottom:12px;}
+.lbar-f{height:100%;background:var(--c);animation:ls 1.3s linear infinite;}
+@keyframes ls{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}
+
+#hgrid{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.05;
+  background-image:linear-gradient(rgba(0,229,255,.8) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,229,255,.8) 1px,transparent 1px);
+  background-size:44px 44px;}
+</style>
 </head>
 <body>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        let scene, camera, renderer, cube;
 
-        function init() {
-            // Sahne oluşturma
-            scene = new THREE.Scene();
+<div id="hgrid"></div>
+<video id="bg-video" autoplay playsinline muted></video>
+<canvas id="gl-canvas"></canvas>
 
-            // Kamera Düzeltmesi: PerspectiveCamera(fov, aspect, near, far)
-            // Aspect ratio dinamik olarak pencere boyutuna göre ayarlandı
-            const aspect = window.innerWidth / window.innerHeight;
-            camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
-            
-            // Kamera pozisyonu: Objenin tam görülebilmesi için geri çekildi
-            camera.position.set(0, 2, 5);
+<div id="overlay">
+  <canvas id="hand-canvas"></canvas>
+  <div id="sl"></div>
 
-            // Renderer ayarları
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
+  <!-- PERMISSION -->
+  <div id="perm">
+    <div style="font-family:var(--orb);font-size:32px;font-weight:900;letter-spacing:8px;text-shadow:var(--glow);margin-bottom:3px;">TUNCER <em>HOLO</em></div>
+    <div style="font-size:9px;letter-spacing:5px;opacity:.35;margin-bottom:40px;">AR 3D MODELLEME SİSTEMİ v3.1</div>
+    <button id="startbtn" onclick="bootApp()" style="padding:13px 42px;border:2px solid var(--c);background:rgba(0,60,150,.35);color:var(--c);font-family:var(--orb);font-size:11px;letter-spacing:4px;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);">▶ AR BAŞLAT</button>
+  </div>
 
-            // Örnek bir obje (Küp)
-            const geometry = new THREE.BoxGeometry(1, 1, 1);
-            const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-            cube = new THREE.Mesh(geometry, material);
-            scene.add(cube);
+  <!-- LOADING -->
+  <div id="loading">
+    <div class="lbar"><div class="lbar-f"></div></div>
+    <div id="ltxt" style="font-size:9.5px;letter-spacing:2px;opacity:.55;">SİSTEM BAŞLATILIYOR...</div>
+  </div>
 
-            // Işıklandırma
-            const light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(1, 1, 2).normalize();
-            scene.add(light);
-            scene.add(new THREE.AmbientLight(0x404040));
+  <!-- HUD -->
+  <div id="hud">
+    <div class="hco tl"></div><div class="hco tr"></div>
+    <div class="hco bl"></div><div class="hco br"></div>
 
-            // Kamera odağı: Kameranın küpe bakması sağlandı
-            camera.lookAt(cube.position);
+    <div id="topbar">
+      <div id="logo">⬡ TUNCER <em>HOLO</em></div>
+      <div id="tstat">
+        <div id="fps-el">FPS: --</div>
+        <div id="xr-el">◉ BEKLENİYOR</div>
+        <div id="mp-el">✋ EL TAKİBİ</div>
+      </div>
+    </div>
 
-            window.addEventListener('resize', onWindowResize, false);
-            animate();
-        }
+    <!-- Left Panel -->
+    <div id="lp">
+      <div class="psec">KATI</div>
+      <button class="cbtn lbtn" onclick="qAdd('cube')"><span class="ci">⬛</span><span class="cl">KÜP</span></button>
+      <button class="cbtn lbtn" onclick="qAdd('cylinder')"><span class="ci">⬤</span><span class="cl">SLNDİR</span></button>
+      <button class="cbtn lbtn" onclick="qAdd('sphere')"><span class="ci">◉</span><span class="cl">KÜRE</span></button>
+      <div class="psec">DELİK</div>
+      <button class="cbtn lbtn hole" onclick="qAdd('cube',true)"><span class="ci">⬜</span><span class="cl">D.KÜP</span></button>
+    </div>
 
-        function onWindowResize() {
-            // Pencere boyutu değiştiğinde kameranın bozulmaması için
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
+    <!-- Right Panel -->
+    <div id="rp">
+      <div class="psec">MOD</div>
+      <button class="cbtn lbtn act" id="btn-move" onclick="setTool('move')"><span class="ci">✥</span><span class="cl">TAŞI</span></button>
+      <button class="cbtn lbtn" id="btn-rotate" onclick="setTool('rotate')"><span class="ci">↻</span><span class="cl">DÖNDÜR</span></button>
+      <button class="cbtn lbtn" id="btn-scale" onclick="setTool('scale')"><span class="ci">⤢</span><span class="cl">ÖLÇEK</span></button>
+      <div class="psec">SİL</div>
+      <button class="cbtn lbtn del" onclick="delSel()"><span class="ci">✕</span><span class="cl">SİL</span></button>
+    </div>
 
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // Hafif rotasyon
-            if (cube) {
-                cube.rotation.x += 0.01;
-                cube.rotation.y += 0.01;
-            }
+    <div id="objlist"><div id="oli"></div></div>
 
-            renderer.render(scene, camera);
-        }
+    <div id="xfp">
+      <h5 style="font-size:9px;margin-bottom:5px;opacity:.5;">TRANSFORM</h5>
+      <div class="xrow"><span class="xax">X</span><button class="xb" onclick="xfm('x',-1)">−</button><button class="xb" onclick="xfm('x',1)">+</button></div>
+      <div class="xrow"><span class="xax">Y</span><button class="xb" onclick="xfm('y',-1)">−</button><button class="xb" onclick="xfm('y',1)">+</button></div>
+      <div class="xrow"><span class="xax">Z</span><button class="xb" onclick="xfm('z',-1)">−</button><button class="xb" onclick="xfm('z',1)">+</button></div>
+    </div>
 
-        window.onload = init;
-    </script>
+    <div id="clrp"></div>
+
+    <div id="botbar">
+      <div id="vtxt">...</div>
+      <button id="vbtn" onclick="toggleVoice()">🎤</button>
+      <div id="mlbl">◈ TAŞIMA<br>MODU</div>
+    </div>
+
+    <div id="toast"></div>
+  </div>
+</div>
+
+<video id="mp-video" playsinline autoplay muted style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;"></video>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+
+<script>
+let scene, camera, renderer, raycaster, reticleMesh;
+let xrSession = null;
+let hitTestSource = null;
+let hitTestSourceReady = false;
+let mpHands = null, mpCam = null;
+let handCv, handCtx;
+
+const S = {
+  ready: false, isXR: false, tool: 'move', objects: [], selected: [], cnt: 0,
+  pinching: false, grabbing: false, grabOffset: null, voice: false, color: 0x00e5ff
+};
+
+const SHAPES = {
+  cube: { g:()=>new THREE.BoxGeometry(.25,.25,.25), name:'Küp', icon:'⬛' },
+  cylinder: { g:()=>new THREE.CylinderGeometry(.1,.1,.25,32), name:'Silindir', icon:'⬤' },
+  sphere: { g:()=>new THREE.SphereGeometry(.12,32,32), name:'Küre', icon:'◉' }
+};
+
+function initThree() {
+  const cv=document.getElementById('gl-canvas');
+  scene=new THREE.Scene();
+  
+  // KAMERA DÜZELTME: Aspect ratio ve başlangıç pozisyonu güncellendi
+  const aspect = window.innerWidth / window.innerHeight;
+  camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+  camera.position.set(0, 0, 2); // Objelerin görülebilmesi için kamera geriye çekildi
+  
+  renderer=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+  renderer.setSize(window.innerWidth,window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.xr.enabled=true;
+
+  scene.add(new THREE.AmbientLight(0xffffff,1.2));
+  const dl=new THREE.DirectionalLight(0xffffff,0.8);
+  dl.position.set(5,10,5); scene.add(dl);
+
+  const rGeo=new THREE.RingGeometry(.08,.1,32); rGeo.rotateX(-Math.PI/2);
+  reticleMesh=new THREE.Mesh(rGeo,new THREE.MeshBasicMaterial({color:0x00e5ff,transparent:true,opacity:0.5}));
+  reticleMesh.matrixAutoUpdate=false; reticleMesh.visible=false;
+  scene.add(reticleMesh);
+
+  raycaster=new THREE.Raycaster();
+  
+  // Ekran boyutu değiştiğinde kamerayı güncelle
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+}
+
+async function startWebXR() {
+  if(!navigator.xr) return false;
+  try {
+    const supported = await navigator.xr.isSessionSupported('immersive-ar');
+    if(!supported) return false;
+
+    xrSession = await navigator.xr.requestSession('immersive-ar', {
+      requiredFeatures: ['local'],
+      optionalFeatures: ['hit-test', 'dom-overlay'],
+      domOverlay: { root: document.getElementById('overlay') }
+    });
+    renderer.xr.setReferenceSpaceType('local');
+    await renderer.xr.setSession(xrSession);
+    
+    xrSession.requestReferenceSpace('viewer').then(space => {
+      xrSession.requestHitTestSource({space}).then(src => {
+        hitTestSource = src; hitTestSourceReady = true;
+      });
+    });
+    
+    renderer.setAnimationLoop(xrLoop);
+    S.isXR = true;
+    document.getElementById('xr-el').textContent = "◉ AR AKTİF";
+    return true;
+  } catch(e) { return false; }
+}
+
+function xrLoop(time, frame) {
+  if(frame && hitTestSourceReady) {
+    const hits = frame.getHitTestResults(hitTestSource);
+    if(hits.length > 0) {
+      const pose = hits[0].getPose(renderer.xr.getReferenceSpace());
+      reticleMesh.visible = true;
+      reticleMesh.matrix.fromArray(pose.transform.matrix);
+    } else {
+      reticleMesh.visible = false;
+    }
+  }
+  renderer.render(scene, camera);
+}
+
+async function initMediaPipe() {
+  handCv = document.getElementById('hand-canvas');
+  handCv.width = window.innerWidth; handCv.height = window.innerHeight;
+  handCtx = handCv.getContext('2d');
+
+  mpHands = new Hands({
+    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+  });
+
+  mpHands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.6,
+    minTrackingConfidence: 0.5
+  });
+
+  mpHands.onResults(results => {
+    handCtx.clearRect(0, 0, handCv.width, handCv.height);
+    if(results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+      const landmarks = results.multiHandLandmarks[0];
+      drawHand(landmarks);
+      checkPinch(landmarks);
+    } else {
+      S.pinching = false; S.grabbing = false;
+    }
+  });
+
+  const video = document.getElementById('mp-video');
+  mpCam = new Camera(video, {
+    onFrame: async () => { await mpHands.send({image: video}); },
+    width: 640, height: 480
+  });
+  mpCam.start().then(() => {
+    document.getElementById('mp-el').style.color = "#00e676";
+  });
+}
+
+function drawHand(lm) {
+  handCtx.fillStyle = S.pinching ? "#ff3d00" : "#00e5ff";
+  const idx = lm[8]; // İşaret parmağı ucu
+  handCtx.beginPath();
+  handCtx.arc(idx.x * handCv.width, idx.y * handCv.height, 8, 0, Math.PI*2);
+  handCtx.fill();
+}
+
+function checkPinch(lm) {
+  const thumb = lm[4], index = lm[8];
+  const d = Math.sqrt((thumb.x-index.x)**2 + (thumb.y-index.y)**2);
+  S.pinching = d < 0.08;
+  
+  if(S.pinching && !S.grabbing) {
+    const ndc = new THREE.Vector2(index.x * 2 - 1, -(index.y * 2 - 1));
+    raycaster.setFromCamera(ndc, camera);
+    const intersects = raycaster.intersectObjects(S.objects);
+    if(intersects.length > 0) {
+      S.grabbing = true;
+      selObj(intersects[0].object);
+    }
+  } else if(!S.pinching) {
+    S.grabbing = false;
+  }
+
+  if(S.grabbing && S.selected.length > 0) {
+    const target = S.selected[0];
+    // Kamera matrisine göre dünyada hareket ettir
+    const worldPos = new THREE.Vector3((index.x - 0.5) * 4, -(index.y - 0.5) * 4, -1.5).applyMatrix4(camera.matrixWorld);
+    target.position.lerp(worldPos, 0.15);
+  }
+}
+
+function qAdd(type, isHole=false) {
+  const cfg = SHAPES[type];
+  const mat = new THREE.MeshPhongMaterial({
+    color: isHole ? 0xff6d00 : S.color, 
+    transparent: isHole, 
+    opacity: isHole ? 0.5 : 1,
+    shininess: 100
+  });
+  const mesh = new THREE.Mesh(cfg.g(), mat);
+  
+  if(reticleMesh.visible) {
+    mesh.position.setFromMatrixPosition(reticleMesh.matrix);
+  } else {
+    // Kamera önüne ekle
+    const offset = new THREE.Vector3(0, 0, -1).applyMatrix4(camera.matrixWorld);
+    mesh.position.copy(offset);
+  }
+  
+  S.cnt++;
+  mesh.userData = { id: S.cnt, name: cfg.name + " " + S.cnt, icon: cfg.icon, isHole };
+  scene.add(mesh);
+  S.objects.push(mesh);
+  selObj(mesh);
+  updateObjList();
+  toast(mesh.userData.name + " eklendi");
+}
+
+function selObj(obj) {
+  S.selected = [obj];
+  document.getElementById('xfp').classList.add('vis');
+  updateObjList();
+}
+
+function delSel() {
+  if(S.selected.length > 0) {
+    const obj = S.selected[0];
+    scene.remove(obj);
+    S.objects = S.objects.filter(o => o !== obj);
+    S.selected = [];
+    document.getElementById('xfp').classList.remove('vis');
+    updateObjList();
+    toast("Nesne silindi");
+  }
+}
+
+function setTool(t) {
+  S.tool = t;
+  document.querySelectorAll('#rp .cbtn').forEach(b => b.classList.remove('act'));
+  document.getElementById('btn-'+t).classList.add('act');
+  document.getElementById('mlbl').innerHTML = t.toUpperCase() + "<br>MODU";
+}
+
+function xfm(ax, dir) {
+  if(S.selected.length === 0) return;
+  const obj = S.selected[0];
+  const step = 0.05;
+  if(S.tool === 'move') obj.position[ax] += dir * step;
+  if(S.tool === 'rotate') obj.rotation[ax] += dir * 0.2;
+  if(S.tool === 'scale') obj.scale[ax] = Math.max(0.1, obj.scale[ax] + dir * 0.1);
+}
+
+function updateObjList() {
+  const container = document.getElementById('oli');
+  container.innerHTML = "";
+  S.objects.forEach(o => {
+    const div = document.createElement('div');
+    div.className = 'olit' + (S.selected.includes(o) ? ' s' : '');
+    div.innerHTML = `${o.userData.icon} ${o.userData.name}`;
+    div.onclick = () => selObj(o);
+    container.appendChild(div);
+  });
+}
+
+function toast(m, e=false) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.className = 'on' + (e ? ' e' : '');
+  setTimeout(() => t.classList.remove('on'), 2500);
+}
+
+function renderNonXR() {
+  if(!S.isXR) {
+    renderer.render(scene, camera);
+    requestAnimationFrame(renderNonXR);
+  }
+}
+
+async function bootApp() {
+  document.getElementById('perm').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+  
+  initThree();
+  await initMediaPipe();
+  
+  const xr = await startWebXR();
+  if(!xr) {
+    document.getElementById('bg-video').style.display = 'block';
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+    }).then(s => {
+      document.getElementById('bg-video').srcObject = s;
+      renderNonXR(); // XR yoksa normal render döngüsünü başlat
+    }).catch(err => {
+      toast("Kamera erişimi reddedildi!", true);
+    });
+  }
+  
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('hud').classList.add('vis');
+  S.ready = true;
+}
+
+function toggleVoice() { toast("Sesli kontrol yakında!"); }
+</script>
 </body>
 </html>
 
