@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v37.0</title>
+    <title>Tuncer AR v38.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- MediaPipe Hands -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
@@ -62,9 +60,9 @@
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud-container">
-            <div class="hud-line">DURUM <span class="hud-value" id="status-text">AKTİF</span></div>
-            <div class="hud-line">EL_TAKİP <span class="hud-value" id="hand-text" style="color:#ff3366;">ARANIYOR</span></div>
-            <div class="hud-line">ETKİLEŞİM <span class="hud-value" id="pinch-text">BOŞTA</span></div>
+            <div class="hud-line">SİSTEM <span class="hud-value" id="status-text">ONLINE</span></div>
+            <div class="hud-line">KAMERA <span class="hud-value" id="cam-text">NATIVE_AR</span></div>
+            <div class="hud-line">MOD <span class="hud-value">MARK-III</span></div>
         </div>
         <div id="status-pill">YÜZEY TARANIYOR...</div>
     </div>
@@ -74,102 +72,46 @@
 
         let scene, camera, renderer, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
-        let handCursor, cursorRing, cursorDot;
-        let objects = [], selectedObject = null;
-        let isPinching = false;
-        let lastHandUpdate = 0;
-
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
-        });
-
-        hands.onResults((results) => {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const lm = results.multiHandLandmarks[0];
-                const index = lm[8];
-                const thumb = lm[4];
-
-                document.getElementById('hand-text').innerText = "KİLİTLENDİ";
-                document.getElementById('hand-text').style.color = "#00ffcc";
-
-                // Coordinate conversion
-                const vector = new THREE.Vector3((1 - index.x) * 2 - 1, -index.y * 2 + 1, 0.5);
-                vector.unproject(camera);
-                const dir = vector.sub(camera.position).normalize();
-                const pos = camera.position.clone().add(dir.multiplyScalar(0.35));
-                
-                handCursor.visible = true;
-                handCursor.position.copy(pos);
-                handCursor.lookAt(camera.position);
-
-                const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
-                if (dist < 0.055) {
-                    document.getElementById('pinch-text').innerText = "TUTUYOR";
-                    cursorRing.material.color.setHex(0x00ffcc);
-                    cursorRing.scale.set(0.75, 0.75, 0.75);
-                    if (!isPinching) {
-                        isPinching = true;
-                        objects.forEach(obj => { if(obj.position.distanceTo(pos) < 0.12) selectedObject = obj; });
-                    }
-                    if (selectedObject) selectedObject.position.lerp(pos, 0.25);
-                } else {
-                    isPinching = false; selectedObject = null;
-                    document.getElementById('pinch-text').innerText = "BOŞTA";
-                    cursorRing.material.color.setHex(0xff3366);
-                    cursorRing.scale.set(1, 1, 1);
-                }
-            } else {
-                handCursor.visible = false;
-                document.getElementById('hand-text').innerText = "ARANIYOR";
-                document.getElementById('hand-text').style.color = "#ff3366";
-            }
-        });
+        let objects = [];
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
             scene.add(new THREE.AmbientLight(0xffffff, 1.5));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(1, 1, 1);
+            scene.add(light);
 
+            // Zemin Tarayıcı (Reticle)
             reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.03, 0.04, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
+                new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // MARK-III CURSOR
-            handCursor = new THREE.Group();
-            cursorDot = new THREE.Mesh(new THREE.SphereGeometry(0.005, 12, 12), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-            cursorRing = new THREE.Mesh(new THREE.RingGeometry(0.013, 0.016, 32), new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide }));
-            handCursor.add(cursorDot, cursorRing);
-            handCursor.visible = false;
-            scene.add(handCursor);
-
             document.getElementById('btn-go').addEventListener('click', async () => {
-                const session = await navigator.xr.requestSession('immersive-ar', {
-                    requiredFeatures: ['hit-test'],
-                    optionalFeatures: ['dom-overlay'],
-                    domOverlay: { root: document.getElementById('ui-overlay') }
-                });
-                renderer.xr.setSession(session);
-                document.getElementById('start-screen').style.display = 'none';
-                document.getElementById('ui-overlay').style.display = 'flex';
-                renderer.setAnimationLoop(render);
+                try {
+                    const session = await navigator.xr.requestSession('immersive-ar', {
+                        requiredFeatures: ['hit-test'],
+                        optionalFeatures: ['dom-overlay'],
+                        domOverlay: { root: document.getElementById('ui-overlay') }
+                    });
+                    renderer.xr.setSession(session);
+                    document.getElementById('start-screen').style.display = 'none';
+                    document.getElementById('ui-overlay').style.display = 'flex';
+                    renderer.setAnimationLoop(render);
+                } catch (e) {
+                    alert("XR başlatılamadı: " + e.message);
+                }
             });
         }
 
@@ -177,7 +119,13 @@
             if (reticle.visible && e.target.id !== 'btn-go') {
                 const cube = new THREE.Mesh(
                     new THREE.BoxGeometry(0.1, 0.1, 0.1),
-                    new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.6 })
+                    new THREE.MeshStandardMaterial({ 
+                        color: 0x00e5ff, 
+                        metalness: 0.5, 
+                        roughness: 0.2,
+                        transparent: true,
+                        opacity: 0.8 
+                    })
                 );
                 cube.position.setFromMatrixPosition(reticle.matrix);
                 scene.add(cube);
@@ -190,13 +138,6 @@
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
-                // ÇAKIŞMAYI ÖNLEYEN KRİTİK NOKTA:
-                // Ayrı video açmak yerine, o anki render'ı (canvası) MediaPipe'a gönder
-                if (timestamp - lastHandUpdate > 40) { 
-                    hands.send({ image: renderer.domElement });
-                    lastHandUpdate = timestamp;
-                }
-
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
                         session.requestHitTestSource({ space: s }).then(src => hitTestSource = src);
@@ -208,10 +149,12 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('status-pill').innerText = "ZEMİN HAZIR - DOKUN";
+                        document.getElementById('status-pill').innerText = "ZEMİN KİLİTLENDİ - DOKUN";
+                        document.getElementById('status-pill').style.color = "#00ffcc";
                     } else {
                         reticle.visible = false;
                         document.getElementById('status-pill').innerText = "YÜZEY TARANIYOR...";
+                        document.getElementById('status-pill').style.color = "#00e5ff";
                     }
                 }
             }
