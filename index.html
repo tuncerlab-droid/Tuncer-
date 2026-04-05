@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v45.0 - Final Sync & Voice</title>
+    <title>Tuncer AR v46.0 - Perfect Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -38,9 +38,8 @@
             background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
             font-weight: 900; padding: 20px 60px; border-radius: 15px; border: none; 
             cursor: pointer; font-size: 20px; box-shadow: 0 0 40px rgba(0, 229, 255, 0.5); 
-            pointer-events: auto; text-transform: uppercase; transition: transform 0.2s;
+            pointer-events: auto; text-transform: uppercase;
         }
-        #btn-go:active { transform: scale(0.95); }
     </style>
     <script type="importmap">
         {
@@ -56,8 +55,8 @@
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER MARK-III</h1>
-        <p style="color:#666; margin-bottom:40px; font-size:11px; letter-spacing:3px;">ADVANCED VOICE INTERFACE</p>
-        <button id="btn-go">SİSTEMİ BAŞLAT</button>
+        <p style="color:#666; margin-bottom:40px; font-size:11px; letter-spacing:3px;">SYSTEM FINAL SYNC</p>
+        <button id="btn-go">BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
@@ -80,7 +79,7 @@
         let isPinching = false;
         let handCursorGroup, cursorDot, cursorRing;
 
-        // --- GELİŞMİŞ SESLİ KONTROL ---
+        // --- SESLİ KONTROL ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         let recognition = null;
 
@@ -102,13 +101,9 @@
 
         function processCommand(cmd) {
             document.getElementById('voice-text').innerText = cmd.toUpperCase();
-            
-            // Ekleme Komutları
             if (cmd.includes('küp') || cmd.includes('kutu')) addShape('cube');
             else if (cmd.includes('küre') || cmd.includes('daire') || cmd.includes('top')) addShape('sphere');
             else if (cmd.includes('halka') || cmd.includes('delik') || cmd.includes('simit')) addShape('torus');
-            
-            // Silme
             else if (cmd.includes('sil') || cmd.includes('yok et') || cmd.includes('kaldır')) {
                 if (selectedObject) {
                     scene.remove(selectedObject);
@@ -116,20 +111,14 @@
                     selectedObject = null;
                 }
             }
-
-            // Renkler
             else if (cmd.includes('mavi')) updateSelected('color', 0x00e5ff);
             else if (cmd.includes('kırmızı')) updateSelected('color', 0xff3366);
             else if (cmd.includes('yeşil')) updateSelected('color', 0x00ffcc);
             else if (cmd.includes('sarı')) updateSelected('color', 0xffcc00);
             else if (cmd.includes('beyaz')) updateSelected('color', 0xffffff);
-
-            // Boyut
             else if (cmd.includes('büyüt')) updateSelected('scale', 1.5);
             else if (cmd.includes('küçült')) updateSelected('scale', 0.7);
-
-            // Döndürme
-            else if (cmd.includes('döndür') || cmd.includes('çevir')) updateSelected('spin', true);
+            else if (cmd.includes('döndür')) updateSelected('spin', true);
             else if (cmd.includes('durdur') || cmd.includes('sabit')) updateSelected('spin', false);
         }
 
@@ -165,7 +154,7 @@
             if (action === 'spin') selectedObject.userData.isSpinning = value;
         }
 
-        // --- EL TAKİBİ VE SENKRONİZASYON ---
+        // --- EL TAKİBİ ---
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -186,10 +175,8 @@
                 document.getElementById('hand-text').innerText = "KİLİTLİ";
                 document.getElementById('hand-text').style.color = "#00ffcc";
 
-                // KESİN DÜZELTME: El sola gidince sağa gitme sorununu çözmek için
-                // indexTip.x değerini doğrudan (indexTip.x * 2 - 1) ile kullanıp 
-                // çarpanı -2.0 yaparak ekseni senkronize ediyoruz.
-                const x = (indexTip.x * 2 - 1) * -2.2; 
+                // DÜZELTME: (indexTip.x * 2 - 1) * 2.2 yaparak pozitif çarpanla yönü eşledim.
+                const x = (indexTip.x * 2 - 1) * 2.2; 
                 const y = (indexTip.y * -2 + 1) * 1.6; 
                 const z = -2.5;
 
@@ -227,7 +214,6 @@
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
