@@ -3,16 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v21.0</title>
+    <title>Tuncer AR v21.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* SİYAH EKRAN ÇÖZÜMÜ: html ve body tamamen şeffaf olmak zorundadır */
-        html, body { margin: 0; overflow: hidden; background: transparent !important; background-color: transparent !important; font-family: monospace; }
+        /* KRİTİK: Kameranın görünmesi için tüm katmanlar şeffaf olmalı */
+        html, body { 
+            margin: 0; 
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; 
+            background: transparent !important; 
+            background-color: transparent !important; 
+            color-scheme: dark;
+            font-family: monospace; 
+        }
         
         #ui-container { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-        .hud-panel { background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; padding: 15px; border-radius: 10px; color: #00e5ff; font-size: 11px; align-self: flex-end; backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(0,0,0,0.5); text-transform: uppercase; }
+        .hud-panel { background: rgba(0, 15, 30, 0.8); border-left: 4px solid #00e5ff; padding: 15px; border-radius: 10px; color: #00e5ff; font-size: 11px; align-self: flex-end; backdrop-filter: blur(8px); box-shadow: 0 0 20px rgba(0,0,0,0.5); text-transform: uppercase; }
+        
         #start-screen { position: fixed; inset: 0; background: #000; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; }
         #btn-activate { 
             background: #00e5ff; color: #000; font-weight: 900; padding: 22px 60px; 
@@ -21,8 +32,11 @@
             text-transform: uppercase; letter-spacing: 2px; transition: transform 0.1s;
         }
         #btn-activate:active { transform: scale(0.95); }
+        
         #target-hint { align-self: center; margin-bottom: 60px; background: rgba(0,229,255,0.2); padding: 10px 25px; border-radius: 30px; color: #00e5ff; border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; backdrop-filter: blur(4px); }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* Canvas ayarları */
+        canvas { display: block; width: 100% !important; height: 100% !important; }
     </style>
 
     <script type="importmap">
@@ -37,8 +51,8 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v21</h1>
-        <p style="color:#444; margin-bottom:40px; font-size:11px;">SİYAH EKRAN VE KAMERA ONARILDI</p>
+        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v21.1</h1>
+        <p style="color:#444; margin-bottom:40px; font-size:11px;">KAMERA AKISI DOGRUDAN BAGLANDI</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -61,18 +75,22 @@
         let objects = [], selectedObject = null;
         let hands = [];
         let isPinching = false;
-        
         let fingerCursor;
 
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // SİYAH EKRAN ÇÖZÜMÜ: alpha:true, preserveDrawingBuffer:true ve setClearColor 0 olmalı!
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            // Renderer şeffaflık ayarları en yüksek seviyede
+            renderer = new THREE.WebGLRenderer({ 
+                antialias: true, 
+                alpha: true, 
+                preserveDrawingBuffer: true 
+            });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x000000, 0); // Arka planı tamamen görünmez yapar, kamerayı ortaya çıkarır
+            // setClearColor 0 olmalı ki altındaki kamera görüntüsü gözüksün
+            renderer.setClearColor(0x000000, 0); 
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
@@ -81,6 +99,7 @@
             light.position.set(2, 5, 2);
             scene.add(light);
 
+            // Hedefleme halkası
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
@@ -89,33 +108,30 @@
             reticle.visible = false;
             scene.add(reticle);
 
+            // El takip imleci
             fingerCursor = new THREE.Mesh(
-                new THREE.SphereGeometry(0.015, 16, 16),
+                new THREE.SphereGeometry(0.012, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
             );
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // WebXR Native El Takibi Modelleri
-            try {
-                const handModelFactory = new XRHandModelFactory();
-                for (let i = 0; i < 2; i++) {
-                    const hand = renderer.xr.getHand(i);
-                    hand.add(handModelFactory.createHandModel(hand, "mesh"));
-                    scene.add(hand);
-                    hands.push(hand);
+            // El Modelleri
+            const handModelFactory = new XRHandModelFactory();
+            for (let i = 0; i < 2; i++) {
+                const hand = renderer.xr.getHand(i);
+                hand.add(handModelFactory.createHandModel(hand, "mesh"));
+                scene.add(hand);
+                hands.push(hand);
 
-                    hand.addEventListener('connected', () => {
-                        document.getElementById('hand-status').innerText = "AKTİF";
-                        document.getElementById('hand-status').style.color = "#00ffcc";
-                    });
-                    hand.addEventListener('disconnected', () => {
-                        document.getElementById('hand-status').innerText = "ARANIYOR";
-                        document.getElementById('hand-status').style.color = "#ff3366";
-                    });
-                }
-            } catch (e) {
-                console.warn("Native Hand Tracking desteklenmiyor olabilir:", e);
+                hand.addEventListener('connected', () => {
+                    document.getElementById('hand-status').innerText = "AKTİF";
+                    document.getElementById('hand-status').style.color = "#00ffcc";
+                });
+                hand.addEventListener('disconnected', () => {
+                    document.getElementById('hand-status').innerText = "ARANIYOR";
+                    document.getElementById('hand-status').style.color = "#ff3366";
+                });
             }
 
             const startBtn = document.getElementById('btn-activate');
@@ -127,7 +143,7 @@
 
                 const sessionInit = { 
                     requiredFeatures: ['hit-test'], 
-                    optionalFeatures: ['dom-overlay', 'hand-tracking'], // Kamera ve el takibi için doğru izinler
+                    optionalFeatures: ['dom-overlay', 'hand-tracking'], 
                     domOverlay: { root: document.getElementById('ui-container') } 
                 };
                 
@@ -142,7 +158,7 @@
                     initVoice(); 
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("AR Başlatılamadı. Lütfen kamera izinlerini kontrol edin.");
+                    alert("AR Baslatilamadi. Lutfen kamera iznini tarayici ayarlarindan kontrol edin.");
                 }
             });
         }
@@ -175,8 +191,8 @@
             const geo = type === 'cube' ? new THREE.BoxGeometry(0.1, 0.1, 0.1) : new THREE.SphereGeometry(0.06, 32, 32);
             const mat = new THREE.MeshStandardMaterial({ 
                 color: new THREE.Color(`hsl(${Math.random() * 360}, 80%, 50%)`), 
-                metalness: 0.6, 
-                roughness: 0.2 
+                metalness: 0.7, 
+                roughness: 0.1 
             });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.setFromMatrixPosition(reticle.matrix);
@@ -201,35 +217,31 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('target-hint').innerText = "YÜZEY HAZIR - EKRANA DOKUN VEYA KÜP DE";
+                        document.getElementById('target-hint').innerText = "YÜZEY BULUNDU";
                     } else { 
                         reticle.visible = false; 
-                        document.getElementById('target-hint').innerText = "YÜZEY ARANIYOR (ZEMİNE BAK)...";
                     }
                 }
 
                 let handDetected = false;
                 for (const hand of hands) {
-                    if (hand.joints && Object.keys(hand.joints).length > 0) {
+                    if (hand.joints && hand.joints['index-finger-tip']) {
                         handDetected = true;
                         const indexTip = hand.joints['index-finger-tip'];
                         const thumbTip = hand.joints['thumb-tip'];
 
                         if (indexTip && thumbTip) {
                             fingerCursor.visible = true;
-                            
                             const indexPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
                             const thumbPos = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
-                            
                             fingerCursor.position.copy(indexPos);
 
                             const pinchDist = indexPos.distanceTo(thumbPos);
-                            const isPinchNow = pinchDist < 0.03; 
+                            const isPinchNow = pinchDist < 0.025; 
 
                             if (isPinchNow) {
                                 fingerCursor.material.color.setHex(0xff3366); 
                                 document.getElementById('interact-mode').innerText = "TUTULUYOR";
-                                
                                 if (!isPinching) {
                                     isPinching = true;
                                     for (let obj of objects) {
@@ -239,7 +251,6 @@
                                         }
                                     }
                                 }
-
                                 if (selectedObject) {
                                     selectedObject.position.lerp(indexPos, 0.2);
                                     selectedObject.quaternion.slerp(hand.quaternion, 0.1);
@@ -248,22 +259,9 @@
                                 isPinching = false;
                                 document.getElementById('interact-mode').innerText = "GÖZLEM";
                                 fingerCursor.material.color.setHex(0x00e5ff); 
-                                
-                                let isHovering = false;
-                                for (let obj of objects) {
-                                    if (obj.position.distanceTo(indexPos) < 0.15) {
-                                        isHovering = true;
-                                        break;
-                                    }
-                                }
-                                if (isHovering && !selectedObject) {
-                                    fingerCursor.material.color.setHex(0xffea00); 
-                                } else {
-                                    selectedObject = null;
-                                }
+                                if (!isPinching) selectedObject = null;
                             }
                         }
-                        break; 
                     }
                 }
                 if (!handDetected) fingerCursor.visible = false;
@@ -272,7 +270,7 @@
         }
 
         window.addEventListener('pointerdown', (e) => {
-            if (reticle.visible && e.target.id !== 'btn-activate') {
+            if (reticle.visible && e.target.tagName !== 'BUTTON') {
                 createObject('cube');
             }
         });
@@ -281,5 +279,4 @@
     </script>
 </body>
 </html>
-
 
