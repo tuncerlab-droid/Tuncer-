@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO - Kusursuz AR v3</title>
+    <title>TUNCER HOLO - Kusursuz AR v3.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="importmap">
@@ -31,24 +31,25 @@
             -webkit-user-select: none;
         }
 
-        /* Başlangıç Ekranı - En üstte ve güvenli tıklama alanı */
+        /* Başlangıç Ekranı */
         #start-screen {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             background: radial-gradient(circle, #001a22 0%, #000000 100%);
-            z-index: 9999;
+            z-index: 1000;
         }
 
         /* WebXR için DOM Overlay Katmanı */
         #ui-overlay {
             position: absolute;
             top: 0; left: 0; width: 100vw; height: 100vh;
-            display: none; /* AR başlayana kadar gizli */
+            display: none; 
             flex-direction: column;
             justify-content: space-between;
             padding: 1rem;
-            pointer-events: none; /* Sadece içindeki butonlar tıklansın */
+            pointer-events: none; 
+            z-index: 2000;
         }
 
         .hud-panel {
@@ -75,14 +76,14 @@
             color: #fff;
         }
 
-        /* Three.js AR Butonunu Özelleştirme - Tıklanabilirlik Garantisi */
+        /* Three.js AR Butonu Özelleştirmesi - GARANTİLİ TIKLAMA */
         #ARButton {
-            position: relative !important;
-            bottom: auto !important;
-            left: auto !important;
-            margin-top: 30px !important;
-            padding: 20px 40px !important;
-            background: #004444 !important;
+            position: absolute !important;
+            bottom: 15% !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            padding: 18px 36px !important;
+            background: rgba(0, 60, 60, 0.8) !important;
             border: 2px solid #0ff !important;
             color: #0ff !important;
             font-family: 'Share Tech Mono', monospace !important;
@@ -90,7 +91,8 @@
             border-radius: 8px !important;
             cursor: pointer !important;
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.5) !important;
-            pointer-events: auto !important; /* Tıklama zorunlu */
+            pointer-events: auto !important;
+            z-index: 9999 !important;
         }
     </style>
 </head>
@@ -103,18 +105,15 @@
     <div id="start-screen">
         <div class="text-center p-6 max-w-sm w-full">
             <h1 class="text-4xl font-bold text-cyan-400 mb-2 tracking-widest drop-shadow-[0_0_10px_rgba(0,255,255,0.8)]">TUNCER</h1>
-            <h2 class="text-xl text-cyan-200 mb-6 tracking-widest">HOLO AR v3</h2>
+            <h2 class="text-xl text-cyan-200 mb-6 tracking-widest">HOLO AR v3.1</h2>
             <p class="text-xs text-gray-400 mb-4 leading-relaxed">
-                El eklemleri (Joints) ve SLAM motoru onarıldı.<br>Sistemi başlatmak için aşağıdaki butona dokunun.
+                El takibi cihaz tarafından destekleniyorsa otomatik aktifleşecektir.<br>Sistemi başlatmak için butona dokunun.
             </p>
-            <!-- AR Butonu buraya yerleşecek -->
-            <div id="btn-container" class="w-full flex justify-center"></div>
         </div>
     </div>
 
     <!-- AR Arayüzü (DOM Overlay) -->
     <div id="ui-overlay">
-        <!-- Üst Panel -->
         <div class="flex justify-between items-start w-full">
             <div class="hud-panel p-3 rounded text-sm w-1/2">
                 <div class="font-bold text-sm tracking-widest text-white mb-1">TUNCER AR</div>
@@ -127,7 +126,6 @@
             </div>
         </div>
 
-        <!-- Alt Panel -->
         <div class="flex justify-between items-end w-full gap-2">
             <div class="hud-panel p-2 rounded h-28 w-1/2 overflow-hidden flex flex-col justify-end text-[9px]" id="log-console">
                 <div class="text-cyan-600">> Sistem Yüklendi. Bekleniyor...</div>
@@ -144,7 +142,7 @@
 <script type="module">
 import * as THREE from 'three';
 import { ARButton } from 'three/addons/webxr/ARButton.js';
-import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js'; // El takibi için resmi fabrika
+import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 import { SUBTRACTION, Brush, Evaluator } from 'three-bvh-csg';
 
 const logConsole = document.getElementById('log-console');
@@ -165,7 +163,6 @@ function log(msg, err = false) {
     d.textContent = `> ${msg}`;
     d.className = err ? 'text-red-500 font-bold' : 'text-cyan-400';
     logConsole.appendChild(d);
-    // Konsolu temiz tut
     while (logConsole.childNodes.length > 6) {
         logConsole.removeChild(logConsole.firstChild);
     }
@@ -183,38 +180,33 @@ function initThree() {
     renderer.xr.enabled = true;
     container.appendChild(renderer.domElement);
 
-    // Işıklandırma (Derinlik algısı için önemli)
     scene.add(new THREE.AmbientLight(0xffffff, 1.0));
     const dLight = new THREE.DirectionalLight(0xffffff, 1.5);
     dLight.position.set(0, 5, 2);
     scene.add(dLight);
 
-    // 1. DÜZELTME: AR Butonunun Sorunsuz Çalışması İçin Ayarlar
+    // KESİN ÇÖZÜM BURADA: hand-tracking "optional" yapıldı!
     const arOptions = {
-        requiredFeatures: ['hit-test', 'hand-tracking'], // El takibi zorunlu kılındı
-        optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: uiOverlay } // UI Overlay katmanını WebXR'a tanıttık
+        requiredFeatures: ['hit-test'], 
+        optionalFeatures: ['dom-overlay', 'hand-tracking'], 
+        domOverlay: { root: uiOverlay } 
     };
     
     const arBtn = ARButton.createButton(renderer, arOptions);
-    document.getElementById('btn-container').appendChild(arBtn);
+    // Butonu direkt body'e ekliyoruz ki hiçbir div onu engellemesin
+    document.body.appendChild(arBtn);
 
-    // 2. DÜZELTME: Resmi El Takibi Modeli (XRHandModelFactory)
-    // Bu sayede parmak uçlarında ve eklemlerde otomatik olarak küreler (noktalar) çıkacak.
     const handModelFactory = new XRHandModelFactory();
     
-    hand0 = renderer.xr.getHand(0); // Birinci el (Genelde sağ)
+    hand0 = renderer.xr.getHand(0); 
     
-    // El için "spheres" profilini kullanarak eklem noktalarını çizdiriyoruz
     handModel0 = handModelFactory.createHandModel(hand0, "spheres"); 
     hand0.add(handModel0);
     scene.add(hand0);
 
-    // Çimdik (Pinch) Olayları
     hand0.addEventListener('pinchstart', onPinchStart);
     hand0.addEventListener('pinchend', onPinchEnd);
 
-    // Zemin Tarama İmleci
     reticle = new THREE.Mesh(
         new THREE.RingGeometry(0.08, 0.1, 32).rotateX(-Math.PI/2),
         new THREE.MeshBasicMaterial({ color: 0x00ffff })
@@ -223,10 +215,9 @@ function initThree() {
     reticle.visible = false;
     scene.add(reticle);
 
-    // AR Oturumu Yönetimi
     renderer.xr.addEventListener('sessionstart', () => {
-        startScreen.style.display = 'none'; // Başlangıç ekranını tamamen gizle
-        uiOverlay.style.display = 'flex'; // Arayüzü göster
+        startScreen.style.display = 'none'; 
+        uiOverlay.style.display = 'flex'; 
         log("AR Sistemleri Çevrimiçi.");
     });
 
@@ -242,14 +233,13 @@ function initThree() {
 function onPinchStart() {
     isGrabbing = true;
     
-    // İşaret parmağı ucunun dünya koordinatını al
     const indexTip = hand0.joints['index-finger-tip'];
     if (!indexTip) return;
 
     const handPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
     
     let closest = null;
-    let minDist = 0.2; // 20cm yakalama mesafesi
+    let minDist = 0.2; 
 
     const allItems = [...objects, ...holeObjects];
     allItems.forEach(obj => {
@@ -262,7 +252,7 @@ function onPinchStart() {
 
     if (closest) {
         selectedObject = closest;
-        selectedObject.material.emissive.setHex(0x004444); // Seçilince parlat
+        selectedObject.material.emissive.setHex(0x004444); 
         log("Obje Yakalandı.");
     }
 }
@@ -270,7 +260,7 @@ function onPinchStart() {
 function onPinchEnd() {
     isGrabbing = false;
     if (selectedObject) {
-        selectedObject.material.emissive.setHex(0x000000); // Parlamayı kapat
+        selectedObject.material.emissive.setHex(0x000000); 
         selectedObject = null;
         log("Obje Bırakıldı.");
     }
@@ -287,13 +277,10 @@ function updateObjectTransform() {
         const p1 = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
         const p2 = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
         
-        // İşaret ve baş parmak ortası
         const midPoint = new THREE.Vector3().lerpVectors(p1, p2, 0.5);
         
-        // Pürüzsüz taşıma
         selectedObject.position.lerp(midPoint, 0.3);
         
-        // Bilek açısına göre döndürme
         const wristRot = new THREE.Quaternion().setFromRotationMatrix(wrist.matrixWorld);
         selectedObject.quaternion.slerp(wristRot, 0.2);
     }
@@ -313,19 +300,18 @@ function addObj(isHole = false) {
     });
     
     const mesh = new THREE.Mesh(geo, mat);
-    // Reticle (imleç) neresiyse oraya koy
     mesh.position.setFromMatrixPosition(reticle.matrix);
     mesh.quaternion.setFromRotationMatrix(reticle.matrix);
-    mesh.translateY(0.075); // Yarısı kadar yukarı kaldır ki zemine otursun
+    mesh.translateY(0.075); 
     
     scene.add(mesh);
     if (isHole) holeObjects.push(mesh); else objects.push(mesh);
-    log(isHole ? "Kırmızı Delik (Kesici) eklendi." : "Mavi Küp (Ana) eklendi.");
+    log(isHole ? "Kırmızı Delik eklendi." : "Mavi Küp eklendi.");
 }
 
 function mergeObjects() {
     if (objects.length === 0 || holeObjects.length === 0) {
-        log("Birleştirme için 1 Mavi, 1 Kırmızı küp gerekli!", true);
+        log("1 Mavi, 1 Kırmızı küp gerekli!", true);
         return;
     }
     
@@ -358,9 +344,9 @@ function mergeObjects() {
         
         objects = [result]; 
         holeObjects = [];
-        log("İşlem Başarılı: Obje Kesildi.");
+        log("Obje Kesildi.");
     } catch (e) { 
-        log("CSG Matematik Hatası!", true); 
+        log("CSG Hatası!", true); 
     }
 }
 
@@ -369,7 +355,6 @@ function render(timestamp, frame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
         
-        // Zemin Tarama (Hit Test)
         if (!hitTestSourceRequested) {
             session.requestReferenceSpace('viewer').then(ref => {
                 session.requestHitTestSource({ space: ref }).then(src => hitTestSource = src);
@@ -391,7 +376,6 @@ function render(timestamp, frame) {
             }
         }
 
-        // Elin sistem tarafından algılanıp algılanmadığını HUD'a yazdır
         let handVisible = false;
         for (const inputSource of session.inputSources) {
             if (inputSource.hand) handVisible = true;
@@ -400,21 +384,18 @@ function render(timestamp, frame) {
             handStatus.textContent = "EL TAKİBİ: AKTİF";
             handStatus.className = "text-[10px] text-cyan-400 mt-1";
         } else {
-            handStatus.textContent = "EL TAKİBİ: GÖZÜKMÜYOR";
+            handStatus.textContent = "EL TAKİBİ: GÖZÜKMÜYOR / DESTEKLENMİYOR";
             handStatus.className = "text-[10px] text-gray-400 mt-1";
         }
 
-        // Obje tutuluyorsa hareket ettir
         if (isGrabbing) updateObjectTransform();
     }
     
     renderer.render(scene, camera);
 }
 
-// Sistemi Başlat
 window.addEventListener('load', initThree);
 
-// Buton Etkileşimleri
 document.getElementById('btn-cube').onclick = () => addObj(false);
 document.getElementById('btn-hole').onclick = () => addObj(true);
 document.getElementById('btn-merge').onclick = mergeObjects;
@@ -431,7 +412,6 @@ document.getElementById('btn-delete').onclick = () => {
     }
 };
 
-// Ekran yeniden boyutlandırma
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
