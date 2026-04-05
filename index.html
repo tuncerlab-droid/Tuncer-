@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO AR v3.5</title>
+    <title>TUNCER HOLO AR v3.6</title>
     <script src="https://cdn.tailwindcss.com"></script>
 
     <script type="importmap">
@@ -26,63 +26,60 @@
             font-family: 'Share Tech Mono', monospace;
         }
 
-        /* Giriş Ekranı */
+        /* Giriş Paneli */
         #start-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: radial-gradient(circle, #001a22 0%, #000 100%);
-            z-index: 9999;
+            background: #000; z-index: 2000;
         }
 
-        /* AR Arayüz Katmanı */
+        /* AR ARAYÜZÜ - KRİTİK KATMAN */
         #ui-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: none; flex-direction: column; justify-content: space-between;
-            padding: 15px; box-sizing: border-box;
-            z-index: 10000;
-            pointer-events: none; /* Sahneye dokunmayı engellemez */
+            position: absolute; /* Fixed yerine absolute bazen WebXR'da daha iyi sonuç verir */
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: none; /* Oturum açılınca JS ile açılacak */
+            flex-direction: column; justify-content: space-between;
+            padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
+            box-sizing: border-box;
+            pointer-events: none; /* Arka plana tıklamayı engelleme */
+            z-index: 99999; /* En üstte olmasını garantile */
         }
 
-        /* Tıklanabilir Alanlar */
         .interactive {
-            pointer-events: auto !important;
+            pointer-events: auto !important; /* Butonlara basılmasını sağla */
         }
 
         .hud-panel {
-            background: rgba(0, 15, 20, 0.9);
+            background: rgba(0, 20, 25, 0.85);
             border: 1px solid #0ff;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+            border-radius: 6px;
         }
 
         .btn-holo {
-            background: rgba(0, 255, 255, 0.1);
+            background: rgba(0, 255, 255, 0.15);
             border: 1px solid #0ff;
             color: #0ff;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: bold;
-            padding: 10px;
+            padding: 12px 5px;
             cursor: pointer;
-            text-transform: uppercase;
+            text-align: center;
         }
 
         .btn-holo:active {
-            background: rgba(0, 255, 255, 0.4);
+            background: rgba(0, 255, 255, 0.5);
+            color: #000;
         }
 
-        /* Mevcut "START AR" butonu stili */
+        /* WebXR Varsayılan Butonunu Özelleştirme Denemesi */
         #ARButton {
-            position: absolute !important;
-            bottom: 25% !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            padding: 15px 30px !important;
             background: #002222 !important;
-            border: 2px solid #0ff !important;
+            border: 1px solid #0ff !important;
             color: #0ff !important;
-            font-family: 'Share Tech Mono', monospace !important;
-            letter-spacing: 2px !important;
-            z-index: 10001 !important;
+            font-family: 'Share Tech Mono' !important;
+            border-radius: 4px !important;
+            bottom: 30% !important;
         }
     </style>
 </head>
@@ -91,36 +88,37 @@
     <div id="canvas-container"></div>
 
     <div id="start-screen">
-        <h1 class="text-3xl font-bold text-cyan-400 mb-2 tracking-tighter">TUNCER HOLO v3.5</h1>
-        <p class="text-cyan-700 text-[10px] mb-8 uppercase animate-pulse">Sistemler Hazırlanıyor</p>
+        <div class="border border-cyan-500 p-8 text-center bg-black/50">
+            <h1 class="text-2xl text-cyan-400 font-bold mb-2">TUNCER HOLO v3.6</h1>
+            <p class="text-cyan-800 text-[10px] mb-6 tracking-widest">AR INTERFACE SYSTEM</p>
+        </div>
     </div>
 
-    <!-- Bu katman WebXR dom-overlay olarak kullanılacak -->
+    <!-- Bu div WebXR dom-overlay olarak atanacak -->
     <div id="ui-overlay">
-        <!-- Üst Bilgi Paneli -->
-        <div class="flex justify-between w-full interactive">
-            <div class="hud-panel p-2 w-1/2">
-                <div class="text-[9px] text-cyan-500 font-bold mb-1 uppercase">Sistem Durumu</div>
-                <div id="sys-status" class="text-yellow-500 text-[10px]">ZEMİN ARANIYOR...</div>
-                <div id="hand-status" class="text-gray-500 text-[9px] mt-1">EL TAKİBİ: PASİF</div>
+        <!-- Üst HUD -->
+        <div class="flex justify-between w-full mt-4 interactive">
+            <div class="hud-panel p-2 w-48">
+                <div id="sys-status" class="text-yellow-500 text-[10px] animate-pulse">SİSTEM BAŞLATILIYOR...</div>
+                <div id="hand-status" class="text-cyan-700 text-[9px] mt-1 italic">EL VERİSİ YOK</div>
             </div>
-            <div class="hud-panel px-3 py-2 flex items-center justify-center">
-                <span class="text-green-500 text-[10px] font-bold animate-pulse">● LIVE</span>
+            <div class="hud-panel px-3 py-1 flex items-center">
+                <span class="text-green-500 text-[10px] font-bold">ONLINE</span>
             </div>
         </div>
 
-        <!-- Alt Kontrol Paneli -->
-        <div class="flex flex-col gap-2 w-full">
-            <div class="flex gap-2 items-end">
-                <div class="hud-panel p-2 h-20 w-1/2 overflow-hidden flex flex-col justify-end text-[8px] interactive" id="log-console">
-                    <div class="text-cyan-900">> Çekirdek Hazır.</div>
+        <!-- Alt Kontroller -->
+        <div class="w-full mb-8 flex flex-col gap-3">
+            <div class="flex gap-2 items-end h-32">
+                <div class="hud-panel p-2 flex-grow overflow-hidden flex flex-col justify-end text-[8px] opacity-70" id="log-console">
+                    <div class="text-cyan-800">> Sistem hazir.</div>
                 </div>
                 
-                <div class="grid grid-cols-2 gap-1 w-1/2 interactive">
-                    <button id="btn-cube" class="btn-holo rounded">KÜP</button>
-                    <button id="btn-hole" class="btn-holo rounded border-red-500 text-red-500">DELİK</button>
-                    <button id="btn-merge" class="btn-holo rounded border-yellow-500 text-yellow-500">MERGE</button>
-                    <button id="btn-delete" class="btn-holo rounded text-white border-white">SİL</button>
+                <div class="grid grid-cols-2 gap-2 w-48 interactive">
+                    <button id="btn-cube" class="btn-holo">KÜP</button>
+                    <button id="btn-hole" class="btn-holo border-red-500 text-red-500">DELİK</button>
+                    <button id="btn-merge" class="btn-holo border-yellow-500 text-yellow-500">BİRLEŞTİR</button>
+                    <button id="btn-delete" class="btn-holo border-white text-white">SİL</button>
                 </div>
             </div>
         </div>
@@ -143,12 +141,12 @@ const handStatus = document.getElementById('hand-status');
 const uiOverlay = document.getElementById('ui-overlay');
 const startScreen = document.getElementById('start-screen');
 
-function log(msg, err = false) {
+function log(msg, isErr = false) {
     const d = document.createElement('div');
     d.textContent = `> ${msg}`;
-    d.className = err ? 'text-red-500' : 'text-cyan-400';
+    d.className = isErr ? 'text-red-500' : 'text-cyan-400';
     logConsole.appendChild(d);
-    if(logConsole.childNodes.length > 5) logConsole.removeChild(logConsole.firstChild);
+    if(logConsole.childNodes.length > 6) logConsole.removeChild(logConsole.firstChild);
 }
 
 function init() {
@@ -162,38 +160,35 @@ function init() {
     document.getElementById('canvas-container').appendChild(renderer.domElement);
 
     scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-    const light = new THREE.DirectionalLight(0xffffff, 1.5);
-    light.position.set(0, 5, 2);
+    const light = new THREE.DirectionalLight(0xffffff, 1.2);
+    light.position.set(0, 10, 5);
     scene.add(light);
 
-    // AR Desteği
-    const arBtn = ARButton.createButton(renderer, {
+    // KRİTİK: AR BUTONUNU DOM OVERLAY İLE BAĞLA
+    const arButton = ARButton.createButton(renderer, {
         requiredFeatures: ['hit-test'],
         optionalFeatures: ['dom-overlay', 'hand-tracking'],
-        domOverlay: { root: uiOverlay }
+        domOverlay: { root: uiOverlay } // Overlay'i buraya bağlıyoruz
     });
-    document.body.appendChild(arBtn);
+    document.body.appendChild(arButton);
 
-    // El Takibi
+    // El Takibi Kurulumu
     const handModelFactory = new XRHandModelFactory();
     hand0 = renderer.xr.getHand(0);
     handModel0 = handModelFactory.createHandModel(hand0, "spheres");
     hand0.add(handModel0);
     scene.add(hand0);
 
-    hand0.addEventListener('pinchstart', () => {
-        isGrabbing = true;
-        findTarget();
-    });
-    hand0.addEventListener('pinchend', () => {
-        isGrabbing = false;
+    hand0.addEventListener('pinchstart', () => { isGrabbing = true; findTarget(); });
+    hand0.addEventListener('pinchend', () => { 
+        isGrabbing = false; 
         if(selectedObject) {
             selectedObject.material.emissive.setHex(0x000000);
             selectedObject = null;
         }
     });
 
-    // Zemin Halkanız
+    // Zemin İşaretçisi
     reticle = new THREE.Mesh(
         new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI/2),
         new THREE.MeshBasicMaterial({ color: 0x00ffff })
@@ -204,40 +199,46 @@ function init() {
 
     renderer.xr.addEventListener('sessionstart', () => {
         startScreen.style.display = 'none';
-        uiOverlay.style.display = 'flex';
-        log("Oturum Hazır.");
+        uiOverlay.style.display = 'flex'; // Overlay'i görünür yap
+        log("Holografik Sistem Aktif.");
+    });
+
+    renderer.xr.addEventListener('sessionend', () => {
+        startScreen.style.display = 'flex';
+        uiOverlay.style.display = 'none';
+        window.location.reload(); // Temiz bir başlangıç için
     });
 
     renderer.setAnimationLoop(render);
 }
 
 function findTarget() {
-    const indexTip = hand0.joints['index-finger-tip'];
-    if (!indexTip) return;
-    const handPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
+    const tip = hand0.joints['index-finger-tip'];
+    if (!tip) return;
+    const pos = new THREE.Vector3().setFromMatrixPosition(tip.matrixWorld);
     
     let closest = null;
-    let dist = 0.20;
+    let minD = 0.20;
     [...objects, ...holeObjects].forEach(obj => {
-        const d = obj.position.distanceTo(handPos);
-        if (d < dist) { dist = d; closest = obj; }
+        const d = obj.position.distanceTo(pos);
+        if (d < minD) { minD = d; closest = obj; }
     });
     
     if (closest) {
         selectedObject = closest;
-        selectedObject.material.emissive.setHex(0x002222);
-        log("Obje Tutuldu.");
+        selectedObject.material.emissive.setHex(0x003333);
+        log("Nesne Yakalandı.");
     }
 }
 
-function add(isHole = false) {
-    if (!reticle.visible) return log("Zemin Bekleniyor...", true);
+function addObject(isHole = false) {
+    if (!reticle.visible) return log("Zemin Bulunamadı!", true);
     
     const geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     const mat = new THREE.MeshStandardMaterial({
-        color: isHole ? 0xff3333 : 0x00aaff,
+        color: isHole ? 0xff4444 : 0x00ccff,
         transparent: true,
-        opacity: isHole ? 0.5 : 1.0,
+        opacity: isHole ? 0.6 : 1.0,
         emissive: 0x000000
     });
     
@@ -248,11 +249,11 @@ function add(isHole = false) {
     scene.add(mesh);
     
     if (isHole) holeObjects.push(mesh); else objects.push(mesh);
-    log(isHole ? "Delik Eklendi." : "Küp Eklendi.");
+    log(isHole ? "Negatif Alan Eklendi." : "Pozitif Blok Eklendi.");
 }
 
-function merge() {
-    if (objects.length < 1 || holeObjects.length < 1) return log("İşlem için obje yok!", true);
+function mergeAction() {
+    if (objects.length < 1 || holeObjects.length < 1) return log("Eksik Nesne!", true);
     
     try {
         const evaluator = new Evaluator();
@@ -279,11 +280,11 @@ function merge() {
         
         objects = [result];
         holeObjects = [];
-        log("CSG İşlemi Tamam.");
-    } catch (e) { log("CSG Hatası!", true); }
+        log("Merge Islemi Tamamlandi.");
+    } catch (e) { log("Islem Hatasi!", true); }
 }
 
-function render(timestamp, frame) {
+function render(time, frame) {
     if (frame) {
         const ref = renderer.xr.getReferenceSpace();
         const session = renderer.xr.getSession();
@@ -301,62 +302,49 @@ function render(timestamp, frame) {
                 const pose = results[0].getPose(ref);
                 reticle.visible = true;
                 reticle.matrix.fromArray(pose.transform.matrix);
-                sysStatus.textContent = "ZEMİN KİLİTLENDİ";
-                sysStatus.style.color = "#00ff00";
+                sysStatus.textContent = "ZEMIN KILITLENDI";
+                sysStatus.className = "text-green-500 text-[10px]";
             } else {
                 reticle.visible = false;
-                sysStatus.textContent = "ZEMİN ARANIYOR...";
-                sysStatus.style.color = "#ffff00";
+                sysStatus.textContent = "ZEMIN ARANIYOR...";
+                sysStatus.className = "text-yellow-500 text-[10px]";
             }
         }
 
-        let handActive = false;
-        for (const input of session.inputSources) {
-            if (input.hand) handActive = true;
-        }
-        handStatus.textContent = handActive ? "EL TAKİBİ: AKTİF" : "EL TAKİBİ: PASİF";
-        handStatus.style.color = handActive ? "#00ffff" : "#666666";
+        // El durumu güncelleme
+        let elVar = false;
+        for (const input of session.inputSources) { if (input.hand) elVar = true; }
+        handStatus.textContent = elVar ? "EL TAKIBI: AKTIF" : "EL VERISI YOK";
+        handStatus.className = elVar ? "text-cyan-400 text-[9px] mt-1" : "text-gray-600 text-[9px] mt-1";
 
         if (isGrabbing && selectedObject) {
-            const indexTip = hand0.joints['index-finger-tip'];
-            if (indexTip) {
-                const targetPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
-                selectedObject.position.lerp(targetPos, 0.2);
+            const tip = hand0.joints['index-finger-tip'];
+            if (tip) {
+                const p = new THREE.Vector3().setFromMatrixPosition(tip.matrixWorld);
+                selectedObject.position.lerp(p, 0.15);
             }
         }
     }
     renderer.render(scene, camera);
 }
 
-// Olay Dinleyicileri (Click olaylarını garantiye almak için)
-window.addEventListener('load', init);
+// Buton Atamaları
+window.onload = init;
 
-document.getElementById('btn-cube').addEventListener('click', (e) => {
-    e.preventDefault();
-    add(false);
-});
-
-document.getElementById('btn-hole').addEventListener('click', (e) => {
-    e.preventDefault();
-    add(true);
-});
-
-document.getElementById('btn-merge').addEventListener('click', (e) => {
-    e.preventDefault();
-    merge();
-});
-
-document.getElementById('btn-delete').addEventListener('click', (e) => {
-    e.preventDefault();
+document.getElementById('btn-cube').onclick = (e) => { e.stopPropagation(); addObject(false); };
+document.getElementById('btn-hole').onclick = (e) => { e.stopPropagation(); addObject(true); };
+document.getElementById('btn-merge').onclick = (e) => { e.stopPropagation(); mergeAction(); };
+document.getElementById('btn-delete').onclick = (e) => {
+    e.stopPropagation();
     const all = [...objects, ...holeObjects];
     if (all.length) {
         const t = all.pop();
         scene.remove(t);
         objects = objects.filter(o => o !== t);
         holeObjects = holeObjects.filter(o => o !== t);
-        log("Silindi.");
+        log("Nesne Silindi.");
     }
-});
+};
 </script>
 </body>
 </html>
