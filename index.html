@@ -3,49 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v36.0</title>
+    <title>Tuncer AR v37.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MediaPipe Hands -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     
     <style>
-        html, body { 
-            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
-            background: #000; 
-        }
-        canvas { 
-            display: block; position: absolute; top: 0; left: 0; z-index: 1;
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
         #ui-overlay { 
             position: absolute; inset: 0; pointer-events: none; z-index: 10; 
-            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; 
+            display: flex; flex-direction: column; justify-content: space-between; padding: 25px; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
         }
-        .hud { 
-            background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; 
-            padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
-            font-size: 12px; align-self: flex-end; backdrop-filter: blur(8px);
+        .hud-container {
+            align-self: flex-end;
+            background: rgba(10, 25, 41, 0.85);
+            border-left: 3px solid #00e5ff;
+            border-radius: 8px;
+            padding: 15px;
+            min-width: 180px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
+        .hud-line { color: #00e5ff; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
+        .hud-value { color: #ffffff; float: right; font-weight: 400; }
         #start-screen { 
-            position: fixed; inset: 0; background: #050505; z-index: 1000; 
+            position: fixed; inset: 0; background: #0a0a0a; z-index: 1000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            color: white; font-family: monospace;
         }
         #btn-go { 
             background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
-            font-weight: 900; padding: 18px 50px; border-radius: 12px; border: none; 
-            cursor: pointer; font-size: 18px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
-            pointer-events: auto; text-transform: uppercase;
+            font-weight: 900; padding: 20px 60px; border-radius: 50px; border: none; 
+            cursor: pointer; font-size: 16px; box-shadow: 0 0 40px rgba(0, 229, 255, 0.3); 
+            pointer-events: auto; text-transform: uppercase; letter-spacing: 2px;
         }
-        #status-hint { 
-            align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
-            padding: 10px 20px; border-radius: 25px; color: #00e5ff; border: 1px solid #00e5ff;
-            font-size: 12px; font-family: monospace; font-weight: bold;
+        #status-pill {
+            align-self: center; margin-bottom: 40px;
+            background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.5);
+            padding: 8px 24px; border-radius: 100px; color: #00e5ff;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
         }
     </style>
     <script type="importmap">
         {
             "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js",
-                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/"
+                "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js"
             }
         }
     </script>
@@ -53,18 +55,18 @@
 <body>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">MEDIAPIPE CANVAS SYNC</p>
+        <h1 style="color:#00e5ff; font-size: 24px; font-weight: 900; letter-spacing: 5px; margin-bottom:10px;">TUNCER <span style="font-weight:300;">MARK-III</span></h1>
+        <div style="width:40px; height:2px; background:#00e5ff; margin-bottom:50px;"></div>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
-        <div class="hud">
-            DURUM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
-            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
-            ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
+        <div class="hud-container">
+            <div class="hud-line">DURUM <span class="hud-value" id="status-text">AKTİF</span></div>
+            <div class="hud-line">EL_TAKİP <span class="hud-value" id="hand-text" style="color:#ff3366;">ARANIYOR</span></div>
+            <div class="hud-line">ETKİLEŞİM <span class="hud-value" id="pinch-text">BOŞTA</span></div>
         </div>
-        <div id="status-hint">YÜZEY TARANIYOR...</div>
+        <div id="status-pill">YÜZEY TARANIYOR...</div>
     </div>
 
     <script type="module">
@@ -72,13 +74,11 @@
 
         let scene, camera, renderer, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
+        let handCursor, cursorRing, cursorDot;
         let objects = [], selectedObject = null;
         let isPinching = false;
-        let lastHandProcessTime = 0;
-        
-        let handCursorGroup, cursorDot, cursorRing;
+        let lastHandUpdate = 0;
 
-        // MediaPipe Hands Yapılandırması
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -86,58 +86,47 @@
         hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
         });
 
         hands.onResults((results) => {
             if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                 const lm = results.multiHandLandmarks[0];
-                const indexTip = lm[8];
-                const thumbTip = lm[4];
+                const index = lm[8];
+                const thumb = lm[4];
 
-                document.getElementById('hand-text').innerText = "AKTİF";
+                document.getElementById('hand-text').innerText = "KİLİTLENDİ";
                 document.getElementById('hand-text').style.color = "#00ffcc";
 
-                // 2D'den 3D'ye Koordinat Dönüşümü
-                const vector = new THREE.Vector3(
-                    (1 - indexTip.x) * 2 - 1, 
-                    -indexTip.y * 2 + 1,
-                    0.5
-                );
+                // Coordinate conversion
+                const vector = new THREE.Vector3((1 - index.x) * 2 - 1, -index.y * 2 + 1, 0.5);
                 vector.unproject(camera);
                 const dir = vector.sub(camera.position).normalize();
-                const pos = camera.position.clone().add(dir.multiplyScalar(0.4));
+                const pos = camera.position.clone().add(dir.multiplyScalar(0.35));
                 
-                handCursorGroup.visible = true;
-                handCursorGroup.position.copy(pos);
-                handCursorGroup.lookAt(camera.position);
+                handCursor.visible = true;
+                handCursor.position.copy(pos);
+                handCursor.lookAt(camera.position);
 
-                // Pinch (Tutu) Hesabı
-                const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                if (dist < 0.06) {
+                const dist = Math.hypot(index.x - thumb.x, index.y - thumb.y);
+                if (dist < 0.055) {
                     document.getElementById('pinch-text').innerText = "TUTUYOR";
-                    document.getElementById('pinch-text').style.color = "#00ffcc";
                     cursorRing.material.color.setHex(0x00ffcc);
-                    cursorRing.scale.set(0.7, 0.7, 0.7);
-                    
+                    cursorRing.scale.set(0.75, 0.75, 0.75);
                     if (!isPinching) {
                         isPinching = true;
-                        objects.forEach(obj => {
-                            if (obj.position.distanceTo(pos) < 0.15) selectedObject = obj;
-                        });
+                        objects.forEach(obj => { if(obj.position.distanceTo(pos) < 0.12) selectedObject = obj; });
                     }
-                    if (selectedObject) selectedObject.position.lerp(pos, 0.2);
+                    if (selectedObject) selectedObject.position.lerp(pos, 0.25);
                 } else {
-                    isPinching = false;
-                    selectedObject = null;
+                    isPinching = false; selectedObject = null;
                     document.getElementById('pinch-text').innerText = "BOŞTA";
-                    document.getElementById('pinch-text').style.color = "#fff";
                     cursorRing.material.color.setHex(0xff3366);
-                    cursorRing.scale.set(1.0, 1.0, 1.0);
+                    cursorRing.scale.set(1, 1, 1);
                 }
             } else {
-                handCursorGroup.visible = false;
+                handCursor.visible = false;
                 document.getElementById('hand-text').innerText = "ARANIYOR";
                 document.getElementById('hand-text').style.color = "#ff3366";
             }
@@ -147,55 +136,40 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+            scene.add(new THREE.AmbientLight(0xffffff, 1.5));
 
-            // Zemin Reticle
             reticle = new THREE.Mesh(
                 new THREE.RingGeometry(0.03, 0.04, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
 
-            // MARK-III İŞARETÇİSİ
-            handCursorGroup = new THREE.Group();
-            cursorDot = new THREE.Mesh(
-                new THREE.SphereGeometry(0.005, 12, 12),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
-            );
-            cursorRing = new THREE.Mesh(
-                new THREE.RingGeometry(0.012, 0.015, 32),
-                new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide })
-            );
-            handCursorGroup.add(cursorDot);
-            handCursorGroup.add(cursorRing);
-            handCursorGroup.visible = false;
-            scene.add(handCursorGroup);
+            // MARK-III CURSOR
+            handCursor = new THREE.Group();
+            cursorDot = new THREE.Mesh(new THREE.SphereGeometry(0.005, 12, 12), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+            cursorRing = new THREE.Mesh(new THREE.RingGeometry(0.013, 0.016, 32), new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide }));
+            handCursor.add(cursorDot, cursorRing);
+            handCursor.visible = false;
+            scene.add(handCursor);
 
             document.getElementById('btn-go').addEventListener('click', async () => {
-                try {
-                    const session = await navigator.xr.requestSession('immersive-ar', {
-                        requiredFeatures: ['hit-test'],
-                        optionalFeatures: ['dom-overlay'],
-                        domOverlay: { root: document.getElementById('ui-overlay') }
-                    });
-                    renderer.xr.setReferenceSpaceType('local');
-                    await renderer.xr.setSession(session);
-
-                    document.getElementById('start-screen').style.display = 'none';
-                    document.getElementById('ui-overlay').style.display = 'flex';
-                    
-                    renderer.setAnimationLoop(render);
-                } catch (e) {
-                    alert("XR Hata: " + e.message);
-                }
+                const session = await navigator.xr.requestSession('immersive-ar', {
+                    requiredFeatures: ['hit-test'],
+                    optionalFeatures: ['dom-overlay'],
+                    domOverlay: { root: document.getElementById('ui-overlay') }
+                });
+                renderer.xr.setSession(session);
+                document.getElementById('start-screen').style.display = 'none';
+                document.getElementById('ui-overlay').style.display = 'flex';
+                renderer.setAnimationLoop(render);
             });
         }
 
@@ -203,7 +177,7 @@
             if (reticle.visible && e.target.id !== 'btn-go') {
                 const cube = new THREE.Mesh(
                     new THREE.BoxGeometry(0.1, 0.1, 0.1),
-                    new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.7 })
+                    new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.6 })
                 );
                 cube.position.setFromMatrixPosition(reticle.matrix);
                 scene.add(cube);
@@ -216,10 +190,11 @@
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
-                // MediaPipe'ı ana canvas üzerinden besle (Hata vermemesi için)
-                if (timestamp - lastHandProcessTime > 50) { // Her 50ms'de bir işle (CPU koruma)
+                // ÇAKIŞMAYI ÖNLEYEN KRİTİK NOKTA:
+                // Ayrı video açmak yerine, o anki render'ı (canvası) MediaPipe'a gönder
+                if (timestamp - lastHandUpdate > 40) { 
                     hands.send({ image: renderer.domElement });
-                    lastHandProcessTime = timestamp;
+                    lastHandUpdate = timestamp;
                 }
 
                 if (!hitTestSourceRequested) {
@@ -233,8 +208,10 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
+                        document.getElementById('status-pill').innerText = "ZEMİN HAZIR - DOKUN";
                     } else {
                         reticle.visible = false;
+                        document.getElementById('status-pill').innerText = "YÜZEY TARANIYOR...";
                     }
                 }
             }
