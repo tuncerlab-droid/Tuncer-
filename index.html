@@ -1,355 +1,398 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>TUNCER HOLO</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TUNCER HOLO V4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon: #00f2ff;
+            --neon-glow: 0 0 15px rgba(0, 242, 255, 0.5);
+            --bg-dark: rgba(2, 8, 18, 0.85);
+            --border: rgba(0, 242, 255, 0.2);
+        }
 
-<style>
-:root{
-  --c:#00e5ff; --c2:#0077ff; --gold:#ffd700;
-  --red:#ff1744; --org:#ff6d00; --grn:#00e676; --prp:#ea80fc;
-  --bg:#020a14; --panel:rgba(1,12,30,0.93);
-  --glow:0 0 18px rgba(0,229,255,.65);
-  --glow2:0 0 40px rgba(0,229,255,.28);
-  --mono:'Share Tech Mono',monospace;
-  --orb:'Orbitron',sans-serif;
-}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{width:100%;height:100%;overflow:hidden;background:transparent !important;touch-action:none;}
-body{font-family:var(--mono);color:var(--c);}
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body, html { 
+            width: 100%; height: 100%; 
+            overflow: hidden; 
+            background: #000; /* Başlangıç siyahı */
+            font-family: 'JetBrains+Mono', monospace;
+            color: var(--neon);
+        }
 
-/* Siyah ekranı önlemek için canvas ve video ayarları */
-#gl-canvas{position:fixed;inset:0;z-index:1;background:transparent !important;}
-#bg-video{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;background:black;}
+        /* Kamera ve Canvas Katmanları */
+        #video-bg {
+            position: fixed; inset: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
 
-#overlay{position:fixed;inset:0;z-index:10;pointer-events:none;background:transparent;}
-#hand-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+        #three-canvas {
+            position: fixed; inset: 0;
+            z-index: 2;
+            pointer-events: none; /* Tıklamalar HUD'a gitsin */
+        }
 
-#sl{position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,
-  rgba(0,229,255,.014) 3px,rgba(0,229,255,.014) 4px);}
+        #hand-overlay {
+            position: fixed; inset: 0;
+            z-index: 3;
+            pointer-events: none;
+        }
 
-#hud{position:absolute;inset:0;display:none;}
-#hud.vis{display:block;}
-#hud>*{pointer-events:auto;}
+        /* HUD Arayüzü */
+        #ui-root {
+            position: fixed; inset: 0;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            pointer-events: none;
+        }
 
-.hco{position:absolute;width:34px;height:34px;border-color:rgba(0,229,255,.55);border-style:solid;}
-.hco.tl{top:6px;left:6px;border-width:2px 0 0 2px;}
-.hco.tr{top:6px;right:6px;border-width:2px 2px 0 0;}
-.hco.bl{bottom:6px;left:6px;border-width:0 0 2px 2px;}
-.hco.br{bottom:6px;right:6px;border-width:0 2px 2px 0;}
+        .interactive { pointer-events: auto; }
 
-#topbar{
-  position:absolute;top:0;left:0;right:0;height:54px;
-  background:linear-gradient(to bottom,rgba(0,15,40,.96),transparent);
-  border-bottom:1px solid rgba(0,229,255,.1);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 14px;pointer-events:none;
-}
-#logo{font-family:var(--orb);font-size:17px;font-weight:900;letter-spacing:6px;
-  color:var(--c);text-shadow:var(--glow);}
-#logo em{color:var(--gold);font-style:normal;}
-#tstat{text-align:right;font-size:9px;line-height:1.9;opacity:.7;}
-#fps-el{color:var(--gold);}
-#xr-el{color:var(--grn);}
-#mp-el{color:var(--prp);}
+        /* Üst Bar */
+        header {
+            padding: 15px 25px;
+            background: linear-gradient(to bottom, var(--bg-dark), transparent);
+            display: flex; justify-content: space-between; align-items: center;
+        }
 
-.cbtn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
-  border:1px solid rgba(0,229,255,.32);background:rgba(0,25,65,.75);
-  color:var(--c);cursor:pointer;font-family:var(--mono);
-  clip-path:polygon(5px 0,100% 0,100% calc(100% - 5px),calc(100% - 5px) 100%,0 100%,0 5px);
-  transition:all .16s;touch-action:manipulation;
-}
-.cbtn:hover,.cbtn:active{background:rgba(0,229,255,.18);box-shadow:var(--glow);}
-.cbtn.act{background:rgba(0,229,255,.22);border-color:var(--c);box-shadow:var(--glow);}
-.cbtn .ci{font-size:18px;line-height:1;}
-.cbtn .cl{font-size:7px;opacity:.72;letter-spacing:.4px;}
-.cbtn.hole{border-color:rgba(255,109,0,.45);color:var(--org);}
-.cbtn.del{border-color:rgba(255,23,68,.45);color:var(--red);}
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            letter-spacing: 4px;
+            text-shadow: var(--neon-glow);
+        }
 
-#lp{
-  position:absolute;left:0;top:58px;bottom:84px;width:56px;
-  background:var(--panel);border-right:1px solid rgba(0,229,255,.13);
-  display:flex;flex-direction:column;align-items:center;
-  padding:6px 0;gap:3px;overflow-y:auto;pointer-events:auto;
-}
-.psec{width:44px;text-align:center;font-size:7.5px;color:var(--c);opacity:.4;
-  letter-spacing:1.5px;border-top:1px solid rgba(0,229,255,.1);padding-top:4px;margin-top:2px;}
-.lbtn{width:46px;height:44px;flex-shrink:0;}
+        .status-box {
+            font-size: 10px;
+            text-align: right;
+            opacity: 0.8;
+        }
 
-#rp{
-  position:absolute;right:0;top:58px;bottom:84px;width:56px;
-  background:var(--panel);border-left:1px solid rgba(0,229,255,.13);
-  display:flex;flex-direction:column;align-items:center;
-  padding:6px 0;gap:3px;overflow-y:auto;pointer-events:auto;
-}
+        /* Yan Paneller */
+        .side-panel {
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 10px;
+            padding: 15px;
+        }
 
-#botbar{
-  position:absolute;bottom:0;left:0;right:0;height:82px;
-  background:linear-gradient(to top,rgba(0,15,40,.96),transparent);
-  border-top:1px solid rgba(0,229,255,.1);
-  display:flex;align-items:center;justify-content:center;
-  gap:14px;padding:0 14px;pointer-events:auto;
-}
-#vbtn{
-  width:52px;height:52px;border-radius:50%;
-  border:2px solid var(--c);background:rgba(0,40,100,.75);
-  color:var(--c);font-size:20px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-}
+        #left-panel { left: 0; }
+        #right-panel { right: 0; }
 
-#objlist{
-  position:absolute;top:58px;right:60px;max-height:175px;max-width:155px;
-  background:rgba(0,10,26,.92);border:1px solid rgba(0,229,255,.18);overflow-y:auto;pointer-events:auto;
-}
-.olit{padding:5px 9px;font-size:9px;color:var(--c);cursor:pointer;border-bottom:1px solid rgba(0,229,255,.07);}
+        .btn {
+            width: 50px; height: 50px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            color: var(--neon);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: 0.2s;
+            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
+        }
 
-#toast{
-  position:absolute;top:60px;left:50%;transform:translateX(-50%);
-  background:rgba(0,12,32,.96);border:1px solid var(--c);color:var(--c);
-  padding:6px 16px;font-size:11px;opacity:0;transition:opacity .22s;
-  pointer-events:none;z-index:30;
-}
+        .btn:active {
+            background: var(--neon);
+            color: #000;
+            box-shadow: var(--neon-glow);
+        }
 
-#perm{
-  position:absolute;inset:0;
-  background:radial-gradient(ellipse at 40% 40%,rgba(0,40,100,.97),rgba(0,0,0,.99));
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:28px;text-align:center;pointer-events:auto;z-index:100;
-}
-#loading{
-  position:absolute;inset:0;background:#000;
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  pointer-events:auto;z-index:101;
-}
-#hgrid{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.05;
-  background-image:linear-gradient(rgba(0,229,255,.8) 1px,transparent 1px),
-  linear-gradient(90deg,rgba(0,229,255,.8) 1px,transparent 1px);
-  background-size:44px 44px;}
-</style>
+        .btn span { font-size: 8px; margin-top: 2px; }
+
+        /* Alt Kontrol */
+        footer {
+            position: absolute; bottom: 0; width: 100%;
+            padding: 20px;
+            display: flex; justify-content: center; align-items: center;
+            background: linear-gradient(to top, var(--bg-dark), transparent);
+        }
+
+        #action-label {
+            background: rgba(0, 242, 255, 0.1);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            border: 1px solid var(--border);
+        }
+
+        /* Başlatma Ekranı */
+        #start-screen {
+            position: fixed; inset: 0;
+            z-index: 100;
+            background: radial-gradient(circle at center, #05162a, #000);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+        }
+
+        #start-btn {
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: transparent;
+            border: 2px solid var(--neon);
+            color: var(--neon);
+            font-family: 'Orbitron';
+            letter-spacing: 2px;
+            cursor: pointer;
+            box-shadow: var(--neon-glow);
+        }
+
+        /* Tarama Çizgisi */
+        .scanline {
+            width: 100%; height: 2px;
+            background: rgba(0, 242, 255, 0.1);
+            position: absolute;
+            top: 0;
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+    </style>
 </head>
 <body>
 
-<div id="hgrid"></div>
-<video id="bg-video" autoplay playsinline muted></video>
-<canvas id="gl-canvas"></canvas>
-
-<div id="overlay">
-  <canvas id="hand-canvas"></canvas>
-  <div id="sl"></div>
-
-  <!-- GİRİŞ EKRANI -->
-  <div id="perm">
-    <div style="font-family:var(--orb);font-size:32px;font-weight:900;letter-spacing:8px;text-shadow:var(--glow);margin-bottom:3px;">TUNCER <em>HOLO</em></div>
-    <div style="font-size:9px;letter-spacing:5px;opacity:.35;margin-bottom:40px;">AR 3D MODELLEME SİSTEMİ v3.1</div>
-    <button id="startbtn" onclick="bootApp()" style="padding:13px 42px;border:2px solid var(--c);background:rgba(0,60,150,.35);color:var(--c);font-family:var(--orb);font-size:11px;letter-spacing:4px;cursor:pointer;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);">▶ AR BAŞLAT</button>
-  </div>
-
-  <!-- YÜKLENİYOR -->
-  <div id="loading">
-    <div style="font-size:9.5px;letter-spacing:2px;opacity:.55;">SİSTEM BAŞLATILIYOR...</div>
-  </div>
-
-  <!-- HUD -->
-  <div id="hud">
-    <div class="hco tl"></div><div class="hco tr"></div>
-    <div class="hco bl"></div><div class="hco br"></div>
-
-    <div id="topbar">
-      <div id="logo">⬡ TUNCER <em>HOLO</em></div>
-      <div id="tstat">
-        <div id="fps-el">FPS: --</div>
-        <div id="xr-el">◉ BEKLENİYOR</div>
-        <div id="mp-el">✋ EL TAKİBİ</div>
-      </div>
+    <div id="start-screen">
+        <h1 class="logo">TUNCER <span style="color:#fff">HOLO</span></h1>
+        <p style="opacity: 0.5; font-size: 10px; margin-top: 10px;">DENEYİMSEL HOLOGRAM ARAYÜZÜ V4.0</p>
+        <button id="start-btn" class="interactive" onclick="startApp()">SİSTEMİ BAŞLAT</button>
     </div>
 
-    <!-- Nesne Paneli -->
-    <div id="lp">
-      <div class="psec">KATI</div>
-      <button class="cbtn lbtn" onclick="qAdd('cube')"><span class="ci">⬛</span><span class="cl">KÜP</span></button>
-      <button class="cbtn lbtn" onclick="qAdd('cylinder')"><span class="ci">⬤</span><span class="cl">SLNDİR</span></button>
-      <button class="cbtn lbtn" onclick="qAdd('sphere')"><span class="ci">◉</span><span class="cl">KÜRE</span></button>
-      <div class="psec">DELİK</div>
-      <button class="cbtn lbtn hole" onclick="qAdd('cube',true)"><span class="ci">⬜</span><span class="cl">D.KÜP</span></button>
+    <video id="video-bg" autoplay playsinline muted></video>
+    <canvas id="three-canvas"></canvas>
+    <canvas id="hand-overlay"></canvas>
+    <div class="scanline"></div>
+
+    <div id="ui-root">
+        <header>
+            <div class="logo">HOLO_OS</div>
+            <div class="status-box">
+                <div id="fps">FPS: 60</div>
+                <div id="hand-status" style="color: #ff3366">● EL TAKİBİ KAPALI</div>
+            </div>
+        </header>
+
+        <div id="left-panel" class="side-panel">
+            <button class="btn interactive" onclick="addShape('cube')">📦<span>KÜP</span></button>
+            <button class="btn interactive" onclick="addShape('sphere')">🔮<span>KÜRE</span></button>
+            <button class="btn interactive" onclick="addShape('cone')">🗼<span>KONİ</span></button>
+        </div>
+
+        <div id="right-panel" class="side-panel">
+            <button class="btn interactive" onclick="setMode('translate')">✥<span>TAŞI</span></button>
+            <button class="btn interactive" onclick="setMode('rotate')">↻<span>DÖN</span></button>
+            <button class="btn interactive" onclick="setMode('scale')">⤢<span>ÖLÇEK</span></button>
+            <button class="btn interactive" style="border-color: #ff3366; color: #ff3366;" onclick="clearLast()">✕<span>SİL</span></button>
+        </div>
+
+        <footer>
+            <div id="action-label">MOD: SEÇİM BEKLENİYOR</div>
+        </footer>
     </div>
 
-    <!-- Araç Paneli -->
-    <div id="rp">
-      <div class="psec">MOD</div>
-      <button class="cbtn lbtn act" id="btn-move" onclick="setTool('move')"><span class="ci">✥</span><span class="cl">TAŞI</span></button>
-      <button class="cbtn lbtn" id="btn-rotate" onclick="setTool('rotate')"><span class="ci">↻</span><span class="cl">DÖNDÜR</span></button>
-      <button class="cbtn lbtn" id="btn-scale" onclick="setTool('scale')"><span class="ci">⤢</span><span class="cl">ÖLÇEK</span></button>
-      <div class="psec">SİL</div>
-      <button class="cbtn lbtn del" onclick="delSel()"><span class="ci">✕</span><span class="cl">SİL</span></button>
-    </div>
+    <!-- Kütüphaneler -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
-    <div id="objlist"><div id="oli"></div></div>
+    <script>
+        let scene, camera, renderer, clock;
+        let mpHands, mpCamera;
+        let shapes = [];
+        let currentMode = 'translate';
+        let isHandActive = false;
 
-    <div id="botbar">
-      <button id="vbtn" onclick="toggleVoice()">🎤</button>
-      <div id="mlbl">◈ TAŞIMA<br>MODU</div>
-    </div>
+        // --- ÜÇ BOYUTLU SAHNE KURULUMU ---
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({
+                canvas: document.getElementById('three-canvas'),
+                alpha: true,
+                antialias: true
+            });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
 
-    <div id="toast"></div>
-  </div>
-</div>
+            // Işıklandırma
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0x00f2ff, 1);
+            pointLight.position.set(5, 5, 5);
+            scene.add(pointLight);
 
-<video id="mp-video" playsinline autoplay muted style="position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;"></video>
+            camera.position.z = 2;
+            clock = new THREE.Clock();
+            
+            animate();
+        }
 
-<!-- Kütüphaneler -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Nesneleri hafifçe yüzdür
+            const time = clock.getElapsedTime();
+            shapes.forEach((obj, i) => {
+                obj.position.y += Math.sin(time + i) * 0.001;
+                obj.rotation.y += 0.01;
+            });
 
-<script>
-let scene, camera, renderer, raycaster, reticleMesh;
-let xrSession = null;
-let mpHands = null;
+            renderer.render(scene, camera);
+        }
 
-const S = {
-  ready: false, isXR: false, tool: 'move', objects: [], selected: [], cnt: 0,
-  pinching: false, grabbing: false, color: 0x00e5ff
-};
+        // --- EL TAKİBİ SİSTEMİ ---
+        async function initHandTracking() {
+            const video = document.getElementById('video-bg');
+            const overlay = document.getElementById('hand-overlay');
+            const ctx = overlay.getContext('2d');
+            overlay.width = window.innerWidth;
+            overlay.height = window.innerHeight;
 
-const SHAPES = {
-  cube: { g:()=>new THREE.BoxGeometry(.25,.25,.25), name:'Küp', icon:'⬛' },
-  cylinder: { g:()=>new THREE.CylinderGeometry(.1,.1,.25,32), name:'Silindir', icon:'⬤' },
-  sphere: { g:()=>new THREE.SphereGeometry(.12,32,32), name:'Küre', icon:'◉' }
-};
+            mpHands = new Hands({
+                locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+            });
 
-function initThree() {
-  const cv = document.getElementById('gl-canvas');
-  scene = new THREE.Scene();
-  
-  // AR için kamera açısı ve saydamlık ayarı
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 100);
-  
-  // renderer'ın alpha (şeffaflık) değerinin true olması siyah ekranı önler
-  renderer = new THREE.WebGLRenderer({
-    canvas: cv,
-    alpha: true, 
-    antialias: true,
-    preserveDrawingBuffer: true
-  });
-  renderer.setClearColor(0x000000, 0); // Arka planı tamamen şeffaf yap
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.xr.enabled = true;
+            mpHands.setOptions({
+                maxNumHands: 1,
+                modelComplexity: 1,
+                minDetectionConfidence: 0.7,
+                minTrackingConfidence: 0.7
+            });
 
-  scene.add(new THREE.AmbientLight(0xffffff, 1.2));
-  const dl = new THREE.DirectionalLight(0xffffff, 0.8);
-  dl.position.set(5, 10, 5); scene.add(dl);
+            mpHands.onResults((results) => {
+                ctx.clearRect(0, 0, overlay.width, overlay.height);
+                
+                if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                    isHandActive = true;
+                    document.getElementById('hand-status').textContent = "● EL AKTİF";
+                    document.getElementById('hand-status').style.color = "#00f2ff";
+                    
+                    const landmarks = results.multiHandLandmarks[0];
+                    drawCursor(ctx, landmarks[8]); // İşaret parmağı ucunu çiz
+                    handleInteractions(landmarks[8]);
+                } else {
+                    isHandActive = false;
+                    document.getElementById('hand-status').textContent = "● EL YOK";
+                    document.getElementById('hand-status').style.color = "#ff3366";
+                }
+            });
 
-  const rGeo = new THREE.RingGeometry(.08, .1, 32); rGeo.rotateX(-Math.PI/2);
-  reticleMesh = new THREE.Mesh(rGeo, new THREE.MeshBasicMaterial({color: 0x00e5ff, transparent: true, opacity: 0.5}));
-  reticleMesh.matrixAutoUpdate = false; reticleMesh.visible = false;
-  scene.add(reticleMesh);
+            mpCamera = new Camera(video, {
+                onFrame: async () => {
+                    await mpHands.send({image: video});
+                },
+                width: 640,
+                height: 480
+            });
+            mpCamera.start();
+        }
 
-  raycaster = new THREE.Raycaster();
-}
+        function drawCursor(ctx, point) {
+            const x = point.x * window.innerWidth;
+            const y = point.y * window.innerHeight;
+            
+            ctx.strokeStyle = "#00f2ff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // İç artı göstergesi
+            ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y);
+            ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5);
+            ctx.stroke();
+        }
 
-async function bootApp() {
-  document.getElementById('perm').style.display = 'none';
-  document.getElementById('loading').style.display = 'flex';
-  
-  initThree();
-  await initMediaPipe();
+        function handleInteractions(point) {
+            if (shapes.length === 0) return;
+            
+            // Ekran koordinatlarını Three.js dünyasına çevir
+            const target = shapes[shapes.length - 1];
+            const nx = (point.x * 2) - 1;
+            const ny = -(point.y * 2) + 1;
 
-  // Kamera görüntüsünü bg-video elementine bağla
-  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' }
-    }).then(stream => {
-      const v = document.getElementById('bg-video');
-      v.srcObject = stream;
-      v.play();
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('hud').classList.add('vis');
-    }).catch(e => {
-      console.error("Kamera hatası:", e);
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('hud').classList.add('vis');
-    });
-  }
+            if (currentMode === 'translate') {
+                target.position.x = THREE.MathUtils.lerp(target.position.x, nx * 2, 0.1);
+                target.position.y = THREE.MathUtils.lerp(target.position.y, ny * 2, 0.1);
+            } else if (currentMode === 'rotate') {
+                target.rotation.z = nx * Math.PI;
+            }
+        }
 
-  // Animasyon döngüsü
-  renderer.setAnimationLoop(() => {
-    renderer.render(scene, camera);
-  });
-}
+        // --- UYGULAMA MANTIĞI ---
+        function addShape(type) {
+            let geometry;
+            switch(type) {
+                case 'cube': geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3); break;
+                case 'sphere': geometry = new THREE.SphereGeometry(0.2, 32, 32); break;
+                case 'cone': geometry = new THREE.ConeGeometry(0.2, 0.4, 32); break;
+            }
 
-async function initMediaPipe() {
-  const HandsLib = window.Hands || Hands;
-  if (!HandsLib) return;
+            const material = new THREE.MeshPhongMaterial({
+                color: 0x00f2ff,
+                transparent: true,
+                opacity: 0.7,
+                wireframe: true
+            });
 
-  mpHands = new HandsLib({
-    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-  });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.set(0, 0, 0);
+            scene.add(mesh);
+            shapes.push(mesh);
+            
+            document.getElementById('action-label').textContent = `EKLENDİ: ${type.toUpperCase()}`;
+        }
 
-  mpHands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.6,
-    minTrackingConfidence: 0.5
-  });
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('action-label').textContent = `MOD: ${mode.toUpperCase()}`;
+        }
 
-  const video = document.getElementById('mp-video');
-  const CameraLib = window.Camera || Camera;
-  if (CameraLib) {
-    const mpCam = new CameraLib(video, {
-      onFrame: async () => { await mpHands.send({image: video}); },
-      width: 640, height: 480
-    });
-    mpCam.start();
-  }
-}
+        function clearLast() {
+            if (shapes.length > 0) {
+                const last = shapes.pop();
+                scene.remove(last);
+            }
+        }
 
-function qAdd(type, isHole=false) {
-  const cfg = SHAPES[type];
-  const mat = new THREE.MeshPhongMaterial({color: isHole ? 0xff6d00 : S.color, transparent: isHole, opacity: isHole ? 0.5 : 1});
-  const mesh = new THREE.Mesh(cfg.g(), mat);
-  mesh.position.set(0, 0, -1).applyMatrix4(camera.matrixWorld);
-  S.cnt++;
-  mesh.userData = { id: S.cnt, name: cfg.name + " " + S.cnt, icon: cfg.icon };
-  scene.add(mesh);
-  S.objects.push(mesh);
-  updateObjList();
-}
+        async function startApp() {
+            document.getElementById('start-screen').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('start-screen').style.display = 'none';
+            }, 500);
 
-function setTool(t) {
-  S.tool = t;
-  document.querySelectorAll('#rp .cbtn').forEach(b => b.classList.remove('act'));
-  document.getElementById('btn-'+t).classList.add('act');
-  document.getElementById('mlbl').innerHTML = t.toUpperCase() + "<br>MODU";
-}
+            initThree();
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                document.getElementById('video-bg').srcObject = stream;
+                initHandTracking();
+            } catch (err) {
+                alert("Kamera hatası: " + err.message);
+            }
+        }
 
-function updateObjList() {
-  const container = document.getElementById('oli');
-  container.innerHTML = "";
-  S.objects.forEach(o => {
-    const div = document.createElement('div');
-    div.className = 'olit';
-    div.innerHTML = `${o.userData.icon} ${o.userData.name}`;
-    container.appendChild(div);
-  });
-}
+        // Pencere Boyutu Değişimi
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
 
-function delSel() {
-  if(S.objects.length > 0) {
-    const obj = S.objects.pop();
-    scene.remove(obj);
-    updateObjList();
-  }
-}
-
-function toggleVoice() {}
-</script>
+    </script>
 </body>
 </html>
 
