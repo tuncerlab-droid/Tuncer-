@@ -3,263 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TUNCER HOLO V4</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <title>3D Sahne - Tuncer Holo Edition</title>
     <style>
-        :root {
-            --neon: #00f2ff;
-            --neon-glow: 0 0 15px rgba(0, 242, 255, 0.5);
-            --bg-dark: rgba(2, 8, 18, 0.85);
-            --border: rgba(0, 242, 255, 0.2);
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        canvas { display: block; position: fixed; inset: 0; }
         
-        body, html { 
-            width: 100%; height: 100%; 
-            overflow: hidden; 
-            background: #000; /* Başlangıç siyahı */
-            font-family: 'JetBrains+Mono', monospace;
-            color: var(--neon);
-        }
-
-        /* Kamera ve Canvas Katmanları */
-        #video-bg {
+        /* Kamera Katmanı */
+        #video-el {
             position: fixed; inset: 0;
             width: 100%; height: 100%;
             object-fit: cover;
-            z-index: 1;
+            z-index: 0;
         }
-
-        #three-canvas {
-            position: fixed; inset: 0;
-            z-index: 2;
-            pointer-events: none; /* Tıklamalar HUD'a gitsin */
-        }
-
-        #hand-overlay {
-            position: fixed; inset: 0;
-            z-index: 3;
-            pointer-events: none;
-        }
+        
+        /* Three.js Canvas */
+        #three-canvas { z-index: 1; pointer-events: none; }
 
         /* HUD Arayüzü */
-        #ui-root {
+        #hud {
+            position: fixed; inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            display: flex; flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            color: #00f2ff;
+        }
+
+        .ui-btn {
+            pointer-events: auto;
+            background: rgba(0, 242, 255, 0.1);
+            border: 1px solid #00f2ff;
+            color: #00f2ff;
+            padding: 10px 20px;
+            cursor: pointer;
+            backdrop-filter: blur(5px);
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        #start-overlay {
             position: fixed; inset: 0;
             z-index: 10;
-            display: flex;
-            flex-direction: column;
-            pointer-events: none;
-        }
-
-        .interactive { pointer-events: auto; }
-
-        /* Üst Bar */
-        header {
-            padding: 15px 25px;
-            background: linear-gradient(to bottom, var(--bg-dark), transparent);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .logo {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 700;
-            letter-spacing: 4px;
-            text-shadow: var(--neon-glow);
-        }
-
-        .status-box {
-            font-size: 10px;
-            text-align: right;
-            opacity: 0.8;
-        }
-
-        /* Yan Paneller */
-        .side-panel {
-            position: absolute;
-            top: 50%; transform: translateY(-50%);
-            display: flex; flex-direction: column; gap: 10px;
-            padding: 15px;
-        }
-
-        #left-panel { left: 0; }
-        #right-panel { right: 0; }
-
-        .btn {
-            width: 50px; height: 50px;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            color: var(--neon);
+            background: #000;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            font-size: 20px;
-            cursor: pointer;
-            transition: 0.2s;
-            clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
-        }
-
-        .btn:active {
-            background: var(--neon);
-            color: #000;
-            box-shadow: var(--neon-glow);
-        }
-
-        .btn span { font-size: 8px; margin-top: 2px; }
-
-        /* Alt Kontrol */
-        footer {
-            position: absolute; bottom: 0; width: 100%;
-            padding: 20px;
-            display: flex; justify-content: center; align-items: center;
-            background: linear-gradient(to top, var(--bg-dark), transparent);
-        }
-
-        #action-label {
-            background: rgba(0, 242, 255, 0.1);
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            border: 1px solid var(--border);
-        }
-
-        /* Başlatma Ekranı */
-        #start-screen {
-            position: fixed; inset: 0;
-            z-index: 100;
-            background: radial-gradient(circle at center, #05162a, #000);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            text-align: center;
-        }
-
-        #start-btn {
-            margin-top: 30px;
-            padding: 15px 40px;
-            background: transparent;
-            border: 2px solid var(--neon);
-            color: var(--neon);
-            font-family: 'Orbitron';
-            letter-spacing: 2px;
-            cursor: pointer;
-            box-shadow: var(--neon-glow);
-        }
-
-        /* Tarama Çizgisi */
-        .scanline {
-            width: 100%; height: 2px;
-            background: rgba(0, 242, 255, 0.1);
-            position: absolute;
-            top: 0;
-            animation: scan 4s linear infinite;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        @keyframes scan {
-            0% { top: 0; }
-            100% { top: 100%; }
+            color: #00f2ff;
         }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <h1 class="logo">TUNCER <span style="color:#fff">HOLO</span></h1>
-        <p style="opacity: 0.5; font-size: 10px; margin-top: 10px;">DENEYİMSEL HOLOGRAM ARAYÜZÜ V4.0</p>
-        <button id="start-btn" class="interactive" onclick="startApp()">SİSTEMİ BAŞLAT</button>
+    <div id="start-overlay">
+        <h2>TUNCER HOLO V4</h2>
+        <button class="ui-btn" onclick="startSystem()" style="margin-top: 20px;">SİSTEMİ BAŞLAT</button>
     </div>
 
-    <video id="video-bg" autoplay playsinline muted></video>
+    <video id="video-el" autoplay playsinline muted></video>
     <canvas id="three-canvas"></canvas>
-    <canvas id="hand-overlay"></canvas>
-    <div class="scanline"></div>
 
-    <div id="ui-root">
-        <header>
-            <div class="logo">HOLO_OS</div>
-            <div class="status-box">
-                <div id="fps">FPS: 60</div>
-                <div id="hand-status" style="color: #ff3366">● EL TAKİBİ KAPALI</div>
-            </div>
-        </header>
-
-        <div id="left-panel" class="side-panel">
-            <button class="btn interactive" onclick="addShape('cube')">📦<span>KÜP</span></button>
-            <button class="btn interactive" onclick="addShape('sphere')">🔮<span>KÜRE</span></button>
-            <button class="btn interactive" onclick="addShape('cone')">🗼<span>KONİ</span></button>
+    <div id="hud" style="display:none;">
+        <div style="display: flex; justify-content: space-between;">
+            <div id="status">SİSTEM: AKTİF</div>
+            <div id="fps">FPS: --</div>
         </div>
-
-        <div id="right-panel" class="side-panel">
-            <button class="btn interactive" onclick="setMode('translate')">✥<span>TAŞI</span></button>
-            <button class="btn interactive" onclick="setMode('rotate')">↻<span>DÖN</span></button>
-            <button class="btn interactive" onclick="setMode('scale')">⤢<span>ÖLÇEK</span></button>
-            <button class="btn interactive" style="border-color: #ff3366; color: #ff3366;" onclick="clearLast()">✕<span>SİL</span></button>
+        
+        <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="ui-btn" onclick="addNewShape('cube')">KÜP EKLE</button>
+            <button class="ui-btn" onclick="addNewShape('sphere')">KÜRE EKLE</button>
+            <button class="ui-btn" onclick="resetScene()">TEMİZLE</button>
         </div>
-
-        <footer>
-            <div id="action-label">MOD: SEÇİM BEKLENİYOR</div>
-        </footer>
     </div>
 
-    <!-- Kütüphaneler -->
+    <!-- Three.js ve MediaPipe Kütüphaneleri -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 
     <script>
         let scene, camera, renderer, clock;
-        let mpHands, mpCamera;
         let shapes = [];
-        let currentMode = 'translate';
-        let isHandActive = false;
+        let mpHands;
 
-        // --- ÜÇ BOYUTLU SAHNE KURULUMU ---
-        function initThree() {
+        function init() {
+            // 1. Sahne Oluşturma (Senin kodun altyapısı)
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            
-            renderer = new THREE.WebGLRenderer({
+
+            // 2. Kamera Düzeltmesi (Senin kodun)
+            const aspect = window.innerWidth / window.innerHeight;
+            camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+            camera.position.set(0, 1, 4);
+
+            // 3. Renderer Ayarları (Alpha:true ile arka planı şeffaf yaptık)
+            renderer = new THREE.WebGLRenderer({ 
                 canvas: document.getElementById('three-canvas'),
-                alpha: true,
-                antialias: true
+                antialias: true,
+                alpha: true 
             });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
 
-            // Işıklandırma
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-            scene.add(ambientLight);
-            const pointLight = new THREE.PointLight(0x00f2ff, 1);
-            pointLight.position.set(5, 5, 5);
-            scene.add(pointLight);
+            // 4. Işıklandırma (Senin kodun geliştirildi)
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(1, 1, 2).normalize();
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0x404040, 2));
 
-            camera.position.z = 2;
             clock = new THREE.Clock();
+            window.addEventListener('resize', onWindowResize, false);
             
             animate();
         }
 
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // Nesneleri hafifçe yüzdür
-            const time = clock.getElapsedTime();
-            shapes.forEach((obj, i) => {
-                obj.position.y += Math.sin(time + i) * 0.001;
-                obj.rotation.y += 0.01;
-            });
-
-            renderer.render(scene, camera);
-        }
-
-        // --- EL TAKİBİ SİSTEMİ ---
+        // El Takibi Başlatma
         async function initHandTracking() {
-            const video = document.getElementById('video-bg');
-            const overlay = document.getElementById('hand-overlay');
-            const ctx = overlay.getContext('2d');
-            overlay.width = window.innerWidth;
-            overlay.height = window.innerHeight;
-
+            const video = document.getElementById('video-el');
+            
             mpHands = new Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
             });
@@ -267,131 +126,95 @@
             mpHands.setOptions({
                 maxNumHands: 1,
                 modelComplexity: 1,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.7
+                minDetectionConfidence: 0.6,
+                minTrackingConfidence: 0.6
             });
 
             mpHands.onResults((results) => {
-                ctx.clearRect(0, 0, overlay.width, overlay.height);
-                
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    isHandActive = true;
-                    document.getElementById('hand-status').textContent = "● EL AKTİF";
-                    document.getElementById('hand-status').style.color = "#00f2ff";
-                    
-                    const landmarks = results.multiHandLandmarks[0];
-                    drawCursor(ctx, landmarks[8]); // İşaret parmağı ucunu çiz
-                    handleInteractions(landmarks[8]);
-                } else {
-                    isHandActive = false;
-                    document.getElementById('hand-status').textContent = "● EL YOK";
-                    document.getElementById('hand-status').style.color = "#ff3366";
+                    const tip = results.multiHandLandmarks[0][8]; // İşaret parmağı ucu
+                    moveLastObject(tip.x, tip.y);
                 }
             });
 
-            mpCamera = new Camera(video, {
-                onFrame: async () => {
-                    await mpHands.send({image: video});
-                },
-                width: 640,
-                height: 480
+            const cameraUtils = new Camera(video, {
+                onFrame: async () => { await mpHands.send({image: video}); },
+                width: 640, height: 480
             });
-            mpCamera.start();
+            cameraUtils.start();
         }
 
-        function drawCursor(ctx, point) {
-            const x = point.x * window.innerWidth;
-            const y = point.y * window.innerHeight;
-            
-            ctx.strokeStyle = "#00f2ff";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(x, y, 15, 0, Math.PI * 2);
-            ctx.stroke();
-            
-            // İç artı göstergesi
-            ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y);
-            ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5);
-            ctx.stroke();
-        }
-
-        function handleInteractions(point) {
+        function moveLastObject(x, y) {
             if (shapes.length === 0) return;
             
-            // Ekran koordinatlarını Three.js dünyasına çevir
-            const target = shapes[shapes.length - 1];
-            const nx = (point.x * 2) - 1;
-            const ny = -(point.y * 2) + 1;
-
-            if (currentMode === 'translate') {
-                target.position.x = THREE.MathUtils.lerp(target.position.x, nx * 2, 0.1);
-                target.position.y = THREE.MathUtils.lerp(target.position.y, ny * 2, 0.1);
-            } else if (currentMode === 'rotate') {
-                target.rotation.z = nx * Math.PI;
-            }
+            // Ekran koordinatlarını 3D dünyaya çevirme
+            const lastObj = shapes[shapes.length - 1];
+            const targetX = (x * 2 - 1) * 2.5;
+            const targetY = -(y * 2 - 1) * 2;
+            
+            // Yumuşak takip (Lerp)
+            lastObj.position.x += (targetX - lastObj.position.x) * 0.1;
+            lastObj.position.y += (targetY - lastObj.position.y) * 0.1;
         }
 
-        // --- UYGULAMA MANTIĞI ---
-        function addShape(type) {
-            let geometry;
-            switch(type) {
-                case 'cube': geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3); break;
-                case 'sphere': geometry = new THREE.SphereGeometry(0.2, 32, 32); break;
-                case 'cone': geometry = new THREE.ConeGeometry(0.2, 0.4, 32); break;
-            }
+        function addNewShape(type) {
+            let geo;
+            if(type === 'cube') geo = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            else geo = new THREE.SphereGeometry(0.5, 32, 32);
 
-            const material = new THREE.MeshPhongMaterial({
-                color: 0x00f2ff,
+            const mat = new THREE.MeshStandardMaterial({ 
+                color: 0x00f2ff, 
+                wireframe: true,
                 transparent: true,
-                opacity: 0.7,
-                wireframe: true
+                opacity: 0.8
             });
 
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.set(0, 0, 0);
+            const mesh = new THREE.Mesh(geo, mat);
             scene.add(mesh);
             shapes.push(mesh);
-            
-            document.getElementById('action-label').textContent = `EKLENDİ: ${type.toUpperCase()}`;
         }
 
-        function setMode(mode) {
-            currentMode = mode;
-            document.getElementById('action-label').textContent = `MOD: ${mode.toUpperCase()}`;
+        function resetScene() {
+            shapes.forEach(s => scene.remove(s));
+            shapes = [];
         }
 
-        function clearLast() {
-            if (shapes.length > 0) {
-                const last = shapes.pop();
-                scene.remove(last);
-            }
-        }
-
-        async function startApp() {
-            document.getElementById('start-screen').style.opacity = 0;
-            setTimeout(() => {
-                document.getElementById('start-screen').style.display = 'none';
-            }, 500);
-
-            initThree();
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' } 
-                });
-                document.getElementById('video-bg').srcObject = stream;
-                initHandTracking();
-            } catch (err) {
-                alert("Kamera hatası: " + err.message);
-            }
-        }
-
-        // Pencere Boyutu Değişimi
-        window.addEventListener('resize', () => {
+        function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        }
 
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getElapsedTime();
+            
+            shapes.forEach((s, i) => {
+                s.rotation.y += 0.01;
+                s.rotation.x += 0.005;
+                // Hafif hologram efekti (yüzme)
+                s.position.y += Math.sin(delta + i) * 0.002;
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        async function startSystem() {
+            document.getElementById('start-overlay').style.display = 'none';
+            document.getElementById('hud').style.display = 'flex';
+            
+            init();
+
+            // Kamerayı başlat
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                document.getElementById('video-el').srcObject = stream;
+                initHandTracking();
+            } catch (err) {
+                console.error("Kamera açılamadı:", err);
+                alert("Kamera izni gerekiyor!");
+            }
+        }
     </script>
 </body>
 </html>
