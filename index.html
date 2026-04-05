@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v39.0</title>
+    <title>Tuncer AR v39.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     
@@ -35,8 +35,6 @@
             padding: 10px 20px; border-radius: 25px; color: #00e5ff; border: 1px solid #00e5ff;
             font-size: 12px; font-family: monospace; font-weight: bold;
         }
-        /* Görünmez video elementi (MediaPipe beslemesi için yedek) */
-        #video-temp { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     </style>
     <script type="importmap">
         {
@@ -48,18 +46,16 @@
 </head>
 <body>
 
-    <video id="video-temp" autoplay playsinline></video>
-
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">STABLE HAND ENGINE</p>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">STABLE VISUAL ENGINE</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
             DURUM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
-            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">BAĞLANIYOR</span><br>
+            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
             ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
         <div id="status-hint">YÜZEY TARANIYOR...</div>
@@ -73,7 +69,7 @@
         let objects = [], selectedObject = null;
         let isPinching = false;
         let handCursorGroup, cursorDot, cursorRing;
-        const videoElement = document.getElementById('video-temp');
+        let lastHandProcess = 0;
 
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
@@ -82,8 +78,8 @@
         hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
         });
 
         hands.onResults((results) => {
@@ -105,13 +101,13 @@
                 handCursorGroup.lookAt(camera.position);
 
                 const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                if (dist < 0.05) {
+                if (dist < 0.06) {
                     document.getElementById('pinch-text').innerText = "TUTUYOR";
                     cursorRing.material.color.setHex(0x00ffcc);
                     cursorRing.scale.set(0.7, 0.7, 0.7);
                     if (!isPinching) {
                         isPinching = true;
-                        objects.forEach(obj => { if(obj.position.distanceTo(pos) < 0.1) selectedObject = obj; });
+                        objects.forEach(obj => { if(obj.position.distanceTo(pos) < 0.12) selectedObject = obj; });
                     }
                     if (selectedObject) selectedObject.position.lerp(pos, 0.2);
                 } else {
@@ -131,7 +127,8 @@
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            // preserveDrawingBuffer kritik: MediaPipe'ın canvas'tan veri okuyabilmesi için
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
@@ -163,16 +160,6 @@
                     });
                     renderer.xr.setSession(session);
                     
-                    // Kamerayı el takibi için güvenli modda başlat
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    videoElement.srcObject = stream;
-                    
-                    const processHand = async () => {
-                        if (videoElement.readyState >= 2) await hands.send({ image: videoElement });
-                        requestAnimationFrame(processHand);
-                    };
-                    processHand();
-
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-overlay').style.display = 'flex';
                     renderer.setAnimationLoop(render);
@@ -198,6 +185,14 @@
             if (frame) {
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
+
+                // ÇAKIŞMAYI ÖNLEYEN DÜZELTME: 
+                // Ayrı video kanalı açmak yerine, render edilen canvası MediaPipe'a gönderiyoruz.
+                // Bu sayede kamera görüntüsü WebXR tarafından sağlanırken el takibi de çalışır.
+                if (timestamp - lastHandProcess > 60) {
+                    hands.send({ image: renderer.domElement });
+                    lastHandProcess = timestamp;
+                }
 
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
