@@ -3,44 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v38.0</title>
+    <title>Tuncer AR v39.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
         #ui-overlay { 
             position: absolute; inset: 0; pointer-events: none; z-index: 10; 
-            display: flex; flex-direction: column; justify-content: space-between; padding: 25px; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; 
         }
-        .hud-container {
-            align-self: flex-end;
-            background: rgba(10, 25, 41, 0.85);
-            border-left: 3px solid #00e5ff;
-            border-radius: 8px;
-            padding: 15px;
-            min-width: 180px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        .hud { 
+            background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; 
+            padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
+            font-size: 12px; align-self: flex-end; backdrop-filter: blur(8px);
         }
-        .hud-line { color: #00e5ff; font-size: 11px; font-weight: 800; letter-spacing: 1px; margin-bottom: 4px; }
-        .hud-value { color: #ffffff; float: right; font-weight: 400; }
         #start-screen { 
-            position: fixed; inset: 0; background: #0a0a0a; z-index: 1000; 
+            position: fixed; inset: 0; background: #050505; z-index: 1000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            color: white; font-family: monospace;
         }
         #btn-go { 
             background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
-            font-weight: 900; padding: 20px 60px; border-radius: 50px; border: none; 
-            cursor: pointer; font-size: 16px; box-shadow: 0 0 40px rgba(0, 229, 255, 0.3); 
-            pointer-events: auto; text-transform: uppercase; letter-spacing: 2px;
+            font-weight: 900; padding: 18px 50px; border-radius: 12px; border: none; 
+            cursor: pointer; font-size: 18px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
+            pointer-events: auto; text-transform: uppercase;
         }
-        #status-pill {
-            align-self: center; margin-bottom: 40px;
-            background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.5);
-            padding: 8px 24px; border-radius: 100px; color: #00e5ff;
-            font-size: 11px; font-weight: 700; text-transform: uppercase;
+        #status-hint { 
+            align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
+            padding: 10px 20px; border-radius: 25px; color: #00e5ff; border: 1px solid #00e5ff;
+            font-size: 12px; font-family: monospace; font-weight: bold;
         }
+        /* Görünmez video elementi (MediaPipe beslemesi için yedek) */
+        #video-temp { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
     </style>
     <script type="importmap">
         {
@@ -52,19 +48,21 @@
 </head>
 <body>
 
+    <video id="video-temp" autoplay playsinline></video>
+
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 24px; font-weight: 900; letter-spacing: 5px; margin-bottom:10px;">TUNCER <span style="font-weight:300;">MARK-III</span></h1>
-        <div style="width:40px; height:2px; background:#00e5ff; margin-bottom:50px;"></div>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">STABLE HAND ENGINE</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
-        <div class="hud-container">
-            <div class="hud-line">SİSTEM <span class="hud-value" id="status-text">ONLINE</span></div>
-            <div class="hud-line">KAMERA <span class="hud-value" id="cam-text">NATIVE_AR</span></div>
-            <div class="hud-line">MOD <span class="hud-value">MARK-III</span></div>
+        <div class="hud">
+            DURUM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
+            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">BAĞLANIYOR</span><br>
+            ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
-        <div id="status-pill">YÜZEY TARANIYOR...</div>
+        <div id="status-hint">YÜZEY TARANIYOR...</div>
     </div>
 
     <script type="module">
@@ -72,7 +70,62 @@
 
         let scene, camera, renderer, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
-        let objects = [];
+        let objects = [], selectedObject = null;
+        let isPinching = false;
+        let handCursorGroup, cursorDot, cursorRing;
+        const videoElement = document.getElementById('video-temp');
+
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.7,
+            minTrackingConfidence: 0.7
+        });
+
+        hands.onResults((results) => {
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const lm = results.multiHandLandmarks[0];
+                const indexTip = lm[8];
+                const thumbTip = lm[4];
+
+                document.getElementById('hand-text').innerText = "KİLİTLENDİ";
+                document.getElementById('hand-text').style.color = "#00ffcc";
+
+                const vector = new THREE.Vector3((1 - indexTip.x) * 2 - 1, -indexTip.y * 2 + 1, 0.5);
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const pos = camera.position.clone().add(dir.multiplyScalar(0.35));
+                
+                handCursorGroup.visible = true;
+                handCursorGroup.position.copy(pos);
+                handCursorGroup.lookAt(camera.position);
+
+                const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+                if (dist < 0.05) {
+                    document.getElementById('pinch-text').innerText = "TUTUYOR";
+                    cursorRing.material.color.setHex(0x00ffcc);
+                    cursorRing.scale.set(0.7, 0.7, 0.7);
+                    if (!isPinching) {
+                        isPinching = true;
+                        objects.forEach(obj => { if(obj.position.distanceTo(pos) < 0.1) selectedObject = obj; });
+                    }
+                    if (selectedObject) selectedObject.position.lerp(pos, 0.2);
+                } else {
+                    isPinching = false; selectedObject = null;
+                    document.getElementById('pinch-text').innerText = "BOŞTA";
+                    cursorRing.material.color.setHex(0xff3366);
+                    cursorRing.scale.set(1, 1, 1);
+                }
+            } else {
+                handCursorGroup.visible = false;
+                document.getElementById('hand-text').innerText = "ARANIYOR";
+                document.getElementById('hand-text').style.color = "#ff3366";
+            }
+        });
 
         function init() {
             scene = new THREE.Scene();
@@ -84,19 +137,22 @@
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-            const light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(1, 1, 1);
-            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-            // Zemin Tarayıcı (Reticle)
             reticle = new THREE.Mesh(
-                new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+                new THREE.RingGeometry(0.03, 0.04, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             reticle.matrixAutoUpdate = false;
             reticle.visible = false;
             scene.add(reticle);
+
+            handCursorGroup = new THREE.Group();
+            cursorDot = new THREE.Mesh(new THREE.SphereGeometry(0.005, 12, 12), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
+            cursorRing = new THREE.Mesh(new THREE.RingGeometry(0.012, 0.015, 32), new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide }));
+            handCursorGroup.add(cursorDot, cursorRing);
+            handCursorGroup.visible = false;
+            scene.add(handCursorGroup);
 
             document.getElementById('btn-go').addEventListener('click', async () => {
                 try {
@@ -106,11 +162,22 @@
                         domOverlay: { root: document.getElementById('ui-overlay') }
                     });
                     renderer.xr.setSession(session);
+                    
+                    // Kamerayı el takibi için güvenli modda başlat
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    videoElement.srcObject = stream;
+                    
+                    const processHand = async () => {
+                        if (videoElement.readyState >= 2) await hands.send({ image: videoElement });
+                        requestAnimationFrame(processHand);
+                    };
+                    processHand();
+
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-overlay').style.display = 'flex';
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("XR başlatılamadı: " + e.message);
+                    alert("Başlatma Hatası: " + e.message);
                 }
             });
         }
@@ -119,13 +186,7 @@
             if (reticle.visible && e.target.id !== 'btn-go') {
                 const cube = new THREE.Mesh(
                     new THREE.BoxGeometry(0.1, 0.1, 0.1),
-                    new THREE.MeshStandardMaterial({ 
-                        color: 0x00e5ff, 
-                        metalness: 0.5, 
-                        roughness: 0.2,
-                        transparent: true,
-                        opacity: 0.8 
-                    })
+                    new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.7 })
                 );
                 cube.position.setFromMatrixPosition(reticle.matrix);
                 scene.add(cube);
@@ -149,12 +210,8 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('status-pill').innerText = "ZEMİN KİLİTLENDİ - DOKUN";
-                        document.getElementById('status-pill').style.color = "#00ffcc";
                     } else {
                         reticle.visible = false;
-                        document.getElementById('status-pill').innerText = "YÜZEY TARANIYOR...";
-                        document.getElementById('status-pill').style.color = "#00e5ff";
                     }
                 }
             }
