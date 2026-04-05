@@ -3,22 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v21.2</title>
+    <title>Tuncer AR v21.3</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        /* KRİTİK: Kamera görüntüsü için şeffaflık zorunludur */
         html, body { 
             margin: 0; 
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden; 
-            background: transparent !important; 
-            background-color: transparent !important; 
+            background: #000 !important; 
         }
         
+        /* Kamera görüntüsünü en arkaya yerleştirir */
+        #ar-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 0;
+            display: none;
+        }
+
         #ui-container { position: absolute; inset: 0; pointer-events: none; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
         .hud-panel { background: rgba(0, 15, 30, 0.8); border-left: 4px solid #00e5ff; padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; font-size: 11px; align-self: flex-end; backdrop-filter: blur(8px); text-transform: uppercase; }
         
@@ -32,7 +42,7 @@
         
         #target-hint { align-self: center; margin-bottom: 60px; background: rgba(0,229,255,0.2); padding: 10px 25px; border-radius: 30px; color: #00e5ff; border: 1px solid #00e5ff; font-size: 10px; text-transform: uppercase; backdrop-filter: blur(4px); font-family: monospace; }
         
-        canvas { display: block; width: 100% !important; height: 100% !important; }
+        canvas { display: block; width: 100% !important; height: 100% !important; position: absolute; top: 0; left: 0; z-index: 5; pointer-events: none; }
     </style>
 
     <script type="importmap">
@@ -46,9 +56,12 @@
 </head>
 <body>
 
+    <!-- KAMERA AKIŞI BURADA ÇALIŞACAK -->
+    <video id="ar-video" autoplay playsinline muted></video>
+
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v21.2</h1>
-        <p style="color:#444; margin-bottom:40px; font-size:11px;">KAMERA BASLATMA HATASI GIDERILDI</p>
+        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v21.3</h1>
+        <p style="color:#444; margin-bottom:40px; font-size:11px;">KAMERA AKISI MANUEL OLARAK BAGLANDI</p>
         <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -73,11 +86,25 @@
         let isPinching = false;
         let fingerCursor;
 
+        // Kamerayı manuel olarak başlatan fonksiyon
+        async function startCamera() {
+            const video = document.getElementById('ar-video');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+                video.style.display = 'block';
+            } catch (err) {
+                console.error("Kamera erisim hatasi:", err);
+            }
+        }
+
         function init() {
             scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-            // Şeffaflık ayarları kamera görüntüsünün geçmesi için kritiktür
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
                 alpha: true, 
@@ -109,7 +136,6 @@
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // El modellerini hazırla
             const handModelFactory = new XRHandModelFactory();
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
@@ -125,7 +151,8 @@
 
             const startBtn = document.getElementById('btn-activate');
             startBtn.addEventListener('click', async () => {
-                // KAMERA ONARIMI: Session ayarlarını daha güvenli hale getirdik
+                await startCamera(); // Düğmeye basıldığında kamerayı aç
+
                 const sessionInit = { 
                     requiredFeatures: ['hit-test'], 
                     optionalFeatures: ['dom-overlay', 'hand-tracking'], 
@@ -133,13 +160,6 @@
                 };
                 
                 try {
-                    // Cihazın AR desteğini kontrol et ve başlat
-                    const isSupported = await navigator.xr.isSessionSupported('immersive-ar');
-                    if (!isSupported) {
-                        alert("AR bu cihazda desteklenmiyor.");
-                        return;
-                    }
-
                     const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
                     renderer.xr.setSession(session);
                     
@@ -150,20 +170,7 @@
                     initVoice(); 
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    // Eğer hand-tracking yüzünden hata verirse, hand-tracking olmadan dene
-                    try {
-                        const fallbackSession = await navigator.xr.requestSession('immersive-ar', {
-                            requiredFeatures: ['hit-test'],
-                            optionalFeatures: ['dom-overlay'],
-                            domOverlay: { root: document.getElementById('ui-container') }
-                        });
-                        renderer.xr.setSession(fallbackSession);
-                        document.getElementById('start-screen').style.display = 'none';
-                        document.getElementById('ui-container').style.display = 'flex';
-                        renderer.setAnimationLoop(render);
-                    } catch (e2) {
-                        alert("Kamera başlatılamadı. Lütfen Chrome ayarlarından kamera izni verdiğinizden emin olun.");
-                    }
+                    alert("AR Baslatilamadi. Kamera iznini kontrol edin.");
                 }
             });
         }
@@ -238,7 +245,6 @@
 
                             if (isPinchNow) {
                                 fingerCursor.material.color.setHex(0xff3366); 
-                                document.getElementById('interact-mode').innerText = "TUTULUYOR";
                                 if (!isPinching) {
                                     isPinching = true;
                                     for (let obj of objects) {
@@ -251,7 +257,6 @@
                                 }
                             } else {
                                 isPinching = false;
-                                document.getElementById('interact-mode').innerText = "GÖZLEM";
                                 fingerCursor.material.color.setHex(0x00e5ff); 
                                 if (!isPinching) selectedObject = null;
                             }
