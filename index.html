@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v43.1 - Final Calib</title>
+    <title>Tuncer AR v44.0 - Mark III Ultimate</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -14,7 +14,6 @@
         video { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             object-fit: cover; z-index: 1; 
-            /* Arka kamera düzdür, aynalama (scaleX) yapmıyoruz */
         }
         
         #ui-overlay { 
@@ -25,7 +24,12 @@
             background: rgba(0, 15, 30, 0.85); border-left: 4px solid #00e5ff; 
             padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
             font-size: 11px; align-self: flex-end; backdrop-filter: blur(8px);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+            min-width: 160px;
         }
+        .hud-line { margin-bottom: 5px; font-weight: 700; letter-spacing: 1px; }
+        .hud-value { float: right; font-weight: 400; }
+        
         #start-screen { 
             position: fixed; inset: 0; background: #050505; z-index: 1000; 
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
@@ -52,15 +56,18 @@
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 28px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:10px; letter-spacing:2px;">REAR CAMERA FINAL SYNC</p>
+        <p style="color:#555; margin-bottom:40px; font-size:10px; letter-spacing:2px;">VOICE CONTROL ACTIVATED</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
-            SİSTEM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
-            MOTOR: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
-            HAREKET: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
+            <div class="hud-line">SİSTEM: <span class="hud-value" style="color:#fff;">AKTİF</span></div>
+            <div class="hud-line">MOTOR: <span class="hud-value" id="hand-text" style="color:#ff3366;">ARANIYOR</span></div>
+            <div class="hud-line">HAREKET: <span class="hud-value" id="pinch-text" style="color:#fff;">BOŞTA</span></div>
+            <div class="hud-line" style="margin-top:10px; border-top:1px solid rgba(0,229,255,0.3); padding-top:10px;">
+                SES: <span class="hud-value" id="voice-text" style="color:#00ffcc;">DİNLİYOR...</span>
+            </div>
         </div>
     </div>
 
@@ -73,6 +80,103 @@
         let isPinching = false;
         let handCursorGroup, cursorDot, cursorRing;
 
+        // --- SESLİ KOMUT SİSTEMİ (WEB SPEECH API) ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onresult = (event) => {
+                const command = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
+                document.getElementById('voice-text').innerText = command.toUpperCase().substring(0, 15);
+                handleVoiceCommand(command);
+            };
+
+            recognition.onend = () => {
+                recognition.start(); // Sürekli dinleme için yeniden başlat
+            };
+        } else {
+            document.getElementById('voice-text').innerText = "DESTEKLENMİYOR";
+        }
+
+        function handleVoiceCommand(cmd) {
+            // Şekil Ekleme
+            if (cmd.includes('küp') || cmd.includes('kutu')) createShape('cube');
+            else if (cmd.includes('daire') || cmd.includes('küre') || cmd.includes('yuvarlak')) createShape('sphere');
+            else if (cmd.includes('delik') || cmd.includes('halka') || cmd.includes('simit')) createShape('torus');
+            
+            // Silme
+            else if (cmd.includes('sil') || cmd.includes('yok et')) {
+                if (selectedObject) {
+                    scene.remove(selectedObject);
+                    objects = objects.filter(o => o !== selectedObject);
+                    selectedObject = null;
+                } else if (objects.length > 0) {
+                    const obj = objects.pop();
+                    scene.remove(obj);
+                }
+            }
+            
+            // Renk Değiştirme
+            else if (cmd.includes('mavi')) changeColor(0x00e5ff);
+            else if (cmd.includes('kırmızı')) changeColor(0xff3366);
+            else if (cmd.includes('yeşil')) changeColor(0x00ffcc);
+            else if (cmd.includes('sarı')) changeColor(0xffcc00);
+            else if (cmd.includes('beyaz')) changeColor(0xffffff);
+            else if (cmd.includes('siyah')) changeColor(0x222222);
+
+            // Büyütme / Küçültme
+            else if (cmd.includes('büyüt') || cmd.includes('kocaman')) {
+                if (selectedObject) selectedObject.scale.multiplyScalar(1.4);
+            }
+            else if (cmd.includes('küçült') || cmd.includes('ufak')) {
+                if (selectedObject) selectedObject.scale.multiplyScalar(0.7);
+            }
+
+            // Döndürme
+            else if (cmd.includes('döndür') || cmd.includes('çevir')) {
+                if (selectedObject) selectedObject.userData.spinning = !selectedObject.userData.spinning;
+            }
+        }
+
+        function changeColor(hexColor) {
+            if (selectedObject) {
+                selectedObject.material.color.setHex(hexColor);
+                selectedObject.material.emissive.setHex(hexColor);
+            }
+        }
+
+        function createShape(type) {
+            let geometry;
+            if (type === 'cube') geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            else if (type === 'sphere') geometry = new THREE.SphereGeometry(0.12, 32, 32);
+            else if (type === 'torus') geometry = new THREE.TorusGeometry(0.12, 0.04, 16, 50);
+
+            const material = new THREE.MeshStandardMaterial({ 
+                color: 0x00e5ff, 
+                transparent: true, 
+                opacity: 0.85,
+                metalness: 0.3,
+                roughness: 0.2,
+                emissive: 0x00e5ff,
+                emissiveIntensity: 0.2
+            });
+
+            const mesh = new THREE.Mesh(geometry, material);
+            // İmleç neredeyse oraya yarat, imleç yoksa kameranın önüne
+            mesh.position.copy(handCursorGroup.visible ? handCursorGroup.position : new THREE.Vector3(0, 0, -2));
+            mesh.userData = { spinning: false }; // Başlangıçta dönmesin (havada sabit kalsın)
+            
+            scene.add(mesh);
+            objects.push(mesh);
+            selectedObject = mesh;
+        }
+
+        // --- EL MOTORU (MEDİAPİPE) ---
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -93,12 +197,10 @@
                 document.getElementById('hand-text').innerText = "KİLİTLENDİ";
                 document.getElementById('hand-text').style.color = "#00ffcc";
 
-                // KRİTİK ARKA KAMERA DÜZELTMESİ (Aynalama Olmadan):
-                // MediaPipe arka kamerada x eksenini ters algılar.
-                // Bu yüzden (1 - indexTip.x) yaparak ekseni el hareketine eşliyoruz.
+                // Arka Kamera Kalibrasyonu (v43.1 ile aynı mükemmel ayar)
                 const x = ((1 - indexTip.x) * 2 - 1) * 2.0; 
                 const y = (indexTip.y * -2 + 1) * 1.5; 
-                const z = -2.5; // Daha geniş görüş alanı için derinliği artırdık
+                const z = -2.5;
 
                 const pos = new THREE.Vector3(x, y, z);
                 
@@ -106,54 +208,42 @@
                 handCursorGroup.position.lerp(pos, 0.4);
 
                 const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+                
                 if (dist < 0.05) {
                     document.getElementById('pinch-text').innerText = "TUTUYOR";
                     cursorRing.material.color.setHex(0x00ffcc);
+                    cursorRing.scale.set(0.7, 0.7, 0.7);
                     
                     if (!isPinching) {
                         isPinching = true;
-                        let found = false;
+                        // Seçim
+                        let minD = Infinity;
                         objects.forEach(obj => {
-                            if (obj.position.distanceTo(handCursorGroup.position) < 0.6) {
+                            const d = obj.position.distanceTo(handCursorGroup.position);
+                            if (d < 0.6 && d < minD) {
                                 selectedObject = obj;
-                                found = true;
+                                minD = d;
                             }
                         });
-                        
-                        if (!found) {
-                            createNewObject(handCursorGroup.position.clone());
-                        }
+                        // Eğer boşluğa tutarsan komutla şekil eklenmesini bekler, spam yapmaz.
                     }
                     
+                    // Nesne seçiliyse havada elinle taşı (Tam Sabitlik LERP'i)
                     if (selectedObject) {
-                        selectedObject.position.lerp(handCursorGroup.position, 0.2);
+                        selectedObject.position.lerp(handCursorGroup.position, 0.25);
                     }
                 } else {
                     isPinching = false;
-                    selectedObject = null;
                     document.getElementById('pinch-text').innerText = "BOŞTA";
                     cursorRing.material.color.setHex(0xff3366);
+                    cursorRing.scale.set(1, 1, 1);
                 }
             } else {
                 handCursorGroup.visible = false;
                 document.getElementById('hand-text').innerText = "ARANIYOR";
+                document.getElementById('hand-text').style.color = "#ff3366";
             }
         });
-
-        function createNewObject(pos) {
-            const geometry = new THREE.DodecahedronGeometry(0.15, 0);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0x00e5ff, 
-                wireframe: true,
-                transparent: true, 
-                opacity: 0.8
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.copy(pos);
-            scene.add(mesh);
-            objects.push(mesh);
-            selectedObject = mesh;
-        }
 
         function init() {
             scene = new THREE.Scene();
@@ -164,7 +254,10 @@
             renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(0, 5, 5);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
             handCursorGroup = new THREE.Group();
             cursorDot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
@@ -178,20 +271,31 @@
                 },
                 width: 1280,
                 height: 720,
-                facingMode: 'environment' // Arka kamera zorunlu
+                facingMode: 'environment'
             });
 
             document.getElementById('btn-go').addEventListener('click', () => {
                 document.getElementById('start-screen').style.display = 'none';
                 document.getElementById('ui-overlay').style.display = 'flex';
+                
                 cameraUtils.start();
+                if (recognition) recognition.start(); // Sesi dinlemeye başla
+                
                 animate();
             });
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            objects.forEach(obj => { if (obj !== selectedObject) obj.rotation.y += 0.01; });
+            
+            // Sadece 'döndür' komutu verilmiş objeler döner, diğerleri havada çakılı kalır.
+            objects.forEach(obj => { 
+                if (obj.userData.spinning) {
+                    obj.rotation.y += 0.02;
+                    obj.rotation.x += 0.01;
+                }
+            });
+            
             renderer.render(scene, camera);
         }
 
@@ -199,4 +303,5 @@
     </script>
 </body>
 </html>
+
 
