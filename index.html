@@ -3,11 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v34.0</title>
+    <title>Tuncer AR v35.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- MediaPipe Hands Core -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     
     <style>
         html, body { 
@@ -25,7 +23,6 @@
             background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; 
             padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
             font-size: 12px; align-self: flex-end; backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         #start-screen { 
             position: fixed; inset: 0; background: #050505; z-index: 1000; 
@@ -36,14 +33,14 @@
             background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
             font-weight: 900; padding: 18px 50px; border-radius: 12px; border: none; 
             cursor: pointer; font-size: 18px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
-            pointer-events: auto; text-transform: uppercase; letter-spacing: 2px;
+            pointer-events: auto; text-transform: uppercase;
         }
         #status-hint { 
             align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
             padding: 10px 20px; border-radius: 25px; color: #00e5ff; border: 1px solid #00e5ff;
             font-size: 12px; font-family: monospace; font-weight: bold;
         }
-        #video-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; }
+        #video-feed { position: absolute; opacity: 0; pointer-events: none; width: 640px; height: 480px; }
     </style>
     <script type="importmap">
         {
@@ -56,18 +53,18 @@
 </head>
 <body>
 
-    <video id="video-hidden" autoplay playsinline></video>
+    <video id="video-feed" autoplay playsinline></video>
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">STABLE VISION ENGINE</p>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">STABLE FIX ENGINE</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
             DURUM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
-            EL_TAKİP: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
+            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">BAŞLATILIYOR</span><br>
             ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
         <div id="status-hint">YÜZEY TARANIYOR...</div>
@@ -82,9 +79,9 @@
         let isPinching = false;
         
         let handCursorGroup, cursorDot, cursorRing;
-        const videoElement = document.getElementById('video-hidden');
+        const videoElement = document.getElementById('video-feed');
 
-        // MediaPipe Kurulumu
+        // MediaPipe Hands
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -92,8 +89,8 @@
         hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.6,
-            minTrackingConfidence: 0.6
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
         });
 
         function init() {
@@ -119,7 +116,7 @@
             reticle.visible = false;
             scene.add(reticle);
 
-            // MARK-III İŞARETÇİSİ (Görseldeki gibi)
+            // MARK-III İŞARETÇİSİ
             handCursorGroup = new THREE.Group();
             cursorDot = new THREE.Mesh(
                 new THREE.SphereGeometry(0.005, 12, 12),
@@ -134,17 +131,15 @@
             handCursorGroup.visible = false;
             scene.add(handCursorGroup);
 
-            // El Takibi Sonuçları
             hands.onResults((results) => {
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
                     const lm = results.multiHandLandmarks[0];
-                    const indexTip = lm[8]; // İşaret parmağı ucu
-                    const thumbTip = lm[4]; // Baş parmak ucu
+                    const indexTip = lm[8];
+                    const thumbTip = lm[4];
 
                     document.getElementById('hand-text').innerText = "AKTİF";
                     document.getElementById('hand-text').style.color = "#00ffcc";
 
-                    // Ekrana yansıtma (Ayna modu düzeltmesi ile)
                     const vector = new THREE.Vector3(
                         (1 - indexTip.x) * 2 - 1,
                         -indexTip.y * 2 + 1,
@@ -152,27 +147,23 @@
                     );
                     vector.unproject(camera);
                     const dir = vector.sub(camera.position).normalize();
-                    const pos = camera.position.clone().add(dir.multiplyScalar(0.35));
+                    const pos = camera.position.clone().add(dir.multiplyScalar(0.3));
                     
                     handCursorGroup.visible = true;
                     handCursorGroup.position.copy(pos);
                     handCursorGroup.lookAt(camera.position);
 
-                    // Pinch (Çimdik) Algılama
                     const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                    if (dist < 0.05) {
+                    if (dist < 0.06) {
                         document.getElementById('pinch-text').innerText = "TUTUYOR";
                         document.getElementById('pinch-text').style.color = "#00ffcc";
                         cursorRing.material.color.setHex(0x00ffcc);
                         cursorRing.scale.set(0.7, 0.7, 0.7);
-                        
                         if (!isPinching) {
                             isPinching = true;
-                            objects.forEach(obj => {
-                                if (obj.position.distanceTo(pos) < 0.1) selectedObject = obj;
-                            });
+                            objects.forEach(obj => { if (obj.position.distanceTo(pos) < 0.15) selectedObject = obj; });
                         }
-                        if (selectedObject) selectedObject.position.lerp(pos, 0.2);
+                        if (selectedObject) selectedObject.position.lerp(pos, 0.3);
                     } else {
                         isPinching = false;
                         selectedObject = null;
@@ -188,6 +179,27 @@
                 }
             });
 
+            // GÜVENLİ KAMERA BAŞLATICI (Kamera Hatasını Önlemek İçin)
+            async function startCamera() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment", width: 640, height: 480 }
+                    });
+                    videoElement.srcObject = stream;
+                    
+                    async function detectionLoop() {
+                        if (videoElement.readyState >= 2) {
+                            await hands.send({ image: videoElement });
+                        }
+                        requestAnimationFrame(detectionLoop);
+                    }
+                    detectionLoop();
+                } catch (err) {
+                    console.error("Kamera Hatası:", err);
+                    document.getElementById('hand-text').innerText = "HATA";
+                }
+            }
+
             document.getElementById('btn-go').addEventListener('click', async () => {
                 try {
                     const session = await navigator.xr.requestSession('immersive-ar', {
@@ -199,44 +211,37 @@
                     renderer.xr.setReferenceSpaceType('local');
                     renderer.xr.setSession(session);
 
-                    // Kamerayı güvenli bir şekilde başlat
-                    const cam = new Camera(videoElement, {
-                        onFrame: async () => { await hands.send({ image: videoElement }); },
-                        width: 640, height: 480
-                    });
-                    cam.start();
+                    // Önce AR başlasın, 1 saniye sonra kamerayı MediaPipe'a bağla
+                    setTimeout(startCamera, 1000);
 
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-overlay').style.display = 'flex';
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("Hata: " + e.message);
+                    alert("XR Hatası: " + e.message);
                 }
             });
         }
 
-        function createCube() {
-            const cube = new THREE.Mesh(
-                new THREE.BoxGeometry(0.1, 0.1, 0.1),
-                new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.7 })
-            );
-            cube.position.setFromMatrixPosition(reticle.matrix);
-            scene.add(cube);
-            objects.push(cube);
-        }
-
         window.addEventListener('pointerdown', (e) => {
-            if (reticle.visible && e.target.id !== 'btn-go') createCube();
+            if (reticle.visible && e.target.id !== 'btn-go') {
+                const cube = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.1, 0.1, 0.1),
+                    new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.7 })
+                );
+                cube.position.setFromMatrixPosition(reticle.matrix);
+                scene.add(cube);
+                objects.push(cube);
+            }
         });
 
         function render(timestamp, frame) {
             if (frame) {
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
-
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
-                        session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
+                        session.requestHitTestSource({ space: s }).then(src => hitTestSource = src);
                     });
                     hitTestSourceRequested = true;
                 }
@@ -245,7 +250,6 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('status-hint').innerText = "ZEMİN HAZIR - DOKUN";
                     } else {
                         reticle.visible = false;
                     }
