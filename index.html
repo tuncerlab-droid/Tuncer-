@@ -3,33 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v22.0 - Full</title>
+    <title>Tuncer AR v22.1</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
+        /* KAMERA FIX: html ve body mutlaka transparent olmalı */
         html, body { 
             margin: 0; 
             padding: 0;
             width: 100%;
             height: 100%;
             overflow: hidden; 
-            background: #000 !important; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent !important; 
+            background-color: transparent !important;
         }
         
-        #ar-video {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 0;
-            display: none;
-            filter: brightness(1.1) contrast(1.1);
-        }
-
         #ui-container { 
             position: absolute; 
             inset: 0; 
@@ -38,105 +27,71 @@
             display: flex; 
             flex-direction: column; 
             justify-content: space-between; 
-            padding: 25px; 
+            padding: 20px; 
         }
 
         .hud-panel { 
-            background: rgba(0, 20, 40, 0.7); 
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            border-left: 5px solid #00e5ff; 
-            padding: 18px; 
-            border-radius: 12px; 
+            background: rgba(0, 15, 30, 0.8); 
+            border-left: 4px solid #00e5ff; 
+            padding: 15px; 
+            border-radius: 10px; 
             color: #00e5ff; 
             font-family: monospace; 
-            font-size: 12px; 
+            font-size: 11px; 
             align-self: flex-end; 
-            backdrop-filter: blur(12px); 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            backdrop-filter: blur(8px); 
             text-transform: uppercase;
-            letter-spacing: 1px;
-            animation: slideIn 0.5s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
         }
 
         #start-screen { 
             position: fixed; 
             inset: 0; 
-            background: radial-gradient(circle at center, #001a33 0%, #000 100%);
+            background: #000; 
             z-index: 1000; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
             color: white; 
-            text-align: center;
+            font-family: monospace;
         }
 
         #btn-activate { 
-            background: transparent;
-            color: #00e5ff; 
+            background: #00e5ff; 
+            color: #000; 
             font-weight: 900; 
             padding: 20px 50px; 
-            border-radius: 4px; 
-            border: 2px solid #00e5ff; 
+            border-radius: 12px; 
+            border: none; 
             cursor: pointer; 
             font-size: 18px; 
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2); 
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
             pointer-events: auto;
-            text-transform: uppercase; 
-            letter-spacing: 4px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        #btn-activate:hover {
-            background: #00e5ff;
-            color: #000;
-            box-shadow: 0 0 50px rgba(0, 229, 255, 0.6);
+            text-transform: uppercase;
         }
 
         #target-hint { 
             align-self: center; 
-            margin-bottom: 50px; 
-            background: rgba(0, 229, 255, 0.15); 
-            padding: 12px 30px; 
-            border-radius: 4px; 
+            margin-bottom: 60px; 
+            background: rgba(0, 229, 255, 0.2); 
+            padding: 10px 25px; 
+            border-radius: 30px; 
             color: #00e5ff; 
-            border: 1px solid rgba(0, 229, 255, 0.5); 
-            font-size: 11px; 
+            border: 1px solid #00e5ff; 
+            font-size: 10px; 
             text-transform: uppercase; 
-            backdrop-filter: blur(5px); 
-            font-family: monospace; 
-            letter-spacing: 2px;
+            backdrop-filter: blur(4px); 
+            font-family: monospace;
         }
         
+        /* Canvas arkasındaki her şeyi göstermeli */
         canvas { 
             display: block; 
-            width: 100% !important; 
-            height: 100% !important; 
             position: absolute; 
             top: 0; 
             left: 0; 
-            z-index: 5; 
-            pointer-events: none; 
+            z-index: 1; 
         }
-
-        .status-dot {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            margin-right: 5px;
-            background: #ff3366;
-            box-shadow: 0 0 10px #ff3366;
-        }
-
-        .status-online { background: #00ffcc; box-shadow: 0 0 10px #00ffcc; }
     </style>
 
     <script type="importmap">
@@ -150,29 +105,20 @@
 </head>
 <body>
 
-    <video id="ar-video" autoplay playsinline muted></video>
-
     <div id="start-screen">
-        <div style="margin-bottom: 30px;">
-            <div style="font-size: 10px; letter-spacing: 5px; color: #00e5ff; opacity: 0.7;">PROJECT</div>
-            <h1 style="color:#fff; font-size: 42px; font-weight: 100; margin: 5px 0;">TUNCER<span style="font-weight: 900; color: #00e5ff;">CORE</span></h1>
-            <div style="height: 2px; width: 50px; background: #00e5ff; margin: 15px auto;"></div>
-            <p style="color:#666; font-size:10px; letter-spacing: 2px;">V22.0 AR-DRIVE / NEURAL LINK</p>
-        </div>
-        <button id="btn-activate">INITIALIZE SYSTEM</button>
+        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:10px;">TUNCER CORE v22.1</h1>
+        <p style="color:#666; margin-bottom:40px; font-size:10px;">KAMERA VE ETKILEŞIM ONARILDI</p>
+        <button id="btn-activate">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-container" style="display: none;">
         <div class="hud-panel">
-            <div><span id="dot-sys" class="status-dot"></span> SİSTEM: <span id="sys-status" style="color:#fff;">STANDBY</span></div>
-            <div style="margin-top: 5px;"><span id="dot-hand" class="status-dot"></span> EL_AI: <span id="hand-status" style="color:#fff;">OFFLINE</span></div>
-            <div style="margin-top: 5px;"><span id="dot-voice" class="status-dot"></span> SES_LINK: <span id="voice-status" style="color:#fff;">READY</span></div>
-            <div style="margin-top: 10px; border-top: 1px solid rgba(0,229,255,0.2); padding-top: 10px;">
-                MOD: <span id="interact-mode" style="color:#00ffcc;">NAVIGATION</span><br>
-                KOMUT: <span id="voice-cmd" style="color:#fff;">---</span>
-            </div>
+            SİSTEM: <span id="sys-status" style="color:#fff;">AKTİF</span><br>
+            EL_AI: <span id="hand-status" style="color:#ff3366;">ARANIYOR</span><br>
+            MOD: <span id="interact-mode" style="color:#fff;">GÖZLEM</span><br>
+            SES: <span id="voice-cmd" style="color:#fff;">BEKLEMEDE</span>
         </div>
-        <div id="target-hint">SCANNING ENVIRONMENT...</div>
+        <div id="target-hint">YÜZEY TARANIYOR...</div>
     </div>
 
     <script type="module">
@@ -185,30 +131,12 @@
         let hands = [];
         let isPinching = false;
         let fingerCursor;
-        let lastPinchDist = 0;
-
-        async function startCamera() {
-            const video = document.getElementById('ar-video');
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "environment",
-                        width: {理想: 1920},
-                        height: {理想: 1080}
-                    }, 
-                    audio: false 
-                });
-                video.srcObject = stream;
-                video.style.display = 'block';
-            } catch (err) {
-                console.error("Camera access denied:", err);
-            }
-        }
 
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 30);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
+            // KAMERA İÇİN KRİTİK AYARLAR: alpha:true ve setClearColor(0,0)
             renderer = new THREE.WebGLRenderer({ 
                 antialias: true, 
                 alpha: true, 
@@ -216,45 +144,33 @@
             });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setClearColor(0x000000, 0); 
+            renderer.setClearColor(0x000000, 0); // Tam şeffaflık
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            // Gelişmiş Işıklandırma
-            scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-            const pointLight = new THREE.PointLight(0x00e5ff, 2, 10);
-            pointLight.position.set(0, 5, 0);
-            scene.add(pointLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 2.0));
+            const light = new THREE.DirectionalLight(0xffffff, 1);
+            light.position.set(2, 5, 2);
+            scene.add(light);
 
-            // Holo-Reticle
-            const ringGeo = new THREE.RingGeometry(0.04, 0.05, 32).rotateX(-Math.PI / 2);
-            const ringMat = new THREE.MeshBasicMaterial({ 
-                color: 0x00e5ff, 
-                transparent: true, 
-                opacity: 0.6,
-                side: THREE.DoubleSide
-            });
-            reticle = new THREE.Mesh(ringGeo, ringMat);
+            // Hedef Halka
+            reticle = new THREE.Mesh(
+                new THREE.RingGeometry(0.05, 0.07, 32).rotateX(-Math.PI / 2),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+            );
             reticle.matrixAutoUpdate = false; 
             reticle.visible = false;
-            
-            // Halka içine küçük bir nokta ekle
-            const centerDot = new THREE.Mesh(
-                new THREE.CircleGeometry(0.005, 16).rotateX(-Math.PI / 2),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff })
-            );
-            reticle.add(centerDot);
             scene.add(reticle);
 
-            // Parmak İmleci (Efektli)
+            // Parmak İmleci
             fingerCursor = new THREE.Mesh(
-                new THREE.SphereGeometry(0.01, 16, 16),
-                new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true, transparent: true, opacity: 0.5 })
+                new THREE.SphereGeometry(0.015, 16, 16),
+                new THREE.MeshBasicMaterial({ color: 0x00e5ff, wireframe: true })
             );
             fingerCursor.visible = false;
             scene.add(fingerCursor);
 
-            // WebXR El Takibi
+            // El Takibi Modelleri
             const handModelFactory = new XRHandModelFactory();
             for (let i = 0; i < 2; i++) {
                 const hand = renderer.xr.getHand(i);
@@ -263,20 +179,13 @@
                 hands.push(hand);
 
                 hand.addEventListener('connected', () => {
-                    document.getElementById('hand-status').innerText = "ONLINE";
-                    document.getElementById('dot-hand').classList.add('status-online');
-                });
-                
-                hand.addEventListener('disconnected', () => {
-                    document.getElementById('hand-status').innerText = "OFFLINE";
-                    document.getElementById('dot-hand').classList.remove('status-online');
+                    document.getElementById('hand-status').innerText = "AKTİF";
+                    document.getElementById('hand-status').style.color = "#00ffcc";
                 });
             }
 
             const startBtn = document.getElementById('btn-activate');
             startBtn.addEventListener('click', async () => {
-                await startCamera();
-
                 const sessionInit = { 
                     requiredFeatures: ['hit-test'], 
                     optionalFeatures: ['dom-overlay', 'hand-tracking'], 
@@ -289,13 +198,11 @@
                     
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-container').style.display = 'flex';
-                    document.getElementById('sys-status').innerText = "ACTIVE";
-                    document.getElementById('dot-sys').classList.add('status-online');
                     
                     initVoice(); 
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("XR Engine initialization failed.");
+                    alert("Kamera/AR başlatılamadı. Lütfen izinleri kontrol edin.");
                 }
             });
         }
@@ -310,42 +217,24 @@
                 const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
                 document.getElementById('voice-cmd').innerText = cmd.toUpperCase();
                 
-                if (cmd.includes("küp") || cmd.includes("obje")) createObject('cube');
-                if (cmd.includes("küre") || cmd.includes("top")) createObject('sphere');
-                if (cmd.includes("sil") || cmd.includes("temizle")) {
-                    if (selectedObject) {
-                        scene.remove(selectedObject);
-                        objects = objects.filter(o => o !== selectedObject);
-                        selectedObject = null;
-                    } else if (objects.length > 0) {
-                        const last = objects.pop();
-                        scene.remove(last);
-                    }
+                if (cmd.includes("küp") && reticle.visible) createObject('cube');
+                if (cmd.includes("küre") && reticle.visible) createObject('sphere');
+                if (cmd.includes("sil") && selectedObject) {
+                    scene.remove(selectedObject);
+                    objects = objects.filter(o => o !== selectedObject);
+                    selectedObject = null;
                 }
-                if (cmd.includes("kırmızı")) changeColor(0xff0000);
-                if (cmd.includes("mavi")) changeColor(0x00e5ff);
-                if (cmd.includes("yeşil")) changeColor(0x00ffcc);
             };
             rec.onend = () => { if (renderer.xr.isPresenting) rec.start(); };
-            try { 
-                rec.start(); 
-                document.getElementById('dot-voice').classList.add('status-online');
-            } catch(e){}
-        }
-
-        function changeColor(hex) {
-            if (selectedObject) selectedObject.material.color.setHex(hex);
+            try { rec.start(); } catch(e){}
         }
 
         function createObject(type) {
-            if (!reticle.visible) return;
             const geo = type === 'cube' ? new THREE.BoxGeometry(0.1, 0.1, 0.1) : new THREE.SphereGeometry(0.06, 32, 32);
             const mat = new THREE.MeshStandardMaterial({ 
-                color: 0x00e5ff, 
-                metalness: 0.8, 
-                roughness: 0.1,
-                transparent: true,
-                opacity: 0.9
+                color: new THREE.Color(`hsl(${Math.random() * 360}, 80%, 50%)`), 
+                metalness: 0.7, 
+                roughness: 0.2 
             });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.setFromMatrixPosition(reticle.matrix);
@@ -359,31 +248,26 @@
                 const session = renderer.xr.getSession();
                 const referenceSpace = renderer.xr.getReferenceSpace();
 
-                // Zemin Taraması
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
                         session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
                     });
                     hitTestSourceRequested = true;
                 }
-                
                 if (hitTestSource) {
                     const results = frame.getHitTestResults(hitTestSource);
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
-                        document.getElementById('target-hint').innerText = "LOCKED ON SURFACE";
+                        document.getElementById('target-hint').innerText = "YÜZEY HAZIR";
                     } else { 
                         reticle.visible = false; 
-                        document.getElementById('target-hint').innerText = "SCANNING FOR PLANE...";
                     }
                 }
 
-                // El Takibi ve Fiziksel Etkileşim
-                let activeHand = null;
+                // El Takibi Mantığı
                 for (const hand of hands) {
                     if (hand.joints && hand.joints['index-finger-tip']) {
-                        activeHand = hand;
                         const indexTip = hand.joints['index-finger-tip'];
                         const thumbTip = hand.joints['thumb-tip'];
 
@@ -394,50 +278,36 @@
                             fingerCursor.position.copy(indexPos);
 
                             const pinchDist = indexPos.distanceTo(thumbPos);
-                            const isPinchingNow = pinchDist < 0.03; 
+                            const isPinchNow = pinchDist < 0.03; 
 
-                            if (isPinchingNow) {
+                            if (isPinchNow) {
                                 fingerCursor.material.color.setHex(0xff3366); 
-                                document.getElementById('interact-mode').innerText = "MANIPULATION";
-                                
+                                document.getElementById('interact-mode').innerText = "TUTULUYOR";
                                 if (!isPinching) {
                                     isPinching = true;
-                                    lastPinchDist = pinchDist;
-                                    // En yakın objeyi bul
-                                    let minD = 0.2;
                                     for (let obj of objects) {
-                                        let d = obj.position.distanceTo(indexPos);
-                                        if (d < minD) { selectedObject = obj; minD = d; }
+                                        if (obj.position.distanceTo(indexPos) < 0.15) { 
+                                            selectedObject = obj; 
+                                            break; 
+                                        }
                                     }
                                 }
-
                                 if (selectedObject) {
-                                    // Takip ve Yumuşak Hareket
-                                    selectedObject.position.lerp(indexPos, 0.3);
-                                    selectedObject.quaternion.slerp(hand.quaternion, 0.1);
-                                    
-                                    // Ölçekleme (Pinch mesafesi değişimiyle)
-                                    const scaleDelta = (pinchDist / lastPinchDist);
-                                    if (Math.abs(1 - scaleDelta) > 0.01) {
-                                        selectedObject.scale.multiplyScalar(scaleDelta);
-                                        lastPinchDist = pinchDist;
-                                    }
+                                    selectedObject.position.lerp(indexPos, 0.2);
                                 }
                             } else {
                                 isPinching = false;
-                                document.getElementById('interact-mode').innerText = "NAVIGATION";
+                                document.getElementById('interact-mode').innerText = "GÖZLEM";
                                 fingerCursor.material.color.setHex(0x00e5ff); 
                                 selectedObject = null;
                             }
                         }
                     }
                 }
-                if (!activeHand) fingerCursor.visible = false;
             }
             renderer.render(scene, camera);
         }
 
-        // Dokunmatik Tetikleme
         window.addEventListener('pointerdown', (e) => {
             if (reticle.visible && e.target.tagName !== 'BUTTON') {
                 createObject('cube');
