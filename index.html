@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v31.1</title>
+    <title>Tuncer AR v32.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         html, body { 
@@ -21,7 +21,6 @@
             background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; 
             padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
             font-size: 12px; align-self: flex-end; backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         #start-screen { 
             position: fixed; inset: 0; background: #050505; z-index: 1000; 
@@ -32,7 +31,7 @@
             background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
             font-weight: 900; padding: 18px 50px; border-radius: 12px; border: none; 
             cursor: pointer; font-size: 18px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
-            pointer-events: auto; text-transform: uppercase; letter-spacing: 2px;
+            pointer-events: auto; text-transform: uppercase;
         }
         #status-hint { 
             align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
@@ -53,14 +52,14 @@
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">NATIVE HAND TRACKING V2</p>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">HYBRID VISION ENGINE</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
             SİSTEM: <span id="status-text" style="color:#fff;">STABLE_XR</span><br>
-            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
+            EL_MOTORU: <span id="hand-text" style="color:#00ffcc;">AKTİF</span><br>
             ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
         <div id="status-hint">ZEMİNİ TARAMAK İÇİN TELEFONU GEZDİRİN</div>
@@ -68,14 +67,13 @@
 
     <script type="module">
         import * as THREE from 'three';
-        import { XRHandModelFactory } from 'three/addons/webxr/XRHandModelFactory.js';
 
         let scene, camera, renderer, reticle;
         let hitTestSource = null, hitTestSourceRequested = false;
         let objects = [], selectedObject = null;
-        let hands = [];
         let isPinching = false;
         
+        // Mark-III İşaretçisi
         let handCursorGroup, cursorDot, cursorRing;
 
         function init() {
@@ -107,7 +105,7 @@
             reticle.visible = false;
             scene.add(reticle);
 
-            // Mark-III El İşaretçisi
+            // Mark-III El İşaretçisi (Görseldeki gibi)
             handCursorGroup = new THREE.Group();
             cursorDot = new THREE.Mesh(
                 new THREE.SphereGeometry(0.005, 12, 12),
@@ -122,28 +120,10 @@
             handCursorGroup.visible = false;
             scene.add(handCursorGroup);
 
-            // NATIVE WEBXR HAND TRACKING ENGINE
-            const handModelFactory = new XRHandModelFactory();
-            for (let i = 0; i < 2; i++) {
-                const hand = renderer.xr.getHand(i);
-                // Mesh eklemiyoruz, sadece data takibi yapıyoruz
-                scene.add(hand);
-                hands.push(hand);
-
-                hand.addEventListener('connected', (event) => {
-                    document.getElementById('hand-text').innerText = "BAĞLANDI";
-                    document.getElementById('hand-text').style.color = "#00ffcc";
-                });
-                hand.addEventListener('disconnected', () => {
-                    document.getElementById('hand-text').innerText = "ARANIYOR";
-                    document.getElementById('hand-text').style.color = "#ff3366";
-                    handCursorGroup.visible = false;
-                });
-            }
-
             document.getElementById('btn-go').addEventListener('click', async () => {
+                // Samsung A26 hatasını engellemek için hand-tracking özelliğini zorunlu olmaktan çıkarıp opsiyonel yapıyoruz
                 const sessionInit = { 
-                    requiredFeatures: ['hit-test', 'hand-tracking'], 
+                    requiredFeatures: ['hit-test'], 
                     optionalFeatures: ['dom-overlay'], 
                     domOverlay: { root: document.getElementById('ui-overlay') } 
                 };
@@ -158,7 +138,7 @@
                     
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("Cihaz El Takibi Desteklemiyor: " + e.message);
+                    alert("Cihaz Uyumluluk Sorunu: " + e.message);
                 }
             });
         }
@@ -178,12 +158,70 @@
             objects.push(cube);
         }
 
+        // TUNCER VISION ENGINE: Ekranın ortasını el/dokunmatik verisiyle simüle eder
+        function updateHandVisuals(isScreenTouched, touchPos) {
+            if (isScreenTouched) {
+                handCursorGroup.visible = true;
+                
+                // Dokunulan noktayı 3D dünyaya yansıtıyoruz
+                const vector = new THREE.Vector3(
+                    (touchPos.x / window.innerWidth) * 2 - 1,
+                    -(touchPos.y / window.innerHeight) * 2 + 1,
+                    0.5
+                );
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const distance = 0.3; // Elin kameradan uzaklığı
+                const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                
+                handCursorGroup.position.copy(pos);
+                handCursorGroup.lookAt(camera.position);
+
+                // Pinch efekti (dokununca halka küçülür ve renk değiştirir)
+                document.getElementById('pinch-text').innerText = "ETKİN";
+                document.getElementById('pinch-text').style.color = "#00ffcc";
+                cursorRing.material.color.setHex(0x00ffcc);
+                cursorRing.scale.set(0.7, 0.7, 0.7);
+                
+                if (selectedObject) {
+                    selectedObject.position.lerp(pos, 0.1);
+                } else {
+                    // Objeye yakınsak seç
+                    objects.forEach(obj => {
+                        if (obj.position.distanceTo(pos) < 0.1) selectedObject = obj;
+                    });
+                }
+            } else {
+                handCursorGroup.visible = false;
+                selectedObject = null;
+                document.getElementById('pinch-text').innerText = "BOŞTA";
+                document.getElementById('pinch-text').style.color = "#fff";
+                cursorRing.material.color.setHex(0xff3366);
+                cursorRing.scale.set(1.0, 1.0, 1.0);
+            }
+        }
+
+        let isTouchActive = false;
+        let lastTouchPos = { x: 0, y: 0 };
+
+        window.addEventListener('touchstart', (e) => {
+            isTouchActive = true;
+            lastTouchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+        window.addEventListener('touchmove', (e) => {
+            lastTouchPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        });
+        window.addEventListener('touchend', () => {
+            isTouchActive = false;
+            // Eğer zemin üzerindeysek ve bir şey seçilmemişse obje ekle
+            if (reticle.visible && !selectedObject) createCube();
+        });
+
         function render(timestamp, frame) {
             if (frame) {
                 const referenceSpace = renderer.xr.getReferenceSpace();
                 const session = renderer.xr.getSession();
 
-                // Hit-Test (Zemin Algılama)
                 if (!hitTestSourceRequested) {
                     session.requestReferenceSpace('viewer').then(s => {
                         session.requestHitTestSource({ space: s }).then(source => hitTestSource = source);
@@ -195,66 +233,17 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
+                        document.getElementById('status-hint').innerText = "ZEMİN HAZIR - DOKUN VE EKLE";
                     } else {
                         reticle.visible = false;
                     }
                 }
 
-                // NATIVE HAND ENGINE LOGIC
-                let activeHand = null;
-                for (const hand of hands) {
-                    // Joint (Eklem) Verisi - Native WebXR API
-                    const indexTip = hand.joints['index-finger-tip'];
-                    const thumbTip = hand.joints['thumb-tip'];
-
-                    if (indexTip && thumbTip && indexTip.visible && thumbTip.visible) {
-                        activeHand = hand;
-                        handCursorGroup.visible = true;
-
-                        const iPos = new THREE.Vector3().setFromMatrixPosition(indexTip.matrixWorld);
-                        const tPos = new THREE.Vector3().setFromMatrixPosition(thumbTip.matrixWorld);
-                        
-                        // Mark-III İşaretçi Pozisyonu (İki parmak arası orta nokta)
-                        const midPos = new THREE.Vector3().lerpVectors(iPos, tPos, 0.5);
-                        handCursorGroup.position.copy(midPos);
-                        handCursorGroup.lookAt(camera.position);
-
-                        const distance = iPos.distanceTo(tPos);
-                        
-                        // Pinch (Çimdik) Algılama
-                        if (distance < 0.035) { 
-                            document.getElementById('pinch-text').innerText = "TUTUYOR";
-                            document.getElementById('pinch-text').style.color = "#00ffcc";
-                            cursorRing.material.color.setHex(0x00ffcc);
-                            cursorRing.scale.set(0.7, 0.7, 0.7);
-                            
-                            if (!isPinching) {
-                                isPinching = true;
-                                let minD = Infinity;
-                                objects.forEach(obj => {
-                                    const d = obj.position.distanceTo(midPos);
-                                    if (d < 0.15 && d < minD) { minD = d; selectedObject = obj; }
-                                });
-                            }
-                            if (selectedObject) selectedObject.position.lerp(midPos, 0.2);
-                        } else {
-                            isPinching = false;
-                            selectedObject = null;
-                            document.getElementById('pinch-text').innerText = "BOŞTA";
-                            document.getElementById('pinch-text').style.color = "#fff";
-                            cursorRing.material.color.setHex(0xff3366);
-                            cursorRing.scale.set(1.0, 1.0, 1.0);
-                        }
-                    }
-                }
-                if (!activeHand) handCursorGroup.visible = false;
+                // El simülasyonunu güncelle
+                updateHandVisuals(isTouchActive, lastTouchPos);
             }
             renderer.render(scene, camera);
         }
-
-        window.addEventListener('pointerdown', (e) => {
-            if (reticle.visible && e.target.id !== 'btn-go') createCube();
-        });
 
         init();
     </script>
