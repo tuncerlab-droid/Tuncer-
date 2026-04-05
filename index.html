@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v33.0</title>
+    <title>Tuncer AR v34.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- MediaPipe Hands Kütüphaneleri -->
+    <!-- MediaPipe Hands Core -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
     
     <style>
@@ -26,6 +25,7 @@
             background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; 
             padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
             font-size: 12px; align-self: flex-end; backdrop-filter: blur(8px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
         #start-screen { 
             position: fixed; inset: 0; background: #050505; z-index: 1000; 
@@ -36,15 +36,14 @@
             background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
             font-weight: 900; padding: 18px 50px; border-radius: 12px; border: none; 
             cursor: pointer; font-size: 18px; box-shadow: 0 0 30px rgba(0, 229, 255, 0.4); 
-            pointer-events: auto; text-transform: uppercase;
+            pointer-events: auto; text-transform: uppercase; letter-spacing: 2px;
         }
         #status-hint { 
             align-self: center; margin-bottom: 60px; background: rgba(0, 229, 255, 0.2); 
             padding: 10px 20px; border-radius: 25px; color: #00e5ff; border: 1px solid #00e5ff;
             font-size: 12px; font-family: monospace; font-weight: bold;
         }
-        /* Gizli Video Elementi (MediaPipe için) */
-        #video-input { position: fixed; opacity: 0; pointer-events: none; }
+        #video-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; }
     </style>
     <script type="importmap">
         {
@@ -57,21 +56,21 @@
 </head>
 <body>
 
-    <video id="video-input" autoplay playsinline></video>
+    <video id="video-hidden" autoplay playsinline></video>
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">MEDIAPIPE VISION ENGINE</p>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">STABLE VISION ENGINE</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
-            SİSTEM: <span id="status-text" style="color:#fff;">STABLE_XR</span><br>
-            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">BAĞLANIYOR</span><br>
+            DURUM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
+            EL_TAKİP: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
             ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
-        <div id="status-hint">ZEMİNİ TARAMAK İÇİN TELEFONU GEZDİRİN</div>
+        <div id="status-hint">YÜZEY TARANIYOR...</div>
     </div>
 
     <script type="module">
@@ -82,11 +81,10 @@
         let objects = [], selectedObject = null;
         let isPinching = false;
         
-        // Mark-III İşaretçisi
         let handCursorGroup, cursorDot, cursorRing;
+        const videoElement = document.getElementById('video-hidden');
 
         // MediaPipe Kurulumu
-        const videoElement = document.getElementById('video-input');
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -94,8 +92,8 @@
         hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
         });
 
         function init() {
@@ -103,20 +101,14 @@
             camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
             renderer = new THREE.WebGLRenderer({ 
-                antialias: true, 
-                alpha: true,
-                stencil: false,
-                depth: true
+                antialias: true, alpha: true, stencil: false, depth: true 
             });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.xr.enabled = true;
             document.body.appendChild(renderer.domElement);
 
-            scene.add(new THREE.AmbientLight(0xffffff, 1.0));
-            const light = new THREE.DirectionalLight(0xffffff, 1.2);
-            light.position.set(2, 4, 3);
-            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
             // Zemin Halkası
             reticle = new THREE.Mesh(
@@ -127,7 +119,7 @@
             reticle.visible = false;
             scene.add(reticle);
 
-            // Mark-III El İşaretçisi
+            // MARK-III İŞARETÇİSİ (Görseldeki gibi)
             handCursorGroup = new THREE.Group();
             cursorDot = new THREE.Mesh(
                 new THREE.SphereGeometry(0.005, 12, 12),
@@ -142,36 +134,33 @@
             handCursorGroup.visible = false;
             scene.add(handCursorGroup);
 
-            // MediaPipe Sonuç İşleme
+            // El Takibi Sonuçları
             hands.onResults((results) => {
                 if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                    const landmarks = results.multiHandLandmarks[0];
-                    const indexTip = landmarks[8];
-                    const thumbTip = landmarks[4];
-                    
+                    const lm = results.multiHandLandmarks[0];
+                    const indexTip = lm[8]; // İşaret parmağı ucu
+                    const thumbTip = lm[4]; // Baş parmak ucu
+
                     document.getElementById('hand-text').innerText = "AKTİF";
                     document.getElementById('hand-text').style.color = "#00ffcc";
 
-                    // Landmark'ları 3D Koordinata Çevir
+                    // Ekrana yansıtma (Ayna modu düzeltmesi ile)
                     const vector = new THREE.Vector3(
-                        (1 - indexTip.x) * 2 - 1, // X eksenini ters çeviriyoruz (kamera aynası)
+                        (1 - indexTip.x) * 2 - 1,
                         -indexTip.y * 2 + 1,
                         0.5
                     );
                     vector.unproject(camera);
                     const dir = vector.sub(camera.position).normalize();
-                    const pos = camera.position.clone().add(dir.multiplyScalar(0.4));
+                    const pos = camera.position.clone().add(dir.multiplyScalar(0.35));
                     
                     handCursorGroup.visible = true;
                     handCursorGroup.position.copy(pos);
                     handCursorGroup.lookAt(camera.position);
 
-                    // Pinch (Çimdik) Algılama - Landmarklar arası mesafe
-                    const dx = indexTip.x - thumbTip.x;
-                    const dy = indexTip.y - thumbTip.y;
-                    const distance = Math.sqrt(dx*dx + dy*dy);
-
-                    if (distance < 0.05) {
+                    // Pinch (Çimdik) Algılama
+                    const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
+                    if (dist < 0.05) {
                         document.getElementById('pinch-text').innerText = "TUTUYOR";
                         document.getElementById('pinch-text').style.color = "#00ffcc";
                         cursorRing.material.color.setHex(0x00ffcc);
@@ -180,7 +169,7 @@
                         if (!isPinching) {
                             isPinching = true;
                             objects.forEach(obj => {
-                                if (obj.position.distanceTo(pos) < 0.15) selectedObject = obj;
+                                if (obj.position.distanceTo(pos) < 0.1) selectedObject = obj;
                             });
                         }
                         if (selectedObject) selectedObject.position.lerp(pos, 0.2);
@@ -200,47 +189,37 @@
             });
 
             document.getElementById('btn-go').addEventListener('click', async () => {
-                const sessionInit = { 
-                    requiredFeatures: ['hit-test'], 
-                    optionalFeatures: ['dom-overlay'], 
-                    domOverlay: { root: document.getElementById('ui-overlay') } 
-                };
-                
                 try {
-                    const session = await navigator.xr.requestSession('immersive-ar', sessionInit);
+                    const session = await navigator.xr.requestSession('immersive-ar', {
+                        requiredFeatures: ['hit-test'],
+                        optionalFeatures: ['dom-overlay'],
+                        domOverlay: { root: document.getElementById('ui-overlay') }
+                    });
+                    
                     renderer.xr.setReferenceSpaceType('local');
                     renderer.xr.setSession(session);
-                    
-                    // Kamerayı Başlat (MediaPipe için)
-                    const cameraFeed = new Camera(videoElement, {
-                        onFrame: async () => {
-                            await hands.send({ image: videoElement });
-                        },
-                        width: 640,
-                        height: 480
+
+                    // Kamerayı güvenli bir şekilde başlat
+                    const cam = new Camera(videoElement, {
+                        onFrame: async () => { await hands.send({ image: videoElement }); },
+                        width: 640, height: 480
                     });
-                    cameraFeed.start();
+                    cam.start();
 
                     document.getElementById('start-screen').style.display = 'none';
                     document.getElementById('ui-overlay').style.display = 'flex';
-                    
                     renderer.setAnimationLoop(render);
                 } catch (e) {
-                    alert("Sistem Başlatılamadı: " + e.message);
+                    alert("Hata: " + e.message);
                 }
             });
         }
 
         function createCube() {
-            const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-            const material = new THREE.MeshStandardMaterial({ 
-                color: 0x0088aa, 
-                metalness: 0.8, 
-                roughness: 0.2,
-                transparent: true,
-                opacity: 0.7
-            });
-            const cube = new THREE.Mesh(geometry, material);
+            const cube = new THREE.Mesh(
+                new THREE.BoxGeometry(0.1, 0.1, 0.1),
+                new THREE.MeshStandardMaterial({ color: 0x0088aa, transparent: true, opacity: 0.7 })
+            );
             cube.position.setFromMatrixPosition(reticle.matrix);
             scene.add(cube);
             objects.push(cube);
@@ -266,6 +245,7 @@
                     if (results.length > 0) {
                         reticle.visible = true;
                         reticle.matrix.fromArray(results[0].getPose(referenceSpace).transform.matrix);
+                        document.getElementById('status-hint').innerText = "ZEMİN HAZIR - DOKUN";
                     } else {
                         reticle.visible = false;
                     }
