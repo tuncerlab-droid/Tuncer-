@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v42.0</title>
+    <title>Tuncer AR v42.1</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -11,7 +11,12 @@
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 5; }
-        video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+        /* Kamera tersliğini düzeltmek için scaleX(-1) kullanıyoruz */
+        video { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            object-fit: cover; z-index: 1; 
+            transform: scaleX(-1); 
+        }
         
         #ui-overlay { 
             position: absolute; inset: 0; pointer-events: none; z-index: 10; 
@@ -53,7 +58,7 @@
 
     <div id="start-screen">
         <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">PURE HAND TRACKING ENGINE</p>
+        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">CALIBRATED VISION ENGINE</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
@@ -75,7 +80,6 @@
         let isPinching = false;
         let handCursorGroup, cursorDot, cursorRing;
 
-        // MediaPipe Hands Ayarları
         const hands = new Hands({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
         });
@@ -96,18 +100,17 @@
                 document.getElementById('hand-text').innerText = "KİLİTLENDİ";
                 document.getElementById('hand-text').style.color = "#00ffcc";
 
-                // Koordinat Dönüşümü (Video -> Three.js)
-                // x: 0-1 arası (ters çevriliyor), y: 0-1 arası
-                const x = (indexTip.x * 2 - 1) * -1.5; // Genişlik çarpanı
-                const y = (indexTip.y * -2 + 1) * 1.0;  // Yükseklik çarpanı
-                const z = -1.5; // Sabit derinlik
+                // Koordinat Düzeltme:
+                // Video ters çevrildiği için x koordinatını (1 - indexTip.x) yerine doğrudan indexTip.x kullanarak eşliyoruz
+                const x = (indexTip.x * 2 - 1) * 1.5; 
+                const y = (indexTip.y * -2 + 1) * 1.0; 
+                const z = -1.5;
 
                 const pos = new THREE.Vector3(x, y, z);
                 
                 handCursorGroup.visible = true;
-                handCursorGroup.position.lerp(pos, 0.3); // Yumuşak takip
+                handCursorGroup.position.lerp(pos, 0.3);
 
-                // Pinch (Kıstırma) Algılama
                 const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
                 if (dist < 0.05) {
                     document.getElementById('pinch-text').innerText = "TUTUYOR";
@@ -116,14 +119,12 @@
                     
                     if (!isPinching) {
                         isPinching = true;
-                        // En yakın nesneyi yakala
                         objects.forEach(obj => {
                             if (obj.position.distanceTo(handCursorGroup.position) < 0.3) {
                                 selectedObject = obj;
                             }
                         });
                         
-                        // Eğer nesne seçilmediyse yeni bir tane oluştur (Eski tıklama yerine)
                         if (!selectedObject) {
                             createNewObject(handCursorGroup.position.clone());
                         }
@@ -176,7 +177,6 @@
             scene.add(light);
             scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-            // Mark-III İşaretçi Tasarımı
             handCursorGroup = new THREE.Group();
             cursorDot = new THREE.Mesh(
                 new THREE.SphereGeometry(0.015, 16, 16),
@@ -208,15 +208,12 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Objeleri hafifçe döndür
             objects.forEach(obj => {
                 if (obj !== selectedObject) {
                     obj.rotation.y += 0.01;
                     obj.rotation.x += 0.005;
                 }
             });
-
             renderer.render(scene, camera);
         }
 
