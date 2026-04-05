@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v42.2</title>
+    <title>Tuncer AR v43.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -12,7 +12,7 @@
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
         canvas { display: block; position: absolute; top: 0; left: 0; z-index: 5; }
         
-        /* Arka kamera kullandığımız için ayna efektini (scaleX) kaldırdık */
+        /* Arka kamera için ayna efekti kapalı */
         video { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
             object-fit: cover; z-index: 1; 
@@ -25,7 +25,8 @@
         .hud { 
             background: rgba(0, 15, 30, 0.85); border-left: 4px solid #00e5ff; 
             padding: 15px; border-radius: 10px; color: #00e5ff; font-family: monospace; 
-            font-size: 12px; align-self: flex-end; backdrop-filter: blur(8px);
+            font-size: 11px; align-self: flex-end; backdrop-filter: blur(8px);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
         }
         #start-screen { 
             position: fixed; inset: 0; background: #050505; z-index: 1000; 
@@ -57,18 +58,18 @@
     <video id="input_video" playsinline></video>
 
     <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 30px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
-        <p style="color:#555; margin-bottom:40px; font-size:11px; letter-spacing:1px;">REAR CAMERA CALIBRATED</p>
+        <h1 style="color:#00e5ff; font-size: 28px; font-weight: 900; margin-bottom:5px;">TUNCER MARK-III</h1>
+        <p style="color:#555; margin-bottom:40px; font-size:10px; letter-spacing:2px;">STABLE REAR-CAM CALIB</p>
         <button id="btn-go">SİSTEMİ BAŞLAT</button>
     </div>
 
     <div id="ui-overlay" style="display: none;">
         <div class="hud">
-            DURUM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
-            EL_MOTORU: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
-            ETKİLEŞİM: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
+            SİSTEM: <span id="status-text" style="color:#fff;">AKTİF</span><br>
+            MOTOR: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span><br>
+            HAREKET: <span id="pinch-text" style="color:#fff;">BOŞTA</span>
         </div>
-        <div id="status-hint">ELİNİ GÖSTER...</div>
+        <div id="status-hint">KAMERAYI ZEMİNE TUT...</div>
     </div>
 
     <script type="module">
@@ -87,8 +88,8 @@
         hands.setOptions({
             maxNumHands: 1,
             modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
         });
 
         hands.onResults((results) => {
@@ -100,29 +101,30 @@
                 document.getElementById('hand-text').innerText = "KİLİTLENDİ";
                 document.getElementById('hand-text').style.color = "#00ffcc";
 
-                // Arka Kamera Koordinat Düzeltmesi:
-                // x: (indexTip.x * 2 - 1) -> Sağa gidince pozitif, sola gidince negatif.
-                // Çarpanı -1.5 yaparak Three.js sahnesine göre yönü düzelttik.
-                const x = (indexTip.x * 2 - 1) * -1.8; 
+                // KOORDİNAT SİSTEMİ DÜZELTME (ARKA KAMERA):
+                // Arka kamerada ayna etkisi olmadığı için x doğrudan (indexTip.x * 2 - 1) olmalı.
+                // Eğer hala ters ise çarpanı 1.8 veya -1.8 olarak değiştirerek tam uyumu sağlarız.
+                // Bir önceki sürümde -1.8 denemiştik, şimdi 1.8 (pozitif) deniyoruz.
+                const x = (indexTip.x * 2 - 1) * 1.8; 
                 const y = (indexTip.y * -2 + 1) * 1.2; 
-                const z = -1.5;
+                const z = -2.0;
 
                 const pos = new THREE.Vector3(x, y, z);
                 
                 handCursorGroup.visible = true;
-                handCursorGroup.position.lerp(pos, 0.4);
+                handCursorGroup.position.lerp(pos, 0.5);
 
                 const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                if (dist < 0.05) {
+                if (dist < 0.06) {
                     document.getElementById('pinch-text').innerText = "TUTUYOR";
                     cursorRing.material.color.setHex(0x00ffcc);
+                    cursorRing.scale.set(0.8, 0.8, 0.8);
                     
                     if (!isPinching) {
                         isPinching = true;
-                        // Seçim mantığını genişlettik
                         let found = false;
                         objects.forEach(obj => {
-                            if (obj.position.distanceTo(handCursorGroup.position) < 0.4) {
+                            if (obj.position.distanceTo(handCursorGroup.position) < 0.5) {
                                 selectedObject = obj;
                                 found = true;
                             }
@@ -134,13 +136,14 @@
                     }
                     
                     if (selectedObject) {
-                        selectedObject.position.lerp(handCursorGroup.position, 0.2);
+                        selectedObject.position.lerp(handCursorGroup.position, 0.3);
                     }
                 } else {
                     isPinching = false;
                     selectedObject = null;
                     document.getElementById('pinch-text').innerText = "BOŞTA";
                     cursorRing.material.color.setHex(0xff3366);
+                    cursorRing.scale.set(1, 1, 1);
                 }
             } else {
                 handCursorGroup.visible = false;
@@ -150,54 +153,57 @@
         });
 
         function createNewObject(pos) {
-            const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            const geometry = new THREE.IcosahedronGeometry(0.12, 0);
             const material = new THREE.MeshStandardMaterial({ 
                 color: 0x00e5ff, 
+                wireframe: true,
                 transparent: true, 
-                opacity: 0.8,
-                metalness: 0.5,
-                roughness: 0.1
+                opacity: 0.9,
+                emissive: 0x00e5ff,
+                emissiveIntensity: 0.5
             });
-            const cube = new THREE.Mesh(geometry, material);
-            cube.position.copy(pos);
-            scene.add(cube);
-            objects.push(cube);
-            selectedObject = cube;
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.copy(pos);
+            scene.add(mesh);
+            objects.push(mesh);
+            selectedObject = mesh;
         }
 
         function init() {
             scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
             
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             document.body.appendChild(renderer.domElement);
 
-            const light = new THREE.DirectionalLight(0xffffff, 1);
-            light.position.set(1, 1, 1).normalize();
+            const light = new THREE.PointLight(0xffffff, 2, 100);
+            light.position.set(0, 10, 10);
             scene.add(light);
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
 
             handCursorGroup = new THREE.Group();
             cursorDot = new THREE.Mesh(
-                new THREE.SphereGeometry(0.02, 16, 16),
+                new THREE.SphereGeometry(0.015, 16, 16),
                 new THREE.MeshBasicMaterial({ color: 0x00e5ff })
             );
             cursorRing = new THREE.Mesh(
-                new THREE.RingGeometry(0.05, 0.06, 32),
+                new THREE.RingGeometry(0.045, 0.055, 32),
                 new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide })
             );
             handCursorGroup.add(cursorDot, cursorRing);
             handCursorGroup.visible = false;
             scene.add(handCursorGroup);
 
+            // Arka kamerayı zorla (facingMode: environment)
             const cameraUtils = new Camera(videoElement, {
                 onFrame: async () => {
                     await hands.send({image: videoElement});
                 },
                 width: 1280,
-                height: 720
+                height: 720,
+                facingMode: 'environment'
             });
 
             document.getElementById('btn-go').addEventListener('click', () => {
@@ -212,7 +218,8 @@
             requestAnimationFrame(animate);
             objects.forEach(obj => {
                 if (obj !== selectedObject) {
-                    obj.rotation.y += 0.01;
+                    obj.rotation.y += 0.02;
+                    obj.rotation.z += 0.01;
                 }
             });
             renderer.render(scene, camera);
