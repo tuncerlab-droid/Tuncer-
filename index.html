@@ -3,33 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TUNCER ZEKA v5.0 - Edith HUD</title>
+    <title>TUNCER ZEKA v5.0 - Ultimate HUD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
-            --hud-color: #00ffff;
-            --hud-bg: rgba(0, 20, 30, 0.95);
+            --hud-primary: #00ffff;
+            --hud-secondary: #0088ff;
+            --hud-alert: #ff2a2a;
+            --hud-bg: rgba(0, 15, 20, 0.85);
             --font-size-base: 8px;
         }
 
         body {
-            background-color: #ffffff;
-            color: var(--hud-color);
+            background-color: #ffffff; /* Şeffaf polarize camlar için saf beyaz */
+            color: var(--hud-primary);
             font-family: 'Share Tech Mono', monospace;
             overflow: hidden;
             margin: 0;
             padding: 0;
             user-select: none;
             font-size: var(--font-size-base);
+            /* İnce bir grid deseni (gözlük camı hissiyatı) */
+            background-image: linear-gradient(rgba(0, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(0, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
         }
 
-        /* EDITH "SNAP" ANİMASYONU */
+        /* -------------------------------------------
+           EDITH SNAP ANİMASYONU VE PARÇALAR
+        ------------------------------------------- */
         .edith-element {
             opacity: 0;
-            transform: translate(-150px, -150px) rotate(-20deg) scale(0.1);
-            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+            transform: translate(-100px, -50px) rotate(-10deg) scale(0.5);
+            transition: all 0.6s cubic-bezier(0.25, 1.2, 0.25, 1);
             pointer-events: none;
+            filter: drop-shadow(0 0 5px var(--hud-primary));
         }
 
         body.system-active .edith-element {
@@ -38,99 +47,202 @@
             pointer-events: auto;
         }
 
+        /* Yüksek Teknoloji Panel Tasarımı (Köşebentli) */
         .hud-panel {
             background: var(--hud-bg);
-            border: 0.5px solid var(--hud-color);
-            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
-            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            position: relative;
+            backdrop-filter: blur(2px);
         }
+        
+        /* Panel Hedefleme Köşeleri */
+        .hud-panel::before, .hud-panel::after {
+            content: ''; position: absolute; width: 6px; height: 6px; border: 1.5px solid var(--hud-primary);
+        }
+        .hud-panel::before { top: -1px; left: -1px; border-right: none; border-bottom: none; }
+        .hud-panel::after { bottom: -1px; right: -1px; border-left: none; border-top: none; }
 
+        /* -------------------------------------------
+           MERKEZ REAKTÖR VE NİŞANGAH
+        ------------------------------------------- */
         .reactor-container {
             position: relative;
-            width: 110px;
-            height: 110px;
+            width: 130px;
+            height: 130px;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
-        .ring {
-            position: absolute;
-            border-radius: 50%;
-            border: 0.8px solid var(--hud-color);
+        .ring { position: absolute; border-radius: 50%; }
+        
+        /* Dış kesik halka */
+        .ring-outer {
+            width: 100%; height: 100%;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-top: 2px solid var(--hud-primary);
+            border-bottom: 2px solid var(--hud-primary);
+            animation: spin 8s linear infinite;
         }
 
-        .ring-1 { width: 100%; height: 100%; border-style: dashed; animation: spin 15s linear infinite; }
-        .ring-2 { width: 80%; height: 80%; border-width: 2px; border-left-color: transparent; animation: spin-reverse 4s linear infinite; }
+        /* İç detaylı halka */
+        .ring-inner {
+            width: 75%; height: 75%;
+            border: 1px dashed var(--hud-secondary);
+            animation: spin-reverse 12s linear infinite;
+        }
+
+        /* Merkez optik çekirdek */
         .ring-core { 
-            width: 18%; height: 18%; background: var(--hud-color); border-radius: 50%; 
-            box-shadow: 0 0 20px var(--hud-color);
-            transition: all 0.2s ease;
+            width: 15%; height: 15%; 
+            background: var(--hud-primary); 
+            border-radius: 50%; 
+            box-shadow: 0 0 15px var(--hud-primary), 0 0 30px var(--hud-primary);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; justify-content: center; align-items: center;
         }
 
-        .ring-core.listening { background: #ff00ff; box-shadow: 0 0 30px #ff00ff; transform: scale(1.3); }
+        .ring-core::after {
+            content: ''; width: 2px; height: 2px; background: #fff; border-radius: 50%;
+        }
+
+        .ring-core.listening { 
+            background: #ff0055; 
+            box-shadow: 0 0 20px #ff0055, 0 0 40px #ff0055; 
+            transform: scale(1.5); 
+        }
+
+        /* Merkez Nişangah Çizgileri */
+        .crosshair {
+            position: absolute; width: 100%; height: 100%;
+            background: 
+                linear-gradient(to right, transparent 49%, rgba(0,255,255,0.2) 49%, rgba(0,255,255,0.2) 51%, transparent 51%),
+                linear-gradient(to bottom, transparent 49%, rgba(0,255,255,0.2) 49%, rgba(0,255,255,0.2) 51%, transparent 51%);
+        }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
 
+        /* -------------------------------------------
+           SES DALGASI (EQUALIZER) ANİMASYONU
+        ------------------------------------------- */
+        .equalizer {
+            display: flex; gap: 1.5px; height: 10px; align-items: flex-end; opacity: 0; transition: opacity 0.3s;
+        }
+        .equalizer.active { opacity: 1; }
+        .bar {
+            width: 2px; background: var(--hud-primary);
+            animation: equalize 1s infinite alternate ease-in-out;
+        }
+        .bar:nth-child(1) { animation-delay: 0.1s; height: 30%; }
+        .bar:nth-child(2) { animation-delay: 0.3s; height: 80%; }
+        .bar:nth-child(3) { animation-delay: 0.5s; height: 50%; }
+        .bar:nth-child(4) { animation-delay: 0.2s; height: 100%; }
+        .bar:nth-child(5) { animation-delay: 0.4s; height: 40%; }
+
+        @keyframes equalize { 0% { height: 20%; } 100% { height: 100%; } }
+
+        /* -------------------------------------------
+           MİNİMAL METİN VE YERLEŞİMLER
+        ------------------------------------------- */
         #boot-overlay {
             position: fixed; inset: 0; background: #ffffff; z-index: 100;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        .tiny-text { font-size: 6px; line-height: 1; letter-spacing: 0.2px; text-transform: uppercase; }
+        .tiny-text { font-size: 6px; line-height: 1.2; letter-spacing: 0.5px; text-transform: uppercase; }
+        .hud-glow { text-shadow: 0 0 3px var(--hud-primary); }
     </style>
 </head>
 <body class="h-screen w-screen relative">
 
+    <!-- SESLİ AKTİVASYON (BEKLEME) EKRANI -->
     <div id="boot-overlay">
-        <div class="text-cyan-600 text-center">
-            <div id="boot-status" class="text-[10px] font-bold tracking-widest animate-pulse">SESLE KOMUT BEKLENİYOR...</div>
-            <div class="text-[7px] mt-2 opacity-60">"TUNCER BAŞLAT"</div>
+        <div class="text-cyan-500 text-center relative">
+            <!-- Dekoratif köşeler -->
+            <div class="absolute -top-2 -left-2 w-2 h-2 border-t border-l border-cyan-500"></div>
+            <div class="absolute -bottom-2 -right-2 w-2 h-2 border-b border-r border-cyan-500"></div>
+            
+            <div id="boot-status" class="text-[9px] font-bold tracking-[0.2em] animate-pulse hud-glow">SES İZİ ARANIYOR...</div>
+            <div class="text-[6px] mt-1.5 opacity-60 tracking-widest text-cyan-700">"TUNCER BAŞLAT" DEYİN</div>
+            
+            <!-- Mini tarama çizgisi -->
+            <div class="w-full h-[1px] bg-cyan-500/30 mt-2 relative overflow-hidden">
+                <div class="absolute top-0 left-0 h-full w-4 bg-cyan-400 animate-[move_1.5s_infinite_linear]"></div>
+            </div>
         </div>
     </div>
+    <style>@keyframes move { 0% { left: -10%; } 100% { left: 110%; } }</style>
 
-    <div class="absolute inset-0 p-1 flex flex-col justify-between pointer-events-none">
+    <!-- HUD ANA ÇERÇEVE (1.3 İnç Uyumlu) -->
+    <div class="absolute inset-0 p-1.5 flex flex-col justify-between pointer-events-none">
+        
+        <!-- ÜST BİLGİ PANELLERİ -->
         <div class="flex justify-between items-start">
-            <div class="edith-element hud-panel p-1 rounded w-16" style="transition-delay: 0.1s;">
-                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-0.5">SYS</div>
-                <div class="flex justify-between tiny-text"><span>PWR</span> <span class="text-green-400">98%</span></div>
-                <div id="sys-time" class="tiny-text opacity-40 mt-0.5">00:00</div>
+            <div class="edith-element hud-panel p-1.5 w-16" style="transition-delay: 0.1s;">
+                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-1 flex justify-between">
+                    <span>SYS</span> <span class="text-[4px] leading-tight mt-0.5">v5.0</span>
+                </div>
+                <div class="flex justify-between tiny-text"><span>ENG:</span> <span class="text-green-400">ON</span></div>
+                <div id="sys-time" class="tiny-text opacity-60 mt-0.5 hud-glow">00:00:00</div>
             </div>
-            <div class="edith-element hud-panel p-1 rounded w-16" style="transition-delay: 0.2s;">
-                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-0.5">TASK</div>
-                <div id="task-info" class="tiny-text italic text-cyan-600 truncate">IDLE</div>
+
+            <div class="edith-element hud-panel p-1.5 w-16" style="transition-delay: 0.2s;">
+                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-1">TARGET</div>
+                <div id="task-info" class="tiny-text italic text-cyan-500 truncate">NO LOCK</div>
             </div>
         </div>
 
+        <!-- ORTA HOLOGRAFIK ALAN -->
         <div class="flex-1 flex justify-center items-center relative">
-            <div class="edith-element absolute left-0 w-14 opacity-30" style="transition-delay: 0.4s;">
-                <div id="data-stream" class="space-y-0.5 h-16 overflow-hidden flex flex-col justify-end tiny-text text-[5px]"></div>
+            
+            <!-- Sol Veri Akışı (Data Stream) -->
+            <div class="edith-element absolute left-0 w-16 opacity-40" style="transition-delay: 0.4s;">
+                <div id="data-stream" class="space-y-[1px] h-20 overflow-hidden flex flex-col justify-end tiny-text text-[4.5px] font-bold text-cyan-300"></div>
             </div>
+
+            <!-- MERKEZ REAKTÖR (Geliştirilmiş Nişangah) -->
             <div class="edith-element reactor-container" style="transition-delay: 0s;">
-                <div class="ring ring-1"></div>
-                <div class="ring ring-2"></div>
+                <div class="crosshair"></div>
+                <div class="ring ring-outer"></div>
+                <div class="ring ring-inner"></div>
+                <!-- Merkez etrafında dönen üçgenimsi yörünge detayları -->
+                <svg class="absolute w-full h-full animate-[spin_6s_linear_infinite_reverse]" viewBox="0 0 100 100">
+                    <polygon points="50,15 52,20 48,20" fill="#00ffff" opacity="0.6"/>
+                    <polygon points="50,85 52,80 48,80" fill="#00ffff" opacity="0.6"/>
+                    <polygon points="15,50 20,48 20,52" fill="#00ffff" opacity="0.6"/>
+                    <polygon points="85,50 80,48 80,52" fill="#00ffff" opacity="0.6"/>
+                </svg>
                 <div id="reactor-core" class="ring-core"></div>
             </div>
-            <div class="edith-element absolute right-0 w-14 hud-panel p-1 rounded" style="transition-delay: 0.4s;">
-                <div class="tiny-text border-b border-cyan-500/50 text-center mb-0.5">SCAN</div>
-                <div class="text-[5px] leading-tight">OBJ: NULL<br>LOC: 0.0</div>
+
+            <!-- Sağ Analiz Paneli -->
+            <div class="edith-element absolute right-0 w-16 hud-panel p-1.5" style="transition-delay: 0.4s;">
+                <div class="tiny-text border-b border-cyan-500/50 text-center mb-1 font-bold">RADAR</div>
+                <div class="text-[5px] leading-tight space-y-[1px] text-cyan-200">
+                    <div class="flex justify-between"><span>X:</span><span>0.00</span></div>
+                    <div class="flex justify-between"><span>Y:</span><span>0.00</span></div>
+                    <div class="flex justify-between"><span>Z:</span><span>0.00</span></div>
+                </div>
             </div>
         </div>
 
-        <div class="edith-element w-full flex justify-center mb-0.5" style="transition-delay: 0.6s;">
-            <div class="hud-panel p-1 rounded w-full max-w-[180px] border-b border-cyan-500">
-                <div id="ai-response" class="text-[8px] text-center min-h-[14px] flex items-center justify-center font-bold text-white uppercase leading-tight">
-                    LISTENING...
+        <!-- ALT DİYALOG PANELİ (Ses Dalgası ile) -->
+        <div class="edith-element w-full flex justify-center mb-1" style="transition-delay: 0.6s;">
+            <div class="hud-panel p-1.5 w-full max-w-[200px] flex items-center justify-between gap-2 border-b-2 border-cyan-400">
+                <div id="equalizer" class="equalizer w-6">
+                    <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
                 </div>
+                <div id="ai-response" class="text-[7.5px] text-center flex-1 font-bold text-white uppercase leading-tight tracking-wide">
+                    SİSTEM KULLANIMA HAZIR
+                </div>
+                <div class="w-6 text-[4px] text-right opacity-50">TZ-v5<br>NLP</div>
             </div>
         </div>
     </div>
 
     <script>
-        /**
-         * ############################################################
-         /**
+    /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
  * ║              TUNCER ZEKA v5.0  —  Gelişmiş Türkçe Yapay Zeka               ║
  * ║              Tasarımcı & Geliştirici : Ahmet Tuncer                         ║
@@ -1785,99 +1897,161 @@ if (typeof exports !== 'undefined') exports.default = TuncerZeka;
  * ───────────────────────────────────────────────────────────────────
  */
 
-          ############################################################
-         */
-        const TuncerZeka = (function () {
-            // Kendi değişkenlerini ve fonksiyonlarını buraya ekle
-            return {
-                // UI'nın beklediği temel fonksiyonları burada tanımlayabilirsin
-                process: (input) => {
-                    console.log("Girdi işleniyor:", input);
-                    // Kendi NLP mantığını buraya yaz
-                    return "KOMUT ALINDI: " + input.toUpperCase();
-                }
-            };
-        })();
 
-        // UI KONTROL VE SİSTEM MANTIĞI
+
+        // ----------------------------------------------------------------------
+        // ⚙️ HUD UI KONTROLCÜSÜ VE MİKROFON YÖNETİMİ
+        // ----------------------------------------------------------------------
+        const uiStatus = document.getElementById('boot-status');
         const uiResponse = document.getElementById('ai-response');
         const uiCore = document.getElementById('reactor-core');
+        const uiDataStream = document.getElementById('data-stream');
+        const uiEqualizer = document.getElementById('equalizer');
+        
+        let isSystemActive = false;
+        let isSpeaking = false;
+        let mainRec = null;
 
+        // 1. ADIM: Sayfa Yüklenince Sesli Aktivasyon Başlasın
         window.onload = () => {
-            // Başlangıç Dinlemesi (Aktivasyon için)
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if(!SR) return;
+            if(!SR) {
+                uiStatus.innerText = "SİSTEM DESTEKLENMİYOR";
+                return;
+            }
             
             const bootRec = new SR();
             bootRec.lang = 'tr-TR';
+            
             bootRec.onresult = (e) => {
                 const cmd = e.results[0][0].transcript.toLowerCase();
+                console.log("Duyulan Boot Komutu:", cmd);
                 if(cmd.includes("tuncer başlat") || cmd.includes("sistemi başlat")) {
-                    bootSystem();
+                    bootRec.stop();
+                    triggerBootSequence();
+                } else {
+                    uiStatus.innerText = "YETKİSİZ SES...";
+                    setTimeout(() => uiStatus.innerText = "SES İZİ ARANIYOR...", 1500);
                 }
             };
-            bootRec.onend = () => { if(!document.body.classList.contains('system-active')) bootRec.start(); };
+            
+            // Eğer durursa ve sistem henüz aktifleşmediyse tekrar başlat
+            bootRec.onend = () => { if(!isSystemActive) bootRec.start(); };
             bootRec.start();
         };
 
-        function bootSystem() {
+        // 2. ADIM: Edith Tarzı Fırlama Animasyonu ve Önyükleme
+        function triggerBootSequence() {
+            isSystemActive = true;
             document.getElementById('boot-overlay').style.display = 'none';
-            document.body.classList.add('system-active');
+            document.body.classList.add('system-active'); // Snap animasyonunu tetikler
             
-            // Saat Başlat
+            // Saat Güncelleyici
             setInterval(() => {
-                document.getElementById('sys-time').innerText = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
+                document.getElementById('sys-time').innerText = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
             }, 1000);
 
-            // Hoşgeldin mesajı ve ana döngü
-            const msg = "SİSTEM AKTİF. PROTOKOL BAŞLATILDI.";
-            typeWriter(msg, uiResponse);
+            // Başlangıç Karşılama Mesajı
+            const bootMsg = "SİSTEM AKTİF. TUNCER PROTOKOLÜ DEVREDE.";
+            typeWriter(bootMsg, uiResponse);
+            addLog("KERNEL BOOT OK");
+            addLog("NLP ENGINE LOADED");
             
-            // Konuşma motorunu sen kütüphanene ekleyebilirsin
-            const synth = window.speechSynthesis;
-            const u = new SpeechSynthesisUtterance(msg);
-            u.lang = 'tr-TR';
-            synth.speak(u);
-
-            // Ana dinleme döngüsünü başlat (Senin kütüphanenle etkileşime girer)
-            setTimeout(startMainListening, 3000);
+            speakText(bootMsg, () => {
+                // Konuşma bitince ana dinleme moduna geç
+                setTimeout(startMainListening, 1000);
+            });
         }
 
+        // 3. ADIM: Sürekli Dinleme ve Yapay Zeka Etkileşimi
         function startMainListening() {
             const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const mainRec = new SR();
+            mainRec = new SR();
             mainRec.lang = 'tr-TR';
+            mainRec.interimResults = false;
             
             mainRec.onstart = () => {
-                uiCore.classList.add('listening');
-                uiResponse.innerText = "DİNLİYORUM...";
+                if(!isSpeaking) {
+                    uiCore.classList.add('listening');
+                    uiEqualizer.classList.add('active'); // Ses dalgasını oynat
+                    uiResponse.innerText = "DİNLİYOR...";
+                }
             };
 
             mainRec.onresult = (e) => {
+                if(isSpeaking) return; // Konuşurken duyduğunu işleme
+                
                 const text = e.results[0][0].transcript;
                 uiCore.classList.remove('listening');
+                uiEqualizer.classList.remove('active');
+                addLog(text);
                 
-                // SENİN KÜTÜPHANEN ÇALIŞIR
-                const result = TuncerZeka.process(text);
-                typeWriter(result, uiResponse);
+                // SENİN KÜTÜPHANENE GÖNDERİLİR
+                const aiReply = TuncerZeka.process(text);
                 
-                const u = new SpeechSynthesisUtterance(result);
-                u.lang = 'tr-TR';
-                window.speechSynthesis.speak(u);
+                typeWriter(aiReply, uiResponse);
+                speakText(aiReply, () => {
+                    // Konuşma bittikten sonra tekrar dinlemeye geç
+                    if(!isSpeaking) mainRec.start();
+                });
             };
 
-            mainRec.onend = () => { mainRec.start(); };
+            mainRec.onend = () => { 
+                uiCore.classList.remove('listening');
+                uiEqualizer.classList.remove('active');
+                // Eğer AI konuşmuyorsa hemen tekrar dinlemeye başla (sürekli mod)
+                if(!isSpeaking && isSystemActive) {
+                    try { mainRec.start(); } catch(e) {}
+                }
+            };
+            
             mainRec.start();
         }
 
+        // --- YARDIMCI FONKSİYONLAR ---
+
+        // Konuşma Motoru (AI kendi sesini duymasın diye mikrofonu duraklatır)
+        function speakText(text, onEndCallback) {
+            isSpeaking = true;
+            if(mainRec) {
+                try { mainRec.stop(); } catch(e) {} // Konuşurken mik. kapa
+            }
+
+            const synth = window.speechSynthesis;
+            synth.cancel(); // Önceki konuşmaları iptal et
+            
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'tr-TR';
+            u.rate = 1.1; // Asistanlar hızlı konuşur
+            u.pitch = 0.95;
+            
+            u.onend = () => {
+                isSpeaking = false;
+                if(onEndCallback) onEndCallback();
+            };
+            
+            synth.speak(u);
+        }
+
+        // Terminal Log Yazıcısı
+        function addLog(text) {
+            const div = document.createElement('div');
+            div.innerText = "> " + text.substring(0, 18).toUpperCase(); // Ekrana sığması için kırp
+            uiDataStream.appendChild(div);
+            // Sadece son 5 logu tut, eskileri sil
+            if(uiDataStream.children.length > 5) uiDataStream.removeChild(uiDataStream.firstChild);
+        }
+
+        // Daktilo Yazı Efekti
         function typeWriter(text, element) {
             element.innerText = '';
             let i = 0;
+            const cleanText = text.toUpperCase();
             function type() {
-                if (i < text.length) {
-                    element.innerText += text.charAt(i).toUpperCase();
+                if (i < cleanText.length) {
+                    element.innerText += cleanText.charAt(i);
                     i++;
-                    setTimeout(type, 20);
+                    setTimeout(type, 20); // Yazı hızı
                 }
             }
             type();
@@ -1885,4 +2059,5 @@ if (typeof exports !== 'undefined') exports.default = TuncerZeka;
     </script>
 </body>
 </html>
+
 
