@@ -242,7 +242,21 @@
     </div>
 
     <script>
-    /**
+        /**
+         * ======================================================================
+         * 🧠 TUNCER ZEKA v5.0 - ÇEKİRDEK KÜTÜPHANESİ (SENİN ALANIN)
+         * ======================================================================
+         */
+        const TuncerZeka = (function () {
+            
+            // Kendi hafıza, NLP veya algoritmalarını buraya yazabilirsin.
+            // UI sadece "process" fonksiyonuna string gönderir ve string cevap bekler.
+            
+            const processData = (input) => {
+                const metin = input.toLowerCase().trim();
+                console.log("HUD'a gelen komut:", metin);
+
+                // --- /**
  * ╔══════════════════════════════════════════════════════════════════════════════╗
  * ║              TUNCER ZEKA v5.0  —  Gelişmiş Türkçe Yapay Zeka               ║
  * ║              Tasarımcı & Geliştirici : Ahmet Tuncer                         ║
@@ -1896,7 +1910,30 @@ if (typeof exports !== 'undefined') exports.default = TuncerZeka;
  *  © 2024 Ahmet Tuncer — Tuncer Zeka v5.0 — MIT Lisansı
  * ───────────────────────────────────────────────────────────────────
  */
+ ---
+                if (metin.includes("merhaba") || metin.includes("selam")) {
+                    return "MERHABA EFENDİM. SİSTEMLER ÇEVRİMİÇİ.";
+                }
+                if (metin.includes("durum") || metin.includes("rapor")) {
+                    return "TÜM SİSTEMLER OPTİMUM SEVİYEDE ÇALIŞIYOR.";
+                }
+                if (metin.includes("saat kaç")) {
+                    return "YEREL SAAT " + new Date().toLocaleTimeString('tr-TR');
+                }
+                if (metin.includes("teşekkür")) {
+                    return "RİCA EDERİM. EMRİNİZDEYİM.";
+                }
 
+                // Bilinmeyen komut
+                return "ANALİZ EDİLDİ: " + metin.toUpperCase();
+                // ----------------------------------------
+            };
+
+            return {
+                process: processData
+            };
+        })();
+        /* ====================================================================== */
 
 
         // ----------------------------------------------------------------------
