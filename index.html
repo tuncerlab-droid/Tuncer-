@@ -2,261 +2,284 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tuncer AR v46.0 - Perfect Sync</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tuncer Zeka - Gözlük HUD</title>
     <style>
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; }
-        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 5; }
-        video { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            object-fit: cover; z-index: 1; 
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+
+        * {
+            box-sizing: border-box;
         }
-        
-        #ui-overlay { 
-            position: absolute; inset: 0; pointer-events: none; z-index: 10; 
-            display: flex; flex-direction: column; justify-content: space-between; padding: 20px; 
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #020202;
+            color: #00e5ff;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
-        .hud { 
-            background: rgba(0, 15, 30, 0.9); border-left: 4px solid #00e5ff; 
-            padding: 15px; border-radius: 12px; color: #00e5ff; font-family: monospace; 
-            font-size: 11px; align-self: flex-end; backdrop-filter: blur(10px);
-            box-shadow: 0 0 25px rgba(0, 229, 255, 0.2);
-            min-width: 180px;
+
+        /* Arka plan hologram ızgarası ve tarama çizgileri */
+        .grid-bg {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(0, 229, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transform: perspective(500px) rotateX(60deg);
+            animation: moveGrid 10s linear infinite;
+            z-index: 0;
         }
-        .hud-title { font-weight: 900; border-bottom: 1px solid #00e5ff33; margin-bottom: 8px; padding-bottom: 4px; }
-        
-        #start-screen { 
-            position: fixed; inset: 0; background: #050505; z-index: 1000; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            color: white; font-family: monospace;
+
+        @keyframes moveGrid {
+            0% { transform: perspective(500px) rotateX(60deg) translateY(0); }
+            100% { transform: perspective(500px) rotateX(60deg) translateY(40px); }
         }
-        #btn-go { 
-            background: linear-gradient(135deg, #00e5ff, #0099ff); color: #000; 
-            font-weight: 900; padding: 20px 60px; border-radius: 15px; border: none; 
-            cursor: pointer; font-size: 20px; box-shadow: 0 0 40px rgba(0, 229, 255, 0.5); 
-            pointer-events: auto; text-transform: uppercase;
+
+        /* Glassmorphism Paneller */
+        .hud-container {
+            position: relative;
+            z-index: 10;
+            width: 90vw;
+            height: 90vh;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            grid-template-rows: 1fr 3fr 1fr;
+            gap: 20px;
         }
+
+        .panel {
+            background: rgba(0, 229, 255, 0.03);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Merkezdeki Animasyonlu Çember (Arc Reactor Tarzı) */
+        .center-display {
+            grid-column: 2;
+            grid-row: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            border: none;
+            background: transparent;
+            backdrop-filter: none;
+            box-shadow: none;
+        }
+
+        .ring {
+            width: 300px;
+            height: 300px;
+            border: 2px solid transparent;
+            border-top: 4px solid #00e5ff;
+            border-right: 4px solid #00e5ff;
+            border-radius: 50%;
+            position: absolute;
+            animation: rotateRight 4s linear infinite;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+        }
+
+        .ring.inner {
+            width: 250px;
+            height: 250px;
+            border: 2px solid transparent;
+            border-bottom: 4px solid #00e5ff;
+            border-left: 4px solid #00e5ff;
+            animation: rotateLeft 3s linear infinite;
+        }
+
+        .core {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00e5ff;
+            z-index: 2;
+            text-align: center;
+        }
+
+        @keyframes rotateRight {
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes rotateLeft {
+            100% { transform: rotate(-360deg); }
+        }
+
+        /* Metin ve Log Alanları */
+        h3 { margin-top: 0; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 1px solid rgba(0,229,255,0.3); padding-bottom: 5px; }
+        .log { flex-grow: 1; overflow-y: auto; font-size: 12px; font-family: monospace; display: flex; flex-direction: column; gap: 5px; }
+        .log span { color: #fff; }
+        .user-text { color: #00ffaa; }
+        .ai-text { color: #00e5ff; }
+
+        /* Başlat Butonu */
+        #start-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 30px;
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid #00e5ff;
+            color: #00e5ff;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+        }
+
+        #start-btn:hover {
+            background: rgba(0, 229, 255, 0.3);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.6);
+        }
+
     </style>
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js"
-            }
-        }
-    </script>
 </head>
 <body>
 
-    <video id="input_video" playsinline></video>
+    <div class="grid-bg"></div>
 
-    <div id="start-screen">
-        <h1 style="color:#00e5ff; font-size: 32px; font-weight: 900; margin-bottom:10px;">TUNCER MARK-III</h1>
-        <p style="color:#666; margin-bottom:40px; font-size:11px; letter-spacing:3px;">SYSTEM FINAL SYNC</p>
-        <button id="btn-go">BAŞLAT</button>
-    </div>
-
-    <div id="ui-overlay" style="display: none;">
-        <div class="hud">
-            <div class="hud-title">MARK-III MONITOR</div>
-            <div>EL MOTORU: <span id="hand-text" style="color:#ff3366;">ARANIYOR</span></div>
-            <div>DURUM: <span id="pinch-text" style="color:#fff;">BEKLEMEDE</span></div>
-            <div style="margin-top:10px; color:#00ffcc;">
-                KOMUT: <span id="voice-text">DİNLENİYOR...</span>
+    <div class="hud-container">
+        <div class="panel">
+            <h3>SİSTEM DURUMU</h3>
+            <div class="log">
+                <div>> GÜÇ: <span style="color:#00ffaa">OPTİMAL</span></div>
+                <div>> BAĞLANTI: <span style="color:#00ffaa">AKTİF</span></div>
+                <div>> ÇEKİRDEK: <span style="color:#00ffaa">TUNCER Z.01</span></div>
+                <div id="status-text">> Ses Modülü: Bekleniyor...</div>
             </div>
+        </div>
+
+        <div class="panel" style="grid-column: 3; grid-row: 1 / span 2;">
+            <h3>İLETİŞİM PROTOKOLÜ</h3>
+            <div class="log" id="chat-log">
+                </div>
+        </div>
+
+        <div class="center-display">
+            <div class="ring"></div>
+            <div class="ring inner"></div>
+            <div class="core" id="core-text">TUNCER ZEKA<br><span style="font-size:12px; color:#fff">SİSTEM ÇEVRİMİÇİ</span></div>
         </div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
+    <button id="start-btn">SİSTEMİ BAŞLAT</button>
 
-        const videoElement = document.getElementById('input_video');
-        let scene, camera, renderer;
-        let objects = [], selectedObject = null;
-        let isPinching = false;
-        let handCursorGroup, cursorDot, cursorRing;
+    <script>
+        const startBtn = document.getElementById('start-btn');
+        const statusText = document.getElementById('status-text');
+        const chatLog = document.getElementById('chat-log');
+        const coreText = document.getElementById('core-text');
 
-        // --- SESLİ KONTROL ---
+        // Web Speech API Kontrolü (Tamamen Ücretsiz)
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
+        const synth = window.speechSynthesis;
+        
+        if (!SpeechRecognition) {
+            alert("Tarayıcınız ses tanımayı desteklemiyor. Lütfen Chrome kullanın.");
+        }
 
-        function initVoice() {
-            if (SpeechRecognition) {
-                recognition = new SpeechRecognition();
-                recognition.lang = 'tr-TR';
-                recognition.continuous = true;
-                recognition.onresult = (event) => {
-                    const lastResult = event.results.length - 1;
-                    const command = event.results[lastResult][0].transcript.toLowerCase();
-                    processCommand(command);
-                };
-                recognition.onerror = () => recognition.start();
-                recognition.onend = () => recognition.start();
-                recognition.start();
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'tr-TR';
+        recognition.continuous = false; // Tek bir cümle dinler, bitince kapanır. Sonra tekrar açarız.
+        recognition.interimResults = false;
+
+        function addLog(sender, text) {
+            const div = document.createElement('div');
+            const colorClass = sender === 'Sen' ? 'user-text' : 'ai-text';
+            div.innerHTML = `[${sender}]: <span class="${colorClass}">${text}</span>`;
+            chatLog.appendChild(div);
+            chatLog.scrollTop = chatLog.scrollHeight; // Otomatik aşağı kaydır
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'tr-TR';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            
+            // Konuşurken arayüzü hareketlendir
+            coreText.innerHTML = "TUNCER ZEKA<br><span style='font-size:12px; color:#00ffaa'>YANIT VERİYOR...</span>";
+            
+            utterance.onend = () => {
+                coreText.innerHTML = "TUNCER ZEKA<br><span style='font-size:12px; color:#fff'>DİNLENİYOR...</span>";
+                // Konuşma bitince tekrar dinlemeye başla
+                setTimeout(() => {
+                    try { recognition.start(); } catch(e){}
+                }, 500);
+            };
+
+            synth.speak(utterance);
+            addLog('Tuncer Zeka', text);
+        }
+
+        // --- YAPAY ZEKA MANTIĞI (Ücretsiz ve Çevrimdışı) ---
+        function processCommand(command) {
+            command = command.toLowerCase();
+
+            if (command.includes("merhaba") || command.includes("selam")) {
+                speak("Sistemler çevrimiçi. Size nasıl yardımcı olabilirim Ahmet Bey?");
+            } 
+            else if (command.includes("kimsin") || command.includes("kendini tanıt") || command.includes("adın ne")) {
+                speak("Benim adım Tuncer Zeka. Ben üst düzey bir yapay zeka asistanıyım. Yaratıcım ve baş mimarım Ahmet Tuncer'dir.");
+            }
+            else if (command.includes("durum") || command.includes("rapor")) {
+                speak("Tüm sistemler stabil. Gözlük sensörleri ve batarya seviyesi optimal durumda.");
+            }
+            else if (command.includes("kapan") || command.includes("sistemi kapat")) {
+                speak("Sistem kapatılıyor. İyi günler Ahmet Bey.");
+                recognition.stop();
+                coreText.innerHTML = "TUNCER ZEKA<br><span style='font-size:12px; color:red'>ÇEVRİMDIŞI</span>";
+            }
+            else {
+                // Bilmediği komutlarda havalı bir hata mesajı
+                speak("Bağışlayın efendim, bu komut şu anki veri tabanımda bulunmuyor. Yeni bir modül yazmanızı bekliyorum.");
             }
         }
 
-        function processCommand(cmd) {
-            document.getElementById('voice-text').innerText = cmd.toUpperCase();
-            if (cmd.includes('küp') || cmd.includes('kutu')) addShape('cube');
-            else if (cmd.includes('küre') || cmd.includes('daire') || cmd.includes('top')) addShape('sphere');
-            else if (cmd.includes('halka') || cmd.includes('delik') || cmd.includes('simit')) addShape('torus');
-            else if (cmd.includes('sil') || cmd.includes('yok et') || cmd.includes('kaldır')) {
-                if (selectedObject) {
-                    scene.remove(selectedObject);
-                    objects = objects.filter(o => o !== selectedObject);
-                    selectedObject = null;
-                }
-            }
-            else if (cmd.includes('mavi')) updateSelected('color', 0x00e5ff);
-            else if (cmd.includes('kırmızı')) updateSelected('color', 0xff3366);
-            else if (cmd.includes('yeşil')) updateSelected('color', 0x00ffcc);
-            else if (cmd.includes('sarı')) updateSelected('color', 0xffcc00);
-            else if (cmd.includes('beyaz')) updateSelected('color', 0xffffff);
-            else if (cmd.includes('büyüt')) updateSelected('scale', 1.5);
-            else if (cmd.includes('küçült')) updateSelected('scale', 0.7);
-            else if (cmd.includes('döndür')) updateSelected('spin', true);
-            else if (cmd.includes('durdur') || cmd.includes('sabit')) updateSelected('spin', false);
-        }
+        recognition.onstart = function() {
+            statusText.innerHTML = "> Ses Modülü: <span style='color:#00ffaa'>DİNLİYOR...</span>";
+        };
 
-        function addShape(type) {
-            let geo;
-            if (type === 'cube') geo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
-            else if (type === 'sphere') geo = new THREE.SphereGeometry(0.15, 32, 32);
-            else if (type === 'torus') geo = new THREE.TorusGeometry(0.15, 0.05, 16, 100);
+        recognition.onresult = function(event) {
+            const transcript = event.results[0][0].transcript;
+            addLog('Sen', transcript);
+            processCommand(transcript);
+        };
 
-            const mat = new THREE.MeshStandardMaterial({ 
-                color: 0x00e5ff, 
-                transparent: true, 
-                opacity: 0.8,
-                emissive: 0x00e5ff,
-                emissiveIntensity: 0.3
-            });
+        recognition.onerror = function(event) {
+            statusText.innerHTML = `> Hata: ${event.error}`;
+            // Hata olsa bile birkaç saniye sonra tekrar dene (sürekli dinleme döngüsü)
+            setTimeout(() => {
+                try { recognition.start(); } catch(e){}
+            }, 1000);
+        };
 
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.copy(handCursorGroup.position);
-            mesh.userData = { isSpinning: false };
-            scene.add(mesh);
-            objects.push(mesh);
-            selectedObject = mesh;
-        }
+        recognition.onend = function() {
+            statusText.innerHTML = "> Ses Modülü: BEKLEMEDE";
+        };
 
-        function updateSelected(action, value) {
-            if (!selectedObject) return;
-            if (action === 'color') {
-                selectedObject.material.color.setHex(value);
-                selectedObject.material.emissive.setHex(value);
-            }
-            if (action === 'scale') selectedObject.scale.multiplyScalar(value);
-            if (action === 'spin') selectedObject.userData.isSpinning = value;
-        }
-
-        // --- EL TAKİBİ ---
-        const hands = new Hands({
-            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        // Sistemi Başlat
+        startBtn.addEventListener('click', () => {
+            startBtn.style.display = 'none'; // Butonu gizle
+            speak("Sistem başlatılıyor. Hoş geldiniz Ahmet Bey.");
         });
 
-        hands.setOptions({
-            maxNumHands: 1,
-            modelComplexity: 1,
-            minDetectionConfidence: 0.7,
-            minTrackingConfidence: 0.7
-        });
-
-        hands.onResults((results) => {
-            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-                const lm = results.multiHandLandmarks[0];
-                const indexTip = lm[8];
-                const thumbTip = lm[4];
-
-                document.getElementById('hand-text').innerText = "KİLİTLİ";
-                document.getElementById('hand-text').style.color = "#00ffcc";
-
-                // DÜZELTME: (indexTip.x * 2 - 1) * 2.2 yaparak pozitif çarpanla yönü eşledim.
-                const x = (indexTip.x * 2 - 1) * 2.2; 
-                const y = (indexTip.y * -2 + 1) * 1.6; 
-                const z = -2.5;
-
-                const pos = new THREE.Vector3(x, y, z);
-                handCursorGroup.visible = true;
-                handCursorGroup.position.lerp(pos, 0.35);
-
-                const dist = Math.hypot(indexTip.x - thumbTip.x, indexTip.y - thumbTip.y);
-                if (dist < 0.05) {
-                    document.getElementById('pinch-text').innerText = "TUTUYOR";
-                    cursorRing.material.color.setHex(0x00ffcc);
-                    if (!isPinching) {
-                        isPinching = true;
-                        let minD = 100;
-                        objects.forEach(obj => {
-                            let d = obj.position.distanceTo(handCursorGroup.position);
-                            if (d < 0.6 && d < minD) {
-                                selectedObject = obj;
-                                minD = d;
-                            }
-                        });
-                    }
-                    if (selectedObject) selectedObject.position.lerp(handCursorGroup.position, 0.2);
-                } else {
-                    isPinching = false;
-                    document.getElementById('pinch-text').innerText = "SERBEST";
-                    cursorRing.material.color.setHex(0xff3366);
-                }
-            } else {
-                handCursorGroup.visible = false;
-                document.getElementById('hand-text').innerText = "ARANIYOR";
-            }
-        });
-
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            document.body.appendChild(renderer.domElement);
-
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const pLight = new THREE.PointLight(0xffffff, 1);
-            pLight.position.set(5, 5, 5);
-            scene.add(pLight);
-
-            handCursorGroup = new THREE.Group();
-            cursorDot = new THREE.Mesh(new THREE.SphereGeometry(0.02, 16, 16), new THREE.MeshBasicMaterial({ color: 0x00e5ff }));
-            cursorRing = new THREE.Mesh(new THREE.RingGeometry(0.05, 0.06, 32), new THREE.MeshBasicMaterial({ color: 0xff3366, side: THREE.DoubleSide }));
-            handCursorGroup.add(cursorDot, cursorRing);
-            scene.add(handCursorGroup);
-
-            const cam = new Camera(videoElement, {
-                onFrame: async () => { await hands.send({image: videoElement}); },
-                width: 1280, height: 720, facingMode: 'environment'
-            });
-
-            document.getElementById('btn-go').addEventListener('click', () => {
-                document.getElementById('start-screen').style.display = 'none';
-                document.getElementById('ui-overlay').style.display = 'flex';
-                cam.start();
-                initVoice();
-                animate();
-            });
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-            objects.forEach(obj => {
-                if (obj.userData.isSpinning) {
-                    obj.rotation.y += 0.03;
-                    obj.rotation.z += 0.01;
-                }
-            });
-            renderer.render(scene, camera);
-        }
-
-        init();
     </script>
 </body>
 </html>
-
