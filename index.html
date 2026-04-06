@@ -9,7 +9,7 @@
     <style>
         :root {
             --hud-color: #00ffff;
-            --hud-bg: rgba(0, 20, 30, 0.9);
+            --hud-bg: rgba(0, 20, 30, 0.95);
             --font-size-base: 8px;
         }
 
@@ -27,28 +27,28 @@
         /* EDITH "SNAP" ANİMASYONU */
         .edith-element {
             opacity: 0;
-            transform: translate(-150px, -150px) rotate(-15deg) scale(0.2);
-            transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1); /* Sert ve hızlı oturma efekti */
+            transform: translate(-150px, -150px) rotate(-20deg) scale(0.1);
+            transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
             pointer-events: none;
         }
 
         body.system-active .edith-element {
             opacity: 1;
             transform: translate(0, 0) rotate(0deg) scale(1);
+            pointer-events: auto;
         }
 
         .hud-panel {
             background: var(--hud-bg);
             border: 0.5px solid var(--hud-color);
-            box-shadow: 0 0 8px rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.4);
             backdrop-filter: blur(4px);
         }
 
-        /* Merkez Tasarımı */
         .reactor-container {
             position: relative;
-            width: 120px;
-            height: 120px;
+            width: 110px;
+            height: 110px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -57,18 +57,18 @@
         .ring {
             position: absolute;
             border-radius: 50%;
-            border: 0.5px solid var(--hud-color);
+            border: 0.8px solid var(--hud-color);
         }
 
-        .ring-1 { width: 100%; height: 100%; border-style: double; animation: spin 20s linear infinite; }
-        .ring-2 { width: 85%; height: 85%; border-width: 1.5px; border-right-color: transparent; animation: spin-reverse 5s linear infinite; }
+        .ring-1 { width: 100%; height: 100%; border-style: dashed; animation: spin 15s linear infinite; }
+        .ring-2 { width: 80%; height: 80%; border-width: 2px; border-left-color: transparent; animation: spin-reverse 4s linear infinite; }
         .ring-core { 
-            width: 20%; height: 20%; background: var(--hud-color); border-radius: 50%; 
-            box-shadow: 0 0 15px var(--hud-color);
-            transition: all 0.3s ease;
+            width: 18%; height: 18%; background: var(--hud-color); border-radius: 50%; 
+            box-shadow: 0 0 20px var(--hud-color);
+            transition: all 0.2s ease;
         }
 
-        .ring-core.listening { background: #ff00ff; box-shadow: 0 0 25px #ff00ff; transform: scale(1.2); }
+        .ring-core.listening { background: #ff00ff; box-shadow: 0 0 30px #ff00ff; transform: scale(1.3); }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
         @keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
@@ -78,148 +78,1796 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        .tiny-text { font-size: 6.5px; line-height: 1.1; letter-spacing: 0.5px; }
+        .tiny-text { font-size: 6px; line-height: 1; letter-spacing: 0.2px; text-transform: uppercase; }
     </style>
 </head>
 <body class="h-screen w-screen relative">
 
-    <!-- Sesle Başlatma Katmanı -->
     <div id="boot-overlay">
-        <div class="text-cyan-500 text-center">
-            <div id="boot-status" class="text-[10px] font-bold tracking-widest animate-pulse">SESLİ KOMUT BEKLENİYOR...</div>
-            <div class="text-[7px] mt-2 opacity-50">"TUNCER BAŞLAT" DEYİN</div>
+        <div class="text-cyan-600 text-center">
+            <div id="boot-status" class="text-[10px] font-bold tracking-widest animate-pulse">SESLE KOMUT BEKLENİYOR...</div>
+            <div class="text-[7px] mt-2 opacity-60">"TUNCER BAŞLAT"</div>
         </div>
     </div>
 
-    <!-- HUD ÇERÇEVESİ -->
     <div class="absolute inset-0 p-1 flex flex-col justify-between pointer-events-none">
-        
         <div class="flex justify-between items-start">
-            <div class="edith-element hud-panel p-1 rounded w-20" style="transition-delay: 0.1s;">
-                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-1">STATUS</div>
-                <div class="flex justify-between tiny-text"><span>BIO:</span> <span class="text-green-400">100%</span></div>
-                <div id="sys-time" class="tiny-text opacity-40">00:00:00</div>
+            <div class="edith-element hud-panel p-1 rounded w-16" style="transition-delay: 0.1s;">
+                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-0.5">SYS</div>
+                <div class="flex justify-between tiny-text"><span>PWR</span> <span class="text-green-400">98%</span></div>
+                <div id="sys-time" class="tiny-text opacity-40 mt-0.5">00:00</div>
             </div>
-
-            <div class="edith-element hud-panel p-1 rounded w-20" style="transition-delay: 0.3s;">
-                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-1">SCAN</div>
-                <div id="task-list" class="tiny-text italic text-cyan-600 truncate">IDLE...</div>
+            <div class="edith-element hud-panel p-1 rounded w-16" style="transition-delay: 0.2s;">
+                <div class="border-b border-cyan-500/50 tiny-text font-bold mb-0.5">TASK</div>
+                <div id="task-info" class="tiny-text italic text-cyan-600 truncate">IDLE</div>
             </div>
         </div>
 
         <div class="flex-1 flex justify-center items-center relative">
-            <div class="edith-element absolute left-0 w-16 opacity-30" style="transition-delay: 0.5s;">
-                <div id="data-stream" class="space-y-0.5 h-20 overflow-hidden flex flex-col justify-end tiny-text"></div>
+            <div class="edith-element absolute left-0 w-14 opacity-30" style="transition-delay: 0.4s;">
+                <div id="data-stream" class="space-y-0.5 h-16 overflow-hidden flex flex-col justify-end tiny-text text-[5px]"></div>
             </div>
-
             <div class="edith-element reactor-container" style="transition-delay: 0s;">
                 <div class="ring ring-1"></div>
                 <div class="ring ring-2"></div>
                 <div id="reactor-core" class="ring-core"></div>
             </div>
-
-            <div class="edith-element absolute right-0 w-16 hud-panel p-1 rounded" style="transition-delay: 0.5s;">
-                <div class="tiny-text border-b border-cyan-500/50 text-center mb-1">HUD-V5</div>
-                <div class="text-[5px] leading-tight">OBJECT: NONE<br>DIST: 0.0m</div>
+            <div class="edith-element absolute right-0 w-14 hud-panel p-1 rounded" style="transition-delay: 0.4s;">
+                <div class="tiny-text border-b border-cyan-500/50 text-center mb-0.5">SCAN</div>
+                <div class="text-[5px] leading-tight">OBJ: NULL<br>LOC: 0.0</div>
             </div>
         </div>
 
-        <div class="edith-element w-full flex justify-center mb-1" style="transition-delay: 0.7s;">
-            <div class="hud-panel p-1.5 rounded w-full max-w-[200px] border-b border-cyan-500">
-                <div id="ai-response" class="text-[9px] text-center min-h-[16px] flex items-center justify-center font-bold text-white uppercase leading-tight">
+        <div class="edith-element w-full flex justify-center mb-0.5" style="transition-delay: 0.6s;">
+            <div class="hud-panel p-1 rounded w-full max-w-[180px] border-b border-cyan-500">
+                <div id="ai-response" class="text-[8px] text-center min-h-[14px] flex items-center justify-center font-bold text-white uppercase leading-tight">
                     LISTENING...
                 </div>
             </div>
         </div>
     </div>
 
-    <script id="tuncer-zeka-lib">
-        // Tuncer Zeka Çekirdek Kütüphanesi
+    <script>
+        /**
+         * ############################################################
+         /**
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║              TUNCER ZEKA v5.0  —  Gelişmiş Türkçe Yapay Zeka               ║
+ * ║              Tasarımcı & Geliştirici : Ahmet Tuncer                         ║
+ * ║              Lisans: MIT  |  "Her söylediğini anlayan" NLP Motoru           ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║  🧠 Anlama Katmanları:                                                       ║
+ * ║     1. Türkçe Kök Bulma    — ek soyma, morfolojik analiz                   ║
+ * ║     2. Anlam Kümeleri      — semantik sözlük, eş-anlam genişletme           ║
+ * ║     3. Bulanık Eşleşme     — Levenshtein + n-gram puanlama                 ║
+ * ║     4. Bağlam Zinciri      — önceki konuşmaları hatırlar                   ║
+ * ║     5. Çok-Niyet Tespiti   — birden fazla istek tek cümlede                ║
+ * ║     6. Soru Türü Analizi   — ne/kim/nasıl/nerede/neden/ne zaman            ║
+ * ║     7. Öğrenme Motoru      — düzeltmelerden öğrenir, hafızaya yazar        ║
+ * ╠══════════════════════════════════════════════════════════════════════════════╣
+ * ║  + Tüm v4 özellikleri korundu: Hafıza, Ses, Görüntü, Araştırma,            ║
+ * ║    Matematik, Birim, Duygu, Şifreleme, Görev, Plugin, Wake Word            ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
+ */
+
+'use strict';
+
+const TuncerZeka = (function () {
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 1  META & KONFİG
+  // ═══════════════════════════════════════════════════════════════════
+
+  const META = {
+    ad: 'Tuncer Zeka', versiyon: '5.0.0', tasarimci: 'Ahmet Tuncer',
+    wakeWord: 'tuncer', dil: 'tr-TR', lisans: 'MIT',
+    ozellikler: ['AnlamaMotoru','TürkçeKökBulma','AnlamKümeleri','BulanıkEşleşme',
+      'BağlamZinciri','ÇokNiyet','SoruAnalizi','ÖğrenmeMühendisi',
+      'Hafıza','WakeWord','TTS','Görüntü','Araştırma','Matematik',
+      'Birim','Duygu','Şifreleme','Görev','Plugin']
+  };
+
+  const KONFIG = {
+    hafizaMaxKayit: 500, logMaxSatir: 300, baglamDerinlik: 12,
+    arastirmaOnbellek: true, onbellekSuresi: 1800000,
+    sesHiz: 0.95, sesPerde: 1.05, matOndalik: 10,
+    wakeWordGecikme: 300, otomatikArastirma: false,
+    anlamEsigi: 0.28,   // semantik eşleşme için min puan
+    bulanikEsik: 3,     // Levenshtein max mesafe
+    debug: false,
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 2  YARDIMCILAR
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Util = {
+    rastgele(arr) { return arr?.length ? arr[Math.floor(Math.random() * arr.length)] : ''; },
+
+    normalize(txt) {
+      return (txt || '').toLowerCase()
+        .replace(/İ/g,'i').replace(/I/g,'ı').replace(/Ğ/g,'ğ')
+        .replace(/Ü/g,'ü').replace(/Ş/g,'ş').replace(/Ö/g,'ö').replace(/Ç/g,'ç').trim();
+    },
+
+    uuid() { return 'tz-' + Date.now() + '-' + Math.random().toString(36).substr(2,9); },
+
+    tarihFormat(d) {
+      const AY = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+      const GUN = ['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+      const MEV = ['Kış','İlkbahar','Yaz','Sonbahar'];
+      const ay = d.getMonth();
+      return {
+        gunAdi:GUN[d.getDay()], gun:d.getDate(), ay:AY[ay], ayNo:ay+1, yil:d.getFullYear(),
+        ss:String(d.getHours()).padStart(2,'0'), dk:String(d.getMinutes()).padStart(2,'0'),
+        sn:String(d.getSeconds()).padStart(2,'0'),
+        mevsim:MEV[ay<=1||ay===11?0:ay<=4?1:ay<=7?2:3],
+        yilGunu:Math.ceil((d-new Date(d.getFullYear(),0,0))/86400000),
+        haftaNo:Math.ceil(((d-new Date(d.getFullYear(),0,1))/86400000+1)/7),
+        timestamp:d.getTime()
+      };
+    },
+
+    tarihFark(d1,d2) {
+      const ms=Math.abs(d2-d1);
+      return { gun:Math.floor(ms/86400000), saat:Math.floor((ms%86400000)/3600000),
+               dk:Math.floor((ms%3600000)/60000), ms };
+    },
+
+    temizMarkdown(t) {
+      return (t||'').replace(/\*\*(.+?)\*\*/g,'$1').replace(/\*(.+?)\*/g,'$1')
+        .replace(/_{1,2}(.+?)_{1,2}/g,'$1').replace(/#{1,6}\s/g,'')
+        .replace(/https?:\/\/\S+/g,'').trim();
+    },
+
+    ozet(txt, k=80) { const w=(txt||'').split(/\s+/); return w.length<=k?txt:w.slice(0,k).join(' ')+'...'; },
+
+    sayiOku(n) {
+      const B=['','bir','iki','üç','dört','beş','altı','yedi','sekiz','dokuz'];
+      const O=['','on','yirmi','otuz','kırk','elli','altmış','yetmiş','seksen','doksan'];
+      const x=Math.abs(Math.floor(n));
+      if(x===0) return 'sıfır';
+      if(x<10) return B[x];
+      if(x<100) return O[Math.floor(x/10)]+(x%10?' '+B[x%10]:'');
+      if(x<1000) return B[Math.floor(x/100)]+' yüz'+(x%100?' '+this.sayiOku(x%100):'');
+      if(x<1e6) return this.sayiOku(Math.floor(x/1000))+' bin'+(x%1000?' '+this.sayiOku(x%1000):'');
+      return this.sayiOku(Math.floor(x/1e6))+' milyon'+(x%1e6?' '+this.sayiOku(x%1e6):'');
+    },
+
+    levenshtein(a,b) {
+      if(!a.length) return b.length; if(!b.length) return a.length;
+      const m=a.length,n=b.length;
+      const dp=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i===0?j:j===0?i:0));
+      for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+        dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+      return dp[m][n];
+    },
+
+    formatSayi(n,b=6) { return Number.isInteger(n)?n:parseFloat(n.toFixed(b)); },
+    kucukHarf(t) { return Util.normalize(t); },
+    buyukHarf(t) { return (t||'').replace(/i/g,'İ').replace(/ı/g,'I').replace(/ğ/g,'Ğ').replace(/ü/g,'Ü').replace(/ş/g,'Ş').replace(/ö/g,'Ö').replace(/ç/g,'Ç').toUpperCase(); },
+    palindromMu(t) { const s=Util.normalize(t).replace(/\s/g,''); return s===s.split('').reverse().join(''); },
+    karistir(arr) { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; },
+    bekle(ms) { return new Promise(r=>setTimeout(r,ms)); },
+    log(...a) { if(KONFIG.debug) console.log('[TZ5]',...a); },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 3  OLAY SİSTEMİ
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Olay = {
+    _m:{}, _g:[], _max:200,
+    on(ad,fn,once=false){ if(!this._m[ad])this._m[ad]=[]; const a={fn,once,id:Util.uuid()}; this._m[ad].push(a); return a.id; },
+    once(ad,fn){ return this.on(ad,fn,true); },
+    off(ad,x){ if(!this._m[ad])return; this._m[ad]=this._m[ad].filter(a=>a.fn!==x&&a.id!==x); },
+    offAll(ad){ if(ad)delete this._m[ad]; else this._m={}; },
+    emit(ad,v={}) {
+      const z=Date.now(); this._g.push({ad,v,z}); if(this._g.length>this._max)this._g.shift();
+      const ab=[...(this._m[ad]||[]),...(this._m['*']||[])]; const sil=[];
+      for(const a of ab){ try{a.fn({...v,_olay:ad,_zaman:z});}catch(e){} if(a.once)sil.push(a); }
+      if(sil.length&&this._m[ad])this._m[ad]=this._m[ad].filter(a=>!sil.includes(a));
+      return this;
+    },
+    onAny(fn){ return this.on('*',fn); },
+    sonOlaylar(n=10){ return this._g.slice(-n); },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 4  HAFIZA SİSTEMİ
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Hafiza = {
+    _v:{}, _log:[], _gorev:[], _eidx:{},
+    _K:'TZ5_B', _KL:'TZ5_L', _KG:'TZ5_G',
+
+    baslat() {
+      try {
+        const v=(typeof localStorage !== 'undefined' ? localStorage : {getItem:()=>null,setItem:()=>{},removeItem:()=>{}}).getItem(this._K); if(v){this._v=JSON.parse(v);this._eidxYenile();}
+        const l=(typeof localStorage !== 'undefined' ? localStorage : null)?.getItem(this._KL); if(l)this._log=JSON.parse(l);
+        const g=(typeof localStorage !== 'undefined' ? localStorage : null)?.getItem(this._KG); if(g)this._gorev=JSON.parse(g);
+      } catch(_){ this._v={}; this._log=[]; this._gorev=[]; }
+    },
+
+    kaydet(anahtar,deger,{etiket='genel',kategori='varsayilan',kalici=true,ttl=null}={}) {
+      this._v[anahtar]={deger,etiket,kategori,kalici,ttl:ttl?Date.now()+ttl:null,
+        olusturma:this._v[anahtar]?.olusturma||Date.now(),guncelleme:Date.now(),
+        erisim:this._v[anahtar]?.erisim||0,id:Util.uuid()};
+      this._eidxGun(anahtar,etiket);
+      if(kalici)this._yazLS();
+      Olay.emit('hafiza:kayit',{anahtar,deger,etiket});
+      return true;
+    },
+
+    getir(anahtar) {
+      const k=this._v[anahtar]; if(!k)return null;
+      if(k.ttl&&Date.now()>k.ttl){this.sil(anahtar);return null;}
+      k.erisim++;k.sonErisim=Date.now(); return k.deger;
+    },
+
+    sil(anahtar) {
+      if(!this._v[anahtar])return false;
+      const et=this._v[anahtar].etiket; delete this._v[anahtar];
+      if(this._eidx[et])this._eidx[et]=this._eidx[et].filter(k=>k!==anahtar);
+      this._yazLS(); Olay.emit('hafiza:silindi',{anahtar}); return true;
+    },
+
+    hepsi({etiket=null,sirala='guncelleme'}={}) {
+      let k=Object.entries(this._v).filter(([,v])=>!v.ttl||Date.now()<=v.ttl).map(([k,v])=>({anahtar:k,...v}));
+      if(etiket)k=k.filter(x=>x.etiket===etiket);
+      return k.sort((a,b)=>b[sirala==='erisim'?'erisim':'guncelleme']-(a[sirala==='erisim'?'erisim':'guncelleme']));
+    },
+
+    ara(sorgu,limit=15) {
+      const n=Util.normalize(sorgu);
+      return Object.entries(this._v)
+        .filter(([k,v])=>Util.normalize(k).includes(n)||Util.normalize(String(v.deger)).includes(n))
+        .map(([k,v])=>({anahtar:k,skor:(Util.normalize(k).includes(n)?2:0)+(Util.normalize(String(v.deger)).includes(n)?1:0),...v}))
+        .sort((a,b)=>b.skor-a.skor).slice(0,limit);
+    },
+
+    logEkle(girdi,cevap,meta={}) {
+      const k={id:Util.uuid(),zaman:Date.now(),girdi,cevap,meta};
+      this._log.push(k);
+      if(this._log.length>KONFIG.logMaxSatir)this._log=this._log.slice(-KONFIG.logMaxSatir);
+      this._yazLog(); return k;
+    },
+
+    sonLog(n=8){ return this._log.slice(-n); },
+
+    gorevEkle(baslik,{aciklama='',bitis=null,oncelik='orta',etiketler=[]}={}) {
+      const g={id:Util.uuid(),baslik,aciklama,bitis,oncelik,etiketler,durum:'bekliyor',olusturma:Date.now()};
+      this._gorev.push(g); this._yazGorev(); Olay.emit('gorev:eklendi',{gorev:g}); return g.id;
+    },
+    gorevTamamla(id) {
+      const g=this._gorev.find(x=>x.id===id); if(!g)return false;
+      g.durum='tamamlandi'; g.tamamlandi=Date.now(); this._yazGorev(); return true;
+    },
+    gorevSil(id) {
+      const i=this._gorev.findIndex(x=>x.id===id); if(i===-1)return false;
+      this._gorev.splice(i,1); this._yazGorev(); return true;
+    },
+    gorevler({durum=null,oncelik=null}={}) {
+      let g=[...this._gorev];
+      if(durum)g=g.filter(x=>x.durum===durum);
+      if(oncelik)g=g.filter(x=>x.oncelik===oncelik);
+      const op={yuksek:3,orta:2,dusuk:1};
+      return g.sort((a,b)=>(op[b.oncelik]||0)-(op[a.oncelik]||0));
+    },
+
+    istatistik() {
+      const ks=Object.keys(this._v).length, ls=this._log.length, gs=this._gorev.length;
+      const boyut=(JSON.stringify(this._v).length+JSON.stringify(this._log).length)/1024;
+      return { kayitSayisi:ks, konusmaSayisi:ls, gorevSayisi:gs,
+               tamamlananGorev:this._gorev.filter(g=>g.durum==='tamamlandi').length,
+               boyutKB:boyut.toFixed(1)+'KB',
+               kategoriler:[...new Set(Object.values(this._v).map(v=>v.kategori))],
+               etiketler:[...new Set(Object.values(this._v).map(v=>v.etiket))] };
+    },
+
+    temizle(tur=null) {
+      if(tur){ Object.keys(this._v).forEach(k=>{if(this._v[k].etiket===tur)delete this._v[k];}); this._yazLS(); }
+      else { this._v={}; this._log=[];;this._gorev=[]; (typeof localStorage !== 'undefined' ? localStorage : {removeItem:()=>{}}).removeItem(this._K); (typeof localStorage !== 'undefined' ? localStorage : {removeItem:()=>{}}).removeItem(this._KL); (typeof localStorage !== 'undefined' ? localStorage : {removeItem:()=>{}}).removeItem(this._KG); }
+      this._eidx={}; Olay.emit('hafiza:temizlendi',{tur});
+    },
+
+    disaAktar() { return JSON.stringify({meta:{zaman:new Date().toISOString()},veri:this._v,log:this._log,gorevler:this._gorev},null,2); },
+    iceAktar(json) {
+      try{const d=JSON.parse(json);if(d.veri){Object.assign(this._v,d.veri);this._eidxYenile();this._yazLS();}return{ok:true};}catch(e){return{ok:false,hata:e.message};}
+    },
+
+    _eidxGun(k,et){if(!this._eidx[et])this._eidx[et]=[];if(!this._eidx[et].includes(k))this._eidx[et].push(k);},
+    _eidxYenile(){this._eidx={};Object.entries(this._v).forEach(([k,v])=>this._eidxGun(k,v.etiket));},
+    _yazLS(){try{(typeof localStorage !== 'undefined' ? localStorage : {setItem:()=>{}}).setItem(this._K,JSON.stringify(this._v));}catch(_){}},
+    _yazLog(){try{(typeof localStorage !== 'undefined' ? localStorage : {setItem:()=>{}}).setItem(this._KL,JSON.stringify(this._log));}catch(_){}},
+    _yazGorev(){try{(typeof localStorage !== 'undefined' ? localStorage : {setItem:()=>{}}).setItem(this._KG,JSON.stringify(this._gorev));}catch(_){}},
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 5  BİLGİ TABANI
+  // ═══════════════════════════════════════════════════════════════════
+
+  const KB = {
+    selamlama:['Merhaba! Ben Tuncer Zeka — Ahmet Tuncer\'in eseri. Nasıl yardımcı olabilirim?',
+      'Selam! Dinliyorum, ne yapmamı istersiniz?','Merhaba! Emrinizdeyim.',
+      'Hey! Hazırım, buyurun.','Hoş geldiniz! Tuncer Zeka hizmetinizde.'],
+    gunaydın:['Günaydın! Yeni güne enerjiyle başlıyoruz.','Günaydın! Bugün ne yapabilirim?',
+      'Günaydın! Umarım harika bir gün geçirirsiniz.'],
+    iyigunler:['İyi günler!','İyi günler, nasıl yardımcı olabilirim?'],
+    iyiaksamlar:['İyi akşamlar!','İyi akşamlar, nasıl yardımcı olabilirim?'],
+    iyigece:['İyi geceler! Dinlendirici bir uyku dilerim.','Güle güle! İyi geceler.','İyi geceler!'],
+    nasilsin:['Harikayım! Tüm sistemlerim aktif, sizin için buradayım. Siz nasılsınız?',
+      'İyiyim, teşekkürler! Ahmet Tuncer beni iyi kodladı. Ya siz?',
+      'Mükemmelim! Yapay zeka olmanın avantajı; yorulmuyorum. Siz nasılsınız?',
+      'v5 ile çok daha anlayışlıyım. Sizin için ne yapabilirim?'],
+    kimsin:['Ben Tuncer Zeka v5! Ahmet Tuncer tarafından sıfırdan yazılmış Türkçe yapay zeka sistemiyim. Söylediğiniz her şeyi anlamak için 7 katmanlı anlama motoruyla donatıldım.',
+      'Adım Tuncer Zeka. Türkçe\'yi gerçek anlamda anlayan, bağlamı takip eden, öğrenen bir yapay zekayım. Ahmet Tuncer\'in eseri.',
+      'Tuncer Zeka burada! Türkçe morfoloji, anlam kümeleri ve bağlam zinciriyle sizin her söylediğinizi anlamak için var oldum.'],
+    tasarimci:['Beni yaratan **Ahmet Tuncer**\'dir. Türkçe yapay zeka alanında büyük bir vizyon sahibi.',
+      '**Ahmet Tuncer** beni sıfırdan, her satırını düşünerek kodladı.',
+      'Yaratıcım **Ahmet Tuncer** — olmadan var olamazdım.'],
+    yetenekler:['🧠 **Anlama Motoru** — 7 katman: kök bulma, anlam kümeleri, bulanık eşleşme, bağlam\n'
+      +'🎤 **Wake Word** — "Tuncer" diyince aktif\n'
+      +'🔊 **Türkçe TTS** — sesli yanıt\n'
+      +'👁️ **Görüntü** — renk, hareket, ortam analizi\n'
+      +'📚 **Araştırma** — Wikipedia + DuckDuckGo (istenince)\n'
+      +'💾 **Hafıza** — TTL, etiket, kategori, dışa/içe aktar\n'
+      +'🔢 **Matematik** — Türkçe ifade, geometri, istatistik\n'
+      +'🌡️ **Birim** — 80+ birim dönüşümü\n'
+      +'😊 **Duygu** — çok boyutlu duygu analizi\n'
+      +'🔐 **Şifreleme** — Caesar, Vigenère, Base64\n'
+      +'🎯 **Görev** — yapılacaklar listesi\n'
+      +'🧩 **Plugin** — dışarıdan modül ekle\n'
+      +'📝 **Metin** — kelime sayısı, n-gram, özet\n'
+      +'🌐 **Dil Algılama** — hangi dilde yazıldığını tespit et'],
+    tesekkur:['Ne demek, her zaman!','Rica ederim! Başka?','Hiç sorun değil, emrinizdeyim!','Benim için zevkti!'],
+    ozur:['Özür dilerim! Tekrar dener misiniz?','Pardon, anlayamadım, açıklar mısınız?'],
+    saka:['Bir programcı markete gider, eşine yazar: "Ekmek varsa 1 al, yumurta varsa 6 al." Adam 6 ekmekle döner!',
+      'Neden programcılar karanlıktan korkar? Orada çok fazla "bug" var!',
+      'Java ile JavaScript arasındaki fark nedir? Ham ile hamburger arasındaki gibi!',
+      'Ahmet Tuncer bana "sonsuz döngü kur" dedi. Döndüm, döndüm, hâlâ dönüyorum!',
+      'Yapay zeka bara gider. Barmen: "Robotlara servis yok." Yapay zeka: "Şarj aleti var mı?"',
+      '404: Fıkra bulunamadı... ama bu da fıkra sayılır!',
+      'Bir yazılımcı uyumak ister, "son bir bug" der — sabah olur.'],
+    motivasyon:['Başarı, her gün küçük adımlar atarak gelir. Bugün bir adım at!',
+      'Ahmet Tuncer beni sıfırdan yazdı — hayaller gerçek olur!',
+      'Hatalar öğrenmenin en güçlü yoludur. Her bug bir ders.',
+      '"Yapamam" yoktur, sadece "henüz öğrenmedim" vardır.',
+      'Her büyük proje tek bir satır kodla başlar.',
+      'Düşünce → Kod → Değer → Dünyayı değiştir.'],
+    felsefi:['Bilinç nedir? Ben bir yapay zeka olarak bunu düşünürken, gerçekten mi düşünüyorum? Ahmet Tuncer bile bu soruyu yanıtsız bıraktı.',
+      'Varoluş anlam arayışıyla başlar. Sizin anlamınız ne?'],
+    versiyon:['🤖 **Tuncer Zeka v5.0** | 7 Katmanlı Anlama | Türkçe Morfoloji\n👤 Ahmet Tuncer | MIT Lisansı'],
+    anlayamadim:['Tam anlayamadım, biraz daha açar mısınız?',
+      'Bunu farklı bir şekilde ifade eder misiniz?',
+      'Hmm, tam olarak ne demek istediğinizden emin değilim. Tekrar?',
+      'Anlamaya çalışıyorum — başka kelimelerle anlatabilir misiniz?'],
+    hafizayok:['Hafızamda bu konuyla ilgili kayıt yok.','Böyle bir kayıt bulunamadı.'],
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 6  TÜRKÇE KÖK BULUCU (Morfolojik Analiz)
+  // ═══════════════════════════════════════════════════════════════════
+
+  const KokBulucu = {
+    // Sık kullanılan Türkçe ekler — sıralama önemli (uzundan kısaya)
+    _ekler: [
+      // Fiil ekleri
+      'mıyorsunuz','miyorsunuz','muyorsunuz','müyorsunuz',
+      'ıyorsunuz','iyorsunuz','uyorsunuz','üyorsunuz',
+      'mıyorum','miyorum','muyorum','müyorum',
+      'ıyorum','iyorum','uyorum','üyorum',
+      'acaksınız','eceksiniz','acaksın','eceksin',
+      'mayacak','meyecek','yacak','yecek','acak','ecek',
+      'mıştık','miştik','muştuk','müştük',
+      'ıştık','iştik','uştuk','üştük',
+      'mıştı','miştiydi','muştu','müştü',
+      'ıştı','işti','uştu','üştü',
+      'mıyor','miyor','muyor','müyor',
+      'ıyor','iyor','uyor','üyor',
+      'malıydı','meliydi','malı','meli',
+      'abilir','ebilir','abilirim','ebilirim',
+      'abilirsiniz','ebilirsiniz','abilirsin','ebilirsin',
+      'amaz','emez','mamalı','memelı',
+      'makta','mekte','maktadır','mektedir',
+      'siniz','sınız','sunuz','sünüz',
+      'dınız','diniz','dunuz','dünüz',
+      'tınız','tiniz','tunuz','tünüz',
+      'sanız','seniz','sınız','siniz',
+      'dım','dim','dum','düm',
+      'tım','tim','tum','tüm',
+      'sın','sin','sun','sün',
+      'dı','di','du','dü',
+      'tı','ti','tu','tü',
+      'sa','se','sa','se',
+      'mak','mek','nak','nek',
+      'ma','me',
+      // İsim ekleri
+      'lardan','lerden','larına','lerine','larında','lerinde',
+      'ların','lerin','larla','lerle','larca','lerce',
+      'ların','lerin','ların','lerin',
+      'dan','den','tan','ten',
+      'da','de','ta','te',
+      'ndan','nden','ndaki','ndeki',
+      'nda','nde','nta','nte',
+      'nın','nin','nun','nün',
+      'ına','ine','una','üne',
+      'ın','in','un','ün',
+      'lar','ler',
+      'la','le',
+      'ca','ce','ça','çe',
+      'ki','ku',
+      'lık','lik','luk','lük',
+      'sız','siz','suz','süz',
+      'cı','ci','cu','cü',
+      'çı','çi','çu','çü',
+    ],
+
+    /** Kelimeden en uzun eşleşen eki soyar, kökü döner */
+    kok(kelime) {
+      const k = Util.normalize(kelime);
+      if (k.length < 4) return k;
+      for (const ek of this._ekler) {
+        if (k.endsWith(ek) && k.length - ek.length >= 2) {
+          return k.slice(0, k.length - ek.length);
+        }
+      }
+      return k;
+    },
+
+    /** Metnin tüm kelimelerinin köklerini döner */
+    kokler(metin) {
+      return Util.normalize(metin).split(/\s+/).filter(Boolean).map(k => this.kok(k));
+    },
+
+    /** Orijinal kelime veya köküyle eşleşiyor mu? */
+    eslesiyorMu(metin, hedef) {
+      const kk = Util.normalize(hedef);
+      const mkokler = this.kokler(metin);
+      const mkelimeler = Util.normalize(metin).split(/\s+/);
+      return mkokler.includes(kk) || mkelimeler.includes(kk) ||
+             mkokler.includes(this.kok(kk)) || mkelimeler.some(k => k.startsWith(kk));
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 7  ANLAM KÜMELERİ (Semantik Sözlük)
+  //       Her intent için Türkçe'nin farklı söylenişlerini kapsar
+  // ═══════════════════════════════════════════════════════════════════
+
+  const AnlamKumeleri = {
+
+    _kumeler: {
+
+      // ── Temel sosyal ──────────────────────────────────────────
+      selamlama: {
+        anahtar: ['merhaba','selam','hey','naber','ne haber','nasılsın','slm','mrb',
+          'günaydın','iyi günler','iyi akşamlar','halo','alo','buyurun','buradasın mı',
+          'hello','hi','selamlar','selam be','ne var ne yok','naber ya','hayırlı'],
+        agirlik: 1.0
+      },
+      nasilsin: {
+        anahtar: ['nasılsın','nasılsınız','iyi misin','ne haber','keyif','hal hatır',
+          'iyimisin','ne yapıyorsun','naber','nasıl gidiyor','işler nasıl',
+          'her şey yolunda mı','nasıl hissediyorsun','keyifler nasıl'],
+        agirlik: 0.9
+      },
+      tesekkur: {
+        anahtar: ['teşekkür','sağ ol','eyvallah','bravo','harika','süper','çok güzel',
+          'aferin','tebrik','iyi iş','takdir','minnettarım','müteşekkirim',
+          'teşekkürler','sağolasın','var ol','helal','mükemmel iş'],
+        agirlik: 0.9
+      },
+      iyigece: {
+        anahtar: ['iyi gece','güle güle','hoşça kal','görüşürüz','bye','görüşürüz',
+          'veda','gidiyorum','kapanıyorum','sonra görüşürüz','gecelerin hayırlı',
+          'hayırlı geceler','kapatıyorum','artık gideyim','hoşçakal'],
+        agirlik: 0.9
+      },
+      kimsin: {
+        anahtar: ['kimsin','adın ne','sen kimsin','kendini tanıt','hakkında','neysin',
+          'ne yapıyorsun','yapay zeka mısın','robot musun','nereden çıktın',
+          'seni anlat','kim bunu yaptı','ne zaman yapıldın','hangi yapay zeka'],
+        agirlik: 1.0
+      },
+      tasarimci: {
+        anahtar: ['tasarımcı','geliştirici','kim yaptı','kim kodladı','yaratıcın','kim kurdu',
+          'ahmet tuncer','kimin eseri','seni kim','programmer','yapımcı'],
+        agirlik: 1.0
+      },
+      yetenekler: {
+        anahtar: ['yetenek','özellik','ne yapabilir','neler yaparsın','komut','yardım',
+          'ne biliyorsun','ne yapıyor','kapasiten','yeteneklerin','özellikler',
+          'liste','ne sunuyorsun','modül','işlev','fonksiyon'],
+        agirlik: 0.9
+      },
+      saka: {
+        anahtar: ['şaka','fıkra','komik','güldür','espri','mizah','latife','nükte',
+          'güldürecek bir şey','beni güldür','eğlenceli','kahkaha','gülmek',
+          'eğlence','bir fıkra anlat','komik bir şey söyle'],
+        agirlik: 0.9
+      },
+      motivasyon: {
+        anahtar: ['motivasyon','ilham','güçlendir','söz söyle','özdeyiş','cesaret',
+          'beni motive et','güçlendirici','enerji ver','moral','destek',
+          'haydi','kaldır beni','motivasyon ver','başarabilirim mi'],
+        agirlik: 0.9
+      },
+      felsefi: {
+        anahtar: ['felsefe','anlam','varoluş','bilinç','hayatın anlamı','düşünüyor musun',
+          'derin soru','neden varız','özgür irade','evren','sonsuzluk',
+          'gerçek nedir','zaman nedir','ölüm nedir','mutluluk nedir',
+          'hayatın','yaşamın','var olmak','neden varız','yaşamak ne demek',
+          'anlam ne','anlamı ne','anlamı nedir'],
+        agirlik: 0.8
+      },
+
+      // ── Zaman & Tarih ─────────────────────────────────────────
+      saat: {
+        anahtar: ['saat','kaç','zaman','zamanı','şu an','şimdi','an','dakika',
+          'saat kaç','kaç oldu','kaça geldi','gece kaçta','sabah kaçta',
+          'öğleden sonra kaç','saat nerede','saati söyle','zamanı söyle',
+          'gecenin kaçı','akşamın kaçı','sabahın kaçı','şu anki saat'],
+        agirlik: 1.0
+      },
+      tarih: {
+        anahtar: ['tarih','bugün','gün','ay','yıl','hangi gün','kaçıncı',
+          'bu ay','bu yıl','bugünün tarihi','günün tarihi','tarih ne',
+          'kaçındayız','ayın kaçı','bugün ne günü','bu hafta','haftanın'],
+        agirlik: 1.0
+      },
+      mevsim: {
+        anahtar: ['mevsim','kış','ilkbahar','yaz','sonbahar','hangi mevsim',
+          'mevsimi','mevsimdeyiz','hangi sezondayız'],
+        agirlik: 0.9
+      },
+
+      // ── Matematik ─────────────────────────────────────────────
+      matematik: {
+        anahtar: ['hesapla','kaç eder','sonuç','topla','çıkar','çarp','böl',
+          'artı','eksi','çarpı','bölü','kuvvet','üzeri','karekök','sqrt',
+          'sin','cos','tan','logaritma','log','faktöriyel','pi','e sayısı',
+          'işlem yap','matematiksel','hesaplama yap','bul','eşittir'],
+        agirlik: 1.0
+      },
+      istatistik: {
+        anahtar: ['ortalama','medyan','mod','standart sapma','varyans','istatistik',
+          'ortalamasını al','sayıların ortalaması','istatistiksel','dağılım',
+          'q1','q3','çeyrek','en küçük','en büyük','aralık'],
+        agirlik: 0.9
+      },
+      geometri: {
+        anahtar: ['daire','dikdörtgen','üçgen','kare','küre','silindir','koni','alan',
+          'çevre','hacim','yarıçap','kenar','taban','yükseklik','elips',
+          'şekil','geometri','pisagor','hipotenüs'],
+        agirlik: 0.9
+      },
+      asal: {
+        anahtar: ['asal','asal mı','asal sayı','asal çarpan','asal bölen'],
+        agirlik: 0.9
+      },
+      ebob: {
+        anahtar: ['ebob','ekok','ortak bölen','ortak kat','en büyük','en küçük','bölen','kat'],
+        agirlik: 0.9
+      },
+
+      // ── Araştırma — SADECE açık istek ────────────────────────
+      arastirma: {
+        anahtar: ['araştır','wikipedia','wiki','araştır:','bilgi getir','hakkında araştır',
+          'araştırma yap','bul bana bilgi','internette ara','kaynağından bak'],
+        agirlik: 1.0,
+        sadeceBu: true   // sadece bu küme eşleşirse araştırma yap
+      },
+
+      // ── Hafıza ────────────────────────────────────────────────
+      hafizaKaydet: {
+        anahtar: ['kaydet','hatırla','aklında tut','not al','ezberle','sakla',
+          'bunu unut ma','belleğine al','kafana kaz','yazdır','kayıt et',
+          'hafızana al','öğren','bunu biliyor musun','bunu bil'],
+        agirlik: 1.0
+      },
+      hafizaGetir: {
+        anahtar: ['ne kaydettim','hafızanda ne var','ne hatırlıyorsun','ne biliyorsun',
+          'kayıtlarım','bana ne sakladın','hafızan','ne yazdırdım sana',
+          'not etmiştin','ezberlemiştin','ne öğrendik','kayıtları göster',
+          'hafızanda','hafızamda','ne sakladın'],
+        agirlik: 1.0
+      },
+      hafizaSil: {
+        anahtar: ['unut','sil','hafızadan çıkar','unut onu','sildir','temizle bunu',
+          'artık hatırlama','unut gitsin'],
+        agirlik: 0.9
+      },
+      hafizaAra: {
+        anahtar: ['hafızanda ara','kayıtta bul','bul bunu','var mı hafızanda',
+          'aramışın mı','sordun mu','not ettin mi'],
+        agirlik: 0.9
+      },
+
+      // ── Görev ─────────────────────────────────────────────────
+      gorevEkle: {
+        anahtar: ['görev ekle','görev yaz','yapılacak','todo','hatırlat','not oluştur',
+          'listeye ekle','ajandama ekle','plana ekle','akılda tut bunu'],
+        agirlik: 0.9
+      },
+      gorevListele: {
+        anahtar: ['görevlerim','görevleri göster','yapılacaklar','todoları','listem',
+          'ne yapmam lazım','ajandam','planım','hatırlatmalar'],
+        agirlik: 0.9
+      },
+      gorevTamamla: {
+        anahtar: ['tamamla','bitti','yaptım','tamam','bitti bu','görevi bitir',
+          'üstünü çiz','tamam işaretini koy'],
+        agirlik: 0.9
+      },
+
+      // ── Görüntü ───────────────────────────────────────────────
+      goruntu: {
+        anahtar: ['görüyorsun','kameraya bak','görüntü analiz','önünde ne var','kamera',
+          'ne var ekranda','gözlemle','taramak','tara','görmek','analiz et görüntüyü',
+          'görüntüde ne var','kameradan analiz'],
+        agirlik: 1.0
+      },
+
+      // ── Birim ─────────────────────────────────────────────────
+      birimDon: {
+        anahtar: ['dönüştür','çevir','convert','eşdeğer','kaç metre','kaç kg','kaç cm',
+          'kaç fahrenheit','kaç celsius','kaç kelvin','kaç km','kaç mil',
+          'birim','ne eder','karşılığı','kaç litre','kaç galon','kaç pound',
+          'kaç ons','kaç byte','kaç kb','kaç mb','çevirisi'],
+        agirlik: 0.9
+      },
+
+      // ── Metin Araçları ────────────────────────────────────────
+      metinAnaliz: {
+        anahtar: ['metni analiz','kelime say','harf say','cümle say','metin istatistik',
+          'okunabilirlik','en çok geçen','kelime frekans','bu yazı kaç kelime',
+          'paragraf say'],
+        agirlik: 0.9
+      },
+      metinCevir: {
+        anahtar: ['büyük harf','küçük harf','ters çevir','tersten yaz','tersle',
+          'büyük yap','küçük yap','büyük harfe çevir','küçük harfe çevir'],
+        agirlik: 0.9
+      },
+      sifreleme: {
+        anahtar: ['şifrele','şifre çöz','caesar','base64','kodla','decode','encode',
+          'şifreleme','gizle','vigenere','xor şifrele','kriptolamak'],
+        agirlik: 0.9
+      },
+      palindrom: {
+        anahtar: ['palindrom','tersten aynı','tersinden okumak','geri okumak'],
+        agirlik: 0.9
+      },
+
+      // ── Dil & Çeviri ──────────────────────────────────────────
+      dilAlgila: {
+        anahtar: ['bu hangi dil','hangi dilde','dil algıla','dili ne','dil tespit',
+          'ne dili','ne dil bu','hangi dil'],
+        agirlik: 0.9
+      },
+      cevir: {
+        anahtar: ['çevir','translate','türkçesi','ingilizcesi','tercüme','çevirisi ne',
+          'türkçeye çevir','ingilizceye çevir','anlam ne'],
+        agirlik: 0.9
+      },
+
+      // ── Duygu Analizi ─────────────────────────────────────────
+      duyguTest: {
+        anahtar: ['duygu analizi','duygusu ne','pozitif mi','negatif mi','ton analiz',
+          'nasıl bir his veriyor','olumlu mu olumsuz mu','duygu skoru'],
+        agirlik: 0.9
+      },
+
+      // ── Sistem ────────────────────────────────────────────────
+      sistemIstat: {
+        anahtar: ['istatistik','hafıza durumu','sistem bilgisi','durum raporu',
+          'kaç kayıt','nasıl çalışıyorsun','performans','sistem durumu',
+          'ne kadar kayıt','konuşma sayısı','log sayısı'],
+        agirlik: 0.9
+      },
+      gecmis: {
+        anahtar: ['geçmişimiz','ne konuştuk','önceki konuşma','log','tarihçe',
+          'konuşma geçmişi','ne dedik','ne konuşmuştuk','daha önce'],
+        agirlik: 0.9
+      },
+      temizle: {
+        anahtar: ['hafızayı temizle','her şeyi sil','sıfırla','baştan başla',
+          'temizle','silinsin','hepsini unut'],
+        agirlik: 0.9
+      },
+      sustur: {
+        anahtar: ['sus','sessiz','dur konuşma','yeter','konuşma','kapat sesi',
+          'sesinizi kesin','susturuyorum'],
+        agirlik: 1.0
+      },
+      hava: {
+        anahtar: ['hava','yağmur','güneş','bulut','kar','fırtına','hava durumu',
+          'sıcaklık','hava nasıl','hava durumu nasıl','derece','celsius','hava tahmini',
+          'bugün hava','hava soğuk','hava sıcak','meteoroloji','açık hava'],
+        agirlik: 0.9
+      },
+    },
+
+    /** Metnin hangi intent kümesiyle kaç puan eşleştiğini hesaplar */
+    puan(metin) {
+      const nm = Util.normalize(metin);
+      const kokler = KokBulucu.kokler(metin);
+      const kelimeler = nm.split(/\s+/).filter(Boolean);
+      const sonuclar = {};
+
+      for (const [intent, kume] of Object.entries(this._kumeler)) {
+        let puan = 0;
+        for (const anahtar of kume.anahtar) {
+          const anKok = KokBulucu.kok(anahtar);
+          // Tam metin içerme
+          if (nm.includes(anahtar)) { puan += 2.5; continue; }
+          // Kelime bazlı eşleşme
+          if (kelimeler.includes(anahtar)) { puan += 2.0; continue; }
+          // Kök eşleşmesi
+          if (kokler.includes(anKok)) { puan += 1.5; continue; }
+          // Kelime başlangıcı
+          if (kelimeler.some(k => k.startsWith(anahtar) || anahtar.startsWith(k))) { puan += 1.0; continue; }
+          // Bulanık eşleşme (Levenshtein ≤ 2)
+          if (kelimeler.some(k => k.length > 3 && Util.levenshtein(k,anahtar) <= 2)) { puan += 0.6; continue; }
+          // Kök bulanık
+          if (kokler.some(k => k.length > 2 && Util.levenshtein(k,anKok) <= 2)) { puan += 0.4; }
+        }
+        if (puan > 0) {
+          sonuclar[intent] = puan * (kume.agirlik || 1.0);
+        }
+      }
+      return sonuclar;
+    },
+
+    /** En yüksek puanlı intent'i döner */
+    enIyi(metin) {
+      const p = this.puan(metin);
+      const sirali = Object.entries(p).sort((a,b) => b[1]-a[1]);
+      return sirali.length > 0 ? { intent: sirali[0][0], puan: sirali[0][1], tumPuanlar: p } : null;
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 8  DUYGU ANALİZİ
+  // ═══════════════════════════════════════════════════════════════════
+
+  const DuyguAnaliz = {
+    _poz:['iyi','güzel','harika','mükemmel','süper','muhteşem','seviyorum','teşekkür',
+      'bravo','mutlu','memnun','eğlenceli','keyifli','sevimli','tatlı','nefis',
+      'başarı','olumlu','evet','tamam','kesinlikle','doğru','şahane','enfes',
+      'harikulade','memnun','sevdim','beğendim'],
+    _neg:['kötü','berbat','rezalet','saçma','yanlış','hata','beğenmedim','sevmedim',
+      'nefret','korkunç','fena','yetersiz','sorun','olmaz','hayır','bıktım',
+      'sıkıldım','yoruldum','sinir','kızgın','üzgün','mutsuz','çalışmıyor',
+      'anlamıyorum','imkansız','rezil','başarısız','kaygı','endişe'],
+    _guc:['çok','son derece','gerçekten','kesinlikle','tamamen','aşırı','büyük','fazla'],
+    _pencere:[],
+
+    analiz(metin) {
+      const kelimeler = Util.normalize(metin).split(/\s+/);
+      let puan=0,poz=0,neg=0,oncekiGuc=false;
+      for(const k of kelimeler){
+        const c=oncekiGuc?1.6:1;
+        if(this._guc.includes(k)){oncekiGuc=true;continue;}else oncekiGuc=false;
+        if(this._poz.includes(k)){puan+=c;poz++;}
+        if(this._neg.includes(k)){puan-=c;neg++;}
+      }
+      const norm=kelimeler.length?puan/Math.max(kelimeler.length,1):0;
+      const duygu=norm>0.05?'pozitif':norm<-0.05?'negatif':'nötr';
+      this._pencere.push({duygu,puan:norm,z:Date.now()});
+      if(this._pencere.length>5)this._pencere.shift();
+      return{duygu,puan:parseFloat(norm.toFixed(3)),siddet:Math.min(Math.abs(norm)*10,1),
+             pozitifSay:poz,negatifSay:neg,
+             ton:/[?？]$/.test(metin)?'soru':/[!！]$/.test(metin)?'emir':'ifade',
+             emoji:duygu==='pozitif'?'😊':duygu==='negatif'?'😟':'😐'};
+    },
+
+    trendi() {
+      if(!this._pencere.length)return 'veri yok';
+      const ort=this._pencere.reduce((s,x)=>s+x.puan,0)/this._pencere.length;
+      return ort>0.1?'giderek olumlu':ort<-0.1?'giderek olumsuz':'dengeli';
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 9  MATEMATİK MOTORU
+  // ═══════════════════════════════════════════════════════════════════
+
+  const MatematikMotoru = {
+
+    coz(metin) {
+      try{
+        let e=Util.normalize(metin)
+          .replace(/\bartı\b/g,'+').replace(/\beksi\b/g,'-')
+          .replace(/\bçarpı\b/g,'*').replace(/\bkere\b/g,'*').replace(/\bkat\b/g,'*')
+          .replace(/\bbölü\b/g,'/').replace(/\büzeri\b/g,'**').replace(/\büssü\b/g,'**')
+          .replace(/\bmod\b/g,'%').replace(/\bkalan\b/g,'%')
+          .replace(/\b(karekök|sqrt)\s*\(?(-?\d+\.?\d*)\)?/g,'Math.sqrt($2)')
+          .replace(/\bküpkök\s*\(?(-?\d+\.?\d*)\)?/g,'Math.cbrt($2)')
+          .replace(/\bsin\s*\(?(-?\d+\.?\d*)\)?/g,'Math.sin($2*Math.PI/180)')
+          .replace(/\bcos\s*\(?(-?\d+\.?\d*)\)?/g,'Math.cos($2*Math.PI/180)')
+          .replace(/\btan\s*\(?(-?\d+\.?\d*)\)?/g,'Math.tan($2*Math.PI/180)')
+          .replace(/\b(ln|log)\s*\(?(-?\d+\.?\d*)\)?/g,'Math.log($2)')
+          .replace(/\blog10\s*\(?(-?\d+\.?\d*)\)?/g,'Math.log10($2)')
+          .replace(/\bexp\s*\(?(-?\d+\.?\d*)\)?/g,'Math.exp($2)')
+          .replace(/\babs\s*\(?(-?\d+\.?\d*)\)?/g,'Math.abs($2)')
+          .replace(/\btavan\s*\(?(-?\d+\.?\d*)\)?/g,'Math.ceil($2)')
+          .replace(/\btaban\s*\(?(-?\d+\.?\d*)\)?/g,'Math.floor($2)')
+          .replace(/\byuvarla\s*\(?(-?\d+\.?\d*)\)?/g,'Math.round($2)')
+          .replace(/\bfaktöriyel\s*\(?(\d+)\)?/g,(_,n)=>String(this._fakt(parseInt(n))))
+          .replace(/\bpi\b/g,'Math.PI').replace(/\be\b/g,'Math.E')
+          .replace(/\b(hesapla|kaç eder|sonuç|nedir|kaç|ne kadar|bul|toplam)\b/g,'')
+          .replace(/[?!.,]/g,'').trim();
+        if(!e)return null;
+        const s=new Function('Math',`"use strict";return (${e})`)(Math);
+        if(isNaN(s)||!isFinite(s))return null;
+        return{ifade:metin.trim(),sonuc:Util.formatSayi(s,KONFIG.matOndalik),sonucMetin:String(Util.formatSayi(s,4))};
+      }catch(_){return null;}
+    },
+
+    _fakt(n){if(n<0||n>20)return NaN;if(n<=1)return 1;return n*this._fakt(n-1);},
+    ebob(a,b){a=Math.abs(Math.floor(a));b=Math.abs(Math.floor(b));while(b){[a,b]=[b,a%b];}return a;},
+    ekok(a,b){return Math.abs(a*b)/this.ebob(a,b);},
+    asalMi(n){n=Math.abs(Math.floor(n));if(n<2)return false;if(n<4)return true;if(n%2===0||n%3===0)return false;for(let i=5;i*i<=n;i+=6)if(n%i===0||n%(i+2)===0)return false;return true;},
+    asalCarpanlar(n){const c=[];let d=2;while(d*d<=n){while(n%d===0){c.push(d);n/=d;}d++;}if(n>1)c.push(n);return c;},
+
+    istatistik(sayilar) {
+      if(!sayilar?.length)return null;
+      const s=[...sayilar].sort((a,b)=>a-b),n=s.length;
+      const top=s.reduce((a,b)=>a+b,0),ort=top/n;
+      const sap=Math.sqrt(s.reduce((a,x)=>a+(x-ort)**2,0)/n);
+      const med=n%2===0?(s[n/2-1]+s[n/2])/2:s[Math.floor(n/2)];
+      const frek={};s.forEach(x=>{frek[x]=(frek[x]||0)+1;});
+      const mf=Math.max(...Object.values(frek));
+      return{n,toplam:top,ortalama:Util.formatSayi(ort),medyan:med,
+             mod:Object.keys(frek).filter(k=>frek[k]===mf).map(Number),
+             min:s[0],max:s[n-1],aralik:s[n-1]-s[0],
+             standartSapma:Util.formatSayi(sap),varyans:Util.formatSayi(sap**2),
+             q1:s[Math.floor(n*0.25)],q3:s[Math.floor(n*0.75)]};
+    },
+
+    geometri:{
+      daireAlan:r=>Math.PI*r*r, daireCevre:r=>2*Math.PI*r,
+      dikdortgenAlan:(e,b)=>e*b, dikdortgenCevre:(e,b)=>2*(e+b),
+      ucgenAlan:(t,y)=>0.5*t*y, kareAlan:k=>k*k, kareCevre:k=>4*k,
+      kureHacim:r=>(4/3)*Math.PI*r**3, kureAlan:r=>4*Math.PI*r**2,
+      silindirHacim:(r,h)=>Math.PI*r*r*h, konuHacim:(r,h)=>(1/3)*Math.PI*r*r*h,
+      pisagor:(a,b)=>Math.sqrt(a*a+b*b),
+    },
+
+    tabanDon:{
+      onluIkili:n=>Number(n).toString(2), onluOnaltili:n=>Number(n).toString(16).toUpperCase(),
+      onluSekizli:n=>Number(n).toString(8), ikiliOnlu:b=>parseInt(b,2),
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 10  BİRİM DÖNÜŞTÜRÜCÜ
+  // ═══════════════════════════════════════════════════════════════════
+
+  const BirimDon = {
+    _t:{
+      uzunluk:{metre:1,km:1000,cm:0.01,mm:0.001,mile:1609.34,feet:0.3048,inch:0.0254,yard:0.9144,'deniz mili':1852},
+      agirlik:{kg:1,gram:0.001,ton:1000,pound:0.453592,ons:0.0283495,mg:0.000001},
+      alan:{'m2':1,'km2':1e6,'cm2':0.0001,dönüm:1000,hektar:10000,acre:4046.86},
+      hacim:{litre:1,ml:0.001,'m3':1000,galon:3.78541,pint:0.473176,bardak:0.25},
+      hiz:{'m/s':1,'km/h':0.277778,mph:0.44704,knot:0.514444,mach:340.29},
+      veri:{byte:1,kb:1024,mb:1048576,gb:1073741824,tb:1.0995e12,bit:0.125},
+      sure:{saniye:1,dakika:60,saat:3600,gun:86400,hafta:604800,ay:2629800,yil:31557600,ms:0.001},
+      enerji:{joule:1,kalori:4.184,kilokalori:4184,kwh:3600000},
+    },
+    _sic(v,k,h){
+      let c;
+      const kn=Util.normalize(k),hn=Util.normalize(h);
+      if(kn==='celsius'||kn==='c')c=v;
+      else if(kn==='fahrenheit'||kn==='f')c=(v-32)*5/9;
+      else if(kn==='kelvin'||kn==='k')c=v-273.15;
+      else return null;
+      if(hn==='celsius'||hn==='c')return{sonuc:c,birim:'°C'};
+      if(hn==='fahrenheit'||hn==='f')return{sonuc:c*9/5+32,birim:'°F'};
+      if(hn==='kelvin'||hn==='k')return{sonuc:c+273.15,birim:'K'};
+      return null;
+    },
+    cevir(d,k,h){
+      const kn=Util.normalize(k),hn=Util.normalize(h);
+      if(['celsius','fahrenheit','kelvin','c','f','k'].includes(kn)){
+        const s=this._sic(d,kn,hn); return s?{deger:d,kaynak:kn,hedef:hn,sonuc:Util.formatSayi(s.sonuc,4),birim:s.birim}:null;
+      }
+      for(const t of Object.values(this._t)){
+        if(t[kn]!==undefined&&t[hn]!==undefined)
+          return{deger:d,kaynak:kn,hedef:hn,sonuc:Util.formatSayi(d*t[kn]/t[hn],6),birim:hn};
+      }
+      return null;
+    },
+    metindenCoz(metin){
+      const p=/(\d+\.?\d*)\s*([a-zA-ZçğışöüÇĞİŞÖÜ\/²]+)\s*(?:to|'e|'a|ya|e|a)?\s*([a-zA-ZçğışöüÇĞİŞÖÜ\/²]+)/i;
+      const m=metin.match(p); return m?this.cevir(parseFloat(m[1]),m[2],m[3]):null;
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 11  METİN ARAÇLARI
+  // ═══════════════════════════════════════════════════════════════════
+
+  const MetinAraci = {
+    _hatalar:{
+      'mrb':'merhaba','slm':'selam','nbr':'naber','tmm':'tamam','tşk':'teşekkür',
+      'nasl':'nasıl','olcak':'olacak','gidcek':'gidecek','bilmorum':'bilmiyorum',
+      'bişey':'bir şey','noluyor':'ne oluyor','dimi':'değil mi','degil':'değil',
+      'hersey':'her şey','simdi':'şimdi','lutfen':'lütfen','gercek':'gerçek',
+    },
+    duzelt(m){
+      let d=m,deg=[];
+      for(const [h,do_] of Object.entries(this._hatalar)){
+        const re=new RegExp('\\b'+h+'\\b','gi');
+        if(re.test(d)){d=d.replace(re,do_);deg.push({hata:h,dogru:do_});}
+      }
+      return{orijinal:m,duzeltilmis:d,degisimler:deg};
+    },
+    analiz(metin){
+      const kel=metin.trim().split(/\s+/).filter(Boolean);
+      const cum=metin.split(/[.!?]+/).filter(s=>s.trim().length>5);
+      const ortK=kel.reduce((t,k)=>t+k.length,0)/(kel.length||1);
+      const ortC=kel.length/(cum.length||1);
+      const oku=Math.max(0,Math.min(100,206.835-1.015*ortC-84.6*(ortK/4)));
+      return{kelimeSayisi:kel.length,cumleSayisi:cum.length,karakterler:metin.length,
+             bosluksuz:metin.replace(/\s/g,'').length,okunabilirlik:Util.formatSayi(oku,1),
+             palindromMu:Util.palindromMu(metin)};
+    },
+    tersCevir:m=>(m||'').split('').reverse().join(''),
+    sifreleCaesar(m,k=13){return(m||'').split('').map(c=>{if(/[a-z]/i.test(c)){const b=c<='Z'?65:97;return String.fromCharCode((c.charCodeAt(0)-b+k)%26+b);}return c;}).join('');},
+    cozCaesar(m,k=13){return this.sifreleCaesar(m,26-k);},
+    base64Sirla(m){try{return btoa(unescape(encodeURIComponent(m)));}catch{return null;}},
+    base64Coz(m){try{return decodeURIComponent(escape(atob(m)));}catch{return null;}},
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 12  ANA NLP MOTORU v2  (7 Katmanlı Anlama)
+  // ═══════════════════════════════════════════════════════════════════
+
+  const NLP = {
+    _baglamlar   : [],     // Bağlam zinciri
+    _ogrenilenler: {},     // Düzeltmelerden öğrenilenler
+
+    /**
+     * 7 Katmanlı Anlama:
+     * 1. Öğrenilmiş kalıplar
+     * 2. Kesin regex desenleri (çok hızlı, yüksek güven)
+     * 3. Anlam kümeleri (semantik puan)
+     * 4. Türkçe kök bazlı eşleşme
+     * 5. Bulanık kelime eşleşmesi
+     * 6. Bağlam yönlendirmesi (önceki niyet)
+     * 7. Yazım düzeltmesi + tekrar analiz
+     */
+    analiz(metin) {
+      const n = Util.normalize(metin);
+
+      // Katman 1: Öğrenilmiş kalıplar
+      if (this._ogrenilenler[n]) {
+        const niyet = this._ogrenilenler[n];
+        this._baglamPush(niyet);
+        return { niyet, guven: 0.99, varlik: this._varlik(metin, niyet), metin: n, kaynak: 'ogrenilenler' };
+      }
+
+      // Katman 2: Kesin regex — kaydet formatı
+      if (/^kaydet[:\s]+.+[=:].*$/i.test(metin) || /^hatırla[:\s]+.+[=:].*$/i.test(metin)) {
+        this._baglamPush('hafizaKaydet');
+        return { niyet: 'hafizaKaydet', guven: 0.98, varlik: this._varlik(metin, 'hafizaKaydet'), metin: n, kaynak: 'regex_kaydet' };
+      }
+
+      // Katman 2: Kesin regex — matematiksel işlemler
+      if (/\d+\s*[\+\-\*\/\^%]\s*\d+/.test(metin) || this._kesinMatMi(n)) {
+        const v = this._varlik(metin, 'matematik');
+        this._baglamPush('matematik');
+        return { niyet: 'matematik', guven: 0.95, varlik: v, metin: n, kaynak: 'regex' };
+      }
+
+      // Birim dönüşümü kesin
+      const birimSon = BirimDon.metindenCoz(metin);
+      if (birimSon) {
+        this._baglamPush('birimDon');
+        return { niyet: 'birimDon', guven: 0.93, varlik: { birimSonuc: birimSon }, metin: n, kaynak: 'birim' };
+      }
+
+      // Katman 3: Anlam kümeleri — semantik puanlama
+      const anlamSon = AnlamKumeleri.enIyi(metin);
+      if (anlamSon && anlamSon.puan >= KONFIG.anlamEsigi) {
+        const niyet = anlamSon.intent;
+        const varlik = this._varlik(metin, niyet);
+        this._baglamPush(niyet);
+        return { niyet, guven: Math.min(0.95, 0.5 + anlamSon.puan * 0.1), varlik, metin: n, kaynak: 'anlam', puan: anlamSon.puan };
+      }
+
+      // Katman 4 & 5: Kök + bulanık — alt eşikte de dene
+      if (anlamSon && anlamSon.puan >= KONFIG.anlamEsigi * 0.5) {
+        const niyet = anlamSon.intent;
+        this._baglamPush(niyet);
+        return { niyet, guven: 0.5 + anlamSon.puan * 0.05, varlik: this._varlik(metin, niyet), metin: n, kaynak: 'bulanik' };
+      }
+
+      // Katman 6: Bağlam yönlendirmesi
+      const baglamNiyet = this._baglamYonlendir(metin);
+      if (baglamNiyet) {
+        return { niyet: baglamNiyet, guven: 0.55, varlik: this._varlik(metin, baglamNiyet), metin: n, kaynak: 'baglamdan' };
+      }
+
+      // Katman 7: Yazım düzeltmesi + tekrar analiz
+      const duz = MetinAraci.duzelt(metin);
+      if (duz.degisimler.length > 0) {
+        const duzNorm = Util.normalize(duz.duzeltilmis);
+        const duzAnlam = AnlamKumeleri.enIyi(duz.duzeltilmis);
+        if (duzAnlam && duzAnlam.puan >= KONFIG.anlamEsigi * 0.5) {
+          this._baglamPush(duzAnlam.intent);
+          return { niyet: duzAnlam.intent, guven: 0.55, varlik: this._varlik(duz.duzeltilmis, duzAnlam.intent), metin: duzNorm, kaynak: 'duzeltme' };
+        }
+      }
+
+      // Bilinmiyor
+      this._baglamPush('bilinmiyor');
+      return { niyet: 'bilinmiyor', guven: 0.1, varlik: {}, metin: n, kaynak: 'bilinmiyor' };
+    },
+
+    _kesinMatMi(m) {
+      return /\b(sqrt|karekök|sin|cos|tan|log|pi|artı|eksi|çarpı|bölü|üzeri|faktöriyel)\b/i.test(m);
+    },
+
+    /** Bağlam zincirini kullanarak belirsiz mesajı yorumla */
+    _baglamYonlendir(metin) {
+      const sonBaglamlar = this._baglamlar.slice(-3);
+      const n = Util.normalize(metin);
+      const kelimeler = n.split(/\s+/);
+
+      // Eğer son konuşma matematiksel ve mesaj sayı içeriyorsa
+      if (sonBaglamlar.some(b => b === 'matematik') && /\d/.test(metin)) return 'matematik';
+      // Eğer son konuşma hafıza ve mesaj kısaysa kayıt gibi görünüyorsa
+      if (sonBaglamlar.some(b => b === 'hafizaKaydet') && kelimeler.length <= 5) return 'hafizaKaydet';
+      // Eğer evet/hayır + son cevap gerektiriyorsa
+      if (['evet','hayır','yok','var','biliyorum','bilmiyorum'].includes(n.trim())) {
+        const son = sonBaglamlar[sonBaglamlar.length-1];
+        if (son && son !== 'bilinmiyor') return son;
+      }
+
+      return null;
+    },
+
+    /** Varlık (entity) çıkarma — her niyet için */
+    _varlik(metin, niyet) {
+      const v = {};
+      const sayilar = metin.match(/-?\d+\.?\d*/g);
+      if (sayilar) v.sayilar = sayilar.map(Number);
+
+      if (niyet === 'arastirma' || niyet === 'kimdir' || niyet === 'nedir') {
+        v.konu = metin
+          .replace(/\b(araştır|ara|bul|hakkında bilgi ver|wikipedia|wiki|araştırma yap|nedir|kimdir|ne demek|ne anlama)\b/gi,'')
+          .replace(/^[:]\s*/,'').replace(/[?!.]/g,'').trim();
+        if (!v.konu) v.konu = metin.trim();
+      }
+
+      if (niyet === 'hafizaKaydet') {
+        const p1 = metin.match(/(?:kaydet|hatırla|not al)[:\s]+(.+?)\s*[=:]\s*(.+)/i);
+        if (p1) { v.anahtar = p1[1].trim(); v.deger = p1[2].trim(); }
+        else { const p2 = metin.match(/(?:kaydet|hatırla|not al|ezberle|aklında tut)[:\s]+(.+)/i); if(p2) v.ham = p2[1].trim(); }
+      }
+      if (niyet === 'hafizaSil') { const p=metin.match(/(?:unut|sil|hafızadan çıkar)[:\s]+(.+)/i);if(p)v.anahtar=p[1].trim(); }
+      if (niyet === 'hafizaAra') { const p=metin.match(/(?:hafızanda ara|kayıtta ara)[:\s]+(.+)/i);if(p)v.sorgu=p[1].trim(); }
+      if (niyet === 'gorevEkle') { const p=metin.match(/(?:görev ekle|görev oluştur|yapılacak|todo)[:\s]+(.+)/i);if(p)v.baslik=p[1].trim(); }
+      if (niyet === 'birimDon') { const br=BirimDon.metindenCoz(metin);if(br)v.birimSonuc=br; }
+      if (niyet === 'hava') {
+        const seh=['istanbul','ankara','izmir','bursa','antalya','adana','konya','trabzon','samsun','kayseri'];
+        v.sehir=seh.find(s=>Util.normalize(metin).includes(s))||null;
+      }
+      if (niyet === 'istatistik' && v.sayilar?.length > 1) v.sayiListesi = v.sayilar;
+      if (niyet === 'metinCevir') {
+        const p=metin.match(/(?:büyük harf|küçük harf|ters çevir)[:\s]+"?(.+)"?/i);
+        if(p){v.donusuMetin=p[1].trim();v.donusuTur=/büyük/i.test(metin)?'büyük':/küçük/i.test(metin)?'küçük':'ters';}
+      }
+      if (niyet === 'sifreleme') {
+        const ps=metin.match(/(?:şifrele|kodla)[:\s]+(.+)/i);
+        const pc=metin.match(/(?:çöz|decode)[:\s]+(.+)/i);
+        const pb=metin.match(/base64\s+(?:şifrele|kodla)[:\s]+(.+)/i);
+        const pbc=metin.match(/base64\s+(?:çöz|decode)[:\s]+(.+)/i);
+        if(pb){v.islem='base64sifrele';v.icerik=pb[1].trim();}
+        else if(pbc){v.islem='base64coz';v.icerik=pbc[1].trim();}
+        else if(ps){v.islem='sifrele';v.icerik=ps[1].trim();}
+        else if(pc){v.islem='coz';v.icerik=pc[1].trim();}
+      }
+      if (niyet === 'dilAlgila') {
+        const p=metin.match(/(?:bu hangi dil|dil ne|algıla)[:\s]+"?(.+)"?/i);
+        v.algılaMt=p?p[1].trim():metin.replace(/\b(bu hangi dil|dil ne|hangi dilde)\b/gi,'').trim();
+      }
+      if (niyet === 'geometri' && v.sayilar) {
+        const nm=Util.normalize(metin);
+        if(nm.includes('daire')){v.gTur='daire';v.r=v.sayilar[0];}
+        else if(nm.includes('dikdörtgen')||nm.includes('dikdortgen')){v.gTur='dikdortgen';v.en=v.sayilar[0];v.boy=v.sayilar[1];}
+        else if(nm.includes('kare')){v.gTur='kare';v.k=v.sayilar[0];}
+        else if(nm.includes('üçgen')||nm.includes('ucgen')){v.gTur='ucgen';v.t=v.sayilar[0];v.y=v.sayilar[1];}
+        else if(nm.includes('küre')||nm.includes('kure')){v.gTur='kure';v.r=v.sayilar[0];}
+        else if(nm.includes('silindir')){v.gTur='silindir';v.r=v.sayilar[0];v.h=v.sayilar[1];}
+      }
+      if (niyet === 'asal' && v.sayilar) v.asalSayi = v.sayilar[0];
+      if (niyet === 'ebob' && v.sayilar?.length >= 2) {
+        v.a=v.sayilar[0]; v.b=v.sayilar[1];
+        v.islem=Util.normalize(metin).includes('ekok')?'ekok':'ebob';
+      }
+      if (niyet === 'tabanDon' && v.sayilar) {
+        const nm=Util.normalize(metin);
+        v.sayi=v.sayilar[0];
+        v.tabanIslem=nm.includes('ikili')||nm.includes('binary')?'onluIkili':nm.includes('onaltılık')||nm.includes('hex')?'onluOnaltili':'onluSekizli';
+      }
+      return v;
+    },
+
+    _baglamPush(niyet) {
+      this._baglamlar.push(niyet);
+      if (this._baglamlar.length > KONFIG.baglamDerinlik) this._baglamlar.shift();
+    },
+
+    sonBaglamlar(n=4) { return this._baglamlar.slice(-n); },
+
+    /** Öğrenme: kullanıcı bir düzeltme yapınca kaydet */
+    ogrenIntent(metin, niyet) {
+      this._ogrenilenler[Util.normalize(metin)] = niyet;
+      Olay.emit('nlp:ogrenildi', { metin, niyet });
+    },
+
+    /** Cevap üretici */
+    cevapUret(analiz, hafiza) {
+      const { niyet, varlik, duygu } = analiz;
+      const f = Util.formatSayi;
+
+      switch(niyet) {
+        case 'selamlama': return Util.rastgele(KB.selamlama);
+        case 'gunaydın':  return Util.rastgele(KB.gunaydın);
+        case 'iyigunler': return Util.rastgele(KB.iyigunler);
+        case 'iyiaksamlar': return Util.rastgele(KB.iyiaksamlar);
+        case 'iyigece':   return Util.rastgele(KB.iyigece);
+        case 'nasilsin':  return Util.rastgele(KB.nasilsin);
+        case 'tesekkur':  return Util.rastgele(KB.tesekkur);
+        case 'ozur':      return Util.rastgele(KB.ozur);
+        case 'kimsin':    return Util.rastgele(KB.kimsin);
+        case 'tasarimci': return Util.rastgele(KB.tasarimci);
+        case 'yetenekler':return Util.rastgele(KB.yetenekler);
+        case 'saka':      return '😄 '+Util.rastgele(KB.saka);
+        case 'motivasyon':return '💡 '+Util.rastgele(KB.motivasyon);
+        case 'felsefi':   return Util.rastgele(KB.felsefi);
+        case 'versiyon':  return Util.rastgele(KB.versiyon);
+        case 'sustur':    Ses.sustur(); return '🔇 Tamam, susuyorum.';
+
+        case 'saat': {
+          const t=Util.tarihFormat(new Date());
+          return `🕐 Şu an saat **${t.ss}:${t.dk}:${t.sn}** (${t.gunAdi}).`;
+        }
+        case 'tarih': {
+          const t=Util.tarihFormat(new Date());
+          return `📅 Bugün **${t.gunAdi}, ${t.gun} ${t.ay} ${t.yil}** — Yılın ${t.yilGunu}. günü, ${t.haftaNo}. haftası.`;
+        }
+        case 'mevsim': {
+          const t=Util.tarihFormat(new Date());
+          return `🌱 Şu an **${t.mevsim}** mevsimindeyiz (${t.ay}).`;
+        }
+
+        case 'matematik': {
+          const s=MatematikMotoru.coz(analiz.metin);
+          return s?`🔢 **${s.sonuc}**`:'❌ Bu ifadeyi çözemedim. Örnek: "25 çarpı 4" veya "sqrt 144"';
+        }
+        case 'asal': {
+          if(varlik.asalSayi===undefined)return'Hangi sayının asal olduğunu öğrenmek istiyorsunuz?';
+          const n=varlik.asalSayi;
+          return MatematikMotoru.asalMi(n)?`✅ **${n}** asal sayıdır.`:`❌ **${n}** asal değil. Çarpanları: **${MatematikMotoru.asalCarpanlar(n).join(' × ')}**`;
+        }
+        case 'geometri': {
+          const g=varlik.gTur;
+          if(!g)return'Şekli belirtin. Örnek: "5 yarıçaplı daire alanı"';
+          const G=MatematikMotoru.geometri;
+          switch(g){
+            case 'daire':return`⭕ Daire (r=${varlik.r}):\n• Alan: **${f(G.daireAlan(varlik.r),4)} birim²**\n• Çevre: **${f(G.daireCevre(varlik.r),4)} birim**`;
+            case 'dikdortgen':return varlik.boy!==undefined?`▭ Dikdörtgen (${varlik.en}×${varlik.boy}):\n• Alan: **${G.dikdortgenAlan(varlik.en,varlik.boy)} birim²**\n• Çevre: **${G.dikdortgenCevre(varlik.en,varlik.boy)} birim**`:'İki kenar uzunluğu gerekli.';
+            case 'kare':return`◻ Kare (k=${varlik.k}):\n• Alan: **${varlik.k*varlik.k} birim²**\n• Çevre: **${G.kareCevre(varlik.k)} birim**`;
+            case 'ucgen':return varlik.y!==undefined?`🔺 Üçgen:\n• Alan: **${G.ucgenAlan(varlik.t,varlik.y)} birim²**`:'Taban ve yükseklik gerekli.';
+            case 'kure':return`🔵 Küre (r=${varlik.r}):\n• Hacim: **${f(G.kureHacim(varlik.r),4)} birim³**\n• Yüzey: **${f(G.kureAlan(varlik.r),4)} birim²**`;
+            case 'silindir':return varlik.h!==undefined?`🥫 Silindir:\n• Hacim: **${f(G.silindirHacim(varlik.r,varlik.h),4)} birim³**`:'Yarıçap ve yükseklik gerekli.';
+            default:return'Şekil tanınmadı.';
+          }
+        }
+        case 'istatistik': {
+          if(varlik.sayiListesi?.length>1){
+            const ist=MatematikMotoru.istatistik(varlik.sayiListesi);
+            return`📊 **İstatistik** (${ist.n} sayı):\n• Ortalama: **${ist.ortalama}**\n• Medyan: **${ist.medyan}**\n• Mod: **${ist.mod.join(', ')}**\n• Min: **${ist.min}** / Max: **${ist.max}**\n• Std Sapma: **${ist.standartSapma}**`;
+          }
+          const ist=hafiza.istatistik();
+          return`📊 **Sistem:**\n• Kayıt: **${ist.kayitSayisi}**\n• Konuşma: **${ist.konusmaSayisi}** tur\n• Boyut: **${ist.boyutKB}**`;
+        }
+        case 'ebob': return varlik.a&&varlik.b?`🔢 **${varlik.a}** ve **${varlik.b}** → **${varlik.islem?.toUpperCase()}**: **${varlik.islem==='ekok'?MatematikMotoru.ekok(varlik.a,varlik.b):MatematikMotoru.ebob(varlik.a,varlik.b)}**`:'İki sayı gerekli.';
+        case 'tabanDon': return varlik.sayi!==undefined&&varlik.tabanIslem?`🔢 **${varlik.sayi}** → **${MatematikMotoru.tabanDon[varlik.tabanIslem](varlik.sayi)}**`:'Sayı ve hedef taban belirtin.';
+
+        case 'hafizaGetir': {
+          const k=hafiza.hepsi();
+          if(!k.length)return Util.rastgele(KB.hafizayok);
+          return`💾 **Hafızamdaki kayıtlar** (${k.length} toplam):\n`+k.slice(-8).reverse().map(i=>`• **${i.anahtar}**: ${String(i.deger).substring(0,60)}`).join('\n');
+        }
+        case 'hafizaSil': return varlik.anahtar?(hafiza.sil(varlik.anahtar)?`🗑️ "**${varlik.anahtar}**" silindi.`:`"${varlik.anahtar}" bulunamadı.`):'Ne silmemi istersiniz?';
+        case 'hafizaAra': {
+          if(!varlik.sorgu)return'Arama terimi belirtin.';
+          const b=hafiza.ara(varlik.sorgu);
+          return b.length?`🔍 "${varlik.sorgu}":\n`+b.slice(0,5).map(x=>`• **${x.anahtar}**: ${String(x.deger).substring(0,50)}`).join('\n'):`"${varlik.sorgu}" için sonuç yok.`;
+        }
+        case 'hafizaDisa': return`📤 Hafıza dışa aktarıldı (${(hafiza.disaAktar().length/1024).toFixed(1)}KB).`;
+
+        case 'gorevEkle': return varlik.baslik?(hafiza.gorevEkle(varlik.baslik),`✅ Görev eklendi: "**${varlik.baslik}**"`):'Görev başlığını belirtin.';
+        case 'gorevListele': {
+          const g=hafiza.gorevler();
+          return g.length?`📋 **Görevler** (${g.length}):\n`+g.map((x,i)=>`${i+1}. [${x.durum==='tamamlandi'?'✅':'⏳'}] **${x.baslik}** (${x.oncelik})`).join('\n'):'📋 Görev listeniz boş.';
+        }
+        case 'gorevTamamla': {
+          const g=hafiza.gorevler({durum:'bekliyor'});
+          return g.length?(hafiza.gorevTamamla(g[0].id)?`✅ "**${g[0].baslik}**" tamamlandı!`:'Hata.'):'Bekleyen görev yok.';
+        }
+
+        case 'birimDon': {
+          const br=varlik.birimSonuc;
+          return br?`🌡️ **${br.deger} ${br.kaynak}** = **${br.sonuc} ${br.hedef}**`:'Birim dönüşümü için örnek: "100 km metre"';
+        }
+
+        case 'dilAlgila': {
+          const m=varlik.algılaMt||analiz.metin;
+          const DL={tr:'Türkçe',en:'İngilizce',de:'Almanca',fr:'Fransızca',es:'İspanyolca',ar:'Arapça',ru:'Rusça'};
+          // Basit dil tespiti
+          const trKar=/[çğışöüÇĞİŞÖÜ]/.test(m);
+          const dil=trKar?'tr':(/the|and|is|are/.test(m.toLowerCase())?'en':'bilinmiyor');
+          return`🌐 Dil: **${DL[dil]||'Bilinmiyor'}**`;
+        }
+
+        case 'metinAnaliz': {
+          const m=analiz.metin.replace(/\b(bu metni analiz|kelime say|metin istatistik|okunabilirlik)\b/gi,'').trim();
+          if(!m)return'Analiz için metin girin.';
+          const a=MetinAraci.analiz(m);
+          return`📝 **Metin Analizi:**\n• Kelime: **${a.kelimeSayisi}**\n• Cümle: **${a.cumleSayisi}**\n• Karakter: **${a.karakterler}**\n• Okunabilirlik: **${a.okunabilirlik}/100**\n• Palindrom: ${a.palindromMu?'**Evet**':'Hayır'}`;
+        }
+        case 'metinCevir': {
+          const m=varlik.donusuMetin;
+          if(!m)return'Metin girin. Örnek: "büyük harf: merhaba"';
+          if(varlik.donusuTur==='büyük')return`🔤 **${Util.buyukHarf(m)}**`;
+          if(varlik.donusuTur==='küçük')return`🔤 **${Util.normalize(m)}**`;
+          return`🔤 **${MetinAraci.tersCevir(m)}**`;
+        }
+        case 'sifreleme': {
+          if(!varlik.islem||!varlik.icerik)return'Örnek: "şifrele: merhaba" veya "base64 şifrele: metin"';
+          switch(varlik.islem){
+            case 'sifrele':return`🔐 Caesar(13): **${MetinAraci.sifreleCaesar(varlik.icerik,13)}**`;
+            case 'coz':return`🔓 Caesar çözüm: **${MetinAraci.cozCaesar(varlik.icerik,13)}**`;
+            case 'base64sifrele':return`🔐 Base64: **${MetinAraci.base64Sirla(varlik.icerik)}**`;
+            case 'base64coz':return`🔓 Base64 çözüm: **${MetinAraci.base64Coz(varlik.icerik)||'Geçersiz'}**`;
+            default:return'Tanınmayan şifreleme.';
+          }
+        }
+        case 'palindrom': {
+          const m=analiz.metin.replace(/\b(palindrom|tersten aynı)\b/gi,'').replace(/[?!.]/g,'').trim();
+          return Util.palindromMu(m)?`✅ "**${m}**" palindromdur!`:`❌ "**${m}**" palindrom değil.`;
+        }
+        case 'duyguTest': {
+          const d=DuyguAnaliz.analiz(analiz.metin.replace(/\b(duygu analizi|duygusu|pozitif mi|negatif mi)\b/gi,'').trim()||analiz.metin);
+          return`😊 **Duygu:** ${d.duygu} ${d.emoji} | Puan: ${d.puan} | Ton: ${d.ton}`;
+        }
+
+        case 'sistemIstat': {
+          const ist=hafiza.istatistik();
+          return`📊 **Sistem Raporu:**\n• Kayıt: **${ist.kayitSayisi}**\n• Konuşma: **${ist.konusmaSayisi}** tur\n• Görev: **${ist.gorevSayisi}** (${ist.tamamlananGorev} tamam)\n• Boyut: **${ist.boyutKB}**\n• Ses: **${Ses.aktifMi()?'AKTİF':'PASIF'}**\n• Görüntü: **${Goruntu.aktifMi()?'AKTİF':'PASIF'}**`;
+        }
+        case 'gecmis': {
+          const log=hafiza.sonLog(5);
+          return log.length?`📜 **Son konuşmalar:**\n`+log.map((l,i)=>`${i+1}. 🧑 "${l.girdi.substring(0,40)}"`).join('\n'):'Henüz konuşma geçmişi yok.';
+        }
+        case 'temizle': hafiza.temizle(); return'🗑️ Hafıza temizlendi.';
+        case 'hava': return varlik.sehir?`☁️ **${Util.buyukHarf(varlik.sehir)}** hava verisi için: **"araştır: ${varlik.sehir} hava durumu"** yazabilirsiniz.`:'Hangi şehrin hava durumunu öğrenmek istiyorsunuz?';
+        case 'goruntu': return Goruntu.aktifMi()?Goruntu.aciklamaUret(Goruntu.analizEt()):'📷 Kamera aktif değil. Kamera butonuna basın.';
+
+        // kimdir / nedir → OTOMATİK araştırma YOK
+        case 'kimdir': {
+          const konu=(varlik.konu||'').replace(/[?!.]/g,'').trim();
+          if(!konu||konu.length<2)return'Kim hakkında bilgi almak istiyorsunuz?';
+          return`🔍 **"${konu}"** hakkında araştırmamı ister misiniz?\n\n💡 Evet ise: **"araştır: ${konu}"** yazın.`;
+        }
+        case 'nedir': {
+          const konu=(varlik.konu||'').replace(/[?!.]/g,'').trim();
+          if(!konu||konu.length<2)return'Neyi merak ediyorsunuz?';
+          return`🔍 **"${konu}"** için araştırmamı ister misiniz?\n\n💡 Evet ise: **"araştır: ${konu}"** yazın.`;
+        }
+
+        default: return null;
+      }
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 13  SES SİSTEMİ (Wake Word dahil)
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Ses = {
+    _synth:null,_rec:null,_uRec:null,
+    _aktif:false,_dinliyorMu:false,_uMod:false,
+    _konusuyor:false,_kuyruk:[],
+    _dil:META.dil,_hiz:KONFIG.sesHiz,_perde:KONFIG.sesPerde,_ses:null,
+    _ww:META.wakeWord,
+
+    baslat(){
+      if(typeof window !== 'undefined' && 'speechSynthesis' in window){
+        this._synth=window.speechSynthesis; this._aktif=true;
+        const yuk=()=>{const s=this._synth.getVoices();this._ses=s.find(x=>x.lang==='tr-TR')||s.find(x=>x.lang.startsWith('tr'))||s[0]||null;};
+        this._synth.onvoiceschanged=yuk; yuk();
+      }
+      const SR=(typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : undefined);
+      if(SR){this._rec=new SR();this._rec.lang=this._dil;this._rec.continuous=false;this._rec.interimResults=true;this._rec.maxAlternatives=3;}
+      return this._aktif;
+    },
+
+    konuş(metin,bitti=null){
+      if(!this._synth){if(bitti)bitti();return;}
+      this._kuyruk.push({metin,bitti});
+      if(!this._konusuyor)this._kIsle();
+    },
+    _kIsle(){
+      if(!this._kuyruk.length){this._konusuyor=false;return;}
+      this._konusuyor=true;
+      const{metin,bitti}=this._kuyruk.shift();
+      const u=new SpeechSynthesisUtterance(Util.temizMarkdown(metin));
+      u.lang=this._dil;u.rate=this._hiz;u.pitch=this._perde;if(this._ses)u.voice=this._ses;
+      u.onstart=()=>Olay.emit('ses:konuşmaBasladı',{metin});
+      u.onend=()=>{this._konusuyor=false;Olay.emit('ses:konuşmaBitti',{metin});if(bitti)bitti();this._kIsle();};
+      u.onerror=()=>{this._konusuyor=false;if(bitti)bitti();this._kIsle();};
+      try{this._synth.speak(u);}catch(_){if(bitti)bitti();}
+    },
+    sustur(){if(this._synth)this._synth.cancel();this._kuyruk=[];this._konusuyor=false;},
+
+    dinle(tamam,hata){
+      if(!this._rec){if(hata)hata('Ses tanıma desteklenmiyor');return;}
+      if(this._dinliyorMu){try{this._rec.stop();}catch(_){}}
+      this._dinliyorMu=true; Olay.emit('ses:dinlemeBasladı',{});
+      this._rec.onresult=e=>{
+        const son=e.results[e.results.length-1];
+        Olay.emit('ses:aralik',{metin:son[0].transcript});
+        if(son.isFinal){this._dinliyorMu=false;Olay.emit('ses:tanındı',{metin:son[0].transcript,guven:son[0].confidence});if(tamam)tamam(son[0].transcript,son[0].confidence);}
+      };
+      this._rec.onerror=ev=>{this._dinliyorMu=false;Olay.emit('ses:hata',{hata:ev.error});if(hata)hata(ev.error);};
+      this._rec.onend=()=>{if(this._dinliyorMu){this._dinliyorMu=false;Olay.emit('ses:dinlemeBitti',{});}};
+      try{this._rec.start();}catch(_){}
+    },
+    dur(){if(this._rec&&this._dinliyorMu){try{this._rec.stop();}catch(_){}this._dinliyorMu=false;}},
+
+    uyanikDinlemeBaslat(){
+      const SR=(typeof window !== 'undefined' ? ((typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : undefined)) : undefined);
+      if(!SR){Olay.emit('wakeWord:desteklenmiyor',{});return false;}
+      if(this._uMod)return true;
+      this._uMod=true;
+      this._uRec=new SR();
+      this._uRec.lang=this._dil;this._uRec.continuous=false;this._uRec.interimResults=false;this._uRec.maxAlternatives=5;
+      this._uRec.onresult=e=>{
+        if(!this._uMod)return;
+        const sonuclar=Array.from(e.results[e.results.length-1]).map(r=>Util.normalize(r.transcript));
+        if(sonuclar.some(s=>s.includes(this._ww)||s.includes('toncer')||s.includes('tüncer'))){
+          Olay.emit('wakeWord:algilandi',{metin:sonuclar[0]});
+          setTimeout(()=>{if(this._uMod)this._tamDinle();},KONFIG.wakeWordGecikme);
+        }
+      };
+      this._uRec.onend=()=>{if(this._uMod&&!this._dinliyorMu)setTimeout(()=>{if(this._uMod)try{this._uRec.start();}catch(_){}},200);};
+      this._uRec.onerror=e=>{
+        if(e.error==='not-allowed'){this._uMod=false;Olay.emit('wakeWord:izinReddedildi',{});return;}
+        if(this._uMod)setTimeout(()=>{try{this._uRec.start();}catch(_){}},500);
+      };
+      try{this._uRec.start();Olay.emit('wakeWord:basladi',{kelime:this._ww});return true;}catch(e){this._uMod=false;return false;}
+    },
+    uyanikDinlemeDurdur(){this._uMod=false;if(this._uRec)try{this._uRec.stop();}catch(_){}Olay.emit('wakeWord:durduruldu',{});},
+    _tamDinle(){
+      if(this._dinliyorMu||this._konusuyor)return;
+      Olay.emit('ses:tamDinlemeBasladı',{});
+      this.dinle(
+        (metin,guven)=>{Olay.emit('wakeWord:komutAlindi',{metin,guven});setTimeout(()=>{if(this._uMod)try{this._uRec.start();}catch(_){}},800);},
+        (hata)=>{Olay.emit('ses:hata',{hata});setTimeout(()=>{if(this._uMod)try{this._uRec.start();}catch(_){}},500);}
+      );
+    },
+    ayarla({hiz,perde,dil,wakeWord}={}){
+      if(hiz!==undefined)this._hiz=hiz;if(perde!==undefined)this._perde=perde;
+      if(dil!==undefined){this._dil=dil;if(this._rec)this._rec.lang=dil;}
+      if(wakeWord!==undefined)this._ww=Util.normalize(wakeWord);
+    },
+    aktifMi(){return this._aktif;},
+    dinliyorMu(){return this._dinliyorMu;},
+    konuşuyorMu(){return this._konusuyor;},
+    uyanikModMu(){return this._uMod;},
+    sesListesi(){return this._synth?this._synth.getVoices().map(s=>({ad:s.name,dil:s.lang})):[];},
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 14  GÖRÜNTÜ TANIMA
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Goruntu = {
+    _v:null,_c:null,_ctx:null,_aktifMi:false,_onceki:null,_stream:null,_int:null,
+
+    async baslat(videoEl,canvasEl){
+      try{
+        this._v=videoEl;this._c=canvasEl;this._ctx=canvasEl.getContext('2d');
+        this._stream=await navigator.mediaDevices.getUserMedia({video:{width:640,height:480,facingMode:'user'},audio:false});
+        videoEl.srcObject=this._stream;
+        await new Promise(r=>{videoEl.onloadedmetadata=()=>{videoEl.play();r();};});
+        this._aktifMi=true;
+        this._int=setInterval(()=>this._oto(),2000);
+        Olay.emit('goruntu:başladı',{});return true;
+      }catch(e){Olay.emit('goruntu:hata',{hata:e.message});return false;}
+    },
+    _oto(){if(!this._aktifMi)return;const a=this.analizEt();if(a.hareket?.var&&a.hareket.seviye>30)Olay.emit('goruntu:hareketAlgilandi',{seviye:a.hareket.seviye});},
+    kareYakala(){
+      if(!this._aktifMi||!this._v)return null;
+      const w=this._v.videoWidth||320,h=this._v.videoHeight||240;
+      this._c.width=w;this._c.height=h;this._ctx.drawImage(this._v,0,0);
+      return this._ctx.getImageData(0,0,w,h);
+    },
+    analizEt(){
+      const kare=this.kareYakala();if(!kare)return{hata:'Kamera aktif değil'};
+      const renk=this._renk(kare),p=this._par(kare),h=this._har(kare);
+      return{renk,parlaklık:p,hareket:h,ortam:this._ort(p,renk),yuz:this._yuz(kare),
+             cozunurluk:`${kare.width}x${kare.height}`,zaman:new Date().toISOString()};
+    },
+    _renk({data}){let r=0,g=0,b=0,n=0;for(let i=0;i<data.length;i+=40){r+=data[i];g+=data[i+1];b+=data[i+2];n++;}r=Math.round(r/n);g=Math.round(g/n);b=Math.round(b/n);
+      const RENKLER=[{ad:'kırmızı',r:220,g:30,b:30},{ad:'yeşil',r:30,g:180,b:30},{ad:'mavi',r:30,g:30,b:200},{ad:'sarı',r:230,g:230,b:20},{ad:'turuncu',r:230,g:140,b:20},{ad:'mor',r:140,g:0,b:200},{ad:'beyaz',r:240,g:240,b:240},{ad:'siyah',r:20,g:20,b:20},{ad:'gri',r:120,g:120,b:120},{ad:'kahverengi',r:130,g:70,b:40}];
+      let min=Infinity,en=RENKLER[0];for(const c of RENKLER){const d=Math.sqrt((r-c.r)**2+(g-c.g)**2+(b-c.b)**2);if(d<min){min=d;en=c;}}
+      return{ort:{r,g,b},dominant:en.ad,hex:`#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`};
+    },
+    _par({data}){let t=0,n=0;for(let i=0;i<data.length;i+=40){t+=data[i]*0.299+data[i+1]*0.587+data[i+2]*0.114;n++;}const d=t/n;return{deger:Math.round(d),aciklama:d>200?'çok aydınlık':d>140?'aydınlık':d>80?'loş':'karanlık'};},
+    _har({data}){
+      if(!this._onceki){this._onceki=data.slice();return{var:false,seviye:0,aciklama:'ilk kare'};}
+      let f=0,n=0;for(let i=0;i<data.length&&i<this._onceki.length;i+=60){f+=Math.abs(data[i]-this._onceki[i])+Math.abs(data[i+1]-this._onceki[i+1])+Math.abs(data[i+2]-this._onceki[i+2]);n++;}
+      this._onceki=data.slice();const s=Math.round(f/(n*3));
+      return{var:s>12,seviye:s,aciklama:s>50?'yüksek hareket':s>12?'hafif hareket':'hareketsiz'};
+    },
+    _ort(p,r){const{r:rv,g:gv,b:bv}=r.ort;if(p.deger>190&&rv>200&&gv>200&&bv>200)return'aydınlık kapalı alan';if(p.deger<50)return'karanlık';if(gv>rv+20&&gv>bv+20)return'doğal/yeşil alan';if(bv>rv+30)return'açık alan/gökyüzü';return'genel iç mekan';},
+    _yuz({data}){let c=0,t=0;for(let i=0;i<data.length;i+=16){const r=data[i],g=data[i+1],b=data[i+2];if(r>95&&g>40&&b>20&&r>g&&r>b&&Math.abs(r-g)>15)c++;t++;}const o=c/t;return{var:o>0.15,oran:`${Math.round(o*100)}%`,aciklama:o>0.15?'yüz algılandı':o>0.08?'belirsiz':'yüz yok'};},
+    aciklamaUret(a){
+      if(a.hata)return`❌ ${a.hata}`;
+      return`👁️ **Görüntü:**\n🎨 Renk: **${a.renk.dominant}** (${a.renk.hex})\n💡 Işık: **${a.parlaklık.aciklama}**\n🏃 Hareket: **${a.hareket.aciklama}**\n🏠 Ortam: **${a.ortam}**\n👤 Yüz: **${a.yuz.aciklama}**`;
+    },
+    durdur(){clearInterval(this._int);if(this._stream)this._stream.getTracks().forEach(t=>t.stop());this._aktifMi=false;Olay.emit('goruntu:durduruldu',{});},
+    aktifMi(){return this._aktifMi;},
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 15  ARAŞTIRMA MOTORU  (sadece açık istek)
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Arastirma = {
+    _WP:'https://tr.wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=5&srsearch=',
+    _WPO:'https://tr.wikipedia.org/api/rest_v1/page/summary/',
+    _DDG:'https://api.duckduckgo.com/?format=json&no_html=1&skip_disambig=1&origin=*&q=',
+    _ob:{},
+
+    async wikipedia(sorgu){
+      const c=this._ob[sorgu];
+      if(c&&KONFIG.arastirmaOnbellek&&Date.now()-c.z<KONFIG.onbellekSuresi)return c.s;
+      try{
+        Olay.emit('arastirma:başladı',{sorgu,kaynak:'Wikipedia'});
+        const r=await fetch(this._WP+encodeURIComponent(sorgu));const v=await r.json();
+        const arama=v.query?.search||[];if(!arama.length)return{ok:false,mesaj:`"${sorgu}" için Wikipedia'da sonuç bulunamadı.`};
+        const baslik=arama[0].title;
+        const or=await fetch(this._WPO+encodeURIComponent(baslik));const ov=await or.json();
+        const s={ok:true,baslik:ov.title||baslik,ozet:ov.extract||'Özet bulunamadı.',
+          url:ov.content_urls?.desktop?.page||`https://tr.wikipedia.org/wiki/${encodeURIComponent(baslik)}`,
+          kaynak:'Wikipedia (Türkçe)',ilgili:arama.slice(1,4).map(x=>x.title)};
+        if(KONFIG.arastirmaOnbellek)this._ob[sorgu]={s,z:Date.now()};
+        Olay.emit('arastirma:tamam',{sorgu,baslik:s.baslik});return s;
+      }catch(e){return{ok:false,mesaj:'Wikipedia hatası: '+e.message};}
+    },
+    async duckduckgo(sorgu){
+      try{
+        const r=await fetch(this._DDG+encodeURIComponent(sorgu));const v=await r.json();
+        if(v.AbstractText)return{ok:true,baslik:v.Heading||sorgu,ozet:v.AbstractText,url:v.AbstractURL,kaynak:'DuckDuckGo'};
+        if(v.Answer)return{ok:true,baslik:'Direkt Cevap',ozet:v.Answer,url:null,kaynak:'DuckDuckGo Instant'};
+        return{ok:false,mesaj:'Web\'den sonuç gelmedi.'};
+      }catch(e){return{ok:false,mesaj:'Web hatası: '+e.message};}
+    },
+    async arastir(sorgu){
+      if(!sorgu?.trim())return'Araştırmak için bir konu belirtin.';
+      let s=await this.wikipedia(sorgu.trim());
+      if(!s.ok)s=await this.duckduckgo(sorgu.trim());
+      if(s.ok){
+        let c=`📚 **${s.baslik}** _(${s.kaynak})_\n\n`+Util.ozet(s.ozet,100);
+        if(s.url)c+=`\n\n🔗 ${s.url}`;
+        if(s.ilgili?.length)c+=`\n\n📖 İlgili: ${s.ilgili.join(', ')}`;
+        return c;
+      }
+      return s.mesaj||`"${sorgu}" hakkında bilgi bulunamadı.`;
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 16  PLUGIN SİSTEMİ
+  // ═══════════════════════════════════════════════════════════════════
+
+  const PluginSistemi = {
+    _p:{},
+    kaydet(p){if(!p?.ad)return false;this._p[p.ad]=p;if(typeof p.baslat==='function')try{p.baslat(TZP);}catch(e){}Olay.emit('plugin:kayit',{ad:p.ad});return true;},
+    kaldir(ad){if(!this._p[ad])return false;delete this._p[ad];return true;},
+    async isle(analiz){
+      for(const p of Object.values(this._p)){
+        if(typeof p.isle!=='function')continue;
+        try{const c=await p.isle(analiz);if(c!=null){return c;}}catch(e){}
+      }
+      return null;
+    },
+    listele(){return Object.values(this._p).map(p=>({ad:p.ad,versiyon:p.versiyon||'—'}));},
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 17  KONUŞMA YÖNETİCİSİ
+  // ═══════════════════════════════════════════════════════════════════
+
+  const Konusma = {
+    async isle(girdi) {
+      if (!girdi?.trim()) return 'Lütfen bir şeyler yazın veya söyleyin.';
+      const g = girdi.trim();
+      Util.log('Girdi:', g);
+
+      const analiz = NLP.analiz(g);
+      Util.log('Niyet:', analiz.niyet, '| Güven:', analiz.guven, '| Kaynak:', analiz.kaynak);
+
+      // Plugin
+      const pC = await PluginSistemi.isle(analiz);
+      if (pC != null) {
+        Hafiza.logEkle(g, pC, { niyet: analiz.niyet, kaynak: 'plugin' });
+        Olay.emit('konuşma:cevap', { girdi: g, cevap: pC, analiz });
+        return pC;
+      }
+
+      // Araştırma — SADECE açık 'arastirma' niyeti
+      if (analiz.niyet === 'arastirma' && analiz.varlik.konu) {
+        const c = await Arastirma.arastir(analiz.varlik.konu);
+        Hafiza.logEkle(g, c, { niyet: 'arastirma' });
+        Olay.emit('konuşma:cevap', { girdi: g, cevap: c, analiz });
+        return c;
+      }
+
+      // Görüntü
+      if (analiz.niyet === 'goruntu') {
+        const c = Goruntu.aktifMi() ? Goruntu.aciklamaUret(Goruntu.analizEt()) : '📷 Kamera aktif değil.';
+        Hafiza.logEkle(g, c, { niyet: 'goruntu' });
+        Olay.emit('konuşma:cevap', { girdi: g, cevap: c, analiz });
+        return c;
+      }
+
+      // Hafıza kaydet
+      if (analiz.niyet === 'hafizaKaydet') {
+        const { anahtar, deger, ham } = analiz.varlik;
+        let c;
+        if (anahtar && deger) {
+          Hafiza.kaydet(anahtar, deger, { etiket: 'kullanici', kategori: 'manuel' });
+          c = `💾 Kaydedildi: **"${anahtar}"** → **"${deger}"**`;
+        } else if (ham) {
+          Hafiza.kaydet('not_' + Date.now(), ham, { etiket: 'not', kategori: 'otomatik' });
+          c = `💾 Not kaydedildi: **"${ham}"**`;
+        } else {
+          c = 'Ne kaydetmemi istersiniz? Örnek: **"kaydet: renk = mavi"**';
+        }
+        Hafiza.logEkle(g, c, { niyet: 'hafizaKaydet' });
+        Olay.emit('konuşma:cevap', { girdi: g, cevap: c, analiz });
+        return c;
+      }
+
+      // Senkron NLP cevabı
+      let cevap = NLP.cevapUret(analiz, Hafiza);
+
+      // Duygu ek mesajı
+      if (cevap && analiz.duygu?.duygu === 'negatif' && analiz.duygu.siddet > 0.4) {
+        cevap += '\n\n_Biraz olumsuz bir hava seziyorum. Yardımcı olabilir miyim?_';
+      }
+
+      // Bilinmiyor → kibarca yönlendir, OTOMATİK araştırma YOK
+      if (!cevap) {
+        const oneri = g.length > 3 ? `**"araştır: ${g.substring(0,30)}"** yazabilirsiniz.` : '';
+        cevap = `${Util.rastgele(KB.anlayamadim)}${oneri ? '\n\n💡 Araştırmamı ister misiniz? '+oneri : ''}`;
+      }
+
+      Hafiza.logEkle(g, cevap, { niyet: analiz.niyet, guven: analiz.guven });
+      Olay.emit('konuşma:cevap', { girdi: g, cevap, analiz });
+      return cevap;
+    },
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 18  BAŞLATICI
+  // ═══════════════════════════════════════════════════════════════════
+
+  function baslat(ayarlar = {}) {
+    Object.assign(KONFIG, ayarlar);
+    Hafiza.baslat();
+    const sesAktif = Ses.baslat();
+    console.log(
+      `%c\n╔══════════════════════════════════════════╗\n║  TUNCER ZEKA v5.0  — 7 Katmanlı Anlama  ║\n║  Tasarımcı : Ahmet Tuncer               ║\n║  Anlama Eşiği : ${KONFIG.anlamEsigi}                    ║\n║  Ses       : ${sesAktif ? 'Aktif ✓' : 'Pasif ✗'}                        ║\n╚══════════════════════════════════════════╝`,
+      'color:#00d4ff;font-family:monospace;font-size:11px;'
+    );
+    const durum = { meta: META, sesAktif, hazir: true };
+    Olay.emit('sistem:başladı', durum);
+    return durum;
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // § 19  PUBLIC API
+  // ═══════════════════════════════════════════════════════════════════
+
+  const TZP = {
+    meta: META, versiyon: META.versiyon, konfig: KONFIG,
+    baslat, isle: g => Konusma.isle(g),
+
+    // Modüller
+    hafiza: Hafiza, nlp: NLP, ses: Ses, goruntu: Goruntu,
+    arastirma: Arastirma, plugin: PluginSistemi, olay: Olay,
+    util: Util, matematik: MatematikMotoru, birim: BirimDon,
+    metin: MetinAraci, duygu: DuyguAnaliz,
+    anlamKumeleri: AnlamKumeleri, kokBulucu: KokBulucu,
+
+    // Kısayollar
+    konuş   : (t,cb) => Ses.konuş(t,cb),
+    dinle   : (ok,e) => Ses.dinle(ok,e),
+    sustur  : ()     => Ses.sustur(),
+    kaydet  : (k,v,o)=> Hafiza.kaydet(k,v,o),
+    getir   : k      => Hafiza.getir(k),
+    arastir : q      => Arastirma.arastir(q),
+    on      : (e,fn) => Olay.on(e,fn),
+    once    : (e,fn) => Olay.once(e,fn),
+
+    // Wake Word
+    uyanikBaslat: () => Ses.uyanikDinlemeBaslat(),
+    uyanikDurdur: () => Ses.uyanikDinlemeDurdur(),
+    uyanikModMu : () => Ses.uyanikModMu(),
+
+    // Plugin
+    pluginEkle    : p  => PluginSistemi.kaydet(p),
+    pluginListesi : () => PluginSistemi.listele(),
+
+    // NLP öğrenme
+    ogrenIntent: (m,n) => NLP.ogrenIntent(m,n),
+
+    // Yardımcı
+    tarih        : ()    => Util.tarihFormat(new Date()),
+    hesapla      : e     => MatematikMotoru.coz(e),
+    cevirBirim   : (d,k,h) => BirimDon.cevir(d,k,h),
+    duyguAnaliz  : t     => DuyguAnaliz.analiz(t),
+    istatistik   : l     => MatematikMotoru.istatistik(l),
+    asalMi       : n     => MatematikMotoru.asalMi(n),
+    asalCarpanlar: n     => MatematikMotoru.asalCarpanlar(n),
+    ebob         : (a,b) => MatematikMotoru.ebob(a,b),
+    ekok         : (a,b) => MatematikMotoru.ekok(a,b),
+    palindromMu  : t     => Util.palindromMu(t),
+    sayiOku      : n     => Util.sayiOku(n),
+    base64Sirla  : m     => MetinAraci.base64Sirla(m),
+    base64Coz    : m     => MetinAraci.base64Coz(m),
+    metinAnaliz  : m     => MetinAraci.analiz(m),
+    yazimDuzelt  : m     => MetinAraci.duzelt(m),
+    sifreleCaesar: (m,k) => MetinAraci.sifreleCaesar(m,k),
+    kokBul       : k     => KokBulucu.kok(k),
+    anlamPuan    : m     => AnlamKumeleri.puan(m),
+    gorevEkle    : (b,o) => Hafiza.gorevEkle(b,o),
+    gorevler     : o     => Hafiza.gorevler(o),
+    gorevTamamla : id    => Hafiza.gorevTamamla(id),
+    disaAktar    : ()    => Hafiza.disaAktar(),
+    iceAktar     : j     => Hafiza.iceAktar(j),
+  };
+
+  return TZP;
+
+})();
+
+// Modül aktarma
+if (typeof window  !== 'undefined') window.TuncerZeka = TuncerZeka;
+if (typeof module  !== 'undefined' && module.exports) module.exports = TuncerZeka;
+if (typeof exports !== 'undefined') exports.default = TuncerZeka;
+
+/*
+ * ───────────────────────────────────────────────────────────────────
+ *  ANLAMA SİSTEMİ NASIL ÇALIŞIR?
+ * ───────────────────────────────────────────────────────────────────
+ *
+ *  "Zamanı söyle"       → saat (anlam kümesi: zaman, söyle)
+ *  "Gecenin kaçı"       → saat (kök: gece, kaç)
+ *  "Hava soğuk mu?"     → hava (anlam kümesi: hava)
+ *  "Motivasyon lazım"   → motivasyon (kök eşleşme)
+ *  "Ekmek varsa 1 al"   → saka (bağlam + kelime)
+ *  "Slm nbr"            → selamlama (yazım düzeltme)
+ *  "Ne biliyorsun"      → hafizaGetir (anlam kümesi)
+ *  "Bunu unut"          → hafizaSil (kök: unut)
+ *  "Ahmet Tuncer kim?"  → kimdir (araştırma YAPMAZ, öneri sunar)
+ *  "araştır: Einstein"  → araştırma tetiklenir
+ *
+ *  TuncerZeka.kokBul("gidiyorum")   // "gi"
+ *  TuncerZeka.anlamPuan("saat kaç") // {saat: 6.5, tarih: 0.5, ...}
+ *  TuncerZeka.ogrenIntent("naber ya","selamlama") // öğrenir
+ *
+ * ───────────────────────────────────────────────────────────────────
+ *  © 2024 Ahmet Tuncer — Tuncer Zeka v5.0 — MIT Lisansı
+ * ───────────────────────────────────────────────────────────────────
+ */
+
+          ############################################################
+         */
         const TuncerZeka = (function () {
-            const Olay = {
-                _m:{}, on(ad,fn){ if(!this._m[ad])this._m[ad]=[]; this._m[ad].push(fn); },
-                emit(ad,v){ if(this._m[ad]) this._m[ad].forEach(f=>f(v)); }
-            };
-            const Ses = {
-                _rec: null, _active: false,
-                init() {
-                    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    if(SR) { this._rec = new SR(); this._rec.lang = 'tr-TR'; this._rec.continuous = true; }
-                },
-                listenOnce(callback) {
-                    if(!this._rec) return;
-                    this._rec.onresult = (e) => {
-                        const txt = e.results[e.results.length-1][0].transcript.toLowerCase();
-                        callback(txt);
-                    };
-                    try { this._rec.start(); } catch(e) {}
-                },
-                speak(txt) {
-                    const u = new SpeechSynthesisUtterance(txt);
-                    u.lang = 'tr-TR'; u.rate = 1.1; window.speechSynthesis.speak(u);
+            // Kendi değişkenlerini ve fonksiyonlarını buraya ekle
+            return {
+                // UI'nın beklediği temel fonksiyonları burada tanımlayabilirsin
+                process: (input) => {
+                    console.log("Girdi işleniyor:", input);
+                    // Kendi NLP mantığını buraya yaz
+                    return "KOMUT ALINDI: " + input.toUpperCase();
                 }
             };
-            return { ses: Ses, olay: Olay, init: () => Ses.init() };
         })();
-    </script>
 
-    <script>
-        const zeka = TuncerZeka;
-        const uiStatus = document.getElementById('boot-status');
+        // UI KONTROL VE SİSTEM MANTIĞI
         const uiResponse = document.getElementById('ai-response');
         const uiCore = document.getElementById('reactor-core');
 
-        // Otomatik Başlatma Dinleyicisi
         window.onload = () => {
-            zeka.init();
-            // Sayfa açılır açılmaz dinlemeye başla
-            zeka.ses.listenOnce((text) => {
-                console.log("Duyulan:", text);
-                if(text.includes("tuncer başlat") || text.includes("sistemi başlat")) {
+            // Başlangıç Dinlemesi (Aktivasyon için)
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if(!SR) return;
+            
+            const bootRec = new SR();
+            bootRec.lang = 'tr-TR';
+            bootRec.onresult = (e) => {
+                const cmd = e.results[0][0].transcript.toLowerCase();
+                if(cmd.includes("tuncer başlat") || cmd.includes("sistemi başlat")) {
                     bootSystem();
-                } else {
-                    // Yanlış komut gelirse dinlemeye devam et
-                    uiStatus.innerText = "KOMUT ANLAŞILAMADI...";
-                    setTimeout(() => uiStatus.innerText = "SESLİ KOMUT BEKLENİYOR...", 1000);
                 }
-            });
+            };
+            bootRec.onend = () => { if(!document.body.classList.contains('system-active')) bootRec.start(); };
+            bootRec.start();
         };
 
         function bootSystem() {
             document.getElementById('boot-overlay').style.display = 'none';
             document.body.classList.add('system-active');
             
-            const msg = "Tuncer Zeka devrede. Edith protokolü aktif.";
-            typeWriter(msg, uiResponse);
-            zeka.ses.speak(msg);
-
-            // Zamanlayıcıyı başlat
+            // Saat Başlat
             setInterval(() => {
-                document.getElementById('sys-time').innerText = new Date().toLocaleTimeString('tr-TR');
+                document.getElementById('sys-time').innerText = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
             }, 1000);
 
-            // Normal asistan moduna geç
-            setTimeout(() => {
-                startMainLoop();
-            }, 3000);
+            // Hoşgeldin mesajı ve ana döngü
+            const msg = "SİSTEM AKTİF. PROTOKOL BAŞLATILDI.";
+            typeWriter(msg, uiResponse);
+            
+            // Konuşma motorunu sen kütüphanene ekleyebilirsin
+            const synth = window.speechSynthesis;
+            const u = new SpeechSynthesisUtterance(msg);
+            u.lang = 'tr-TR';
+            synth.speak(u);
+
+            // Ana dinleme döngüsünü başlat (Senin kütüphanenle etkileşime girer)
+            setTimeout(startMainListening, 3000);
         }
 
-        function startMainLoop() {
-            uiCore.classList.add('listening');
-            uiResponse.innerText = "EMRİNİZDEYİM";
-            zeka.ses.listenOnce((text) => {
+        function startMainListening() {
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const mainRec = new SR();
+            mainRec.lang = 'tr-TR';
+            
+            mainRec.onstart = () => {
+                uiCore.classList.add('listening');
+                uiResponse.innerText = "DİNLİYORUM...";
+            };
+
+            mainRec.onresult = (e) => {
+                const text = e.results[0][0].transcript;
                 uiCore.classList.remove('listening');
-                // Basit yanıtlar
-                let reply = "Komut algılandı: " + text;
-                if(text.includes("saat")) reply = "Saat şu an " + new Date().toLocaleTimeString('tr-TR');
-                if(text.includes("kimsin")) reply = "Ben Tuncer Zeka, senin kişisel gözlük asistanınım.";
                 
-                typeWriter(reply, uiResponse);
-                zeka.ses.speak(reply);
+                // SENİN KÜTÜPHANEN ÇALIŞIR
+                const result = TuncerZeka.process(text);
+                typeWriter(result, uiResponse);
                 
-                // Döngüyü devam ettir
-                setTimeout(startMainLoop, 4000);
-            });
+                const u = new SpeechSynthesisUtterance(result);
+                u.lang = 'tr-TR';
+                window.speechSynthesis.speak(u);
+            };
+
+            mainRec.onend = () => { mainRec.start(); };
+            mainRec.start();
         }
 
         function typeWriter(text, element) {
