@@ -29,8 +29,13 @@
 </head>
 <body class="bg-slate-950 text-slate-200 font-sans antialiased selection:bg-cyan-500/30 overflow-x-hidden">
 
+    <!-- Sistem Uyarı Barı (Firebase yoksa görünür) -->
+    <div id="demoWarning" class="hidden bg-amber-500/10 border-b border-amber-500/30 text-amber-400 text-xs text-center py-2 px-4 z-[60] relative">
+        ⚠️ Sistem şu an DEMO modunda çalışıyor. Veriler kalıcı olarak kaydedilmez. Gerçek kullanım için Firebase ayarlarını koda ekleyin.
+    </div>
+
     <!-- Navbar -->
-    <nav class="fixed w-full z-50 top-0 glass-effect border-b border-slate-800">
+    <nav class="fixed w-full z-50 top-0 glass-effect border-b border-slate-800 transition-all" id="mainNav">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex-shrink-0 flex items-center space-x-2 cursor-pointer" onclick="switchView('home')">
@@ -167,7 +172,7 @@
                             
                             <div class="flex items-center justify-center text-slate-500 text-xs mt-4">
                                 <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
-                                Bilgileriniz Google Firebase altyapısı ile şifrelenerek korunmaktadır.
+                                Bilgileriniz şifrelenerek korunmaktadır.
                             </div>
                         </form>
                     </div>
@@ -204,7 +209,7 @@
             </div>
             <form id="adminLoginForm" class="space-y-4">
                 <input type="password" id="adminPassword" required class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-center text-xl tracking-[0.2em]" placeholder="******">
-                <div id="adminError" class="hidden text-red-400 text-sm text-center">Hatalı şifre!</div>
+                <div id="adminError" class="hidden text-red-400 text-sm text-center">Hatalı şifre! (Şifre: 175017)</div>
                 <button type="submit" class="w-full bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-3 rounded-xl transition-all">Giriş Yap</button>
             </form>
         </div>
@@ -218,7 +223,7 @@
                     <svg class="h-8 w-8 text-cyan-400 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
                     Ön Sipariş Yönetim Paneli
                 </h1>
-                <p class="text-slate-400 mt-1">Sisteme kayıtlı tüm ön sipariş talepleri aşağıda listelenmektedir.</p>
+                <p class="text-slate-400 mt-1" id="adminSubtitle">Sisteme kayıtlı tüm ön sipariş talepleri aşağıda listelenmektedir.</p>
             </div>
             <button onclick="logoutAdmin()" class="bg-slate-800 hover:bg-red-500/20 hover:text-red-400 text-white px-4 py-2 rounded-lg border border-slate-700 hover:border-red-500/50 transition-all flex items-center text-sm">
                 <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -238,7 +243,7 @@
             </div>
             <div class="bg-slate-900 border border-slate-800 rounded-xl p-6">
                 <div class="text-slate-400 text-sm mb-1">Sistem Durumu</div>
-                <div class="text-xl font-bold text-emerald-400 flex items-center mt-2">
+                <div class="text-xl font-bold text-emerald-400 flex items-center mt-2" id="systemStatusText">
                     <span class="w-3 h-3 rounded-full bg-emerald-500 mr-2 animate-pulse"></span> Aktif
                 </div>
             </div>
@@ -259,34 +264,37 @@
                     </thead>
                     <tbody id="ordersTableBody" class="divide-y divide-slate-800/50">
                         <!-- JS ile veriler buraya dolacak -->
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-500">
-                                Yükleniyor... Veya henüz sipariş yok.
-                            </td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <!-- ==================== FIREBASE VE MANTIK ==================== -->
+    <!-- ==================== FIREBASE & MANTIK ==================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // GITHUB/NETLIFY UYUMLULUĞU: Eğer sistem dışarıdaysa varsayılan boş bir config oluştur.
-        // Canvas içindeyse mevcut sistemi kullan.
+        /* ========================================================================
+           KENDİ VERİTABANINA BAĞLAMAK İÇİN AŞAĞIDAKİ ALANI DOLDUR!
+           Eğer burası boş kalırsa sistem hata vermemek için "Demo" moduna geçer.
+           Demo modunda veriler sadece sayfayı yenileyene kadar hafızada kalır.
+           ========================================================================
+        */
         let firebaseConfig = {
-            // BURAYA KENDİ FİREBASE CONFİG BİLGİLERİNİ GİREBİLİRSİN. 
-            // Şu anki haliyle Canvas içinde sorunsuz çalışır, ancak kendi GitHub'ına koyduğunda 
-            // çalışması için Google Firebase'den alacağın config bilgilerini buraya yapıştırman gerekebilir.
+            // apiKey: "API_ANAHTARINI_BURAYA_YAPIŞTIR",
+            // authDomain: "PROJE-ID.firebaseapp.com",
+            // projectId: "PROJE-ID",
+            // storageBucket: "PROJE-ID.firebasestorage.app",
+            // messagingSenderId: "NUMARA",
+            // appId: "APP-ID"
         };
         
         let appId = 'tuncer-core-2027';
 
-        if (typeof __firebase_config !== 'undefined') {
+        // Önizleme ekranındayken otomatik doldurmak için kontrol (Bunu silme)
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
             try { 
                 firebaseConfig = JSON.parse(__firebase_config); 
                 appId = typeof __app_id !== 'undefined' ? __app_id : appId;
@@ -294,36 +302,43 @@
         }
 
         let app, auth, db;
+        let isDbConnected = false;
         let currentUser = null;
         let adminUnsubscribe = null;
+        
+        // Geçici Demo Hafızası
+        let demoOrders = [];
 
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-        } catch(err) {
-            console.error("Firebase Başlatılamadı:", err);
-        }
-
-        // Kimlik Doğrulama Başlatma (Güvenlik kuralları için şart)
-        async function initAuth() {
-            if(!auth) return;
+        // Firebase'i Başlatmayı Dene
+        if (Object.keys(firebaseConfig).length > 0) {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                isDbConnected = true;
+                
+                // Kimlik Doğrulama
+                async function initAuth() {
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Auth failed:", error);
+                    }
                 }
-            } catch (error) {
-                console.error("Auth failed:", error);
+                onAuthStateChanged(auth, (user) => { currentUser = user; });
+                initAuth();
+            } catch(err) {
+                console.error("Firebase Başlatılamadı:", err);
+                isDbConnected = false;
             }
-        }
-
-        if(auth) {
-            onAuthStateChanged(auth, (user) => {
-                currentUser = user;
-            });
-            initAuth();
+        } else {
+            // Eğer config boşsa demo uyarısını göster
+            document.getElementById('demoWarning').classList.remove('hidden');
+            document.getElementById('mainNav').classList.add('top-8'); // Uyarı çubuğu için boşluk
         }
 
         // --- ARAYÜZ (UI) GÖRÜNÜM MANTIĞI ---
@@ -355,7 +370,7 @@
 
         window.logoutAdmin = function() {
             if(adminUnsubscribe) {
-                adminUnsubscribe(); // Veritabanını dinlemeyi bırak
+                adminUnsubscribe(); 
                 adminUnsubscribe = null;
             }
             switchView('home');
@@ -372,43 +387,51 @@
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
             const errorDiv = document.getElementById('formError');
-
-            if (!db || !currentUser) {
-                errorDiv.innerText = "Veritabanı bağlantısı kurulamadı. (Firebase Config eksik olabilir)";
-                errorDiv.classList.remove('hidden');
-                return;
-            }
             
             const data = {
                 name: document.getElementById('p_name').value,
                 email: document.getElementById('p_email').value,
                 phone: document.getElementById('p_phone').value,
                 quantity: parseInt(document.getElementById('p_quantity').value),
-                createdAt: serverTimestamp(),
-                product: 'Tuncer Core 2027'
+                product: 'Tuncer Core 2027',
+                timestamp: Date.now() // Demo için basit zaman damgası
             };
 
             btn.disabled = true;
             btn.innerHTML = 'İşleniyor...';
             errorDiv.classList.add('hidden');
 
-            try {
-                // Herkesin verisi "public" klasörüne kaydedilir ki Admin görebilsin
-                const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
-                await addDoc(preordersRef, data);
-                
-                // Başarı Göster
-                document.getElementById('formContainer').classList.add('hidden');
-                document.getElementById('successContainer').classList.remove('hidden');
-            } catch (error) {
-                console.error("Sipariş hatası:", error);
-                errorDiv.innerText = "Sipariş kaydedilirken bir hata oluştu.";
-                errorDiv.classList.remove('hidden');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = `<span>Listeye Katıl</span><svg class="ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+            // 1. Durum: Firebase Bağlıysa Gerçek Kayıt Yap
+            if (isDbConnected && currentUser) {
+                try {
+                    const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
+                    await addDoc(preordersRef, { ...data, createdAt: serverTimestamp() });
+                    document.getElementById('formContainer').classList.add('hidden');
+                    document.getElementById('successContainer').classList.remove('hidden');
+                } catch (error) {
+                    console.error("Sipariş hatası:", error);
+                    errorDiv.innerText = "Sipariş kaydedilirken bir hata oluştu.";
+                    errorDiv.classList.remove('hidden');
+                } finally {
+                    btn.disabled = false;
+                    resetBtnUI(btn);
+                }
+            } 
+            // 2. Durum: Firebase Yoksa DEMO Olarak Çalıştır (Hata verme, Başarılı göster)
+            else {
+                setTimeout(() => { // Gerçekçi olması için ufak gecikme
+                    demoOrders.push(data); // Hafızaya kaydet (Admin paneli görsün diye)
+                    document.getElementById('formContainer').classList.add('hidden');
+                    document.getElementById('successContainer').classList.remove('hidden');
+                    btn.disabled = false;
+                    resetBtnUI(btn);
+                }, 800);
             }
         });
+
+        function resetBtnUI(btn) {
+            btn.innerHTML = `<span>Listeye Katıl</span><svg class="ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>`;
+        }
 
         // --- ADMİN GİRİŞ VE PANEL MANTIĞI ---
         document.getElementById('adminLoginForm').addEventListener('submit', (e) => {
@@ -428,69 +451,71 @@
         function loadAdminData() {
             const tbody = document.getElementById('ordersTableBody');
             
-            if (!db || !currentUser) {
-                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Veritabanı bağlantısı yok. Lütfen Firebase kurulumunu yapın.</td></tr>`;
+            // Eğer Demo Modundaysa
+            if (!isDbConnected) {
+                document.getElementById('adminSubtitle').innerHTML = '<span class="text-amber-400">DİKKAT: Veritabanı bağlı değil. Sadece bu oturumda girdiğiniz geçici test verileri görüntüleniyor.</span>';
+                document.getElementById('systemStatusText').innerHTML = '<span class="w-3 h-3 rounded-full bg-amber-500 mr-2"></span> Demo Modu';
+                
+                renderTable(demoOrders, tbody);
                 return;
             }
             
-            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">Veriler buluttan çekiliyor...</td></tr>`;
-
+            // Firebase Bağlıysa Gerçek Verileri Çek
+            tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-slate-400">Buluttan veriler çekiliyor...</td></tr>`;
             const preordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'preorders');
             
-            // Verileri çek, sıralamayı JS'de yap.
             adminUnsubscribe = onSnapshot(preordersRef, (snapshot) => {
                 let orders = [];
-                let totalDevices = 0;
-
                 snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    orders.push({ id: doc.id, ...data });
-                    totalDevices += data.quantity || 0;
+                    const d = doc.data();
+                    orders.push({ 
+                        id: doc.id, 
+                        ...d,
+                        timestamp: d.createdAt ? d.createdAt.toMillis() : Date.now()
+                    });
                 });
-
-                // Tarihe göre azalan sıralama (En yeni en üstte)
-                orders.sort((a, b) => {
-                    const timeA = a.createdAt ? a.createdAt.toMillis() : 0;
-                    const timeB = b.createdAt ? b.createdAt.toMillis() : 0;
-                    return timeB - timeA;
-                });
-
-                // İstatistikleri Güncelle
-                document.getElementById('statTotalUsers').innerText = orders.length;
-                document.getElementById('statTotalDevices').innerText = totalDevices;
-
-                // Tabloyu Oluştur
-                if (orders.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Henüz hiç ön sipariş yok.</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = '';
-                orders.forEach(order => {
-                    const dateStr = order.createdAt ? new Date(order.createdAt.toMillis()).toLocaleString('tr-TR') : 'Bilinmiyor';
-                    
-                    const tr = document.createElement('tr');
-                    tr.className = "hover:bg-slate-800/30 transition-colors";
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-slate-400 text-xs">${dateStr}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="font-medium text-white">${order.name}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-cyan-400 text-sm">${order.email}</div>
-                            <div class="text-slate-400 text-xs">${order.phone}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-center font-bold text-white">${order.quantity}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Beklemede</span>
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-
+                renderTable(orders, tbody);
             }, (error) => {
                 console.error("Admin fetch error:", error);
-                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Veriler yüklenirken bir hata oluştu veya yetki yok.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="px-6 py-8 text-center text-red-400">Veriler yüklenirken hata oluştu veya yetki yok.</td></tr>`;
+            });
+        }
+
+        // Tabloyu Çizme Fonksiyonu
+        function renderTable(ordersArray, tbodyElement) {
+            let totalDevices = 0;
+            
+            // Tarihe göre sırala (Yeni üstte)
+            ordersArray.sort((a, b) => b.timestamp - a.timestamp);
+
+            ordersArray.forEach(o => totalDevices += (o.quantity || 0));
+
+            document.getElementById('statTotalUsers').innerText = ordersArray.length;
+            document.getElementById('statTotalDevices').innerText = totalDevices;
+
+            if (ordersArray.length === 0) {
+                tbodyElement.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-slate-500">Henüz hiç ön sipariş yok.</td></tr>`;
+                return;
+            }
+
+            tbodyElement.innerHTML = '';
+            ordersArray.forEach(order => {
+                const dateStr = new Date(order.timestamp).toLocaleString('tr-TR');
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-800/30 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-slate-400 text-xs">${dateStr}</td>
+                    <td class="px-6 py-4 whitespace-nowrap"><div class="font-medium text-white">${order.name}</div></td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-cyan-400 text-sm">${order.email}</div>
+                        <div class="text-slate-400 text-xs">${order.phone}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center font-bold text-white">${order.quantity}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right">
+                        <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Beklemede</span>
+                    </td>
+                `;
+                tbodyElement.appendChild(tr);
             });
         }
     </script>
