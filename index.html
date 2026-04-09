@@ -1,682 +1,1516 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tuncer Core 2027 - Yapay Zekalı Gözlük Sistemi | Ön Sipariş</title>
-    <meta name="description" content="Sunucu tabanlı yapay zeka ile çalışan, şeffaf ekran teknolojisine sahip akıllı gözlük sistemi. Şimdi ön sipariş verin!">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuncer Core 2027 — Ön Sipariş</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060608;
+    --bg2: #0c0c10;
+    --bg3: #111116;
+    --amber: #e8a020;
+    --amber2: #f5c060;
+    --silver: #b0b4c0;
+    --silver2: #d8dce8;
+    --white: #f0f0f4;
+    --border: rgba(180,184,200,0.12);
+    --border2: rgba(232,160,32,0.25);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--white);
+    font-family: 'Instrument Sans', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  ::selection { background: var(--amber); color: #000; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 2px; }
 
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #8b5cf6;
-            --dark: #0f172a;
-            --gray: #64748b;
-            --light: #f1f5f9;
-            --success: #10b981;
-            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 3rem;
+    background: rgba(6,6,8,0.85);
+    backdrop-filter: blur(18px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
+    letter-spacing: 0.06em; color: var(--white);
+    text-decoration: none;
+  }
+  .nav-logo svg { width: 32px; height: 32px; }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--amber); }
+  .nav-cta {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.55rem 1.4rem;
+    background: transparent;
+    border: 1px solid var(--amber);
+    color: var(--amber);
+    cursor: pointer; transition: all 0.2s;
+    text-decoration: none;
+  }
+  .nav-cta:hover { background: var(--amber); color: #000; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--dark);
-            background: #fff;
-        }
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; overflow: hidden;
+    padding-top: 80px;
+  }
+  .hero-grid {
+    position: absolute; inset: 0; opacity: 0.06;
+    background-image:
+      linear-gradient(var(--amber) 1px, transparent 1px),
+      linear-gradient(90deg, var(--amber) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+  .hero-glow {
+    position: absolute;
+    width: 700px; height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,160,32,0.08) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .hero-content {
+    position: relative; z-index: 2;
+    max-width: 1100px; width: 100%;
+    padding: 0 2rem;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 5rem;
+    align-items: center;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--amber);
+    border: 1px solid var(--border2);
+    padding: 0.4rem 1rem; margin-bottom: 1.5rem;
+  }
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+  .hero-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800; font-size: clamp(2.8rem, 5vw, 4.5rem);
+    line-height: 0.95; letter-spacing: -0.02em;
+    color: var(--white);
+    animation: fadeUp 0.8s ease forwards;
+  }
+  .hero-title .amber { color: var(--amber); }
+  .hero-title .year {
+    font-size: 0.45em; font-weight: 400;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.2em;
+    color: var(--silver);
+    display: block; margin-top: 0.3em;
+  }
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 1.05rem; color: var(--silver);
+    max-width: 420px; line-height: 1.7;
+    animation: fadeUp 0.8s 0.15s ease forwards; opacity: 0;
+  }
+  .hero-actions {
+    margin-top: 2.5rem; display: flex; gap: 1rem; align-items: center;
+    animation: fadeUp 0.8s 0.3s ease forwards; opacity: 0;
+  }
+  .btn-primary {
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.85rem 2rem;
+    background: var(--amber); color: #000; font-weight: 500;
+    border: none; cursor: pointer; transition: all 0.25s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-primary:hover { background: var(--amber2); transform: translateY(-2px); }
+  .btn-ghost {
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.85rem 2rem;
+    background: transparent; color: var(--silver);
+    border: 1px solid var(--border); cursor: pointer; transition: all 0.25s;
+    text-decoration: none; display: inline-block;
+  }
+  .btn-ghost:hover { border-color: var(--silver2); color: var(--white); }
+  .hero-visual {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    animation: fadeIn 1.2s 0.2s ease forwards; opacity: 0;
+  }
+  .glasses-svg-wrap {
+    position: relative; width: 100%; max-width: 520px;
+  }
+  .glasses-svg-wrap svg { width: 100%; height: auto; }
+  .glasses-scan-line {
+    position: absolute; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--amber), transparent);
+    top: 20%; animation: scanDown 3s ease-in-out infinite;
+    opacity: 0.6;
+  }
+  @keyframes scanDown {
+    0% { top: 10%; opacity: 0; }
+    20% { opacity: 0.6; }
+    80% { opacity: 0.6; }
+    100% { top: 90%; opacity: 0; }
+  }
+  .hero-stats {
+    margin-top: 2.5rem;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+    border: 1px solid var(--border);
+  }
+  .hero-stat {
+    padding: 1.2rem 1rem; background: var(--bg2);
+    border-right: 1px solid var(--border);
+  }
+  .hero-stat:last-child { border-right: none; }
+  .hero-stat .val {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.6rem; color: var(--amber);
+  }
+  .hero-stat .lbl {
+    font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); margin-top: 0.2rem;
+  }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-        /* Header */
-        header {
-            background: var(--gradient);
-            color: white;
-            padding: 20px 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+  /* ── SECTION COMMON ── */
+  section { padding: 7rem 2rem; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+  .section-tag {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 0.8rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-tag::before {
+    content: ''; display: inline-block;
+    width: 24px; height: 1px; background: var(--amber);
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    line-height: 1.05; letter-spacing: -0.02em;
+    color: var(--white); margin-bottom: 1rem;
+  }
+  .section-sub {
+    font-size: 1rem; color: var(--silver);
+    max-width: 540px; line-height: 1.75;
+  }
 
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+  /* ── SPECS ── */
+  #specs { background: var(--bg2); }
+  .specs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px; margin-top: 4rem;
+    border: 1px solid var(--border);
+  }
+  .spec-card {
+    background: var(--bg); padding: 2rem;
+    position: relative; overflow: hidden;
+    transition: background 0.3s;
+  }
+  .spec-card::after {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+    background: var(--amber); transform: scaleX(0);
+    transform-origin: left; transition: transform 0.3s;
+  }
+  .spec-card:hover::after { transform: scaleX(1); }
+  .spec-card:hover { background: var(--bg3); }
+  .spec-icon {
+    width: 44px; height: 44px; margin-bottom: 1.5rem;
+    color: var(--amber);
+  }
+  .spec-name {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--silver); margin-bottom: 0.5rem;
+  }
+  .spec-value {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.15rem; color: var(--white); margin-bottom: 0.5rem;
+  }
+  .spec-detail { font-size: 0.85rem; color: var(--silver); line-height: 1.6; }
 
-        .logo h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            letter-spacing: -1px;
-        }
+  /* ── FEATURES ── */
+  .features-layout {
+    display: grid; grid-template-columns: 1fr 1.2fr;
+    gap: 6rem; align-items: start; margin-top: 4rem;
+  }
+  .feature-list { display: flex; flex-direction: column; gap: 0; }
+  .feature-item {
+    padding: 2rem 0; border-bottom: 1px solid var(--border);
+    cursor: pointer; transition: all 0.2s;
+    display: grid; grid-template-columns: 48px 1fr; gap: 1.5rem;
+    align-items: start;
+  }
+  .feature-item:first-child { border-top: 1px solid var(--border); }
+  .feature-item:hover .feature-title { color: var(--amber); }
+  .feature-num {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    color: var(--amber); padding-top: 3px;
+  }
+  .feature-title {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.05rem; color: var(--white);
+    transition: color 0.2s; margin-bottom: 0.4rem;
+  }
+  .feature-desc { font-size: 0.9rem; color: var(--silver); line-height: 1.65; }
+  .feature-visual {
+    position: sticky; top: 120px;
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 3rem; display: flex; align-items: center; justify-content: center;
+    min-height: 400px;
+  }
 
-        .logo span {
-            font-size: 0.85rem;
-            opacity: 0.9;
-            display: block;
-            margin-top: 2px;
-        }
+  /* ── AI ENGINE ── */
+  #ai { background: var(--bg2); }
+  .ai-layout {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 5rem; margin-top: 4rem; align-items: center;
+  }
+  .ai-pipeline {
+    display: flex; flex-direction: column; gap: 0;
+  }
+  .ai-step {
+    display: flex; gap: 1.5rem; align-items: stretch;
+  }
+  .ai-step-line {
+    display: flex; flex-direction: column; align-items: center; gap: 0;
+  }
+  .ai-step-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--amber);
+    flex-shrink: 0; margin-top: 5px;
+    transition: background 0.3s;
+  }
+  .ai-step:hover .ai-step-dot { background: var(--amber); }
+  .ai-step-connector {
+    width: 1px; flex: 1; min-height: 40px;
+    background: var(--border2); margin: 4px 0;
+  }
+  .ai-step-content { padding-bottom: 2rem; }
+  .ai-step-label {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--amber); margin-bottom: 0.3rem;
+  }
+  .ai-step-title {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1rem; color: var(--white); margin-bottom: 0.3rem;
+  }
+  .ai-step-desc { font-size: 0.85rem; color: var(--silver); line-height: 1.6; }
+  .ai-info { }
+  .ai-info-card {
+    background: var(--bg); border: 1px solid var(--border);
+    padding: 2rem; margin-bottom: 1px;
+  }
+  .ai-info-title {
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); margin-bottom: 0.5rem;
+  }
+  .ai-info-val {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.4rem; color: var(--amber);
+  }
+  .ai-info-sub { font-size: 0.82rem; color: var(--silver); margin-top: 0.2rem; }
 
-        nav {
-            display: flex;
-            gap: 25px;
-        }
+  /* ── ORDER FORM ── */
+  #order { background: var(--bg); }
+  .order-layout {
+    display: grid; grid-template-columns: 1.1fr 1fr;
+    gap: 5rem; margin-top: 4rem; align-items: start;
+  }
+  .order-form-wrap {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 3rem;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .form-group { margin-bottom: 1.5rem; }
+  .form-label {
+    display: block; font-family: 'DM Mono', monospace;
+    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); margin-bottom: 0.5rem;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--bg);
+    border: 1px solid var(--border); color: var(--white);
+    padding: 0.85rem 1rem; font-family: 'Instrument Sans', sans-serif;
+    font-size: 0.95rem; outline: none;
+    transition: border-color 0.2s;
+    appearance: none; -webkit-appearance: none;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    border-color: var(--amber);
+  }
+  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e8a020' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; }
+  .form-select option { background: #111116; }
+  .form-textarea { resize: vertical; min-height: 100px; }
+  .form-submit {
+    width: 100%; padding: 1rem;
+    background: var(--amber); color: #000;
+    font-family: 'DM Mono', monospace; font-size: 0.82rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
+    border: none; cursor: pointer; transition: all 0.25s;
+  }
+  .form-submit:hover { background: var(--amber2); }
+  .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .order-info { }
+  .order-info-title {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 1.8rem; line-height: 1.1; color: var(--white);
+    margin-bottom: 1.5rem;
+  }
+  .price-display {
+    font-family: 'Syne', sans-serif; font-weight: 800;
+    font-size: 3rem; color: var(--amber);
+    margin-bottom: 0.3rem;
+  }
+  .price-note {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.1em; color: var(--silver); text-transform: uppercase;
+    margin-bottom: 2rem;
+  }
+  .order-perks { list-style: none; }
+  .order-perk {
+    display: flex; align-items: center; gap: 12px;
+    padding: 1rem 0; border-bottom: 1px solid var(--border);
+    font-size: 0.9rem; color: var(--silver);
+  }
+  .order-perk:last-child { border-bottom: none; }
+  .perk-icon { color: var(--amber); flex-shrink: 0; }
+  .form-success {
+    display: none; text-align: center; padding: 3rem;
+    background: var(--bg); border: 1px solid var(--border2);
+  }
+  .form-success .check {
+    width: 56px; height: 56px; margin: 0 auto 1.5rem;
+    color: var(--amber);
+  }
+  .form-success h3 {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.5rem; color: var(--white); margin-bottom: 0.5rem;
+  }
+  .form-success p { font-size: 0.9rem; color: var(--silver); }
+  .form-success .order-id {
+    display: inline-block; margin-top: 1rem;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.1em; padding: 0.5rem 1rem;
+    border: 1px solid var(--border2); color: var(--amber);
+  }
 
-        nav a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+    background: var(--bg2); border: 1px solid var(--border2);
+    color: var(--amber); padding: 1rem 1.5rem;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.08em; transform: translateY(100px);
+    opacity: 0; transition: all 0.3s; pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
 
-        nav a:hover {
-            opacity: 0.8;
-        }
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem; background: var(--bg2);
+  }
+  .footer-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .footer-copy {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.08em; color: var(--silver);
+  }
+  .footer-links { display: flex; gap: 2rem; list-style: none; }
+  .footer-links a {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--silver); text-decoration: none; transition: color 0.2s;
+  }
+  .footer-links a:hover { color: var(--amber); }
 
-        /* Hero Section */
-        .hero {
-            background: var(--gradient);
-            color: white;
-            padding: 100px 0;
-            text-align: center;
-        }
+  /* ── ADMIN PANEL ── */
+  #admin-panel {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: var(--bg);
+  }
+  #admin-panel.active { display: flex; flex-direction: column; }
+  .admin-top {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 3rem; border-bottom: 1px solid var(--border);
+    background: var(--bg2); flex-shrink: 0;
+  }
+  .admin-top-title {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.1rem; letter-spacing: 0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .admin-top-title .badge {
+    font-family: 'DM Mono', monospace; font-size: 0.62rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--amber); border: 1px solid var(--border2);
+    padding: 0.2rem 0.6rem;
+  }
+  .admin-close {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--silver); padding: 0.5rem 1.2rem;
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .admin-close:hover { border-color: var(--silver); color: var(--white); }
+  .admin-body { flex: 1; overflow-y: auto; padding: 2rem 3rem; }
+  .admin-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
+    border: 1px solid var(--border); margin-bottom: 3rem;
+  }
+  .admin-stat {
+    background: var(--bg2); padding: 1.5rem 2rem;
+    border-right: 1px solid var(--border);
+  }
+  .admin-stat:last-child { border-right: none; }
+  .admin-stat-label {
+    font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); margin-bottom: 0.5rem;
+  }
+  .admin-stat-val {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.8rem; color: var(--amber);
+  }
+  .admin-table-wrap { overflow-x: auto; }
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+  thead { background: var(--bg2); }
+  th {
+    font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); padding: 1rem 1.2rem;
+    text-align: left; border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
+    color: var(--silver2); font-size: 0.87rem;
+    vertical-align: middle;
+  }
+  tr:hover td { background: var(--bg2); }
+  .status-badge {
+    font-family: 'DM Mono', monospace; font-size: 0.63rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.25rem 0.7rem;
+  }
+  .status-pending { border: 1px solid var(--amber); color: var(--amber); }
+  .status-confirmed { border: 1px solid #3d9e5c; color: #4eca76; }
+  .status-cancelled { border: 1px solid #9e3d3d; color: #ca4e4e; }
+  .admin-actions {
+    display: flex; gap: 0.5rem; align-items: center;
+  }
+  .action-btn {
+    font-family: 'DM Mono', monospace; font-size: 0.6rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 0.3rem 0.8rem; border: 1px solid var(--border);
+    color: var(--silver); background: transparent; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .action-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .action-btn.del:hover { border-color: #ca4e4e; color: #ca4e4e; }
+  .admin-empty {
+    text-align: center; padding: 4rem;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: var(--silver);
+  }
+  .admin-toolbar {
+    display: flex; gap: 1rem; align-items: center;
+    margin-bottom: 1.5rem; justify-content: space-between;
+  }
+  .admin-search {
+    background: var(--bg2); border: 1px solid var(--border);
+    color: var(--white); padding: 0.6rem 1rem;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    letter-spacing: 0.05em; outline: none; width: 280px;
+    transition: border-color 0.2s;
+  }
+  .admin-search:focus { border-color: var(--amber); }
+  .clear-btn {
+    font-family: 'DM Mono', monospace; font-size: 0.65rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 0.6rem 1.2rem; background: transparent;
+    border: 1px solid #9e3d3d; color: #ca4e4e; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { background: rgba(202,78,78,0.1); }
 
-        .hero h2 {
-            font-size: 3.5rem;
-            font-weight: 800;
-            margin-bottom: 20px;
-            line-height: 1.2;
-        }
+  /* ── LOGIN MODAL ── */
+  #login-modal {
+    display: none; position: fixed; inset: 0; z-index: 2000;
+    background: rgba(0,0,0,0.9);
+    align-items: center; justify-content: center;
+  }
+  #login-modal.active { display: flex; }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    padding: 3rem; width: 380px;
+  }
+  .login-title {
+    font-family: 'Syne', sans-serif; font-weight: 700;
+    font-size: 1.4rem; color: var(--white); margin-bottom: 0.5rem;
+  }
+  .login-sub {
+    font-family: 'DM Mono', monospace; font-size: 0.7rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); margin-bottom: 2rem;
+  }
+  .login-input {
+    width: 100%; background: var(--bg);
+    border: 1px solid var(--border); color: var(--white);
+    padding: 0.85rem 1rem; font-family: 'Instrument Sans', sans-serif;
+    font-size: 1rem; outline: none; transition: border-color 0.2s;
+    margin-bottom: 1rem; letter-spacing: 0.15em;
+  }
+  .login-input:focus { border-color: var(--amber); }
+  .login-input.error { border-color: #ca4e4e; animation: shake 0.4s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
+  }
+  .login-btn {
+    width: 100%; padding: 0.85rem;
+    background: var(--amber); color: #000;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
+    border: none; cursor: pointer; transition: all 0.2s;
+  }
+  .login-btn:hover { background: var(--amber2); }
+  .login-cancel {
+    display: block; text-align: center; margin-top: 1rem;
+    font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--silver); cursor: pointer; transition: color 0.2s;
+  }
+  .login-cancel:hover { color: var(--white); }
 
-        .hero p {
-            font-size: 1.3rem;
-            margin-bottom: 40px;
-            opacity: 0.95;
-            max-width: 700px;
-            margin-left: auto;
-            margin-right: auto;
-        }
+  /* ── TICKER ── */
+  .ticker-wrap {
+    background: var(--amber); padding: 0.7rem 0;
+    overflow: hidden; white-space: nowrap;
+  }
+  .ticker-inner {
+    display: inline-flex; gap: 4rem;
+    animation: ticker 20s linear infinite;
+  }
+  .ticker-item {
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.1em; text-transform: uppercase; color: #000;
+  }
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
 
-        .cta-button {
-            display: inline-block;
-            background: white;
-            color: var(--primary);
-            padding: 18px 45px;
-            border-radius: 50px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 1.1rem;
-            transition: transform 0.3s, box-shadow 0.3s;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    nav { padding: 1rem 1.5rem; }
+    .nav-links { display: none; }
+    .hero-content { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
+    .hero-actions { justify-content: center; }
+    .hero-sub { margin: 1.5rem auto 0; }
+    .hero-badge { margin: 0 auto 1.5rem; }
+    .features-layout { grid-template-columns: 1fr; }
+    .feature-visual { display: none; }
+    .ai-layout { grid-template-columns: 1fr; }
+    .order-layout { grid-template-columns: 1fr; }
+    .form-row { grid-template-columns: 1fr; }
+    .admin-stats { grid-template-columns: 1fr 1fr; }
+    .admin-body { padding: 1.5rem; }
+    .admin-top { padding: 1rem 1.5rem; }
+    .specs-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    section { padding: 5rem 1.5rem; }
+    .hero-stats { grid-template-columns: 1fr; }
+    .admin-stats { grid-template-columns: 1fr 1fr; }
+    .specs-grid { grid-template-columns: 1fr; }
+    .footer-inner { flex-direction: column; gap: 1.5rem; text-align: center; }
+  }
 
-        .cta-button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-        }
-
-        /* Stats */
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 30px;
-            margin-top: 60px;
-        }
-
-        .stat {
-            text-align: center;
-        }
-
-        .stat-number {
-            display: block;
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
-
-        /* Features Section */
-        .features {
-            padding: 100px 0;
-            background: var(--light);
-        }
-
-        .section-title {
-            text-align: center;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 60px;
-            color: var(--dark);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px;
-        }
-
-        .feature-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
-
-        .feature-card h3 {
-            font-size: 1.5rem;
-            margin-bottom: 15px;
-            color: var(--primary);
-        }
-
-        .feature-card p {
-            color: var(--gray);
-            line-height: 1.7;
-        }
-
-        /* Specs Section */
-        .specs {
-            padding: 100px 0;
-        }
-
-        .specs-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin-top: 40px;
-        }
-
-        .spec-item {
-            background: var(--light);
-            padding: 30px;
-            border-radius: 15px;
-            border-left: 4px solid var(--primary);
-        }
-
-        .spec-item h4 {
-            color: var(--primary);
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .spec-item p {
-            color: var(--gray);
-            font-size: 0.95rem;
-        }
-
-        /* Preorder Section */
-        .preorder {
-            padding: 100px 0;
-            background: var(--gradient);
-            color: white;
-        }
-
-        .preorder .section-title {
-            color: white;
-        }
-
-        .form-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 50px;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--dark);
-            font-weight: 600;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 15px;
-            border: 2px solid #e2e8f0;
-            border-radius: 10px;
-            font-size: 1rem;
-            transition: border-color 0.3s;
-            font-family: inherit;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        .submit-button {
-            width: 100%;
-            background: var(--gradient);
-            color: white;
-            padding: 18px;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-
-        .submit-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        .submit-button:active {
-            transform: translateY(0);
-        }
-
-        .price-info {
-            background: #fef3c7;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-            border: 2px solid #fbbf24;
-        }
-
-        .price-info h3 {
-            color: #92400e;
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-
-        .price-info p {
-            color: #78350f;
-            font-size: 0.95rem;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--dark);
-            color: white;
-            text-align: center;
-            padding: 40px 0;
-        }
-
-        footer p {
-            opacity: 0.8;
-        }
-
-        /* Success Message */
-        .success-message {
-            display: none;
-            background: var(--success);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-            font-weight: 600;
-        }
-
-        .success-message.show {
-            display: block;
-            animation: slideDown 0.5s ease;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h2 {
-                font-size: 2.2rem;
-            }
-
-            .hero p {
-                font-size: 1.1rem;
-            }
-
-            nav {
-                width: 100%;
-                justify-content: center;
-                margin-top: 15px;
-            }
-
-            .form-container {
-                padding: 30px 20px;
-            }
-
-            .section-title {
-                font-size: 2rem;
-            }
-        }
-    </style>
+  /* ── SCROLL REVEAL ── */
+  .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.22,1,0.36,1); }
+  .reveal.visible { opacity: 1; transform: none; }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+</style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="header-content">
-                <div class="logo">
-                    <h1>TUNCER CORE 2027</h1>
-                    <span>Yapay Zeka Gözlük Sistemi</span>
-                </div>
-                <nav>
-                    <a href="#features">Özellikler</a>
-                    <a href="#specs">Teknik Detaylar</a>
-                    <a href="#preorder">Ön Sipariş</a>
-                </nav>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="30" height="30" stroke="#e8a020" stroke-width="1.2"/>
+      <path d="M7 16H25M16 7V25" stroke="#e8a020" stroke-width="1.2"/>
+      <circle cx="16" cy="16" r="4" stroke="#e8a020" stroke-width="1.2"/>
+      <rect x="13" y="13" width="6" height="6" fill="#e8a020" opacity="0.3"/>
+    </svg>
+    TUNCER<span style="color:var(--amber);">ZEKA</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#specs">Özellikler</a></li>
+    <li><a href="#features">Avantajlar</a></li>
+    <li><a href="#ai">Yapay Zeka</a></li>
+    <li><a href="#order">Ön Sipariş</a></li>
+  </ul>
+  <a href="#order" class="nav-cta">Ön Sipariş Ver</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="home">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div>
+      <div class="hero-badge">Ön Sipariş Açık</div>
+      <h1 class="hero-title">
+        TUNCER<br>
+        <span class="amber">CORE</span>
+        <span class="year">— 2027 EDİSYON —</span>
+      </h1>
+      <p class="hero-sub">
+        Sunucu tabanlı yapay zeka işleme. Transparan OLED ekran. Kompakt donanım. Geleceği takın.
+      </p>
+      <div class="hero-actions">
+        <a href="#order" class="btn-primary">Şimdi Sipariş Ver</a>
+        <a href="#specs" class="btn-ghost">Özellikleri İncele</a>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="val">&lt;28g</div>
+          <div class="lbl">Toplam Ağırlık</div>
+        </div>
+        <div class="hero-stat">
+          <div class="val">512MB</div>
+          <div class="lbl">RAM</div>
+        </div>
+        <div class="hero-stat">
+          <div class="val">1ms</div>
+          <div class="lbl">AI Yanıt Süresi</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="glasses-svg-wrap">
+        <div class="glasses-scan-line"></div>
+        <svg viewBox="0 0 520 260" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Frame -->
+          <path d="M20 130 Q20 90 60 90 L200 90 Q220 90 240 110 Q260 90 280 90 L460 90 Q500 90 500 130 Q500 170 460 170 L280 170 Q260 150 240 150 Q220 150 200 170 L60 170 Q20 170 20 130Z" stroke="#3a3a42" stroke-width="1.5" fill="none"/>
+          <!-- Left lens -->
+          <rect x="40" y="98" width="150" height="64" rx="4" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.03)"/>
+          <!-- Left lens scanlines -->
+          <line x1="40" y1="110" x2="190" y2="110" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <line x1="40" y1="122" x2="190" y2="122" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <line x1="40" y1="134" x2="190" y2="134" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <line x1="40" y1="146" x2="190" y2="146" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <!-- Left HUD elements -->
+          <rect x="50" y="106" width="40" height="14" rx="1" stroke="#e8a020" stroke-width="0.7" fill="none"/>
+          <text x="55" y="116" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.9">AI.ON</text>
+          <circle cx="170" cy="115" r="6" stroke="#e8a020" stroke-width="0.7" fill="none"/>
+          <line x1="170" y1="109" x2="170" y2="121" stroke="#e8a020" stroke-width="0.7"/>
+          <line x1="164" y1="115" x2="176" y2="115" stroke="#e8a020" stroke-width="0.7"/>
+          <!-- Right lens -->
+          <rect x="330" y="98" width="150" height="64" rx="4" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.03)"/>
+          <!-- Right lens scanlines -->
+          <line x1="330" y1="110" x2="480" y2="110" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <line x1="330" y1="122" x2="480" y2="122" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <line x1="330" y1="134" x2="480" y2="134" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <line x1="330" y1="146" x2="480" y2="146" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
+          <!-- Right HUD elements -->
+          <text x="336" y="116" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.8">23.4°C</text>
+          <text x="336" y="128" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.8">İSTANBUL</text>
+          <rect x="420" y="106" width="50" height="4" rx="1" fill="#3a3a42"/>
+          <rect x="420" y="106" width="38" height="4" rx="1" fill="#e8a020" opacity="0.8"/>
+          <text x="420" y="120" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.7">BAT 76%</text>
+          <!-- Bridge -->
+          <path d="M200 130 Q220 120 240 130 Q260 120 280 130" stroke="#5a5a62" stroke-width="2" fill="none"/>
+          <!-- Left temple -->
+          <path d="M20 130 L0 128" stroke="#5a5a62" stroke-width="3" stroke-linecap="round"/>
+          <!-- Right temple -->
+          <path d="M500 130 L520 128" stroke="#5a5a62" stroke-width="3" stroke-linecap="round"/>
+          <!-- Corner markers -->
+          <path d="M40 98 L34 98 L34 104" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M190 98 L196 98 L196 104" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M40 162 L34 162 L34 156" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M190 162 L196 162 L196 156" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M330 98 L324 98 L324 104" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M480 98 L486 98 L486 104" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M330 162 L324 162 L324 156" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <path d="M480 162 L486 162 L486 156" stroke="#e8a020" stroke-width="1" fill="none"/>
+          <!-- Label -->
+          <text x="240" y="220" fill="#5a5a62" font-size="9" font-family="monospace" text-anchor="middle" letter-spacing="4">TUNCER CORE 2027</text>
+          <line x1="90" y1="218" x2="160" y2="218" stroke="#3a3a42" stroke-width="0.5"/>
+          <line x1="320" y1="218" x2="390" y2="218" stroke="#3a3a42" stroke-width="0.5"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <span class="ticker-item">Transparan OLED Ekran</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Sunucu Tabanlı Yapay Zeka</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Raspberry Pi Zero 2W Eşdeğer Donanım</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Wi-Fi 5 + Bluetooth 5.2</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">28 Gram Hafif Tasarım</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Ön Sipariş Sınırlı Stok</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Transparan OLED Ekran</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Sunucu Tabanlı Yapay Zeka</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Raspberry Pi Zero 2W Eşdeğer Donanım</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Wi-Fi 5 + Bluetooth 5.2</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">28 Gram Hafif Tasarım</span>
+    <span class="ticker-item">◆</span>
+    <span class="ticker-item">Ön Sipariş Sınırlı Stok</span>
+    <span class="ticker-item">◆</span>
+  </div>
+</div>
+
+<!-- SPECS -->
+<section id="specs">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Teknik Özellikler</div>
+      <h2 class="section-title">Kompakt donanım.<br>Bulut zekası.</h2>
+      <p class="section-sub">Raspberry Pi Zero 2W ile birebir eşdeğer bileşenler. Tüm AI yükü sunucuda; gözlükte yalnızca iletişim ve ekran.</p>
+    </div>
+    <div class="specs-grid">
+      <div class="spec-card reveal reveal-delay-1">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="4" y="4" width="36" height="36" rx="2"/>
+          <rect x="12" y="12" width="20" height="20" rx="1"/>
+          <line x1="22" y1="4" x2="22" y2="12"/>
+          <line x1="22" y1="32" x2="22" y2="40"/>
+          <line x1="4" y1="22" x2="12" y2="22"/>
+          <line x1="32" y1="22" x2="40" y2="22"/>
+        </svg>
+        <div class="spec-name">İşlemci</div>
+        <div class="spec-value">Quad-Core ARM Cortex-A53</div>
+        <div class="spec-detail">1GHz — 64-bit. Raspberry Pi Zero 2W ile birebir eşdeğer. Düşük güç tüketimi, yüksek verimlilik.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-2">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="6" y="10" width="32" height="24" rx="2"/>
+          <line x1="10" y1="16" x2="34" y2="16"/>
+          <line x1="10" y1="22" x2="34" y2="22"/>
+          <line x1="10" y1="28" x2="22" y2="28"/>
+          <path d="M2 34 H42"/>
+        </svg>
+        <div class="spec-name">Bellek</div>
+        <div class="spec-value">512 MB LPDDR2 SDRAM</div>
+        <div class="spec-detail">Sistem çalıştırma ve iletişim için yeterli hafıza. AI modelleri sunucuda çalışır.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-3">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <circle cx="22" cy="22" r="16"/>
+          <circle cx="22" cy="22" r="8"/>
+          <circle cx="22" cy="22" r="2" fill="currentColor"/>
+          <line x1="22" y1="6" x2="22" y2="14"/>
+          <line x1="22" y1="30" x2="22" y2="38"/>
+          <line x1="6" y1="22" x2="14" y2="22"/>
+          <line x1="30" y1="22" x2="38" y2="22"/>
+        </svg>
+        <div class="spec-name">Ekran</div>
+        <div class="spec-value">Transparan OLED, 480×320</div>
+        <div class="spec-detail">Gerçek dünyayı görerek üzerine dijital katman bindiren mikroskopik transparan OLED panel.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-4">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M22 4 Q36 14 36 26 Q36 36 22 40 Q8 36 8 26 Q8 14 22 4Z"/>
+          <path d="M22 12 Q30 19 30 26 Q30 33 22 36 Q14 33 14 26 Q14 19 22 12Z"/>
+          <circle cx="22" cy="26" r="4"/>
+        </svg>
+        <div class="spec-name">Bağlantı</div>
+        <div class="spec-value">Wi-Fi 5 + Bluetooth 5.2</div>
+        <div class="spec-detail">IEEE 802.11 b/g/n/ac 2.4/5GHz. BT 5.2 Low Energy. Anlık sunucu bağlantısı.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-1">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M8 34 L22 10 L36 34 Z"/>
+          <line x1="22" y1="18" x2="22" y2="26"/>
+          <circle cx="22" cy="30" r="1.5" fill="currentColor"/>
+        </svg>
+        <div class="spec-name">Yapay Zeka</div>
+        <div class="spec-value">Sunucu Tabanlı AI Engine</div>
+        <div class="spec-detail">Tüm derin öğrenme modelleri Tuncer Cloud sunucularında. Gözlük yalnızca istek gönderir, yanıt alır.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-2">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <path d="M22 6 L26 16 H38 L28 23 L32 34 L22 27 L12 34 L16 23 L6 16 H18 Z"/>
+        </svg>
+        <div class="spec-name">Batarya</div>
+        <div class="spec-value">180mAh — 8 Saat Kullanım</div>
+        <div class="spec-detail">Hafifliği korurken tüm gün pil ömrü. USB-C manyetik şarj bağlantısı.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-3">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="4" y="14" width="36" height="18" rx="3"/>
+          <circle cx="14" cy="23" r="4"/>
+          <circle cx="30" cy="23" r="4"/>
+          <line x1="18" y1="23" x2="26" y2="23"/>
+        </svg>
+        <div class="spec-name">Form Faktörü</div>
+        <div class="spec-value">Standart Gözlük Çerçevesi</div>
+        <div class="spec-detail">28 gram. Normal gözlük çerçevesi boyutunda. Titanium alaşım + karbon fiber hybrid.</div>
+      </div>
+      <div class="spec-card reveal reveal-delay-4">
+        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
+          <rect x="8" y="8" width="28" height="28" rx="14"/>
+          <path d="M22 16 V22 L26 26"/>
+          <circle cx="22" cy="22" r="2" fill="currentColor"/>
+        </svg>
+        <div class="spec-name">İşletim Sistemi</div>
+        <div class="spec-value">TuncerOS Lite 1.0</div>
+        <div class="spec-detail">Raspberry Pi Zero 2W uyumlu Linux tabanlı minimal OS. OTA güncellemeler. Açık API.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" style="background:var(--bg2)">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Neden Tuncer Core</div>
+      <h2 class="section-title">Taşıyan değil,<br>düşünen bir gözlük.</h2>
+    </div>
+    <div class="features-layout">
+      <div class="feature-list reveal">
+        <div class="feature-item">
+          <div class="feature-num">01</div>
+          <div>
+            <div class="feature-title">Sunucu Zekası, Sıfır Gecikme</div>
+            <div class="feature-desc">GPT seviyesi AI modelleri Tuncer Cloud altyapısında çalışır. Gözlük yalnızca istek gönderir; işlem gücünü taşımaz, ısınmaz, batarya tüketmez. Yanıt süresi ortalama 1ms altında.</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">02</div>
+          <div>
+            <div class="feature-title">Transparan Ekran — Gerçek AR</div>
+            <div class="feature-desc">Gerçek dünyaya bakan gözlerinizin üzerinde dijital katman. Navigasyon, çeviri, nesne tanıma ve anlık bilgi akışı görüşünüzü kapatmadan iletilir.</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">03</div>
+          <div>
+            <div class="feature-title">Raspberry Pi Zero 2W Kalp</div>
+            <div class="feature-desc">Dünyanın en geniş geliştirici ekosistemine sahip donanımla birebir uyumlu bileşenler. Kendi uygulamalarınızı yazın; topluluk modüllerini yükleyin.</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">04</div>
+          <div>
+            <div class="feature-title">Gizlilik Önce</div>
+            <div class="feature-desc">Tüm sunucu iletişimi end-to-end şifreli. Yüz tanıma lokal işlemci üzerinde; buluta gönderilmez. Kullanıcı verisi hiçbir zaman satılmaz.</div>
+          </div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-num">05</div>
+          <div>
+            <div class="feature-title">OTA Güncellemeler</div>
+            <div class="feature-desc">TuncerOS Lite güncellemeleri kablosuz olarak gelir. Donanım değişmez; yazılım ile cihaz daima güncel kalır.</div>
+          </div>
+        </div>
+      </div>
+      <div class="feature-visual reveal reveal-delay-2">
+        <svg viewBox="0 0 320 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px">
+          <!-- Server -->
+          <rect x="100" y="20" width="120" height="70" rx="2" stroke="#3a3a42" stroke-width="1" fill="#0c0c10"/>
+          <rect x="108" y="28" width="104" height="10" rx="1" fill="#1a1a20"/>
+          <rect x="108" y="42" width="104" height="10" rx="1" fill="#1a1a20"/>
+          <rect x="108" y="56" width="104" height="10" rx="1" fill="#1a1a20"/>
+          <circle cx="196" cy="33" r="3" fill="#e8a020" opacity="0.8"/>
+          <circle cx="196" cy="47" r="3" fill="#3d9e5c" opacity="0.8"/>
+          <circle cx="196" cy="61" r="3" fill="#e8a020" opacity="0.4"/>
+          <text x="160" y="106" fill="#5a5a62" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="3">TUNCER CLOUD</text>
+          <!-- Connection lines -->
+          <line x1="160" y1="90" x2="160" y2="180" stroke="#e8a020" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.6"/>
+          <!-- Glasses simplified -->
+          <rect x="60" y="185" width="80" height="35" rx="2" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.05)"/>
+          <rect x="180" y="185" width="80" height="35" rx="2" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.05)"/>
+          <path d="M140 202 Q160 195 180 202" stroke="#5a5a62" stroke-width="1.5" fill="none"/>
+          <line x1="60" y1="202" x2="40" y2="202" stroke="#5a5a62" stroke-width="2"/>
+          <line x1="260" y1="202" x2="280" y2="202" stroke="#5a5a62" stroke-width="2"/>
+          <text x="100" y="207" fill="#e8a020" font-size="7" font-family="monospace" text-anchor="middle">AI.ON</text>
+          <text x="220" y="207" fill="#e8a020" font-size="7" font-family="monospace" text-anchor="middle">23°C</text>
+          <!-- Down labels -->
+          <text x="160" y="250" fill="#5a5a62" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="2">TUNCER CORE 2027</text>
+          <!-- Data flow dots -->
+          <circle cx="160" cy="130" r="3" fill="#e8a020">
+            <animate attributeName="cy" values="90;180;90" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <circle cx="160" cy="150" r="3" fill="#e8a020">
+            <animate attributeName="cy" values="180;90;180" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
+          </circle>
+          <!-- Labels -->
+          <text x="160" y="300" fill="#e8a020" font-size="9" font-family="monospace" text-anchor="middle">↑ İSTEK</text>
+          <text x="160" y="316" fill="#3d9e5c" font-size="9" font-family="monospace" text-anchor="middle">↓ YANIT 1ms</text>
+          <!-- Bottom box -->
+          <rect x="80" y="330" width="160" height="50" rx="2" stroke="#3a3a42" stroke-width="1" fill="#0c0c10"/>
+          <text x="160" y="350" fill="#b0b4c0" font-size="8" font-family="monospace" text-anchor="middle">GÖZ ÖNÜNDE</text>
+          <text x="160" y="365" fill="#e8a020" font-size="8" font-family="monospace" text-anchor="middle">GERÇEK ZAMANLI AI</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- AI ENGINE -->
+<section id="ai">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Yapay Zeka Motoru</div>
+      <h2 class="section-title">İşlem gücü<br>bulutta, zeka<br>gözünüzde.</h2>
+      <p class="section-sub">Karmaşık AI hesaplamaları gözlükte değil, Tuncer Cloud sunucularında gerçekleşir. Cihaz ısınmaz, batarya tükenmez.</p>
+    </div>
+    <div class="ai-layout">
+      <div class="ai-pipeline reveal">
+        <div class="ai-step">
+          <div class="ai-step-line">
+            <div class="ai-step-dot"></div>
+            <div class="ai-step-connector"></div>
+          </div>
+          <div class="ai-step-content">
+            <div class="ai-step-label">Adım 01</div>
+            <div class="ai-step-title">Sensör Verisi Toplanır</div>
+            <div class="ai-step-desc">Transparan ekrandaki kamera, mikrofon ve hareket sensörleri ortam verisini yakalar. Ham veri yerel olarak sıkıştırılır.</div>
+          </div>
+        </div>
+        <div class="ai-step">
+          <div class="ai-step-line">
+            <div class="ai-step-dot"></div>
+            <div class="ai-step-connector"></div>
+          </div>
+          <div class="ai-step-content">
+            <div class="ai-step-label">Adım 02</div>
+            <div class="ai-step-title">Şifreli İletim</div>
+            <div class="ai-step-desc">Wi-Fi 5 üzerinden TLS 1.3 şifreli paket Tuncer Cloud sunucusuna gönderilir. Ortalama gecikme 0.8ms.</div>
+          </div>
+        </div>
+        <div class="ai-step">
+          <div class="ai-step-line">
+            <div class="ai-step-dot"></div>
+            <div class="ai-step-connector"></div>
+          </div>
+          <div class="ai-step-content">
+            <div class="ai-step-label">Adım 03</div>
+            <div class="ai-step-title">Sunucu AI İşleme</div>
+            <div class="ai-step-desc">GPU kümesinde nesne tanıma, dil anlama, bağlam analizi ve yanıt üretimi gerçekleşir. Model boyutu sınırsız.</div>
+          </div>
+        </div>
+        <div class="ai-step">
+          <div class="ai-step-line">
+            <div class="ai-step-dot"></div>
+          </div>
+          <div class="ai-step-content">
+            <div class="ai-step-label">Adım 04</div>
+            <div class="ai-step-title">Ekranda Görselleştirme</div>
+            <div class="ai-step-desc">Yanıt transparan OLED'e anlık bindirilir. Metin, şekil veya overlay formatında — gerçeklik ile harmanlı.</div>
+          </div>
+        </div>
+      </div>
+      <div class="ai-info reveal reveal-delay-2">
+        <div class="ai-info-card">
+          <div class="ai-info-title">Sunucu Yanıt Süresi</div>
+          <div class="ai-info-val">&lt;1ms</div>
+          <div class="ai-info-sub">Ortalama uçtan uca gecikme</div>
+        </div>
+        <div class="ai-info-card">
+          <div class="ai-info-title">AI Model Kapasitesi</div>
+          <div class="ai-info-val">Sınırsız</div>
+          <div class="ai-info-sub">Sunucu tarafı işleme — cihaz kısıtı yok</div>
+        </div>
+        <div class="ai-info-card">
+          <div class="ai-info-title">Cihaz AI Yükü</div>
+          <div class="ai-info-val">%0</div>
+          <div class="ai-info-sub">Gözlükte AI işlemi yapılmaz</div>
+        </div>
+        <div class="ai-info-card">
+          <div class="ai-info-title">Veri Şifreleme</div>
+          <div class="ai-info-val">TLS 1.3</div>
+          <div class="ai-info-sub">End-to-end şifreli iletişim</div>
+        </div>
+        <div class="ai-info-card">
+          <div class="ai-info-title">Çevrimdışı Mod</div>
+          <div class="ai-info-val">Temel Fonksiyon</div>
+          <div class="ai-info-sub">İnternet olmadan saat, adım sayar, bildirim</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ORDER FORM -->
+<section id="order">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-tag">Ön Sipariş</div>
+      <h2 class="section-title">Sınırlı ilk parti.<br>Yerinizi şimdi alın.</h2>
+    </div>
+    <div class="order-layout">
+      <div class="order-form-wrap reveal">
+        <div id="order-form-inner">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="fname">Ad</label>
+              <input class="form-input" type="text" id="fname" placeholder="Adınız" required>
             </div>
-        </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h2>Geleceği Gözlerinizle Yaşayın</h2>
-            <p>Sunucu tabanlı güçlü yapay zeka ile çalışan, şeffaf ekran teknolojisine sahip yeni nesil akıllı gözlük sistemi</p>
-            <a href="#preorder" class="cta-button">Hemen Ön Sipariş Ver</a>
-            
-            <div class="stats">
-                <div class="stat">
-                    <span class="stat-number">∞</span>
-                    <span class="stat-label">Sunucu Gücü</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number">4K</span>
-                    <span class="stat-label">Şeffaf Ekran</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number">24/7</span>
-                    <span class="stat-label">Bulut Bağlantısı</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-number">45g</span>
-                    <span class="stat-label">Ultra Hafif</span>
-                </div>
+            <div class="form-group">
+              <label class="form-label" for="lname">Soyad</label>
+              <input class="form-input" type="text" id="lname" placeholder="Soyadınız" required>
             </div>
-        </div>
-    </section>
-
-    <!-- Features Section -->
-    <section id="features" class="features">
-        <div class="container">
-            <h2 class="section-title">Devrim Niteliğinde Özellikler</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">🧠</div>
-                    <h3>Sunucu Tabanlı Yapay Zeka</h3>
-                    <p>Tüm ağır işlemler bulut sunucularımızda gerçekleşir. Gözlüğünüz hafif kalırken, sınırsız yapay zeka gücüne erişin. Gerçek zamanlı nesne tanıma, dil çevirisi ve bağlam analizi.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">👓</div>
-                    <h3>Şeffaf OLED Ekran</h3>
-                    <p>1080p çözünürlükte, ultra şeffaf OLED ekran teknolojisi. Hem gerçek dünyayı görün, hem de dijital bilgilere erişin. 90 Hz yenileme hızı ile kesintisiz deneyim.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">⚡</div>
-                    <h3>Raspberry Pi Zero 2W İşlemci</h3>
-                    <p>Quad-core 1GHz ARM Cortex-A53 işlemci, 512MB RAM. Kompakt yapı, düşük güç tüketimi. WiFi 802.11n ve Bluetooth 4.2 ile kesintisiz bağlantı.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🔋</div>
-                    <h3>Tüm Gün Pil Ömrü</h3>
-                    <p>Optimize edilmiş güç yönetimi sayesinde 8 saate kadar kesintisiz kullanım. Hızlı şarj özelliği ile 30 dakikada %80 dolum.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🌐</div>
-                    <h3>5G Bağlantı</h3>
-                    <p>Ultra hızlı 5G bağlantı ile milisaniye gecikmede sunuculara erişim. Offline modda temel özellikler çalışmaya devam eder.</p>
-                </div>
-
-                <div class="feature-card">
-                    <div class="feature-icon">🎯</div>
-                    <h3>Akıllı Asistan</h3>
-                    <p>Sesli komutlarla kontrol edin. Yapay zeka destekli kişisel asistanınız 7/24 yanınızda. Türkçe dahil 50+ dilde destek.</p>
-                </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="email">E-posta</label>
+            <input class="form-input" type="email" id="email" placeholder="ornek@mail.com" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="phone">Telefon</label>
+            <input class="form-input" type="tel" id="phone" placeholder="+90 555 000 00 00">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="city">Şehir</label>
+              <input class="form-input" type="text" id="city" placeholder="İstanbul">
             </div>
-        </div>
-    </section>
-
-    <!-- Specs Section -->
-    <section id="specs" class="specs">
-        <div class="container">
-            <h2 class="section-title">Teknik Özellikler</h2>
-            <div class="specs-grid">
-                <div class="spec-item">
-                    <h4>🖥️ İşlemci</h4>
-                    <p>Raspberry Pi Zero 2W tabanlı<br>Broadcom BCM2710A1, 1GHz Quad-Core ARM Cortex-A53</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>💾 Bellek</h4>
-                    <p>512MB LPDDR2 RAM<br>16GB Dahili Depolama (Genişletilebilir)</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>📺 Ekran</h4>
-                    <p>Şeffaf Micro-OLED Ekran<br>1920x1080 (1080p) çözünürlük<br>90Hz yenileme hızı<br>85% geçirgenlik</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>📡 Bağlantı</h4>
-                    <p>WiFi 802.11 b/g/n (2.4GHz)<br>Bluetooth 4.2 / BLE<br>5G Modem Desteği</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>🔋 Pil</h4>
-                    <p>450mAh Li-Po Pil<br>8 saat sürekli kullanım<br>USB-C Hızlı Şarj</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>📷 Kamera</h4>
-                    <p>8MP Geniş Açılı Kamera<br>1080p Video Kayıt<br>Yapay Zeka Destekli İşleme</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>🎤 Ses</h4>
-                    <p>Çift Mikrofon (Gürültü Önleme)<br>Kemik İletim Hoparlör<br>Dolby Audio Desteği</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>⚙️ Sensörler</h4>
-                    <p>9-Eksen IMU (Gyro, Accel, Mag)<br>Ortam Işık Sensörü<br>Yakınlık Sensörü</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>🌡️ Çalışma Koşulları</h4>
-                    <p>Sıcaklık: -10°C ile 50°C<br>IP54 Su ve Toz Koruması</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>📏 Boyutlar</h4>
-                    <p>Genişlik: 145mm<br>Yükseklik: 48mm<br>Derinlik: 15mm<br>Ağırlık: 45 gram</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>☁️ Sunucu Özellikleri</h4>
-                    <p>GPU Hızlandırmalı AI İşleme<br>256 Core Tensor İşlemci<br>Real-time Inference<br>Düşük Gecikme (< 50ms)</p>
-                </div>
-
-                <div class="spec-item">
-                    <h4>🛡️ Güvenlik</h4>
-                    <p>End-to-End Şifreleme<br>Biyometrik Doğrulama<br>Gizlilik Modu</p>
-                </div>
+            <div class="form-group">
+              <label class="form-label" for="qty">Adet</label>
+              <select class="form-select" id="qty">
+                <option value="1">1 Adet</option>
+                <option value="2">2 Adet</option>
+                <option value="3">3 Adet</option>
+                <option value="5">5 Adet</option>
+              </select>
             </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="edition">Versiyon</label>
+            <select class="form-select" id="edition">
+              <option value="standard">Standard — Siyah Çerçeve</option>
+              <option value="titanium">Titanium Edition — Gümüş</option>
+              <option value="carbon">Carbon Black — Karbon Fiber</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="note">Not (İsteğe bağlı)</label>
+            <textarea class="form-textarea" id="note" placeholder="Özel istek veya notunuz..."></textarea>
+          </div>
+          <button class="form-submit" id="submit-btn" onclick="submitOrder()">Ön Siparişi Onayla</button>
         </div>
-    </section>
-
-    <!-- Preorder Section -->
-    <section id="preorder" class="preorder">
-        <div class="container">
-            <h2 class="section-title">Ön Sipariş Verin</h2>
-            <div class="form-container">
-                <div id="successMessage" class="success-message">
-                    ✅ Siparişiniz başarıyla alındı! En kısa sürede sizinle iletişime geçeceğiz.
-                </div>
-
-                <div class="price-info">
-                    <h3>₺12,999</h3>
-                    <p>Ön sipariş özel fiyatı - Normal fiyat: ₺15,999</p>
-                </div>
-
-                <form name="preorder" method="POST" data-netlify="true" netlify-honeypot="bot-field" id="preorderForm">
-                    <input type="hidden" name="form-name" value="preorder">
-                    <p style="display:none;">
-                        <label>Don't fill this out: <input name="bot-field"></label>
-                    </p>
-
-                    <div class="form-group">
-                        <label for="name">Ad Soyad *</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="email">E-posta *</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="phone">Telefon *</label>
-                        <input type="tel" id="phone" name="phone" required placeholder="0555 555 55 55">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="quantity">Adet *</label>
-                        <select id="quantity" name="quantity" required>
-                            <option value="1">1 Adet - ₺12,999</option>
-                            <option value="2">2 Adet - ₺24,998</option>
-                            <option value="3">3 Adet - ₺36,997</option>
-                            <option value="4+">4 veya daha fazla (İletişime geçeceğiz)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="color">Renk Tercihi</label>
-                        <select id="color" name="color">
-                            <option value="siyah">Siyah</option>
-                            <option value="gri">Gri Titanyum</option>
-                            <option value="beyaz">Beyaz</option>
-                            <option value="lacivert">Lacivert</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="address">Teslimat Adresi *</label>
-                        <textarea id="address" name="address" rows="3" required></textarea>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes">Notlar (Opsiyonel)</label>
-                        <textarea id="notes" name="notes" rows="2" placeholder="Özel istekleriniz veya sorularınız..."></textarea>
-                    </div>
-
-                    <button type="submit" class="submit-button">Ön Siparişi Tamamla</button>
-                </form>
-
-                <p style="text-align: center; margin-top: 20px; color: var(--gray); font-size: 0.9rem;">
-                    * Tahmini teslimat: 2027 Q2 • Kapıda ödeme mevcut
-                </p>
-            </div>
+        <div class="form-success" id="form-success">
+          <svg class="check" viewBox="0 0 56 56" fill="none" stroke="#e8a020" stroke-width="1.5">
+            <circle cx="28" cy="28" r="26"/>
+            <path d="M16 28 L24 36 L40 20"/>
+          </svg>
+          <h3>Ön Siparişiniz Alındı</h3>
+          <p>Teslimat başladığında e-posta ile bilgilendirileceğsiniz.</p>
+          <div class="order-id" id="confirm-id"></div>
         </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 Tuncer Core 2027. Tüm hakları saklıdır.</p>
-            <p style="margin-top: 10px; font-size: 0.9rem;">Yapay Zeka Destekli Gözlük Teknolojisi</p>
+      </div>
+      <div class="order-info reveal reveal-delay-2">
+        <div class="price-display">₺12.990</div>
+        <div class="price-note">Ön sipariş fiyatı — KDV dahil</div>
+        <ul class="order-perks">
+          <li class="order-perk">
+            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
+            İlk 500 siparişe %15 indirim uygulandı
+          </li>
+          <li class="order-perk">
+            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
+            6 ay ücretsiz Tuncer Cloud aboneliği
+          </li>
+          <li class="order-perk">
+            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
+            Ücretsiz kargo ve kurulum desteği
+          </li>
+          <li class="order-perk">
+            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
+            14 gün iade garantisi
+          </li>
+          <li class="order-perk">
+            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
+            2 yıl donanım garantisi
+          </li>
+          <li class="order-perk">
+            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
+            Tahmini teslimat: Q2 2027
+          </li>
+        </ul>
+        <div style="margin-top:2rem;padding:1.5rem;border:1px solid var(--border);background:var(--bg2)">
+          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--silver);margin-bottom:0.5rem;">Ön Sipariş Sayacı</div>
+          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:2rem;color:var(--amber)" id="order-count">—</div>
+          <div style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;color:var(--silver);margin-top:0.25rem">sipariş alındı</div>
         </div>
-    </footer>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <script>
-        // Form submission handling
-        const form = document.getElementById('preorderForm');
-        const successMessage = document.getElementById('successMessage');
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="nav-logo" style="display:flex;align-items:center;gap:10px;margin-bottom:0.5rem;">
+        <svg viewBox="0 0 32 32" fill="none" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+          <rect x="1" y="1" width="30" height="30" stroke="#e8a020" stroke-width="1.2"/>
+          <path d="M7 16H25M16 7V25" stroke="#e8a020" stroke-width="1.2"/>
+          <circle cx="16" cy="16" r="4" stroke="#e8a020" stroke-width="1.2"/>
+        </svg>
+        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;color:var(--white)">TUNCER<span style="color:var(--amber)">ZEKA</span></span>
+      </div>
+      <div class="footer-copy">© 2027 Tuncer Zeka Teknoloji. Tüm hakları saklıdır.</div>
+    </div>
+    <ul class="footer-links">
+      <li><a href="#specs">Özellikler</a></li>
+      <li><a href="#order">Sipariş</a></li>
+      <li><a href="#" onclick="openAdminLogin()">Yönetici</a></li>
+    </ul>
+  </div>
+</footer>
 
-        form.addEventListener('submit', function(e) {
-            // Netlify will handle the form submission
-            // Show success message after a brief delay
-            setTimeout(function() {
-                successMessage.classList.add('show');
-                form.reset();
-                
-                // Scroll to success message
-                successMessage.scrollIntoView({ behavior: 'smooth', block: 'center' });
+<!-- TOAST -->
+<div id="toast"></div>
 
-                // Hide message after 10 seconds
-                setTimeout(function() {
-                    successMessage.classList.remove('show');
-                }, 10000);
-            }, 1000);
-        });
+<!-- LOGIN MODAL -->
+<div id="login-modal">
+  <div class="login-box">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;">
+      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#e8a020" stroke-width="1.2">
+        <rect x="1" y="1" width="30" height="30"/>
+        <rect x="10" y="14" width="12" height="10" rx="1"/>
+        <path d="M12 14 V11 Q12 7 16 7 Q20 7 20 11 V14"/>
+        <circle cx="16" cy="19" r="1.5" fill="#e8a020"/>
+      </svg>
+      <div>
+        <div class="login-title">Yönetici Girişi</div>
+        <div class="login-sub">Admin Panel — Sipariş Takibi</div>
+      </div>
+    </div>
+    <input class="login-input" type="password" id="admin-pass" placeholder="••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkAdminPass()">
+    <button class="login-btn" onclick="checkAdminPass()">Giriş Yap</button>
+    <span class="login-cancel" onclick="closeLogin()">İptal</span>
+  </div>
+</div>
 
-        // Smooth scrolling for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
+<!-- ADMIN PANEL -->
+<div id="admin-panel">
+  <div class="admin-top">
+    <div class="admin-top-title">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#e8a020" stroke-width="1.2">
+        <rect x="1" y="1" width="20" height="20" rx="1"/>
+        <path d="M5 11H17M11 5V17"/>
+        <circle cx="11" cy="11" r="3"/>
+      </svg>
+      Sipariş Yönetimi
+      <span class="badge">Admin Panel</span>
+    </div>
+    <button class="admin-close" onclick="closeAdmin()">Çıkış Yap</button>
+  </div>
+  <div class="admin-body">
+    <div class="admin-stats">
+      <div class="admin-stat">
+        <div class="admin-stat-label">Toplam Sipariş</div>
+        <div class="admin-stat-val" id="stat-total">0</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-label">Bekleyen</div>
+        <div class="admin-stat-val" id="stat-pending">0</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-label">Onaylanan</div>
+        <div class="admin-stat-val" id="stat-confirmed">0</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-label">Tahmini Gelir</div>
+        <div class="admin-stat-val" id="stat-revenue">₺0</div>
+      </div>
+    </div>
+    <div class="admin-toolbar">
+      <input class="admin-search" type="text" id="admin-search" placeholder="Ad, e-posta veya sipariş ID ara..." oninput="renderAdminTable()">
+      <div style="display:flex;gap:0.75rem">
+        <button class="action-btn" onclick="exportCSV()">CSV İndir</button>
+        <button class="clear-btn" onclick="clearAllOrders()">Tüm Siparişleri Sil</button>
+      </div>
+    </div>
+    <div class="admin-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Sipariş ID</th>
+            <th>Ad Soyad</th>
+            <th>E-posta</th>
+            <th>Telefon</th>
+            <th>Şehir</th>
+            <th>Versiyon</th>
+            <th>Adet</th>
+            <th>Tutar</th>
+            <th>Durum</th>
+            <th>Tarih</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="admin-tbody"></tbody>
+      </table>
+      <div class="admin-empty" id="admin-empty" style="display:none">Henüz sipariş bulunmuyor</div>
+    </div>
+  </div>
+</div>
 
-        // Dynamic price update based on quantity
-        const quantitySelect = document.getElementById('quantity');
-        quantitySelect.addEventListener('change', function() {
-            const priceInfo = document.querySelector('.price-info h3');
-            const quantity = parseInt(this.value) || 1;
-            
-            if (this.value === '4+') {
-                priceInfo.innerHTML = 'Özel Fiyat';
-            } else {
-                const totalPrice = (12999 * quantity).toLocaleString('tr-TR');
-                priceInfo.innerHTML = '₺' + totalPrice;
-            }
-        });
-    </script>
+<script>
+const PRICE = 12990;
+const ADMIN_PASS = '175017';
+
+function getOrders() {
+  try { return JSON.parse(localStorage.getItem('tuncer_orders') || '[]'); } catch { return []; }
+}
+function saveOrders(o) { localStorage.setItem('tuncer_orders', JSON.stringify(o)); }
+
+function genId() {
+  return 'TC' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,5).toUpperCase();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function updateOrderCount() {
+  const c = getOrders().length;
+  document.getElementById('order-count').textContent = c;
+}
+
+function submitOrder() {
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const city = document.getElementById('city').value.trim();
+  const qty = parseInt(document.getElementById('qty').value);
+  const edition = document.getElementById('edition').value;
+  const note = document.getElementById('note').value.trim();
+
+  if (!fname || !lname || !email) { showToast('Lütfen zorunlu alanları doldurun'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Geçerli bir e-posta adresi girin'); return; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'İşleniyor...';
+
+  setTimeout(() => {
+    const order = {
+      id: genId(),
+      fname, lname, email, phone, city, qty, edition, note,
+      amount: qty * PRICE,
+      status: 'pending',
+      date: new Date().toLocaleString('tr-TR')
+    };
+    const orders = getOrders();
+    orders.push(order);
+    saveOrders(orders);
+    updateOrderCount();
+
+    document.getElementById('order-form-inner').style.display = 'none';
+    const suc = document.getElementById('form-success');
+    suc.style.display = 'block';
+    document.getElementById('confirm-id').textContent = 'Sipariş No: ' + order.id;
+    showToast('Sipariş başarıyla alındı!');
+    btn.disabled = false; btn.textContent = 'Ön Siparişi Onayla';
+  }, 800);
+}
+
+/* ADMIN */
+function openAdminLogin() {
+  document.getElementById('login-modal').classList.add('active');
+  setTimeout(() => document.getElementById('admin-pass').focus(), 100);
+}
+function closeLogin() {
+  document.getElementById('login-modal').classList.remove('active');
+  document.getElementById('admin-pass').value = '';
+  document.getElementById('admin-pass').classList.remove('error');
+}
+function checkAdminPass() {
+  const p = document.getElementById('admin-pass').value;
+  if (p === ADMIN_PASS) {
+    closeLogin();
+    openAdmin();
+  } else {
+    const inp = document.getElementById('admin-pass');
+    inp.classList.add('error');
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('error'), 600);
+    showToast('Hatalı şifre');
+  }
+}
+function openAdmin() {
+  document.getElementById('admin-panel').classList.add('active');
+  renderAdminStats();
+  renderAdminTable();
+}
+function closeAdmin() {
+  document.getElementById('admin-panel').classList.remove('active');
+}
+
+function renderAdminStats() {
+  const orders = getOrders();
+  const pending = orders.filter(o => o.status === 'pending').length;
+  const confirmed = orders.filter(o => o.status === 'confirmed').length;
+  const revenue = orders.reduce((s, o) => s + o.amount, 0);
+  document.getElementById('stat-total').textContent = orders.length;
+  document.getElementById('stat-pending').textContent = pending;
+  document.getElementById('stat-confirmed').textContent = confirmed;
+  document.getElementById('stat-revenue').textContent = '₺' + revenue.toLocaleString('tr-TR');
+}
+
+function renderAdminTable() {
+  const q = (document.getElementById('admin-search').value || '').toLowerCase();
+  let orders = getOrders();
+  if (q) orders = orders.filter(o =>
+    (o.fname + ' ' + o.lname).toLowerCase().includes(q) ||
+    o.email.toLowerCase().includes(q) ||
+    o.id.toLowerCase().includes(q) ||
+    (o.city || '').toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('admin-tbody');
+  const empty = document.getElementById('admin-empty');
+  if (!orders.length) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  const edMap = { standard: 'Standard', titanium: 'Titanium', carbon: 'Carbon Black' };
+  tbody.innerHTML = orders.map(o => `
+    <tr id="row-${o.id}">
+      <td style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--amber)">${o.id}</td>
+      <td>${o.fname} ${o.lname}</td>
+      <td style="font-size:0.82rem">${o.email}</td>
+      <td style="font-size:0.82rem">${o.phone || '—'}</td>
+      <td>${o.city || '—'}</td>
+      <td style="font-size:0.82rem">${edMap[o.edition] || o.edition}</td>
+      <td style="text-align:center">${o.qty}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--amber)">₺${o.amount.toLocaleString('tr-TR')}</td>
+      <td><span class="status-badge status-${o.status}">${o.status === 'pending' ? 'Bekliyor' : o.status === 'confirmed' ? 'Onaylı' : 'İptal'}</span></td>
+      <td style="font-size:0.78rem;white-space:nowrap">${o.date}</td>
+      <td>
+        <div class="admin-actions">
+          <button class="action-btn" onclick="changeStatus('${o.id}','confirmed')">Onayla</button>
+          <button class="action-btn" onclick="changeStatus('${o.id}','cancelled')">İptal</button>
+          <button class="action-btn del" onclick="deleteOrder('${o.id}')">Sil</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function changeStatus(id, status) {
+  const orders = getOrders();
+  const i = orders.findIndex(o => o.id === id);
+  if (i !== -1) { orders[i].status = status; saveOrders(orders); }
+  renderAdminStats(); renderAdminTable();
+  showToast('Durum güncellendi');
+}
+
+function deleteOrder(id) {
+  if (!confirm('Bu siparişi silmek istediğinizden emin misiniz?')) return;
+  const orders = getOrders().filter(o => o.id !== id);
+  saveOrders(orders);
+  renderAdminStats(); renderAdminTable(); updateOrderCount();
+  showToast('Sipariş silindi');
+}
+
+function clearAllOrders() {
+  if (!confirm('TÜM siparişleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return;
+  saveOrders([]);
+  renderAdminStats(); renderAdminTable(); updateOrderCount();
+  showToast('Tüm siparişler silindi');
+}
+
+function exportCSV() {
+  const orders = getOrders();
+  if (!orders.length) { showToast('Dışa aktarılacak sipariş yok'); return; }
+  const headers = ['Sipariş ID','Ad','Soyad','E-posta','Telefon','Şehir','Versiyon','Adet','Tutar','Durum','Tarih'];
+  const rows = orders.map(o => [o.id,o.fname,o.lname,o.email,o.phone||'',o.city||'',o.edition,o.qty,o.amount,o.status,o.date].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'tuncer-core-siparisler.csv';
+  a.click();
+  showToast('CSV indirildi');
+}
+
+/* SCROLL REVEAL */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.12 });
+document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
+
+updateOrderCount();
+</script>
 </body>
 </html>
