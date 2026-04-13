@@ -1,1211 +1,939 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tuncer Core 2027 — Ön Sipariş</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #060608;
-    --bg2: #0c0c10;
-    --bg3: #111116;
-    --amber: #e8a020;
-    --amber2: #f5c060;
-    --silver: #b0b4c0;
-    --silver2: #d8dce8;
-    --white: #f0f0f4;
-    --border: rgba(180,184,200,0.12);
-    --border2: rgba(232,160,32,0.25);
-  }
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    background: var(--bg);
-    color: var(--white);
-    font-family: 'Instrument Sans', sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    overflow-x: hidden;
-  }
-  ::selection { background: var(--amber); color: #000; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 2px; }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gazipaşa — Akdeniz'in Gizli Cenneti</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --gold: #c9a84c;
+      --gold-light: #e8c97a;
+      --deep: #0a0d14;
+      --navy: #0d1b2a;
+      --teal: #1a6b73;
+      --teal-light: #22909a;
+      --sand: #f0e6c8;
+      --text: #e8ddc8;
+      --muted: #9a8f7e;
+    }
 
-  /* ── NAV ── */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.25rem 3rem;
-    background: rgba(6,6,8,0.85);
-    backdrop-filter: blur(18px);
-    border-bottom: 1px solid var(--border);
-  }
-  .nav-logo {
-    display: flex; align-items: center; gap: 10px;
-    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem;
-    letter-spacing: 0.06em; color: var(--white);
-    text-decoration: none;
-  }
-  .nav-logo svg { width: 32px; height: 32px; }
-  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
-  .nav-links a {
-    font-family: 'DM Mono', monospace; font-size: 0.72rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); text-decoration: none;
-    transition: color 0.2s;
-  }
-  .nav-links a:hover { color: var(--amber); }
-  .nav-cta {
-    font-family: 'DM Mono', monospace; font-size: 0.72rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 0.55rem 1.4rem;
-    background: transparent;
-    border: 1px solid var(--amber);
-    color: var(--amber);
-    cursor: pointer; transition: all 0.2s;
-    text-decoration: none;
-  }
-  .nav-cta:hover { background: var(--amber); color: #000; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* ── HERO ── */
-  .hero {
-    min-height: 100vh;
-    display: flex; align-items: center; justify-content: center;
-    position: relative; overflow: hidden;
-    padding-top: 80px;
-  }
-  .hero-grid {
-    position: absolute; inset: 0; opacity: 0.06;
-    background-image:
-      linear-gradient(var(--amber) 1px, transparent 1px),
-      linear-gradient(90deg, var(--amber) 1px, transparent 1px);
-    background-size: 60px 60px;
-  }
-  .hero-glow {
-    position: absolute;
-    width: 700px; height: 700px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(232,160,32,0.08) 0%, transparent 70%);
-    top: 50%; left: 50%; transform: translate(-50%, -50%);
-    pointer-events: none;
-  }
-  .hero-content {
-    position: relative; z-index: 2;
-    max-width: 1100px; width: 100%;
-    padding: 0 2rem;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 5rem;
-    align-items: center;
-  }
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--amber);
-    border: 1px solid var(--border2);
-    padding: 0.4rem 1rem; margin-bottom: 1.5rem;
-  }
-  .hero-badge::before {
-    content: '';
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--amber);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.7); }
-  }
-  .hero-title {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800; font-size: clamp(2.8rem, 5vw, 4.5rem);
-    line-height: 0.95; letter-spacing: -0.02em;
-    color: var(--white);
-    animation: fadeUp 0.8s ease forwards;
-  }
-  .hero-title .amber { color: var(--amber); }
-  .hero-title .year {
-    font-size: 0.45em; font-weight: 400;
-    font-family: 'DM Mono', monospace;
-    letter-spacing: 0.2em;
-    color: var(--silver);
-    display: block; margin-top: 0.3em;
-  }
-  .hero-sub {
-    margin-top: 1.5rem;
-    font-size: 1.05rem; color: var(--silver);
-    max-width: 420px; line-height: 1.7;
-    animation: fadeUp 0.8s 0.15s ease forwards; opacity: 0;
-  }
-  .hero-actions {
-    margin-top: 2.5rem; display: flex; gap: 1rem; align-items: center;
-    animation: fadeUp 0.8s 0.3s ease forwards; opacity: 0;
-  }
-  .btn-primary {
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 0.85rem 2rem;
-    background: var(--amber); color: #000; font-weight: 500;
-    border: none; cursor: pointer; transition: all 0.25s;
-    text-decoration: none; display: inline-block;
-  }
-  .btn-primary:hover { background: var(--amber2); transform: translateY(-2px); }
-  .btn-ghost {
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 0.85rem 2rem;
-    background: transparent; color: var(--silver);
-    border: 1px solid var(--border); cursor: pointer; transition: all 0.25s;
-    text-decoration: none; display: inline-block;
-  }
-  .btn-ghost:hover { border-color: var(--silver2); color: var(--white); }
-  .hero-visual {
-    position: relative; display: flex; align-items: center; justify-content: center;
-    animation: fadeIn 1.2s 0.2s ease forwards; opacity: 0;
-  }
-  .glasses-svg-wrap {
-    position: relative; width: 100%; max-width: 520px;
-  }
-  .glasses-svg-wrap svg { width: 100%; height: auto; }
-  .glasses-scan-line {
-    position: absolute; left: 0; right: 0; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--amber), transparent);
-    top: 20%; animation: scanDown 3s ease-in-out infinite;
-    opacity: 0.6;
-  }
-  @keyframes scanDown {
-    0% { top: 10%; opacity: 0; }
-    20% { opacity: 0.6; }
-    80% { opacity: 0.6; }
-    100% { top: 90%; opacity: 0; }
-  }
-  .hero-stats {
-    margin-top: 2.5rem;
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
-    border: 1px solid var(--border);
-  }
-  .hero-stat {
-    padding: 1.2rem 1rem; background: var(--bg2);
-    border-right: 1px solid var(--border);
-  }
-  .hero-stat:last-child { border-right: none; }
-  .hero-stat .val {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.6rem; color: var(--amber);
-  }
-  .hero-stat .lbl {
-    font-family: 'DM Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); margin-top: 0.2rem;
-  }
+    html { scroll-behavior: smooth; }
 
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
+    body {
+      background: var(--deep);
+      color: var(--text);
+      font-family: 'Cormorant Garamond', serif;
+      overflow-x: hidden;
+    }
 
-  /* ── SECTION COMMON ── */
-  section { padding: 7rem 2rem; }
-  .section-inner { max-width: 1100px; margin: 0 auto; }
-  .section-tag {
-    font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    letter-spacing: 0.16em; text-transform: uppercase;
-    color: var(--amber); margin-bottom: 0.8rem;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .section-tag::before {
-    content: ''; display: inline-block;
-    width: 24px; height: 1px; background: var(--amber);
-  }
-  .section-title {
-    font-family: 'Syne', sans-serif; font-weight: 800;
-    font-size: clamp(2rem, 3.5vw, 3rem);
-    line-height: 1.05; letter-spacing: -0.02em;
-    color: var(--white); margin-bottom: 1rem;
-  }
-  .section-sub {
-    font-size: 1rem; color: var(--silver);
-    max-width: 540px; line-height: 1.75;
-  }
+    /* ─── PARTICLES ─── */
+    #particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(201,168,76,0.15);
+      animation: floatUp linear infinite;
+    }
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.5; }
+      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+    }
 
-  /* ── SPECS ── */
-  #specs { background: var(--bg2); }
-  .specs-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1px; margin-top: 4rem;
-    border: 1px solid var(--border);
-  }
-  .spec-card {
-    background: var(--bg); padding: 2rem;
-    position: relative; overflow: hidden;
-    transition: background 0.3s;
-  }
-  .spec-card::after {
-    content: ''; position: absolute;
-    top: 0; left: 0; right: 0; height: 2px;
-    background: var(--amber); transform: scaleX(0);
-    transform-origin: left; transition: transform 0.3s;
-  }
-  .spec-card:hover::after { transform: scaleX(1); }
-  .spec-card:hover { background: var(--bg3); }
-  .spec-icon {
-    width: 44px; height: 44px; margin-bottom: 1.5rem;
-    color: var(--amber);
-  }
-  .spec-name {
-    font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--silver); margin-bottom: 0.5rem;
-  }
-  .spec-value {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.15rem; color: var(--white); margin-bottom: 0.5rem;
-  }
-  .spec-detail { font-size: 0.85rem; color: var(--silver); line-height: 1.6; }
+    /* ─── NAV ─── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 4rem;
+      transition: background 0.4s, backdrop-filter 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(10,13,20,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+    }
+    .nav-logo {
+      font-family: 'Cinzel', serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      color: var(--gold);
+      letter-spacing: 0.08em;
+      text-decoration: none;
+    }
+    .nav-logo span { color: var(--teal-light); }
+    .nav-links { display: flex; gap: 2.5rem; }
+    .nav-links a {
+      font-family: 'Cinzel', serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text);
+      text-decoration: none;
+      position: relative;
+      transition: color 0.3s;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px; left: 0; right: 0;
+      height: 1px;
+      background: var(--gold);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-links a:hover::after { transform: scaleX(1); }
 
-  /* ── FEATURES ── */
-  .features-layout {
-    display: grid; grid-template-columns: 1fr 1.2fr;
-    gap: 6rem; align-items: start; margin-top: 4rem;
-  }
-  .feature-list { display: flex; flex-direction: column; gap: 0; }
-  .feature-item {
-    padding: 2rem 0; border-bottom: 1px solid var(--border);
-    cursor: pointer; transition: all 0.2s;
-    display: grid; grid-template-columns: 48px 1fr; gap: 1.5rem;
-    align-items: start;
-  }
-  .feature-item:first-child { border-top: 1px solid var(--border); }
-  .feature-item:hover .feature-title { color: var(--amber); }
-  .feature-num {
-    font-family: 'DM Mono', monospace; font-size: 0.72rem;
-    color: var(--amber); padding-top: 3px;
-  }
-  .feature-title {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.05rem; color: var(--white);
-    transition: color 0.2s; margin-bottom: 0.4rem;
-  }
-  .feature-desc { font-size: 0.9rem; color: var(--silver); line-height: 1.65; }
-  .feature-visual {
-    position: sticky; top: 120px;
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 3rem; display: flex; align-items: center; justify-content: center;
-    min-height: 400px;
-  }
+    /* ─── HERO ─── */
+    #hero {
+      position: relative;
+      height: 100vh;
+      min-height: 700px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://images.unsplash.com/photo-1552083375-1447ce886485?w=1800&q=85');
+      background-size: cover;
+      background-position: center;
+      transform: scale(1.08);
+      animation: heroZoom 20s ease-in-out infinite alternate;
+    }
+    @keyframes heroZoom {
+      from { transform: scale(1.08) translateY(0); }
+      to   { transform: scale(1.16) translateY(-2%); }
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(10,13,20,0.3) 0%,
+        rgba(10,13,20,0.5) 50%,
+        rgba(10,13,20,0.95) 100%
+      );
+    }
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 0 2rem;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.4);
+      padding: 0.5rem 1.5rem;
+      margin-bottom: 1.5rem;
+      animation: fadeInDown 1s ease 0.3s both;
+    }
+    .hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(3.5rem, 9vw, 8rem);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.01em;
+      animation: fadeInUp 1s ease 0.6s both;
+    }
+    .hero-title .line1 { display: block; color: var(--sand); }
+    .hero-title .line2 {
+      display: block;
+      color: var(--gold);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 0.55em;
+      letter-spacing: 0.08em;
+      margin-top: 0.3em;
+    }
+    .hero-sub {
+      font-size: 1.3rem;
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(240,230,200,0.75);
+      margin-top: 1.5rem;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.6;
+      animation: fadeInUp 1s ease 0.9s both;
+    }
+    .hero-scroll {
+      margin-top: 3.5rem;
+      animation: fadeInUp 1s ease 1.2s both;
+    }
+    .scroll-btn {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      text-decoration: none;
+      cursor: pointer;
+      background: none;
+      border: none;
+    }
+    .scroll-line {
+      width: 1px;
+      height: 50px;
+      background: linear-gradient(to bottom, var(--gold), transparent);
+      animation: scrollPulse 2s ease infinite;
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 1; transform: scaleY(1); }
+      50% { opacity: 0.4; transform: scaleY(0.7); }
+    }
 
-  /* ── AI ENGINE ── */
-  #ai { background: var(--bg2); }
-  .ai-layout {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 5rem; margin-top: 4rem; align-items: center;
-  }
-  .ai-pipeline {
-    display: flex; flex-direction: column; gap: 0;
-  }
-  .ai-step {
-    display: flex; gap: 1.5rem; align-items: stretch;
-  }
-  .ai-step-line {
-    display: flex; flex-direction: column; align-items: center; gap: 0;
-  }
-  .ai-step-dot {
-    width: 12px; height: 12px; border-radius: 50%;
-    background: var(--bg); border: 2px solid var(--amber);
-    flex-shrink: 0; margin-top: 5px;
-    transition: background 0.3s;
-  }
-  .ai-step:hover .ai-step-dot { background: var(--amber); }
-  .ai-step-connector {
-    width: 1px; flex: 1; min-height: 40px;
-    background: var(--border2); margin: 4px 0;
-  }
-  .ai-step-content { padding-bottom: 2rem; }
-  .ai-step-label {
-    font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--amber); margin-bottom: 0.3rem;
-  }
-  .ai-step-title {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1rem; color: var(--white); margin-bottom: 0.3rem;
-  }
-  .ai-step-desc { font-size: 0.85rem; color: var(--silver); line-height: 1.6; }
-  .ai-info { }
-  .ai-info-card {
-    background: var(--bg); border: 1px solid var(--border);
-    padding: 2rem; margin-bottom: 1px;
-  }
-  .ai-info-title {
-    font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); margin-bottom: 0.5rem;
-  }
-  .ai-info-val {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.4rem; color: var(--amber);
-  }
-  .ai-info-sub { font-size: 0.82rem; color: var(--silver); margin-top: 0.2rem; }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-  /* ── ORDER FORM ── */
-  #order { background: var(--bg); }
-  .order-layout {
-    display: grid; grid-template-columns: 1.1fr 1fr;
-    gap: 5rem; margin-top: 4rem; align-items: start;
-  }
-  .order-form-wrap {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 3rem;
-  }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .form-group { margin-bottom: 1.5rem; }
-  .form-label {
-    display: block; font-family: 'DM Mono', monospace;
-    font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); margin-bottom: 0.5rem;
-  }
-  .form-input, .form-select, .form-textarea {
-    width: 100%; background: var(--bg);
-    border: 1px solid var(--border); color: var(--white);
-    padding: 0.85rem 1rem; font-family: 'Instrument Sans', sans-serif;
-    font-size: 0.95rem; outline: none;
-    transition: border-color 0.2s;
-    appearance: none; -webkit-appearance: none;
-  }
-  .form-input:focus, .form-select:focus, .form-textarea:focus {
-    border-color: var(--amber);
-  }
-  .form-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23e8a020' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 1rem center; padding-right: 2.5rem; }
-  .form-select option { background: #111116; }
-  .form-textarea { resize: vertical; min-height: 100px; }
-  .form-submit {
-    width: 100%; padding: 1rem;
-    background: var(--amber); color: #000;
-    font-family: 'DM Mono', monospace; font-size: 0.82rem;
-    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
-    border: none; cursor: pointer; transition: all 0.25s;
-  }
-  .form-submit:hover { background: var(--amber2); }
-  .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-  .order-info { }
-  .order-info-title {
-    font-family: 'Syne', sans-serif; font-weight: 800;
-    font-size: 1.8rem; line-height: 1.1; color: var(--white);
-    margin-bottom: 1.5rem;
-  }
-  .price-display {
-    font-family: 'Syne', sans-serif; font-weight: 800;
-    font-size: 3rem; color: var(--amber);
-    margin-bottom: 0.3rem;
-  }
-  .price-note {
-    font-family: 'DM Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.1em; color: var(--silver); text-transform: uppercase;
-    margin-bottom: 2rem;
-  }
-  .order-perks { list-style: none; }
-  .order-perk {
-    display: flex; align-items: center; gap: 12px;
-    padding: 1rem 0; border-bottom: 1px solid var(--border);
-    font-size: 0.9rem; color: var(--silver);
-  }
-  .order-perk:last-child { border-bottom: none; }
-  .perk-icon { color: var(--amber); flex-shrink: 0; }
-  .form-success {
-    display: none; text-align: center; padding: 3rem;
-    background: var(--bg); border: 1px solid var(--border2);
-  }
-  .form-success .check {
-    width: 56px; height: 56px; margin: 0 auto 1.5rem;
-    color: var(--amber);
-  }
-  .form-success h3 {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.5rem; color: var(--white); margin-bottom: 0.5rem;
-  }
-  .form-success p { font-size: 0.9rem; color: var(--silver); }
-  .form-success .order-id {
-    display: inline-block; margin-top: 1rem;
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
-    letter-spacing: 0.1em; padding: 0.5rem 1rem;
-    border: 1px solid var(--border2); color: var(--amber);
-  }
+    /* ─── SECTION COMMONS ─── */
+    section { position: relative; z-index: 1; }
 
-  /* ── TOAST ── */
-  #toast {
-    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
-    background: var(--bg2); border: 1px solid var(--border2);
-    color: var(--amber); padding: 1rem 1.5rem;
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
-    letter-spacing: 0.08em; transform: translateY(100px);
-    opacity: 0; transition: all 0.3s; pointer-events: none;
-  }
-  #toast.show { transform: translateY(0); opacity: 1; }
+    .section-header {
+      text-align: center;
+      padding: 5rem 2rem 3rem;
+    }
+    .section-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: var(--teal-light);
+      margin-bottom: 1rem;
+      display: block;
+    }
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 600;
+      color: var(--sand);
+      line-height: 1.1;
+    }
+    .section-title em {
+      color: var(--gold);
+      font-style: italic;
+      font-weight: 400;
+    }
+    .section-divider {
+      width: 80px;
+      height: 2px;
+      background: linear-gradient(to right, transparent, var(--gold), transparent);
+      margin: 1.5rem auto 0;
+    }
 
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 3rem 2rem; background: var(--bg2);
-  }
-  .footer-inner {
-    max-width: 1100px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .footer-copy {
-    font-family: 'DM Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.08em; color: var(--silver);
-  }
-  .footer-links { display: flex; gap: 2rem; list-style: none; }
-  .footer-links a {
-    font-family: 'DM Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--silver); text-decoration: none; transition: color 0.2s;
-  }
-  .footer-links a:hover { color: var(--amber); }
+    /* ─── ABOUT STRIP ─── */
+    #about {
+      background: linear-gradient(135deg, #0d1b2a 0%, #0a1520 100%);
+      padding: 6rem 2rem;
+    }
+    .about-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+    .about-img-wrap {
+      position: relative;
+    }
+    .about-img-wrap img {
+      width: 100%;
+      height: 500px;
+      object-fit: cover;
+      display: block;
+    }
+    .about-img-wrap::before {
+      content: '';
+      position: absolute;
+      top: -15px; left: -15px;
+      right: 15px; bottom: 15px;
+      border: 1px solid rgba(201,168,76,0.3);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .about-img-wrap::after {
+      content: '';
+      position: absolute;
+      bottom: -15px; right: -15px;
+      top: 15px; left: 15px;
+      border: 1px solid rgba(34,144,154,0.2);
+      pointer-events: none;
+      z-index: 1;
+    }
+    .about-text .eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 0.62rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.2rem;
+      display: block;
+    }
+    .about-text h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 2.5rem;
+      font-weight: 600;
+      color: var(--sand);
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+    }
+    .about-text h2 em { color: var(--gold); font-style: italic; font-weight: 300; }
+    .about-text p {
+      font-size: 1.15rem;
+      line-height: 1.85;
+      color: rgba(240,230,200,0.75);
+      margin-bottom: 1.2rem;
+      font-weight: 300;
+    }
+    .stats-row {
+      display: flex;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    .stat {
+      border-left: 2px solid var(--gold);
+      padding-left: 1rem;
+    }
+    .stat-num {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold);
+      line-height: 1;
+    }
+    .stat-lbl {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+      letter-spacing: 0.05em;
+    }
 
-  /* ── ADMIN PANEL ── */
-  #admin-panel {
-    display: none; position: fixed; inset: 0; z-index: 1000;
-    background: var(--bg);
-  }
-  #admin-panel.active { display: flex; flex-direction: column; }
-  .admin-top {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 1.25rem 3rem; border-bottom: 1px solid var(--border);
-    background: var(--bg2); flex-shrink: 0;
-  }
-  .admin-top-title {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.1rem; letter-spacing: 0.02em;
-    display: flex; align-items: center; gap: 10px;
-  }
-  .admin-top-title .badge {
-    font-family: 'DM Mono', monospace; font-size: 0.62rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--amber); border: 1px solid var(--border2);
-    padding: 0.2rem 0.6rem;
-  }
-  .admin-close {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--silver); padding: 0.5rem 1.2rem;
-    font-family: 'DM Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    cursor: pointer; transition: all 0.2s;
-  }
-  .admin-close:hover { border-color: var(--silver); color: var(--white); }
-  .admin-body { flex: 1; overflow-y: auto; padding: 2rem 3rem; }
-  .admin-stats {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px;
-    border: 1px solid var(--border); margin-bottom: 3rem;
-  }
-  .admin-stat {
-    background: var(--bg2); padding: 1.5rem 2rem;
-    border-right: 1px solid var(--border);
-  }
-  .admin-stat:last-child { border-right: none; }
-  .admin-stat-label {
-    font-family: 'DM Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); margin-bottom: 0.5rem;
-  }
-  .admin-stat-val {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.8rem; color: var(--amber);
-  }
-  .admin-table-wrap { overflow-x: auto; }
-  table {
-    width: 100%; border-collapse: collapse;
-    font-size: 0.85rem;
-  }
-  thead { background: var(--bg2); }
-  th {
-    font-family: 'DM Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); padding: 1rem 1.2rem;
-    text-align: left; border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  td {
-    padding: 1rem 1.2rem; border-bottom: 1px solid var(--border);
-    color: var(--silver2); font-size: 0.87rem;
-    vertical-align: middle;
-  }
-  tr:hover td { background: var(--bg2); }
-  .status-badge {
-    font-family: 'DM Mono', monospace; font-size: 0.63rem;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    padding: 0.25rem 0.7rem;
-  }
-  .status-pending { border: 1px solid var(--amber); color: var(--amber); }
-  .status-confirmed { border: 1px solid #3d9e5c; color: #4eca76; }
-  .status-cancelled { border: 1px solid #9e3d3d; color: #ca4e4e; }
-  .admin-actions {
-    display: flex; gap: 0.5rem; align-items: center;
-  }
-  .action-btn {
-    font-family: 'DM Mono', monospace; font-size: 0.6rem;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    padding: 0.3rem 0.8rem; border: 1px solid var(--border);
-    color: var(--silver); background: transparent; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .action-btn:hover { border-color: var(--amber); color: var(--amber); }
-  .action-btn.del:hover { border-color: #ca4e4e; color: #ca4e4e; }
-  .admin-empty {
-    text-align: center; padding: 4rem;
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: var(--silver);
-  }
-  .admin-toolbar {
-    display: flex; gap: 1rem; align-items: center;
-    margin-bottom: 1.5rem; justify-content: space-between;
-  }
-  .admin-search {
-    background: var(--bg2); border: 1px solid var(--border);
-    color: var(--white); padding: 0.6rem 1rem;
-    font-family: 'DM Mono', monospace; font-size: 0.78rem;
-    letter-spacing: 0.05em; outline: none; width: 280px;
-    transition: border-color 0.2s;
-  }
-  .admin-search:focus { border-color: var(--amber); }
-  .clear-btn {
-    font-family: 'DM Mono', monospace; font-size: 0.65rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    padding: 0.6rem 1.2rem; background: transparent;
-    border: 1px solid #9e3d3d; color: #ca4e4e; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .clear-btn:hover { background: rgba(202,78,78,0.1); }
+    /* ─── PLACES GRID ─── */
+    #places {
+      padding: 0 2rem 8rem;
+      background: var(--deep);
+    }
+    .places-grid {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+    .place-card {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--navy);
+      transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    .place-card:hover { transform: translateY(-8px); }
+    .place-card.featured {
+      grid-column: span 2;
+    }
+    .place-card img {
+      width: 100%;
+      height: 320px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1), filter 0.5s;
+      filter: brightness(0.85) saturate(1.1);
+    }
+    .place-card.featured img { height: 420px; }
+    .place-card:hover img {
+      transform: scale(1.06);
+      filter: brightness(0.75) saturate(1.3);
+    }
+    .place-card-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(10,13,20,0.95) 0%, rgba(10,13,20,0.2) 50%, transparent 100%);
+      transition: opacity 0.4s;
+    }
+    .place-card-body {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      padding: 2rem 1.8rem;
+      transform: translateY(0);
+      transition: transform 0.4s;
+    }
+    .place-cat {
+      font-family: 'Cinzel', serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--teal-light);
+      margin-bottom: 0.5rem;
+    }
+    .place-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--sand);
+      line-height: 1.2;
+      margin-bottom: 0.5rem;
+    }
+    .place-card.featured .place-name { font-size: 1.7rem; }
+    .place-desc {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: rgba(240,230,200,0.65);
+      font-weight: 300;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s ease, opacity 0.4s;
+      opacity: 0;
+    }
+    .place-card:hover .place-desc {
+      max-height: 100px;
+      opacity: 1;
+    }
+    .place-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      margin-top: 0.8rem;
+      font-family: 'Cinzel', serif;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: var(--gold);
+      border: 1px solid rgba(201,168,76,0.35);
+      padding: 0.3rem 0.8rem;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.4s 0.1s, transform 0.4s 0.1s;
+    }
+    .place-card:hover .place-tag { opacity: 1; transform: translateY(0); }
+    .gold-dot {
+      width: 5px;
+      height: 5px;
+      background: var(--gold);
+      border-radius: 50%;
+    }
 
-  /* ── LOGIN MODAL ── */
-  #login-modal {
-    display: none; position: fixed; inset: 0; z-index: 2000;
-    background: rgba(0,0,0,0.9);
-    align-items: center; justify-content: center;
-  }
-  #login-modal.active { display: flex; }
-  .login-box {
-    background: var(--bg2); border: 1px solid var(--border);
-    padding: 3rem; width: 380px;
-  }
-  .login-title {
-    font-family: 'Syne', sans-serif; font-weight: 700;
-    font-size: 1.4rem; color: var(--white); margin-bottom: 0.5rem;
-  }
-  .login-sub {
-    font-family: 'DM Mono', monospace; font-size: 0.7rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); margin-bottom: 2rem;
-  }
-  .login-input {
-    width: 100%; background: var(--bg);
-    border: 1px solid var(--border); color: var(--white);
-    padding: 0.85rem 1rem; font-family: 'Instrument Sans', sans-serif;
-    font-size: 1rem; outline: none; transition: border-color 0.2s;
-    margin-bottom: 1rem; letter-spacing: 0.15em;
-  }
-  .login-input:focus { border-color: var(--amber); }
-  .login-input.error { border-color: #ca4e4e; animation: shake 0.4s; }
-  @keyframes shake {
-    0%,100% { transform: translateX(0); }
-    25% { transform: translateX(-8px); }
-    75% { transform: translateX(8px); }
-  }
-  .login-btn {
-    width: 100%; padding: 0.85rem;
-    background: var(--amber); color: #000;
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
-    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500;
-    border: none; cursor: pointer; transition: all 0.2s;
-  }
-  .login-btn:hover { background: var(--amber2); }
-  .login-cancel {
-    display: block; text-align: center; margin-top: 1rem;
-    font-family: 'DM Mono', monospace; font-size: 0.68rem;
-    letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--silver); cursor: pointer; transition: color 0.2s;
-  }
-  .login-cancel:hover { color: var(--white); }
+    /* ─── PANORAMA STRIP ─── */
+    #panorama {
+      position: relative;
+      height: 55vh;
+      min-height: 400px;
+      overflow: hidden;
+    }
+    .panorama-bg {
+      position: absolute;
+      inset: 0;
+      background-image: url('https://images.unsplash.com/photo-1570939274717-7eda259b50ed?w=1800&q=85');
+      background-size: cover;
+      background-position: center 30%;
+      background-attachment: fixed;
+    }
+    .panorama-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(10,13,20,0.85) 0%, rgba(10,13,20,0.4) 50%, rgba(10,13,20,0.85) 100%);
+    }
+    .panorama-content {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      text-align: center;
+      padding: 2rem;
+    }
+    .panorama-content blockquote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+      font-style: italic;
+      font-weight: 300;
+      color: var(--sand);
+      max-width: 800px;
+      line-height: 1.5;
+    }
+    .panorama-content blockquote span { color: var(--gold); }
+    .panorama-content cite {
+      display: block;
+      font-family: 'Cinzel', serif;
+      font-size: 0.65rem;
+      letter-spacing: 0.25em;
+      color: var(--teal-light);
+      margin-top: 1.5rem;
+      font-style: normal;
+    }
 
-  /* ── TICKER ── */
-  .ticker-wrap {
-    background: var(--amber); padding: 0.7rem 0;
-    overflow: hidden; white-space: nowrap;
-  }
-  .ticker-inner {
-    display: inline-flex; gap: 4rem;
-    animation: ticker 20s linear infinite;
-  }
-  .ticker-item {
-    font-family: 'DM Mono', monospace; font-size: 0.72rem;
-    letter-spacing: 0.1em; text-transform: uppercase; color: #000;
-  }
-  @keyframes ticker {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
+    /* ─── GALLERY ─── */
+    #gallery {
+      background: linear-gradient(180deg, var(--deep) 0%, #060a10 100%);
+      padding: 0 2rem 8rem;
+    }
+    .gallery-grid {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(2, 220px);
+      gap: 0.8rem;
+    }
+    .gallery-item {
+      overflow: hidden;
+      position: relative;
+    }
+    .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
+    .gallery-item:nth-child(5) { grid-column: span 2; }
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s cubic-bezier(0.23,1,0.32,1), filter 0.5s;
+      filter: brightness(0.9) saturate(1.1);
+    }
+    .gallery-item:hover img {
+      transform: scale(1.07);
+      filter: brightness(1) saturate(1.3);
+    }
+    .gallery-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,13,20,0.2);
+      transition: background 0.4s;
+    }
+    .gallery-item:hover .gallery-overlay {
+      background: rgba(201,168,76,0.05);
+    }
 
-  /* ── RESPONSIVE ── */
-  @media (max-width: 900px) {
-    nav { padding: 1rem 1.5rem; }
-    .nav-links { display: none; }
-    .hero-content { grid-template-columns: 1fr; gap: 3rem; text-align: center; }
-    .hero-actions { justify-content: center; }
-    .hero-sub { margin: 1.5rem auto 0; }
-    .hero-badge { margin: 0 auto 1.5rem; }
-    .features-layout { grid-template-columns: 1fr; }
-    .feature-visual { display: none; }
-    .ai-layout { grid-template-columns: 1fr; }
-    .order-layout { grid-template-columns: 1fr; }
-    .form-row { grid-template-columns: 1fr; }
-    .admin-stats { grid-template-columns: 1fr 1fr; }
-    .admin-body { padding: 1.5rem; }
-    .admin-top { padding: 1rem 1.5rem; }
-    .specs-grid { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 600px) {
-    section { padding: 5rem 1.5rem; }
-    .hero-stats { grid-template-columns: 1fr; }
-    .admin-stats { grid-template-columns: 1fr 1fr; }
-    .specs-grid { grid-template-columns: 1fr; }
-    .footer-inner { flex-direction: column; gap: 1.5rem; text-align: center; }
-  }
+    /* ─── TIPS ─── */
+    #tips {
+      background: var(--navy);
+      padding: 7rem 2rem;
+      border-top: 1px solid rgba(201,168,76,0.1);
+    }
+    .tips-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .tips-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2.5rem;
+      margin-top: 4rem;
+    }
+    .tip-card {
+      padding: 2.5rem;
+      border: 1px solid rgba(201,168,76,0.12);
+      position: relative;
+      transition: border-color 0.3s, transform 0.4s;
+    }
+    .tip-card:hover {
+      border-color: rgba(201,168,76,0.4);
+      transform: translateY(-4px);
+    }
+    .tip-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 3px; height: 40px;
+      background: var(--gold);
+    }
+    .tip-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.2rem;
+    }
+    .tip-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--sand);
+      margin-bottom: 0.8rem;
+    }
+    .tip-text {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: rgba(240,230,200,0.65);
+      font-weight: 300;
+    }
 
-  /* ── SCROLL REVEAL ── */
-  .reveal { opacity: 0; transform: translateY(30px); transition: all 0.7s cubic-bezier(0.22,1,0.36,1); }
-  .reveal.visible { opacity: 1; transform: none; }
-  .reveal-delay-1 { transition-delay: 0.1s; }
-  .reveal-delay-2 { transition-delay: 0.2s; }
-  .reveal-delay-3 { transition-delay: 0.3s; }
-  .reveal-delay-4 { transition-delay: 0.4s; }
-</style>
+    /* ─── FOOTER ─── */
+    footer {
+      background: #05080f;
+      padding: 4rem 2rem;
+      text-align: center;
+      border-top: 1px solid rgba(201,168,76,0.1);
+    }
+    .footer-logo {
+      font-family: 'Cinzel', serif;
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--gold);
+      margin-bottom: 1rem;
+    }
+    .footer-logo span { color: var(--teal-light); }
+    .footer-tagline {
+      font-size: 1rem;
+      font-style: italic;
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+    .footer-divider {
+      width: 60px;
+      height: 1px;
+      background: rgba(201,168,76,0.3);
+      margin: 1.5rem auto;
+    }
+    .footer-copy {
+      font-family: 'Cinzel', serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.2em;
+      color: rgba(154,143,126,0.5);
+      text-transform: uppercase;
+    }
+
+    /* ─── SCROLL REVEAL ─── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+    .reveal-delay-4 { transition-delay: 0.4s; }
+    .reveal-delay-5 { transition-delay: 0.5s; }
+
+    /* ─── WAVE DIVIDER ─── */
+    .wave-divider {
+      width: 100%;
+      overflow: hidden;
+      line-height: 0;
+    }
+    .wave-divider svg { display: block; }
+
+    /* ─── MOBILE ─── */
+    @media (max-width: 900px) {
+      nav { padding: 1rem 1.5rem; }
+      .nav-links { display: none; }
+      .about-inner { grid-template-columns: 1fr; gap: 2.5rem; }
+      .places-grid { grid-template-columns: 1fr; }
+      .place-card.featured { grid-column: span 1; }
+      .gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+      .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 1; }
+      .gallery-item:nth-child(5) { grid-column: span 2; }
+      .tips-grid { grid-template-columns: 1fr; }
+      .stats-row { flex-wrap: wrap; }
+    }
+  </style>
 </head>
 <body>
 
+<!-- PARTICLES -->
+<div id="particles"></div>
+
 <!-- NAV -->
-<nav>
-  <a href="#" class="nav-logo">
-    <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="1" y="1" width="30" height="30" stroke="#e8a020" stroke-width="1.2"/>
-      <path d="M7 16H25M16 7V25" stroke="#e8a020" stroke-width="1.2"/>
-      <circle cx="16" cy="16" r="4" stroke="#e8a020" stroke-width="1.2"/>
-      <rect x="13" y="13" width="6" height="6" fill="#e8a020" opacity="0.3"/>
-    </svg>
-    TUNCER<span style="color:var(--amber);">ZEKA</span>
-  </a>
-  <ul class="nav-links">
-    <li><a href="#specs">Özellikler</a></li>
-    <li><a href="#features">Avantajlar</a></li>
-    <li><a href="#ai">Yapay Zeka</a></li>
-    <li><a href="#order">Ön Sipariş</a></li>
-  </ul>
-  <a href="#order" class="nav-cta">Ön Sipariş Ver</a>
+<nav id="navbar">
+  <a class="nav-logo" href="#"><span>G</span>azipaşa</a>
+  <div class="nav-links">
+    <a href="#about">Hakkında</a>
+    <a href="#places">Yerler</a>
+    <a href="#gallery">Galeri</a>
+    <a href="#tips">İpuçları</a>
+  </div>
 </nav>
 
 <!-- HERO -->
-<section class="hero" id="home">
-  <div class="hero-grid"></div>
-  <div class="hero-glow"></div>
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-overlay"></div>
   <div class="hero-content">
-    <div>
-      <div class="hero-badge">Ön Sipariş Açık</div>
-      <h1 class="hero-title">
-        TUNCER<br>
-        <span class="amber">CORE</span>
-        <span class="year">— 2027 EDİSYON —</span>
-      </h1>
-      <p class="hero-sub">
-        Sunucu tabanlı yapay zeka işleme. Transparan lcd ekran. Kompakt donanım. Geleceği takın.
-      </p>
-      <div class="hero-actions">
-        <a href="#order" class="btn-primary">Şimdi Sipariş Ver</a>
-        <a href="#specs" class="btn-ghost">Özellikleri İncele</a>
-      </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <div class="val">&lt;28g</div>
-          <div class="lbl">Toplam Ağırlık</div>
-        </div>
-        <div class="hero-stat">
-          <div class="val">512MB</div>
-          <div class="lbl">RAM</div>
-        </div>
-        <div class="hero-stat">
-          <div class="val">1ms</div>
-          <div class="lbl">AI Yanıt Süresi</div>
-        </div>
-      </div>
+    <div class="hero-badge">Antalya · Türkiye · Akdeniz</div>
+    <h1 class="hero-title">
+      <span class="line1">Gazipaşa</span>
+      <span class="line2">Akdeniz'in Gizli Cenneti</span>
+    </h1>
+    <p class="hero-sub">Antik kentler, berrak koylar ve muz bahçelerinin gölgesinde Akdeniz'in dokunulmamış köşesi</p>
+    <div class="hero-scroll">
+      <button class="scroll-btn" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">
+        Keşfet
+        <span class="scroll-line"></span>
+      </button>
     </div>
-    <div class="hero-visual">
-      <div class="glasses-svg-wrap">
-        <div class="glasses-scan-line"></div>
-        <svg viewBox="0 0 520 260" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Frame -->
-          <path d="M20 130 Q20 90 60 90 L200 90 Q220 90 240 110 Q260 90 280 90 L460 90 Q500 90 500 130 Q500 170 460 170 L280 170 Q260 150 240 150 Q220 150 200 170 L60 170 Q20 170 20 130Z" stroke="#3a3a42" stroke-width="1.5" fill="none"/>
-          <!-- Left lens -->
-          <rect x="40" y="98" width="150" height="64" rx="4" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.03)"/>
-          <!-- Left lens scanlines -->
-          <line x1="40" y1="110" x2="190" y2="110" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <line x1="40" y1="122" x2="190" y2="122" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <line x1="40" y1="134" x2="190" y2="134" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <line x1="40" y1="146" x2="190" y2="146" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <!-- Left HUD elements -->
-          <rect x="50" y="106" width="40" height="14" rx="1" stroke="#e8a020" stroke-width="0.7" fill="none"/>
-          <text x="55" y="116" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.9">AI.ON</text>
-          <circle cx="170" cy="115" r="6" stroke="#e8a020" stroke-width="0.7" fill="none"/>
-          <line x1="170" y1="109" x2="170" y2="121" stroke="#e8a020" stroke-width="0.7"/>
-          <line x1="164" y1="115" x2="176" y2="115" stroke="#e8a020" stroke-width="0.7"/>
-          <!-- Right lens -->
-          <rect x="330" y="98" width="150" height="64" rx="4" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.03)"/>
-          <!-- Right lens scanlines -->
-          <line x1="330" y1="110" x2="480" y2="110" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <line x1="330" y1="122" x2="480" y2="122" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <line x1="330" y1="134" x2="480" y2="134" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <line x1="330" y1="146" x2="480" y2="146" stroke="#e8a020" stroke-width="0.4" opacity="0.3"/>
-          <!-- Right HUD elements -->
-          <text x="336" y="116" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.8">23.4°C</text>
-          <text x="336" y="128" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.8">İSTANBUL</text>
-          <rect x="420" y="106" width="50" height="4" rx="1" fill="#3a3a42"/>
-          <rect x="420" y="106" width="38" height="4" rx="1" fill="#e8a020" opacity="0.8"/>
-          <text x="420" y="120" fill="#e8a020" font-size="7" font-family="monospace" opacity="0.7">BAT 76%</text>
-          <!-- Bridge -->
-          <path d="M200 130 Q220 120 240 130 Q260 120 280 130" stroke="#5a5a62" stroke-width="2" fill="none"/>
-          <!-- Left temple -->
-          <path d="M20 130 L0 128" stroke="#5a5a62" stroke-width="3" stroke-linecap="round"/>
-          <!-- Right temple -->
-          <path d="M500 130 L520 128" stroke="#5a5a62" stroke-width="3" stroke-linecap="round"/>
-          <!-- Corner markers -->
-          <path d="M40 98 L34 98 L34 104" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M190 98 L196 98 L196 104" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M40 162 L34 162 L34 156" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M190 162 L196 162 L196 156" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M330 98 L324 98 L324 104" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M480 98 L486 98 L486 104" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M330 162 L324 162 L324 156" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <path d="M480 162 L486 162 L486 156" stroke="#e8a020" stroke-width="1" fill="none"/>
-          <!-- Label -->
-          <text x="240" y="220" fill="#5a5a62" font-size="9" font-family="monospace" text-anchor="middle" letter-spacing="4">TUNCER CORE 2027</text>
-          <line x1="90" y1="218" x2="160" y2="218" stroke="#3a3a42" stroke-width="0.5"/>
-          <line x1="320" y1="218" x2="390" y2="218" stroke="#3a3a42" stroke-width="0.5"/>
-        </svg>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="about-inner">
+    <div class="about-img-wrap reveal">
+      <img src="https://images.unsplash.com/photo-1602835026898-e0ef1e55a5a4?w=900&q=85" alt="Gazipaşa sahili" loading="lazy"/>
+    </div>
+    <div class="about-text">
+      <span class="eyebrow reveal">Antalya'nın En Doğu İlçesi</span>
+      <h2 class="reveal reveal-delay-1">Tarihin İzlerini <em>Taşıyan</em> Cennet</h2>
+      <p class="reveal reveal-delay-2">
+        Gazipaşa, Antalya'ya 175 km, Alanya'ya yalnızca 45 km uzaklıkta Akdeniz kıyısında saklı bir ilçedir. 
+        Kalabalık tatil merkezlerinin gürültüsünden uzakta, tarihi M.Ö. 2000'li yıllara uzanan bu kadim topraklar sessizliğiyle büyüler.
+      </p>
+      <p class="reveal reveal-delay-3">
+        Muz bahçeleri, antik kentler, berrak koylar ve sarkıt mağaralarıyla doğa ile tarihin benzersiz biçimde iç içe geçtiği Gazipaşa; 
+        gerçek tatili arayanlar için biçilmiş kaftan.
+      </p>
+      <div class="stats-row">
+        <div class="stat reveal reveal-delay-3">
+          <div class="stat-num">2000+</div>
+          <div class="stat-lbl">Yıllık Tarih</div>
+        </div>
+        <div class="stat reveal reveal-delay-4">
+          <div class="stat-num">8+</div>
+          <div class="stat-lbl">Antik Kent</div>
+        </div>
+        <div class="stat reveal reveal-delay-5">
+          <div class="stat-num">45km</div>
+          <div class="stat-lbl">Alanya'ya Mesafe</div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- TICKER -->
-<div class="ticker-wrap">
-  <div class="ticker-inner">
-    <span class="ticker-item">Transparan OLED Ekran</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Sunucu Tabanlı Yapay Zeka</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Raspberry Pi Zero 2W Eşdeğer Donanım</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Wi-Fi 5 + Bluetooth 5.2</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">28 Gram Hafif Tasarım</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Ön Sipariş Sınırlı Stok</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Transparan OLED Ekran</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Sunucu Tabanlı Yapay Zeka</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Raspberry Pi Zero 2W Eşdeğer Donanım</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Wi-Fi 5 + Bluetooth 5.2</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">28 Gram Hafif Tasarım</span>
-    <span class="ticker-item">◆</span>
-    <span class="ticker-item">Ön Sipariş Sınırlı Stok</span>
-    <span class="ticker-item">◆</span>
-  </div>
+<!-- WAVE -->
+<div class="wave-divider" style="background:#0d1b2a;">
+  <svg viewBox="0 0 1200 80" preserveAspectRatio="none" height="60" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,40 C200,80 400,0 600,40 C800,80 1000,0 1200,40 L1200,80 L0,80 Z" fill="#0a0d14"/>
+  </svg>
 </div>
 
-<!-- SPECS -->
-<section id="specs">
-  <div class="section-inner">
-    <div class="reveal">
-      <div class="section-tag">Teknik Özellikler</div>
-      <h2 class="section-title">Kompakt donanım.<br>Bulut zekası.</h2>
-      <p class="section-sub">Raspberry Pi Zero 2W ile birebir eşdeğer bileşenler. Tüm AI yükü sunucuda; gözlükte yalnızca iletişim ve ekran.</p>
+<!-- PLACES -->
+<section id="places">
+  <div class="section-header">
+    <span class="section-tag reveal">Keşfedilecek Yerler</span>
+    <h2 class="section-title reveal reveal-delay-1">Mutlaka <em>Görmeniz Gereken</em></h2>
+    <div class="section-divider reveal reveal-delay-2"></div>
+  </div>
+
+  <div class="places-grid">
+
+    <!-- 1 FEATURED -->
+    <div class="place-card featured reveal">
+      <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=85" alt="Delik Deniz"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Doğal Güzellik</div>
+        <div class="place-name">Delik Deniz & Kral Koyu</div>
+        <div class="place-desc">Denizin kayalıklara oyduğu tüneller ve turkuaz rengi sularıyla Gazipaşa'nın en fotojenik noktası. Antiochia Ad Cragum antik kentinin kıyısında yer alır.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Muhteşem Manzara</div>
+      </div>
     </div>
-    <div class="specs-grid">
-      <div class="spec-card reveal reveal-delay-1">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <rect x="4" y="4" width="36" height="36" rx="2"/>
-          <rect x="12" y="12" width="20" height="20" rx="1"/>
-          <line x1="22" y1="4" x2="22" y2="12"/>
-          <line x1="22" y1="32" x2="22" y2="40"/>
-          <line x1="4" y1="22" x2="12" y2="22"/>
-          <line x1="32" y1="22" x2="40" y2="22"/>
-        </svg>
-        <div class="spec-name">İşlemci</div>
-        <div class="spec-value">Quad-Core ARM Cortex-A53</div>
-        <div class="spec-detail">1GHz — 64-bit. Raspberry Pi Zero 2W ile birebir eşdeğer. Düşük güç tüketimi, yüksek verimlilik.</div>
+
+    <!-- 2 -->
+    <div class="place-card reveal reveal-delay-1">
+      <img src="https://images.unsplash.com/photo-1541167760496-1628856ab772?w=800&q=85" alt="Antik Kent"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Arkeoloji</div>
+        <div class="place-name">Selinus Antik Kenti</div>
+        <div class="place-desc">M.Ö. 6. yüzyıldan kalma liman kenti. Roma İmparatoru Trajan'ın son mekânı.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Tarihi Sit</div>
       </div>
-      <div class="spec-card reveal reveal-delay-2">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <rect x="6" y="10" width="32" height="24" rx="2"/>
-          <line x1="10" y1="16" x2="34" y2="16"/>
-          <line x1="10" y1="22" x2="34" y2="22"/>
-          <line x1="10" y1="28" x2="22" y2="28"/>
-          <path d="M2 34 H42"/>
-        </svg>
-        <div class="spec-name">Bellek</div>
-        <div class="spec-value">512 MB LPDDR2 SDRAM</div>
-        <div class="spec-detail">Sistem çalıştırma ve iletişim için yeterli hafıza. AI modelleri sunucuda çalışır.</div>
+    </div>
+
+    <!-- 3 -->
+    <div class="place-card reveal reveal-delay-2">
+      <img src="https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=800&q=85" alt="Mağara"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Doğa</div>
+        <div class="place-name">Yalan Dünya Mağarası</div>
+        <div class="place-desc">~4 km uzunluğunda, 5 milyon yıllık sarkıt ve dikitlerle dolu gizemli bir dünya.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Serin Kaçış</div>
       </div>
-      <div class="spec-card reveal reveal-delay-3">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <circle cx="22" cy="22" r="16"/>
-          <circle cx="22" cy="22" r="8"/>
-          <circle cx="22" cy="22" r="2" fill="currentColor"/>
-          <line x1="22" y1="6" x2="22" y2="14"/>
-          <line x1="22" y1="30" x2="22" y2="38"/>
-          <line x1="6" y1="22" x2="14" y2="22"/>
-          <line x1="30" y1="22" x2="38" y2="22"/>
-        </svg>
-        <div class="spec-name">Ekran</div>
-        <div class="spec-value">Transparan OLED, 480×320</div>
-        <div class="spec-detail">Gerçek dünyayı görerek üzerine dijital katman bindiren mikroskopik transparan OLED panel.</div>
+    </div>
+
+    <!-- 4 -->
+    <div class="place-card reveal reveal-delay-1">
+      <img src="https://images.unsplash.com/photo-1505118380757-91f5f5632de0?w=800&q=85" alt="Koru Plajı"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Plaj & Doğa</div>
+        <div class="place-name">Koru Plajı Doğal Havuzlar</div>
+        <div class="place-desc">Kayalıkların arasında oluşan doğal havuzlar — caretta caretta kaplumbağalarının yuvası.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Benzersiz</div>
       </div>
-      <div class="spec-card reveal reveal-delay-4">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <path d="M22 4 Q36 14 36 26 Q36 36 22 40 Q8 36 8 26 Q8 14 22 4Z"/>
-          <path d="M22 12 Q30 19 30 26 Q30 33 22 36 Q14 33 14 26 Q14 19 22 12Z"/>
-          <circle cx="22" cy="26" r="4"/>
-        </svg>
-        <div class="spec-name">Bağlantı</div>
-        <div class="spec-value">Wi-Fi 5 + Bluetooth 5.2</div>
-        <div class="spec-detail">IEEE 802.11 b/g/n/ac 2.4/5GHz. BT 5.2 Low Energy. Anlık sunucu bağlantısı.</div>
+    </div>
+
+    <!-- 5 -->
+    <div class="place-card reveal reveal-delay-2">
+      <img src="https://images.unsplash.com/photo-1603539444875-76e7684265ec?w=800&q=85" alt="Antiochia"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Arkeoloji</div>
+        <div class="place-name">Antiocheia Ad Cragum</div>
+        <div class="place-desc">Roma dönemi mozaikleri ve deniz manzaralı konumuyla nefes kesen bir antik kent.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Mozaik Hazinesi</div>
       </div>
-      <div class="spec-card reveal reveal-delay-1">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <path d="M8 34 L22 10 L36 34 Z"/>
-          <line x1="22" y1="18" x2="22" y2="26"/>
-          <circle cx="22" cy="30" r="1.5" fill="currentColor"/>
-        </svg>
-        <div class="spec-name">Yapay Zeka</div>
-        <div class="spec-value">Sunucu Tabanlı AI Engine</div>
-        <div class="spec-detail">Tüm derin öğrenme modelleri Tuncer Cloud sunucularında. Gözlük yalnızca istek gönderir, yanıt alır.</div>
+    </div>
+
+    <!-- 6 -->
+    <div class="place-card reveal reveal-delay-1">
+      <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800&q=85" alt="İotape"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Arkeoloji & Deniz</div>
+        <div class="place-name">İotape Antik Kenti</div>
+        <div class="place-desc">Roma İmparatoru'nun eşinin adını taşıyan bu antik kentte kalıntıların hemen yanında denize girebilirsiniz.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Tarih & Deniz</div>
       </div>
-      <div class="spec-card reveal reveal-delay-2">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <path d="M22 6 L26 16 H38 L28 23 L32 34 L22 27 L12 34 L16 23 L6 16 H18 Z"/>
-        </svg>
-        <div class="spec-name">Batarya</div>
-        <div class="spec-value">180mAh — 8 Saat Kullanım</div>
-        <div class="spec-detail">Hafifliği korurken tüm gün pil ömrü. USB-C manyetik şarj bağlantısı.</div>
+    </div>
+
+    <!-- 7 -->
+    <div class="place-card reveal reveal-delay-2">
+      <img src="https://images.unsplash.com/photo-1518005020951-eccb494ad742?w=800&q=85" alt="Macar Tepesi"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Seyir Terası</div>
+        <div class="place-name">Macar Tepesi</div>
+        <div class="place-desc">Akdeniz'i ve Gazipaşa'yı kuşbakışı izleyebileceğiniz gün batımı noktası.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Panoramik Manzara</div>
       </div>
-      <div class="spec-card reveal reveal-delay-3">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <rect x="4" y="14" width="36" height="18" rx="3"/>
-          <circle cx="14" cy="23" r="4"/>
-          <circle cx="30" cy="23" r="4"/>
-          <line x1="18" y1="23" x2="26" y2="23"/>
-        </svg>
-        <div class="spec-name">Form Faktörü</div>
-        <div class="spec-value">Standart Gözlük Çerçevesi</div>
-        <div class="spec-detail">28 gram. Normal gözlük çerçevesi boyutunda. Titanium alaşım + karbon fiber hybrid.</div>
+    </div>
+
+    <!-- 8 -->
+    <div class="place-card reveal reveal-delay-3">
+      <img src="https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800&q=85" alt="Muz Bahçeleri"/>
+      <div class="place-card-overlay"></div>
+      <div class="place-card-body">
+        <div class="place-cat">Tarım & Kültür</div>
+        <div class="place-name">Muz Bahçeleri & Muzkent</div>
+        <div class="place-desc">Türkiye'nin muz bahçelerinin kalbi — yeşil seralar ve taze muz aromasıyla dolu eşsiz bir deneyim.</div>
+        <div class="place-tag"><span class="gold-dot"></span> Yöresel Lezzet</div>
       </div>
-      <div class="spec-card reveal reveal-delay-4">
-        <svg class="spec-icon" viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="1.2">
-          <rect x="8" y="8" width="28" height="28" rx="14"/>
-          <path d="M22 16 V22 L26 26"/>
-          <circle cx="22" cy="22" r="2" fill="currentColor"/>
-        </svg>
-        <div class="spec-name">İşletim Sistemi</div>
-        <div class="spec-value">TuncerOS Lite 1.0</div>
-        <div class="spec-detail">Raspberry Pi Zero 2W uyumlu Linux tabanlı minimal OS. OTA güncellemeler. Açık API.</div>
-      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- PANORAMA PARALLAX -->
+<section id="panorama">
+  <div class="panorama-bg"></div>
+  <div class="panorama-overlay"></div>
+  <div class="panorama-content reveal">
+    <blockquote>
+      "Deniz kenarında bakımlı cami ve evler ile <span>yemyeşil dağlara</span> sahiptir."
+    </blockquote>
+    <cite>— Evliya Çelebi, Seyahatname · XVIII. yüzyıl</cite>
+  </div>
+</section>
+
+<!-- GALLERY -->
+<section id="gallery">
+  <div class="section-header">
+    <span class="section-tag reveal">Fotoğraf Galerisi</span>
+    <h2 class="section-title reveal reveal-delay-1">Gazipaşa'nın <em>Renkleri</em></h2>
+    <div class="section-divider reveal reveal-delay-2"></div>
+  </div>
+  <div class="gallery-grid">
+    <div class="gallery-item reveal">
+      <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=900&q=85" alt="Akdeniz Kıyısı" loading="lazy"/>
+      <div class="gallery-overlay"></div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-1">
+      <img src="https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&q=85" alt="Koy" loading="lazy"/>
+      <div class="gallery-overlay"></div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-2">
+      <img src="https://images.unsplash.com/photo-1590523741831-ab7e8b8f9c7f?w=600&q=85" alt="Antik" loading="lazy"/>
+      <div class="gallery-overlay"></div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-1">
+      <img src="https://images.unsplash.com/photo-1533105079780-92b9be482077?w=600&q=85" alt="Deniz" loading="lazy"/>
+      <div class="gallery-overlay"></div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-2">
+      <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&q=85" alt="Plaj" loading="lazy"/>
+      <div class="gallery-overlay"></div>
+    </div>
+    <div class="gallery-item reveal reveal-delay-3">
+      <img src="https://images.unsplash.com/photo-1537953773345-d172ccf13cf1?w=600&q=85" alt="Doğa" loading="lazy"/>
+      <div class="gallery-overlay"></div>
     </div>
   </div>
 </section>
 
-<!-- FEATURES -->
-<section id="features" style="background:var(--bg2)">
-  <div class="section-inner">
-    <div class="reveal">
-      <div class="section-tag">Neden Tuncer Core</div>
-      <h2 class="section-title">Taşıyan değil,<br>düşünen bir gözlük.</h2>
+<!-- TIPS -->
+<section id="tips">
+  <div class="tips-inner">
+    <div class="section-header" style="padding-top:0">
+      <span class="section-tag reveal">Seyahat Rehberi</span>
+      <h2 class="section-title reveal reveal-delay-1">Bilmeniz <em>Gerekenler</em></h2>
+      <div class="section-divider reveal reveal-delay-2"></div>
     </div>
-    <div class="features-layout">
-      <div class="feature-list reveal">
-        <div class="feature-item">
-          <div class="feature-num">01</div>
-          <div>
-            <div class="feature-title">Sunucu Zekası, Sıfır Gecikme</div>
-            <div class="feature-desc">GPT seviyesi AI modelleri Tuncer Cloud altyapısında çalışır. Gözlük yalnızca istek gönderir; işlem gücünü taşımaz, ısınmaz, batarya tüketmez. Yanıt süresi ortalama 1ms altında.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-num">02</div>
-          <div>
-            <div class="feature-title">Transparan Ekran — Gerçek AR</div>
-            <div class="feature-desc">Gerçek dünyaya bakan gözlerinizin üzerinde dijital katman. Navigasyon, çeviri, nesne tanıma ve anlık bilgi akışı görüşünüzü kapatmadan iletilir.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-num">03</div>
-          <div>
-            <div class="feature-title">Raspberry Pi Zero 2W Kalp</div>
-            <div class="feature-desc">Dünyanın en geniş geliştirici ekosistemine sahip donanımla birebir uyumlu bileşenler. Kendi uygulamalarınızı yazın; topluluk modüllerini yükleyin.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-num">04</div>
-          <div>
-            <div class="feature-title">Gizlilik Önce</div>
-            <div class="feature-desc">Tüm sunucu iletişimi end-to-end şifreli. Yüz tanıma lokal işlemci üzerinde; buluta gönderilmez. Kullanıcı verisi hiçbir zaman satılmaz.</div>
-          </div>
-        </div>
-        <div class="feature-item">
-          <div class="feature-num">05</div>
-          <div>
-            <div class="feature-title">OTA Güncellemeler</div>
-            <div class="feature-desc">TuncerOS Lite güncellemeleri kablosuz olarak gelir. Donanım değişmez; yazılım ile cihaz daima güncel kalır.</div>
-          </div>
-        </div>
+    <div class="tips-grid">
+      <div class="tip-card reveal">
+        <div class="tip-icon">✈️</div>
+        <div class="tip-title">Nasıl Gidilir?</div>
+        <div class="tip-text">En yakın havalimanı Gazipaşa–Alanya Havalimanı (GZP). Antalya Havalimanı'ndan yaklaşık 2,5 saatlik sahil yolu keyfi de ayrı bir deneyim sunar.</div>
       </div>
-      <div class="feature-visual reveal reveal-delay-2">
-        <svg viewBox="0 0 320 400" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:320px">
-          <!-- Server -->
-          <rect x="100" y="20" width="120" height="70" rx="2" stroke="#3a3a42" stroke-width="1" fill="#0c0c10"/>
-          <rect x="108" y="28" width="104" height="10" rx="1" fill="#1a1a20"/>
-          <rect x="108" y="42" width="104" height="10" rx="1" fill="#1a1a20"/>
-          <rect x="108" y="56" width="104" height="10" rx="1" fill="#1a1a20"/>
-          <circle cx="196" cy="33" r="3" fill="#e8a020" opacity="0.8"/>
-          <circle cx="196" cy="47" r="3" fill="#3d9e5c" opacity="0.8"/>
-          <circle cx="196" cy="61" r="3" fill="#e8a020" opacity="0.4"/>
-          <text x="160" y="106" fill="#5a5a62" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="3">TUNCER CLOUD</text>
-          <!-- Connection lines -->
-          <line x1="160" y1="90" x2="160" y2="180" stroke="#e8a020" stroke-width="0.8" stroke-dasharray="4 4" opacity="0.6"/>
-          <!-- Glasses simplified -->
-          <rect x="60" y="185" width="80" height="35" rx="2" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.05)"/>
-          <rect x="180" y="185" width="80" height="35" rx="2" stroke="#e8a020" stroke-width="1" fill="rgba(232,160,32,0.05)"/>
-          <path d="M140 202 Q160 195 180 202" stroke="#5a5a62" stroke-width="1.5" fill="none"/>
-          <line x1="60" y1="202" x2="40" y2="202" stroke="#5a5a62" stroke-width="2"/>
-          <line x1="260" y1="202" x2="280" y2="202" stroke="#5a5a62" stroke-width="2"/>
-          <text x="100" y="207" fill="#e8a020" font-size="7" font-family="monospace" text-anchor="middle">AI.ON</text>
-          <text x="220" y="207" fill="#e8a020" font-size="7" font-family="monospace" text-anchor="middle">23°C</text>
-          <!-- Down labels -->
-          <text x="160" y="250" fill="#5a5a62" font-size="8" font-family="monospace" text-anchor="middle" letter-spacing="2">TUNCER CORE 2027</text>
-          <!-- Data flow dots -->
-          <circle cx="160" cy="130" r="3" fill="#e8a020">
-            <animate attributeName="cy" values="90;180;90" dur="2s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
-          </circle>
-          <circle cx="160" cy="150" r="3" fill="#e8a020">
-            <animate attributeName="cy" values="180;90;180" dur="2s" repeatCount="indefinite"/>
-            <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
-          </circle>
-          <!-- Labels -->
-          <text x="160" y="300" fill="#e8a020" font-size="9" font-family="monospace" text-anchor="middle">↑ İSTEK</text>
-          <text x="160" y="316" fill="#3d9e5c" font-size="9" font-family="monospace" text-anchor="middle">↓ YANIT 1ms</text>
-          <!-- Bottom box -->
-          <rect x="80" y="330" width="160" height="50" rx="2" stroke="#3a3a42" stroke-width="1" fill="#0c0c10"/>
-          <text x="160" y="350" fill="#b0b4c0" font-size="8" font-family="monospace" text-anchor="middle">GÖZ ÖNÜNDE</text>
-          <text x="160" y="365" fill="#e8a020" font-size="8" font-family="monospace" text-anchor="middle">GERÇEK ZAMANLI AI</text>
-        </svg>
+      <div class="tip-card reveal reveal-delay-1">
+        <div class="tip-icon">🌞</div>
+        <div class="tip-title">En İyi Zaman</div>
+        <div class="tip-text">Nisan–Haziran ve Eylül–Ekim ayları idealdir. Yaz aylarında sıcaklık 35°C'yi aşabilir; sabah erken saatler antik kentler için en iyi vakittir.</div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- AI ENGINE -->
-<section id="ai">
-  <div class="section-inner">
-    <div class="reveal">
-      <div class="section-tag">Yapay Zeka Motoru</div>
-      <h2 class="section-title">İşlem gücü<br>bulutta, zeka<br>gözünüzde.</h2>
-      <p class="section-sub">Karmaşık AI hesaplamaları gözlükte değil, Tuncer Cloud sunucularında gerçekleşir. Cihaz ısınmaz, batarya tükenmez.</p>
-    </div>
-    <div class="ai-layout">
-      <div class="ai-pipeline reveal">
-        <div class="ai-step">
-          <div class="ai-step-line">
-            <div class="ai-step-dot"></div>
-            <div class="ai-step-connector"></div>
-          </div>
-          <div class="ai-step-content">
-            <div class="ai-step-label">Adım 01</div>
-            <div class="ai-step-title">Sensör Verisi Toplanır</div>
-            <div class="ai-step-desc">Transparan ekrandaki kamera, mikrofon ve hareket sensörleri ortam verisini yakalar. Ham veri yerel olarak sıkıştırılır.</div>
-          </div>
-        </div>
-        <div class="ai-step">
-          <div class="ai-step-line">
-            <div class="ai-step-dot"></div>
-            <div class="ai-step-connector"></div>
-          </div>
-          <div class="ai-step-content">
-            <div class="ai-step-label">Adım 02</div>
-            <div class="ai-step-title">Şifreli İletim</div>
-            <div class="ai-step-desc">Wi-Fi 5 üzerinden TLS 1.3 şifreli paket Tuncer Cloud sunucusuna gönderilir. Ortalama gecikme 0.8ms.</div>
-          </div>
-        </div>
-        <div class="ai-step">
-          <div class="ai-step-line">
-            <div class="ai-step-dot"></div>
-            <div class="ai-step-connector"></div>
-          </div>
-          <div class="ai-step-content">
-            <div class="ai-step-label">Adım 03</div>
-            <div class="ai-step-title">Sunucu AI İşleme</div>
-            <div class="ai-step-desc">GPU kümesinde nesne tanıma, dil anlama, bağlam analizi ve yanıt üretimi gerçekleşir. Model boyutu sınırsız.</div>
-          </div>
-        </div>
-        <div class="ai-step">
-          <div class="ai-step-line">
-            <div class="ai-step-dot"></div>
-          </div>
-          <div class="ai-step-content">
-            <div class="ai-step-label">Adım 04</div>
-            <div class="ai-step-title">Ekranda Görselleştirme</div>
-            <div class="ai-step-desc">Yanıt transparan OLED'e anlık bindirilir. Metin, şekil veya overlay formatında — gerçeklik ile harmanlı.</div>
-          </div>
-        </div>
+      <div class="tip-card reveal reveal-delay-2">
+        <div class="tip-icon">🥾</div>
+        <div class="tip-title">Delik Deniz İçin</div>
+        <div class="tip-text">Koya inmek için sarp ve kaygan bir patika bulunur. Sağlam yürüyüş ayakkabısı şart! Alternatif olarak tekne ile de ulaşabilirsiniz.</div>
       </div>
-      <div class="ai-info reveal reveal-delay-2">
-        <div class="ai-info-card">
-          <div class="ai-info-title">Sunucu Yanıt Süresi</div>
-          <div class="ai-info-val">&lt;1ms</div>
-          <div class="ai-info-sub">Ortalama uçtan uca gecikme</div>
-        </div>
-        <div class="ai-info-card">
-          <div class="ai-info-title">AI Model Kapasitesi</div>
-          <div class="ai-info-val">Sınırsız</div>
-          <div class="ai-info-sub">Sunucu tarafı işleme — cihaz kısıtı yok</div>
-        </div>
-        <div class="ai-info-card">
-          <div class="ai-info-title">Cihaz AI Yükü</div>
-          <div class="ai-info-val">%0</div>
-          <div class="ai-info-sub">Gözlükte AI işlemi yapılmaz</div>
-        </div>
-        <div class="ai-info-card">
-          <div class="ai-info-title">Veri Şifreleme</div>
-          <div class="ai-info-val">TLS 1.3</div>
-          <div class="ai-info-sub">End-to-end şifreli iletişim</div>
-        </div>
-        <div class="ai-info-card">
-          <div class="ai-info-title">Çevrimdışı Mod</div>
-          <div class="ai-info-val">Temel Fonksiyon</div>
-          <div class="ai-info-sub">İnternet olmadan saat, adım sayar, bildirim</div>
-        </div>
+      <div class="tip-card reveal reveal-delay-1">
+        <div class="tip-icon">🐢</div>
+        <div class="tip-title">Caretta Caretta</div>
+        <div class="tip-text">Koru Plajı, caretta caretta kaplumbağalarının yuvalama alanıdır. Gece saatlerinde sahilde ateş yakmak ve bağırmaktan kaçının.</div>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- ORDER FORM -->
-<section id="order">
-  <div class="section-inner">
-    <div class="reveal">
-      <div class="section-tag">Ön Sipariş</div>
-      <h2 class="section-title">Sınırlı ilk parti.<br>Yerinizi şimdi alın.</h2>
-    </div>
-    <div class="order-layout">
-      <div class="order-form-wrap reveal">
-        <div id="order-form-inner">
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="fname">Ad</label>
-              <input class="form-input" type="text" id="fname" placeholder="Adınız" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="lname">Soyad</label>
-              <input class="form-input" type="text" id="lname" placeholder="Soyadınız" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="email">E-posta</label>
-            <input class="form-input" type="email" id="email" placeholder="ornek@mail.com" required>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="phone">Telefon</label>
-            <input class="form-input" type="tel" id="phone" placeholder="+90 555 000 00 00">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="city">Şehir</label>
-              <input class="form-input" type="text" id="city" placeholder="İstanbul">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="qty">Adet</label>
-              <select class="form-select" id="qty">
-                <option value="1">1 Adet</option>
-                <option value="2">2 Adet</option>
-                <option value="3">3 Adet</option>
-                <option value="5">5 Adet</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="edition">Versiyon</label>
-            <select class="form-select" id="edition">
-              <option value="standard">Standard — Siyah Çerçeve</option>
-              <option value="titanium">Titanium Edition — Gümüş</option>
-              <option value="carbon">Carbon Black — Karbon Fiber</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="note">Not (İsteğe bağlı)</label>
-            <textarea class="form-textarea" id="note" placeholder="Özel istek veya notunuz..."></textarea>
-          </div>
-          <button class="form-submit" id="submit-btn" onclick="submitOrder()">Ön Siparişi Onayla</button>
-        </div>
-        <div class="form-success" id="form-success">
-          <svg class="check" viewBox="0 0 56 56" fill="none" stroke="#e8a020" stroke-width="1.5">
-            <circle cx="28" cy="28" r="26"/>
-            <path d="M16 28 L24 36 L40 20"/>
-          </svg>
-          <h3>Ön Siparişiniz Alındı</h3>
-          <p>Teslimat başladığında e-posta ile bilgilendirileceğsiniz.</p>
-          <div class="order-id" id="confirm-id"></div>
-        </div>
+      <div class="tip-card reveal reveal-delay-2">
+        <div class="tip-icon">🍌</div>
+        <div class="tip-title">Yerel Lezzet</div>
+        <div class="tip-text">Gazipaşa muz bahçelerini mutlaka ziyaret edin. Taze muz ve narenciye ürünleri doğrudan çiftçilerden alınabilir — lezzet farkı müthiştir!</div>
       </div>
-      <div class="order-info reveal reveal-delay-2">
-        <div class="price-display">₺12.990</div>
-        <div class="price-note">Ön sipariş fiyatı — KDV dahil</div>
-        <ul class="order-perks">
-          <li class="order-perk">
-            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
-            İlk 500 siparişe %15 indirim uygulandı
-          </li>
-          <li class="order-perk">
-            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
-            6 ay ücretsiz Tuncer Cloud aboneliği
-          </li>
-          <li class="order-perk">
-            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
-            Ücretsiz kargo ve kurulum desteği
-          </li>
-          <li class="order-perk">
-            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
-            14 gün iade garantisi
-          </li>
-          <li class="order-perk">
-            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
-            2 yıl donanım garantisi
-          </li>
-          <li class="order-perk">
-            <svg class="perk-icon" width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="8"/><path d="M5 9 L8 12 L13 6"/></svg>
-            Tahmini teslimat: Q2 2027
-          </li>
-        </ul>
-        <div style="margin-top:2rem;padding:1.5rem;border:1px solid var(--border);background:var(--bg2)">
-          <div style="font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--silver);margin-bottom:0.5rem;">Ön Sipariş Sayacı</div>
-          <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:2rem;color:var(--amber)" id="order-count">—</div>
-          <div style="font-family:'DM Mono',monospace;font-size:0.7rem;letter-spacing:0.08em;color:var(--silver);margin-top:0.25rem">sipariş alındı</div>
-        </div>
+      <div class="tip-card reveal reveal-delay-3">
+        <div class="tip-icon">🏛️</div>
+        <div class="tip-title">Antik Kentler</div>
+        <div class="tip-text">Selinus, Antiocheia Ad Cragum ve İotape antik kentleri aynı güzergâh üzerindedir. Tek bir günde üçünü birden gezebilirsiniz.</div>
       </div>
     </div>
   </div>
@@ -1213,304 +941,83 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-inner">
-    <div>
-      <div class="nav-logo" style="display:flex;align-items:center;gap:10px;margin-bottom:0.5rem;">
-        <svg viewBox="0 0 32 32" fill="none" width="24" height="24" xmlns="http://www.w3.org/2000/svg">
-          <rect x="1" y="1" width="30" height="30" stroke="#e8a020" stroke-width="1.2"/>
-          <path d="M7 16H25M16 7V25" stroke="#e8a020" stroke-width="1.2"/>
-          <circle cx="16" cy="16" r="4" stroke="#e8a020" stroke-width="1.2"/>
-        </svg>
-        <span style="font-family:'Syne',sans-serif;font-weight:800;font-size:0.95rem;color:var(--white)">TUNCER<span style="color:var(--amber)">ZEKA</span></span>
-      </div>
-      <div class="footer-copy">© 2027 Tuncer Zeka Teknoloji. Tüm hakları saklıdır.</div>
-    </div>
-    <ul class="footer-links">
-      <li><a href="#specs">Özellikler</a></li>
-      <li><a href="#order">Sipariş</a></li>
-      <li><a href="#" onclick="openAdminLogin()">Yönetici</a></li>
-    </ul>
-  </div>
+  <div class="footer-logo"><span>G</span>azipaşa</div>
+  <p class="footer-tagline">Akdeniz'in Gizli Cenneti</p>
+  <div class="footer-divider"></div>
+  <p class="footer-copy">Antalya · Türkiye · Akdeniz Sahili</p>
 </footer>
 
-<!-- TOAST -->
-<div id="toast"></div>
-
-<!-- LOGIN MODAL -->
-<div id="login-modal">
-  <div class="login-box">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;">
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="#e8a020" stroke-width="1.2">
-        <rect x="1" y="1" width="30" height="30"/>
-        <rect x="10" y="14" width="12" height="10" rx="1"/>
-        <path d="M12 14 V11 Q12 7 16 7 Q20 7 20 11 V14"/>
-        <circle cx="16" cy="19" r="1.5" fill="#e8a020"/>
-      </svg>
-      <div>
-        <div class="login-title">Yönetici Girişi</div>
-        <div class="login-sub">Admin Panel — Sipariş Takibi</div>
-      </div>
-    </div>
-    <input class="login-input" type="password" id="admin-pass" placeholder="••••••" maxlength="20" onkeydown="if(event.key==='Enter')checkAdminPass()">
-    <button class="login-btn" onclick="checkAdminPass()">Giriş Yap</button>
-    <span class="login-cancel" onclick="closeLogin()">İptal</span>
-  </div>
-</div>
-
-<!-- ADMIN PANEL -->
-<div id="admin-panel">
-  <div class="admin-top">
-    <div class="admin-top-title">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="#e8a020" stroke-width="1.2">
-        <rect x="1" y="1" width="20" height="20" rx="1"/>
-        <path d="M5 11H17M11 5V17"/>
-        <circle cx="11" cy="11" r="3"/>
-      </svg>
-      Sipariş Yönetimi
-      <span class="badge">Admin Panel</span>
-    </div>
-    <button class="admin-close" onclick="closeAdmin()">Çıkış Yap</button>
-  </div>
-  <div class="admin-body">
-    <div class="admin-stats">
-      <div class="admin-stat">
-        <div class="admin-stat-label">Toplam Sipariş</div>
-        <div class="admin-stat-val" id="stat-total">0</div>
-      </div>
-      <div class="admin-stat">
-        <div class="admin-stat-label">Bekleyen</div>
-        <div class="admin-stat-val" id="stat-pending">0</div>
-      </div>
-      <div class="admin-stat">
-        <div class="admin-stat-label">Onaylanan</div>
-        <div class="admin-stat-val" id="stat-confirmed">0</div>
-      </div>
-      <div class="admin-stat">
-        <div class="admin-stat-label">Tahmini Gelir</div>
-        <div class="admin-stat-val" id="stat-revenue">₺0</div>
-      </div>
-    </div>
-    <div class="admin-toolbar">
-      <input class="admin-search" type="text" id="admin-search" placeholder="Ad, e-posta veya sipariş ID ara..." oninput="renderAdminTable()">
-      <div style="display:flex;gap:0.75rem">
-        <button class="action-btn" onclick="exportCSV()">CSV İndir</button>
-        <button class="clear-btn" onclick="clearAllOrders()">Tüm Siparişleri Sil</button>
-      </div>
-    </div>
-    <div class="admin-table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Sipariş ID</th>
-            <th>Ad Soyad</th>
-            <th>E-posta</th>
-            <th>Telefon</th>
-            <th>Şehir</th>
-            <th>Versiyon</th>
-            <th>Adet</th>
-            <th>Tutar</th>
-            <th>Durum</th>
-            <th>Tarih</th>
-            <th>İşlem</th>
-          </tr>
-        </thead>
-        <tbody id="admin-tbody"></tbody>
-      </table>
-      <div class="admin-empty" id="admin-empty" style="display:none">Henüz sipariş bulunmuyor</div>
-    </div>
-  </div>
-</div>
-
 <script>
-const PRICE = 12990;
-const ADMIN_PASS = '175017';
-
-function getOrders() {
-  try { return JSON.parse(localStorage.getItem('tuncer_orders') || '[]'); } catch { return []; }
-}
-function saveOrders(o) { localStorage.setItem('tuncer_orders', JSON.stringify(o)); }
-
-function genId() {
-  return 'TC' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2,5).toUpperCase();
-}
-
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 3000);
-}
-
-function updateOrderCount() {
-  const c = getOrders().length;
-  document.getElementById('order-count').textContent = c;
-}
-
-function submitOrder() {
-  const fname = document.getElementById('fname').value.trim();
-  const lname = document.getElementById('lname').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const phone = document.getElementById('phone').value.trim();
-  const city = document.getElementById('city').value.trim();
-  const qty = parseInt(document.getElementById('qty').value);
-  const edition = document.getElementById('edition').value;
-  const note = document.getElementById('note').value.trim();
-
-  if (!fname || !lname || !email) { showToast('Lütfen zorunlu alanları doldurun'); return; }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Geçerli bir e-posta adresi girin'); return; }
-
-  const btn = document.getElementById('submit-btn');
-  btn.disabled = true; btn.textContent = 'İşleniyor...';
-
-  setTimeout(() => {
-    const order = {
-      id: genId(),
-      fname, lname, email, phone, city, qty, edition, note,
-      amount: qty * PRICE,
-      status: 'pending',
-      date: new Date().toLocaleString('tr-TR')
-    };
-    const orders = getOrders();
-    orders.push(order);
-    saveOrders(orders);
-    updateOrderCount();
-
-    document.getElementById('order-form-inner').style.display = 'none';
-    const suc = document.getElementById('form-success');
-    suc.style.display = 'block';
-    document.getElementById('confirm-id').textContent = 'Sipariş No: ' + order.id;
-    showToast('Sipariş başarıyla alındı!');
-    btn.disabled = false; btn.textContent = 'Ön Siparişi Onayla';
-  }, 800);
-}
-
-/* ADMIN */
-function openAdminLogin() {
-  document.getElementById('login-modal').classList.add('active');
-  setTimeout(() => document.getElementById('admin-pass').focus(), 100);
-}
-function closeLogin() {
-  document.getElementById('login-modal').classList.remove('active');
-  document.getElementById('admin-pass').value = '';
-  document.getElementById('admin-pass').classList.remove('error');
-}
-function checkAdminPass() {
-  const p = document.getElementById('admin-pass').value;
-  if (p === ADMIN_PASS) {
-    closeLogin();
-    openAdmin();
-  } else {
-    const inp = document.getElementById('admin-pass');
-    inp.classList.add('error');
-    inp.value = '';
-    setTimeout(() => inp.classList.remove('error'), 600);
-    showToast('Hatalı şifre');
+  // ── PARTICLES ──
+  const container = document.getElementById('particles');
+  for (let i = 0; i < 25; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random() * 6 + 2;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${Math.random()*100}%;
+      animation-duration:${Math.random()*20+15}s;
+      animation-delay:${Math.random()*15}s;
+    `;
+    container.appendChild(p);
   }
-}
-function openAdmin() {
-  document.getElementById('admin-panel').classList.add('active');
-  renderAdminStats();
-  renderAdminTable();
-}
-function closeAdmin() {
-  document.getElementById('admin-panel').classList.remove('active');
-}
 
-function renderAdminStats() {
-  const orders = getOrders();
-  const pending = orders.filter(o => o.status === 'pending').length;
-  const confirmed = orders.filter(o => o.status === 'confirmed').length;
-  const revenue = orders.reduce((s, o) => s + o.amount, 0);
-  document.getElementById('stat-total').textContent = orders.length;
-  document.getElementById('stat-pending').textContent = pending;
-  document.getElementById('stat-confirmed').textContent = confirmed;
-  document.getElementById('stat-revenue').textContent = '₺' + revenue.toLocaleString('tr-TR');
-}
+  // ── NAVBAR SCROLL ──
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 60);
+  }, { passive: true });
 
-function renderAdminTable() {
-  const q = (document.getElementById('admin-search').value || '').toLowerCase();
-  let orders = getOrders();
-  if (q) orders = orders.filter(o =>
-    (o.fname + ' ' + o.lname).toLowerCase().includes(q) ||
-    o.email.toLowerCase().includes(q) ||
-    o.id.toLowerCase().includes(q) ||
-    (o.city || '').toLowerCase().includes(q)
-  );
-  const tbody = document.getElementById('admin-tbody');
-  const empty = document.getElementById('admin-empty');
-  if (!orders.length) {
-    tbody.innerHTML = '';
-    empty.style.display = 'block';
-    return;
+  // ── SCROLL REVEAL ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── COUNTER ANIMATION ──
+  function animateCounter(el, target, suffix='') {
+    let current = 0;
+    const step = target / 50;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = Math.floor(current) + suffix;
+      if (current >= target) clearInterval(timer);
+    }, 30);
   }
-  empty.style.display = 'none';
-  const edMap = { standard: 'Standard', titanium: 'Titanium', carbon: 'Carbon Black' };
-  tbody.innerHTML = orders.map(o => `
-    <tr id="row-${o.id}">
-      <td style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--amber)">${o.id}</td>
-      <td>${o.fname} ${o.lname}</td>
-      <td style="font-size:0.82rem">${o.email}</td>
-      <td style="font-size:0.82rem">${o.phone || '—'}</td>
-      <td>${o.city || '—'}</td>
-      <td style="font-size:0.82rem">${edMap[o.edition] || o.edition}</td>
-      <td style="text-align:center">${o.qty}</td>
-      <td style="font-family:'DM Mono',monospace;font-size:0.8rem;color:var(--amber)">₺${o.amount.toLocaleString('tr-TR')}</td>
-      <td><span class="status-badge status-${o.status}">${o.status === 'pending' ? 'Bekliyor' : o.status === 'confirmed' ? 'Onaylı' : 'İptal'}</span></td>
-      <td style="font-size:0.78rem;white-space:nowrap">${o.date}</td>
-      <td>
-        <div class="admin-actions">
-          <button class="action-btn" onclick="changeStatus('${o.id}','confirmed')">Onayla</button>
-          <button class="action-btn" onclick="changeStatus('${o.id}','cancelled')">İptal</button>
-          <button class="action-btn del" onclick="deleteOrder('${o.id}')">Sil</button>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-}
 
-function changeStatus(id, status) {
-  const orders = getOrders();
-  const i = orders.findIndex(o => o.id === id);
-  if (i !== -1) { orders[i].status = status; saveOrders(orders); }
-  renderAdminStats(); renderAdminTable();
-  showToast('Durum güncellendi');
-}
+  const statsObserver = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const nums = e.target.querySelectorAll('.stat-num');
+        if (nums[0]) animateCounter(nums[0], 2000, '+');
+        if (nums[1]) animateCounter(nums[1], 8, '+');
+        statsObserver.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
 
-function deleteOrder(id) {
-  if (!confirm('Bu siparişi silmek istediğinizden emin misiniz?')) return;
-  const orders = getOrders().filter(o => o.id !== id);
-  saveOrders(orders);
-  renderAdminStats(); renderAdminTable(); updateOrderCount();
-  showToast('Sipariş silindi');
-}
+  const statsRow = document.querySelector('.stats-row');
+  if (statsRow) statsObserver.observe(statsRow);
 
-function clearAllOrders() {
-  if (!confirm('TÜM siparişleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) return;
-  saveOrders([]);
-  renderAdminStats(); renderAdminTable(); updateOrderCount();
-  showToast('Tüm siparişler silindi');
-}
-
-function exportCSV() {
-  const orders = getOrders();
-  if (!orders.length) { showToast('Dışa aktarılacak sipariş yok'); return; }
-  const headers = ['Sipariş ID','Ad','Soyad','E-posta','Telefon','Şehir','Versiyon','Adet','Tutar','Durum','Tarih'];
-  const rows = orders.map(o => [o.id,o.fname,o.lname,o.email,o.phone||'',o.city||'',o.edition,o.qty,o.amount,o.status,o.date].map(v => `"${String(v).replace(/"/g,'""')}"`).join(','));
-  const csv = [headers.join(','), ...rows].join('\n');
-  const a = document.createElement('a');
-  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-  a.download = 'tuncer-core-siparisler.csv';
-  a.click();
-  showToast('CSV indirildi');
-}
-
-/* SCROLL REVEAL */
-const ro = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
-}, { threshold: 0.12 });
-document.querySelectorAll('.reveal').forEach(el => ro.observe(el));
-
-updateOrderCount();
+  // ── SMOOTH NAV ACTIVE ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 200) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current
+        ? 'var(--gold)' : '';
+    });
+  }, { passive: true });
 </script>
 </body>
 </html>
