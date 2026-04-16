@@ -1,1023 +1,861 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="scroll-smooth">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Gazipaşa — ahmet tuncer tarafından</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet"/>
-  <style>
-    :root {
-      --gold: #c9a84c;
-      --gold-light: #e8c97a;
-      --deep: #0a0d14;
-      --navy: #0d1b2a;
-      --teal: #1a6b73;
-      --teal-light: #22909a;
-      --sand: #f0e6c8;
-      --text: #e8ddc8;
-      --muted: #9a8f7e;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tuncer Zeka | Yapay Zeka Platformu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,300&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --gold: #D4A853;
+    --gold-bright: #F2C46D;
+    --gold-dim: #8A6B30;
+    --ink: #080808;
+    --ink-2: #0E0E0E;
+    --ink-3: #151515;
+    --ink-4: #1E1E1E;
+    --ink-5: #2A2A2A;
+    --ghost: rgba(212,168,83,0.07);
+    --text: #C8C8C0;
+    --text-dim: #6A6A60;
+  }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; }
 
-    body {
-      background: var(--deep);
-      color: var(--text);
-      font-family: 'Cormorant Garamond', serif;
-      overflow-x: hidden;
-    }
+  body {
+    background: var(--ink);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    cursor: default;
+  }
 
-    /* ─── PARTICLES ─── */
-    #particles {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-    .particle {
-      position: absolute;
-      border-radius: 50%;
-      background: rgba(201,168,76,0.15);
-      animation: floatUp linear infinite;
-    }
-    @keyframes floatUp {
-      0%   { transform: translateY(100vh) scale(0); opacity: 0; }
-      10%  { opacity: 1; }
-      90%  { opacity: 0.5; }
-      100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-    }
+  /* \u2500\u2500 SCROLLBAR \u2500\u2500 */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--ink); }
+  ::-webkit-scrollbar-thumb { background: var(--gold-dim); border-radius: 2px; }
 
-    /* ─── NAV ─── */
-    nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.2rem 4rem;
-      transition: background 0.4s, backdrop-filter 0.4s;
-    }
-    nav.scrolled {
-      background: rgba(10,13,20,0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(201,168,76,0.15);
-    }
-    .nav-logo {
-      font-family: 'Cinzel', serif;
-      font-size: 1.4rem;
-      font-weight: 900;
-      color: var(--gold);
-      letter-spacing: 0.08em;
-      text-decoration: none;
-    }
-    .nav-logo span { color: var(--teal-light); }
-    .nav-links { display: flex; gap: 2.5rem; }
-    .nav-links a {
-      font-family: 'Cinzel', serif;
-      font-size: 0.7rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--text);
-      text-decoration: none;
-      position: relative;
-      transition: color 0.3s;
-    }
-    .nav-links a::after {
-      content: '';
-      position: absolute;
-      bottom: -4px; left: 0; right: 0;
-      height: 1px;
-      background: var(--gold);
-      transform: scaleX(0);
-      transition: transform 0.3s;
-    }
-    .nav-links a:hover { color: var(--gold); }
-    .nav-links a:hover::after { transform: scaleX(1); }
+  /* \u2500\u2500 LOADER \u2500\u2500 */
+  #loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: var(--ink);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    transition: opacity 0.6s ease, visibility 0.6s ease;
+  }
+  #loader.out { opacity: 0; visibility: hidden; pointer-events: none; }
 
-    /* ─── HERO ─── */
-    #hero {
-      position: relative;
-      height: 100vh;
-      min-height: 700px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-    .hero-bg {
-      position: absolute;
-      inset: 0;
-      background-image: url('https://images.unsplash.com/photo-1552083375-1447ce886485?w=1800&q=85');
-      background-size: cover;
-      background-position: center;
-      transform: scale(1.08);
-      animation: heroZoom 20s ease-in-out infinite alternate;
-    }
-    @keyframes heroZoom {
-      from { transform: scale(1.08) translateY(0); }
-      to   { transform: scale(1.16) translateY(-2%); }
-    }
-    .hero-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(
-        180deg,
-        rgba(10,13,20,0.3) 0%,
-        rgba(10,13,20,0.5) 50%,
-        rgba(10,13,20,0.95) 100%
-      );
-    }
-    .hero-content {
-      position: relative;
-      z-index: 2;
-      text-align: center;
-      padding: 0 2rem;
-    }
-    .hero-badge {
-      display: inline-block;
-      font-family: 'Cinzel', serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      color: var(--gold);
-      border: 1px solid rgba(201,168,76,0.4);
-      padding: 0.5rem 1.5rem;
-      margin-bottom: 1.5rem;
-      animation: fadeInDown 1s ease 0.3s both;
-    }
-    .hero-title {
-      font-family: 'Cinzel', serif;
-      font-size: clamp(3.5rem, 9vw, 8rem);
-      font-weight: 900;
-      line-height: 0.95;
-      letter-spacing: -0.01em;
-      animation: fadeInUp 1s ease 0.6s both;
-    }
-    .hero-title .line1 { display: block; color: var(--sand); }
-    .hero-title .line2 {
-      display: block;
-      color: var(--gold);
-      font-style: italic;
-      font-weight: 400;
-      font-size: 0.55em;
-      letter-spacing: 0.08em;
-      margin-top: 0.3em;
-    }
-    .hero-sub {
-      font-size: 1.3rem;
-      font-weight: 300;
-      font-style: italic;
-      color: rgba(240,230,200,0.75);
-      margin-top: 1.5rem;
-      max-width: 500px;
-      margin-left: auto;
-      margin-right: auto;
-      line-height: 1.6;
-      animation: fadeInUp 1s ease 0.9s both;
-    }
-    .hero-scroll {
-      margin-top: 3.5rem;
-      animation: fadeInUp 1s ease 1.2s both;
-    }
-    .scroll-btn {
-      display: inline-flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.6rem;
-      font-family: 'Cinzel', serif;
-      font-size: 0.6rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--gold);
-      text-decoration: none;
-      cursor: pointer;
-      background: none;
-      border: none;
-    }
-    .scroll-line {
-      width: 1px;
-      height: 50px;
-      background: linear-gradient(to bottom, var(--gold), transparent);
-      animation: scrollPulse 2s ease infinite;
-    }
-    @keyframes scrollPulse {
-      0%, 100% { opacity: 1; transform: scaleY(1); }
-      50% { opacity: 0.4; transform: scaleY(0.7); }
-    }
+  .loader-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3rem, 8vw, 6rem);
+    letter-spacing: 0.12em;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--gold-dim);
+    position: relative;
+    overflow: hidden;
+  }
+  .loader-logo::after {
+    content: attr(data-text);
+    position: absolute; left: 0; top: 0;
+    color: var(--gold);
+    -webkit-text-stroke: 0;
+    clip-path: inset(0 100% 0 0);
+    animation: revealText 1.8s cubic-bezier(0.77,0,0.175,1) 0.3s forwards;
+  }
+  @keyframes revealText {
+    to { clip-path: inset(0 0% 0 0); }
+  }
 
-    @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-20px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
+  .loader-line {
+    width: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin-top: 1.5rem;
+    animation: lineExpand 1.2s ease 0.8s forwards;
+  }
+  @keyframes lineExpand {
+    to { width: min(400px, 80vw); }
+  }
 
-    /* ─── SECTION COMMONS ─── */
-    section { position: relative; z-index: 1; }
+  .loader-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.35em;
+    color: var(--gold-dim);
+    margin-top: 1rem;
+    opacity: 0;
+    animation: fadeUp 0.8s ease 1.4s forwards;
+    text-transform: uppercase;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
 
-    .section-header {
-      text-align: center;
-      padding: 5rem 2rem 3rem;
-    }
-    .section-tag {
-      font-family: 'Cinzel', serif;
-      font-size: 0.6rem;
-      letter-spacing: 0.35em;
-      text-transform: uppercase;
-      color: var(--teal-light);
-      margin-bottom: 1rem;
-      display: block;
-    }
-    .section-title {
-      font-family: 'Cinzel', serif;
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      font-weight: 600;
-      color: var(--sand);
-      line-height: 1.1;
-    }
-    .section-title em {
-      color: var(--gold);
-      font-style: italic;
-      font-weight: 400;
-    }
-    .section-divider {
-      width: 80px;
-      height: 2px;
-      background: linear-gradient(to right, transparent, var(--gold), transparent);
-      margin: 1.5rem auto 0;
-    }
+  /* \u2500\u2500 CANVAS BG \u2500\u2500 */
+  #bg-canvas {
+    position: fixed; inset: 0; z-index: 0;
+    pointer-events: none;
+    opacity: 0.35;
+  }
 
-    /* ─── ABOUT STRIP ─── */
-    #about {
-      background: linear-gradient(135deg, #0d1b2a 0%, #0a1520 100%);
-      padding: 6rem 2rem;
-    }
-    .about-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 5rem;
-      align-items: center;
-    }
-    .about-img-wrap {
-      position: relative;
-    }
-    .about-img-wrap img {
-      width: 100%;
-      height: 500px;
-      object-fit: cover;
-      display: block;
-    }
-    .about-img-wrap::before {
-      content: '';
-      position: absolute;
-      top: -15px; left: -15px;
-      right: 15px; bottom: 15px;
-      border: 1px solid rgba(201,168,76,0.3);
-      pointer-events: none;
-      z-index: 1;
-    }
-    .about-img-wrap::after {
-      content: '';
-      position: absolute;
-      bottom: -15px; right: -15px;
-      top: 15px; left: 15px;
-      border: 1px solid rgba(34,144,154,0.2);
-      pointer-events: none;
-      z-index: 1;
-    }
-    .about-text .eyebrow {
-      font-family: 'Cinzel', serif;
-      font-size: 0.62rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--gold);
-      margin-bottom: 1.2rem;
-      display: block;
-    }
-    .about-text h2 {
-      font-family: 'Cinzel', serif;
-      font-size: 2.5rem;
-      font-weight: 600;
-      color: var(--sand);
-      line-height: 1.2;
-      margin-bottom: 1.5rem;
-    }
-    .about-text h2 em { color: var(--gold); font-style: italic; font-weight: 300; }
-    .about-text p {
-      font-size: 1.15rem;
-      line-height: 1.85;
-      color: rgba(240,230,200,0.75);
-      margin-bottom: 1.2rem;
-      font-weight: 300;
-    }
-    .stats-row {
-      display: flex;
-      gap: 2rem;
-      margin-top: 2rem;
-    }
-    .stat {
-      border-left: 2px solid var(--gold);
-      padding-left: 1rem;
-    }
-    .stat-num {
-      font-family: 'Cinzel', serif;
-      font-size: 2rem;
-      font-weight: 900;
-      color: var(--gold);
-      line-height: 1;
-    }
-    .stat-lbl {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin-top: 0.2rem;
-      letter-spacing: 0.05em;
-    }
+  /* \u2500\u2500 NAVBAR \u2500\u2500 */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 0 2rem;
+    height: 72px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8,8,8,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(212,168,83,0.1);
+    transition: all 0.3s ease;
+  }
+  nav.scrolled {
+    height: 60px;
+    border-bottom-color: rgba(212,168,83,0.2);
+  }
 
-    /* ─── PLACES GRID ─── */
-    #places {
-      padding: 0 2rem 8rem;
-      background: var(--deep);
-    }
-    .places-grid {
-      max-width: 1300px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.5rem;
-    }
-    .place-card {
-      position: relative;
-      overflow: hidden;
-      cursor: pointer;
-      background: var(--navy);
-      transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-    }
-    .place-card:hover { transform: translateY(-8px); }
-    .place-card.featured {
-      grid-column: span 2;
-    }
-    .place-card img {
-      width: 100%;
-      height: 320px;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1), filter 0.5s;
-      filter: brightness(0.85) saturate(1.1);
-    }
-    .place-card.featured img { height: 420px; }
-    .place-card:hover img {
-      transform: scale(1.06);
-      filter: brightness(0.75) saturate(1.3);
-    }
-    .place-card-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to top, rgba(10,13,20,0.95) 0%, rgba(10,13,20,0.2) 50%, transparent 100%);
-      transition: opacity 0.4s;
-    }
-    .place-card-body {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      padding: 2rem 1.8rem;
-      transform: translateY(0);
-      transition: transform 0.4s;
-    }
-    .place-cat {
-      font-family: 'Cinzel', serif;
-      font-size: 0.55rem;
-      letter-spacing: 0.3em;
-      text-transform: uppercase;
-      color: var(--teal-light);
-      margin-bottom: 0.5rem;
-    }
-    .place-name {
-      font-family: 'Cinzel', serif;
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: var(--sand);
-      line-height: 1.2;
-      margin-bottom: 0.5rem;
-    }
-    .place-card.featured .place-name { font-size: 1.7rem; }
-    .place-desc {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: rgba(240,230,200,0.65);
-      font-weight: 300;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.5s ease, opacity 0.4s;
-      opacity: 0;
-    }
-    .place-card:hover .place-desc {
-      max-height: 100px;
-      opacity: 1;
-    }
-    .place-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-top: 0.8rem;
-      font-family: 'Cinzel', serif;
-      font-size: 0.6rem;
-      letter-spacing: 0.15em;
-      color: var(--gold);
-      border: 1px solid rgba(201,168,76,0.35);
-      padding: 0.3rem 0.8rem;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.4s 0.1s, transform 0.4s 0.1s;
-    }
-    .place-card:hover .place-tag { opacity: 1; transform: translateY(0); }
-    .gold-dot {
-      width: 5px;
-      height: 5px;
-      background: var(--gold);
-      border-radius: 50%;
-    }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 0.1em;
+    color: white;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .nav-logo span { color: var(--gold); font-weight: 400; }
 
-    /* ─── PANORAMA STRIP ─── */
-    #panorama {
-      position: relative;
-      height: 55vh;
-      min-height: 400px;
-      overflow: hidden;
-    }
-    .panorama-bg {
-      position: absolute;
-      inset: 0;
-      background-image: url('https://images.unsplash.com/photo-1570939274717-7eda259b50ed?w=1800&q=85');
-      background-size: cover;
-      background-position: center 30%;
-      background-attachment: fixed;
-    }
-    .panorama-overlay {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(10,13,20,0.85) 0%, rgba(10,13,20,0.4) 50%, rgba(10,13,20,0.85) 100%);
-    }
-    .panorama-content {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      text-align: center;
-      padding: 2rem;
-    }
-    .panorama-content blockquote {
-      font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(1.5rem, 3.5vw, 2.5rem);
-      font-style: italic;
-      font-weight: 300;
-      color: var(--sand);
-      max-width: 800px;
-      line-height: 1.5;
-    }
-    .panorama-content blockquote span { color: var(--gold); }
-    .panorama-content cite {
-      display: block;
-      font-family: 'Cinzel', serif;
-      font-size: 0.65rem;
-      letter-spacing: 0.25em;
-      color: var(--teal-light);
-      margin-top: 1.5rem;
-      font-style: normal;
-    }
+  .nav-links {
+    display: flex; align-items: center; gap: 2rem;
+    list-style: none;
+  }
+  .nav-links a {
+    font-size: 0.82rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.25s;
+    position: relative;
+  }
+  .nav-links a::after {
+    content: ''; position: absolute; bottom: -4px; left: 0;
+    width: 0; height: 1px; background: var(--gold);
+    transition: width 0.3s ease;
+  }
+  .nav-links a:hover { color: var(--gold); }
+  .nav-links a:hover::after { width: 100%; }
 
-    /* ─── GALLERY ─── */
-    #gallery {
-      background: linear-gradient(180deg, var(--deep) 0%, #060a10 100%);
-      padding: 0 2rem 8rem;
-    }
-    .gallery-grid {
-      max-width: 1300px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(2, 220px);
-      gap: 0.8rem;
-    }
-    .gallery-item {
-      overflow: hidden;
-      position: relative;
-    }
-    .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 2; }
-    .gallery-item:nth-child(5) { grid-column: span 2; }
-    .gallery-item img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.6s cubic-bezier(0.23,1,0.32,1), filter 0.5s;
-      filter: brightness(0.9) saturate(1.1);
-    }
-    .gallery-item:hover img {
-      transform: scale(1.07);
-      filter: brightness(1) saturate(1.3);
-    }
-    .gallery-overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(10,13,20,0.2);
-      transition: background 0.4s;
-    }
-    .gallery-item:hover .gallery-overlay {
-      background: rgba(201,168,76,0.05);
-    }
+  .nav-cta {
+    font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
+    background: var(--gold); color: var(--ink);
+    border: none; padding: 0.6rem 1.5rem; border-radius: 2px;
+    font-family: 'DM Sans', sans-serif; font-weight: 700;
+    cursor: pointer; transition: all 0.25s;
+  }
+  .nav-cta:hover { background: var(--gold-bright); transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212,168,83,0.4); }
 
-    /* ─── TIPS ─── */
-    #tips {
-      background: var(--navy);
-      padding: 7rem 2rem;
-      border-top: 1px solid rgba(201,168,76,0.1);
-    }
-    .tips-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-    }
-    .tips-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 2.5rem;
-      margin-top: 4rem;
-    }
-    .tip-card {
-      padding: 2.5rem;
-      border: 1px solid rgba(201,168,76,0.12);
-      position: relative;
-      transition: border-color 0.3s, transform 0.4s;
-    }
-    .tip-card:hover {
-      border-color: rgba(201,168,76,0.4);
-      transform: translateY(-4px);
-    }
-    .tip-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0;
-      width: 3px; height: 40px;
-      background: var(--gold);
-    }
-    .tip-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1.2rem;
-    }
-    .tip-title {
-      font-family: 'Cinzel', serif;
-      font-size: 1rem;
-      font-weight: 600;
-      color: var(--sand);
-      margin-bottom: 0.8rem;
-    }
-    .tip-text {
-      font-size: 1rem;
-      line-height: 1.75;
-      color: rgba(240,230,200,0.65);
-      font-weight: 300;
-    }
+  .nav-admin-btn {
+    font-size: 0.75rem; letter-spacing: 0.08em;
+    color: var(--text-dim); background: transparent;
+    border: 1px solid var(--ink-5); padding: 0.5rem 1rem;
+    border-radius: 2px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.25s;
+  }
+  .nav-admin-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
 
-    /* ─── FOOTER ─── */
-    footer {
-      background: #05080f;
-      padding: 4rem 2rem;
-      text-align: center;
-      border-top: 1px solid rgba(201,168,76,0.1);
-    }
-    .footer-logo {
-      font-family: 'Cinzel', serif;
-      font-size: 2rem;
-      font-weight: 900;
-      color: var(--gold);
-      margin-bottom: 1rem;
-    }
-    .footer-logo span { color: var(--teal-light); }
-    .footer-tagline {
-      font-size: 1rem;
-      font-style: italic;
-      color: var(--muted);
-      margin-bottom: 2rem;
-    }
-    .footer-divider {
-      width: 60px;
-      height: 1px;
-      background: rgba(201,168,76,0.3);
-      margin: 1.5rem auto;
-    }
-    .footer-copy {
-      font-family: 'Cinzel', serif;
-      font-size: 0.58rem;
-      letter-spacing: 0.2em;
-      color: rgba(154,143,126,0.5);
-      text-transform: uppercase;
-    }
+  /* \u2500\u2500 HAMBURGER (mobile) \u2500\u2500 */
+  .hamburger {
+    display: none; flex-direction: column; gap: 5px;
+    background: none; border: none; cursor: pointer; padding: 4px;
+  }
+  .hamburger span {
+    display: block; width: 24px; height: 1.5px;
+    background: var(--text); transition: all 0.3s;
+  }
 
-    /* ─── SCROLL REVEAL ─── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(40px);
-      transition: opacity 0.8s ease, transform 0.8s ease;
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    .reveal-delay-1 { transition-delay: 0.1s; }
-    .reveal-delay-2 { transition-delay: 0.2s; }
-    .reveal-delay-3 { transition-delay: 0.3s; }
-    .reveal-delay-4 { transition-delay: 0.4s; }
-    .reveal-delay-5 { transition-delay: 0.5s; }
+  /* \u2500\u2500 SECTIONS \u2500\u2500 */
+  section { position: relative; z-index: 1; }
 
-    /* ─── WAVE DIVIDER ─── */
-    .wave-divider {
-      width: 100%;
-      overflow: hidden;
-      line-height: 0;
-    }
-    .wave-divider svg { display: block; }
+  /* \u2500\u2500 HERO \u2500\u2500 */
+  #hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 100px 2rem 4rem;
+    text-align: center;
+    overflow: hidden;
+  }
 
-    /* ─── MOBILE ─── */
-    @media (max-width: 900px) {
-      nav { padding: 1rem 1.5rem; }
-      .nav-links { display: none; }
-      .about-inner { grid-template-columns: 1fr; gap: 2.5rem; }
-      .places-grid { grid-template-columns: 1fr; }
-      .place-card.featured { grid-column: span 1; }
-      .gallery-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
-      .gallery-item:nth-child(1) { grid-column: span 2; grid-row: span 1; }
-      .gallery-item:nth-child(5) { grid-column: span 2; }
-      .tips-grid { grid-template-columns: 1fr; }
-      .stats-row { flex-wrap: wrap; }
-    }
-  </style>
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem; letter-spacing: 0.4em;
+    color: var(--gold); text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0; animation: fadeUp 0.8s ease 2.2s forwards;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(3.5rem, 10vw, 9rem);
+    line-height: 0.92;
+    letter-spacing: 0.04em;
+    color: white;
+    margin-bottom: 2rem;
+    opacity: 0; animation: fadeUp 0.9s ease 2.4s forwards;
+  }
+  .hero-title .accent {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--gold);
+    display: block;
+  }
+
+  .hero-desc {
+    max-width: 560px;
+    font-size: 1.05rem; line-height: 1.75;
+    color: var(--text-dim);
+    margin: 0 auto 2.5rem;
+    opacity: 0; animation: fadeUp 0.9s ease 2.6s forwards;
+  }
+
+  .hero-buttons {
+    display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+    opacity: 0; animation: fadeUp 0.9s ease 2.8s forwards;
+  }
+
+  .btn-primary {
+    background: var(--gold); color: var(--ink);
+    padding: 1rem 2.5rem; border-radius: 2px;
+    font-weight: 700; font-size: 0.9rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    border: none; cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: all 0.3s;
+  }
+  .btn-primary:hover { background: var(--gold-bright); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212,168,83,0.4); }
+
+  .btn-outline {
+    background: transparent; color: var(--text);
+    padding: 1rem 2.5rem; border-radius: 2px;
+    font-weight: 500; font-size: 0.9rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    border: 1px solid var(--ink-5); cursor: pointer;
+    text-decoration: none; display: inline-block;
+    transition: all 0.3s;
+  }
+  .btn-outline:hover { border-color: var(--gold-dim); color: var(--gold); transform: translateY(-2px); }
+
+  .hero-scroll {
+    position: absolute; bottom: 2.5rem; left: 50%;
+    transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+    color: var(--text-dim); font-size: 0.65rem; letter-spacing: 0.2em;
+    text-transform: uppercase; font-family: 'Space Mono', monospace;
+    opacity: 0; animation: fadeUp 1s ease 3.2s forwards;
+  }
+  .scroll-line {
+    width: 1px; height: 40px;
+    background: linear-gradient(to bottom, var(--gold-dim), transparent);
+    animation: scrollPulse 2s ease-in-out infinite 3.5s;
+  }
+  @keyframes scrollPulse {
+    0%, 100% { opacity: 0.4; transform: scaleY(1); }
+    50%       { opacity: 1;   transform: scaleY(1.2); }
+  }
+
+  /* \u2500\u2500 FLOATING NUMBERS \u2500\u2500 */
+  .floating-stat {
+    position: absolute;
+    font-family: 'Bebas Neue', sans-serif;
+    color: rgba(212,168,83,0.04);
+    font-size: 18vw;
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* \u2500\u2500 SECTION HEADER \u2500\u2500 */
+  .sec-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.4em;
+    color: var(--gold); text-transform: uppercase;
+    display: block; margin-bottom: 1rem;
+  }
+  .sec-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.4rem, 5vw, 4.5rem);
+    line-height: 0.95; letter-spacing: 0.03em;
+    color: white;
+  }
+  .sec-divider {
+    width: 60px; height: 2px;
+    background: var(--gold);
+    margin: 1.5rem 0;
+  }
+
+  /* \u2500\u2500 FEATURES \u2500\u2500 */
+  #features {
+    padding: 8rem 2rem;
+    background: var(--ink-2);
+    border-top: 1px solid rgba(212,168,83,0.08);
+    border-bottom: 1px solid rgba(212,168,83,0.08);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: rgba(212,168,83,0.08);
+    border: 1px solid rgba(212,168,83,0.08);
+    margin-top: 4rem;
+  }
+
+  .feature-card {
+    background: var(--ink-2);
+    padding: 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0;
+    width: 100%; height: 2px;
+    background: linear-gradient(90deg, var(--gold), transparent);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+  .feature-card:hover { background: var(--ink-3); }
+  .feature-card:hover::before { transform: scaleX(1); }
+
+  .feature-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3.5rem; line-height: 1;
+    color: rgba(212,168,83,0.08);
+    position: absolute; top: 1rem; right: 1.5rem;
+  }
+
+  .feature-icon {
+    width: 48px; height: 48px;
+    border: 1px solid rgba(212,168,83,0.2);
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 1.5rem;
+    color: var(--gold);
+    transition: all 0.3s;
+  }
+  .feature-card:hover .feature-icon {
+    background: rgba(212,168,83,0.1);
+    border-color: var(--gold);
+  }
+
+  .feature-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem; letter-spacing: 0.05em;
+    color: white; margin-bottom: 0.75rem;
+  }
+
+  .feature-text {
+    font-size: 0.9rem; line-height: 1.7;
+    color: var(--text-dim);
+  }
+
+  /* \u2500\u2500 ABOUT \u2500\u2500 */
+  #about {
+    padding: 8rem 2rem;
+  }
+
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6rem;
+    align-items: center;
+    max-width: 1200px;
+    margin: 4rem auto 0;
+  }
+
+  .about-visual {
+    position: relative;
+    aspect-ratio: 1;
+    max-width: 480px;
+  }
+
+  .about-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(212,168,83,0.15);
+  }
+
+  .about-center {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .about-logo-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem; letter-spacing: 0.1em;
+    color: var(--gold);
+    text-shadow: 0 0 60px rgba(212,168,83,0.5);
+  }
+
+  .about-stats {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1.5rem; margin-top: 2.5rem;
+  }
+
+  .about-stat {
+    padding: 1.5rem;
+    background: var(--ink-3);
+    border: 1px solid var(--ink-5);
+    border-radius: 2px;
+    transition: border-color 0.3s;
+  }
+  .about-stat:hover { border-color: var(--gold-dim); }
+
+  .about-stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem; color: var(--gold);
+    line-height: 1;
+  }
+
+  .about-stat-label {
+    font-size: 0.8rem; color: var(--text-dim);
+    margin-top: 0.25rem; letter-spacing: 0.05em;
+  }
+
+  /* \u2500\u2500 PRICING \u2500\u2500 */
+  #pricing {
+    padding: 8rem 2rem;
+    background: var(--ink-2);
+    border-top: 1px solid rgba(212,168,83,0.08);
+    border-bottom: 1px solid rgba(212,168,83,0.08);
+  }
+
+  .pricing-card {
+    max-width: 900px;
+    margin: 4rem auto 0;
+    background: var(--ink-3);
+    border: 1px solid rgba(212,168,83,0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .pricing-top {
+    padding: 3rem;
+    border-bottom: 1px solid rgba(212,168,83,0.1);
+    display: flex; align-items: flex-start;
+    justify-content: space-between; flex-wrap: wrap; gap: 2rem;
+  }
+
+  .pricing-badge {
+    display: inline-block;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.3em;
+    background: rgba(212,168,83,0.12); color: var(--gold);
+    padding: 0.4rem 1rem; border-radius: 2px;
+    margin-bottom: 1rem; text-transform: uppercase;
+  }
+
+  .pricing-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem; letter-spacing: 0.05em; color: white;
+  }
+
+  .pricing-price {
+    text-align: right;
+  }
+
+  .pricing-amount {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 4rem; line-height: 1; color: var(--gold);
+  }
+
+  .pricing-period {
+    font-size: 0.8rem; color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  .pricing-features-list {
+    padding: 2.5rem 3rem;
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    list-style: none;
+  }
+
+  .pricing-features-list li {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    font-size: 0.9rem; color: var(--text);
+  }
+
+  .pricing-features-list li::before {
+    content: '\u2014'; color: var(--gold);
+    font-family: 'Space Mono', monospace;
+    flex-shrink: 0; margin-top: 1px;
+  }
+
+  .pricing-bottom {
+    padding: 2rem 3rem;
+    border-top: 1px solid rgba(212,168,83,0.1);
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+
+  .pricing-note {
+    font-size: 0.8rem; color: var(--text-dim);
+    max-width: 400px;
+  }
+
+  /* \u2500\u2500 PREORDER \u2500\u2500 */
+  #preorder {
+    padding: 8rem 2rem;
+  }
+
+  .form-wrap {
+    max-width: 700px;
+    margin: 4rem auto 0;
+    background: var(--ink-3);
+    border: 1px solid rgba(212,168,83,0.15);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .form-header {
+    padding: 2.5rem 3rem;
+    border-bottom: 1px solid rgba(212,168,83,0.08);
+    background: rgba(212,168,83,0.03);
+  }
+
+  .form-body { padding: 2.5rem 3rem; }
+
+  .field-group {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1.5rem; margin-bottom: 1.5rem;
+  }
+
+  .field-wrap { display: flex; flex-direction: column; gap: 0.5rem; }
+  .field-wrap.full { grid-column: 1 / -1; }
+
+  .field-label {
+    font-size: 0.75rem; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .field-input {
+    background: var(--ink); border: 1px solid var(--ink-5);
+    color: var(--text); border-radius: 2px;
+    padding: 0.875rem 1rem; font-size: 0.95rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none; transition: all 0.25s; width: 100%;
+  }
+  .field-input:focus { border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(212,168,83,0.08); }
+  .field-input::placeholder { color: var(--ink-5); }
+  .field-input option { background: var(--ink-3); }
+
+  .form-submit {
+    background: var(--gold); color: var(--ink);
+    padding: 1.1rem; width: 100%; border-radius: 2px;
+    font-weight: 700; font-size: 0.9rem;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.3s; margin-top: 0.5rem;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .form-submit:hover { background: var(--gold-bright); box-shadow: 0 4px 30px rgba(212,168,83,0.35); }
+  .form-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .form-security {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.75rem; color: var(--text-dim);
+    margin-top: 1.5rem; justify-content: center;
+  }
+
+  #formError {
+    display: none; padding: 0.875rem 1rem;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 2px; color: #f87171;
+    font-size: 0.85rem; margin-bottom: 1rem;
+  }
+
+  /* \u2500\u2500 SUCCESS \u2500\u2500 */
+  #successContainer {
+    display: none;
+    padding: 4rem 3rem; text-align: center;
+  }
+  .success-icon {
+    width: 72px; height: 72px;
+    border: 2px solid var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 2rem; color: var(--gold);
+    font-size: 1.8rem;
+  }
+  .success-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem; color: white; margin-bottom: 1rem; letter-spacing: 0.05em;
+  }
+  .success-text {
+    color: var(--text-dim); font-size: 1rem; margin-bottom: 2rem;
+  }
+
+  /* \u2500\u2500 FOOTER \u2500\u2500 */
+  footer {
+    background: var(--ink);
+    border-top: 1px solid rgba(212,168,83,0.08);
+    padding: 3rem 2rem;
+    text-align: center;
+    position: relative; z-index: 1;
+  }
+
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem; letter-spacing: 0.1em;
+    color: var(--text-dim); margin-bottom: 1rem;
+  }
+  .footer-logo span { color: var(--gold); }
+
+  .footer-copy {
+    font-size: 0.78rem; color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  /* \u2500\u2500 ADMIN MODAL \u2500\u2500 */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-box {
+    background: var(--ink-3);
+    border: 1px solid rgba(212,168,83,0.2);
+    border-radius: 4px; padding: 2.5rem;
+    max-width: 400px; width: 100%;
+    position: relative;
+  }
+
+  .modal-close {
+    position: absolute; top: 1rem; right: 1rem;
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; padding: 0.25rem; font-size: 1.2rem;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: white; }
+
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem; letter-spacing: 0.05em;
+    color: white; margin-bottom: 0.5rem;
+  }
+
+  .modal-sub {
+    font-size: 0.85rem; color: var(--text-dim); margin-bottom: 2rem;
+  }
+
+  .modal-error {
+    display: none; color: #f87171;
+    font-size: 0.85rem; text-align: center; margin-top: 0.75rem;
+  }
+
+  /* \u2500\u2500 ADMIN PANEL \u2500\u2500 */
+  #view-admin {
+    display: none;
+    min-height: 100vh; padding: 100px 2rem 4rem;
+    max-width: 1200px; margin: 0 auto;
+    position: relative; z-index: 1;
+  }
+
+  .admin-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem; margin-bottom: 2.5rem;
+  }
+
+  .admin-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem; letter-spacing: 0.05em; color: white;
+  }
+
+  .stat-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1rem; margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--ink-3); border: 1px solid var(--ink-5);
+    padding: 1.5rem; border-radius: 2px;
+  }
+
+  .stat-label { font-size: 0.75rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .stat-num { font-family: 'Bebas Neue', sans-serif; font-size: 2.5rem; color: var(--gold); line-height: 1; }
+
+  .admin-table-wrap {
+    background: var(--ink-3);
+    border: 1px solid var(--ink-5);
+    border-radius: 2px; overflow: hidden;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: rgba(212,168,83,0.05); }
+  th {
+    padding: 1rem 1.5rem; text-align: left;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem; letter-spacing: 0.2em;
+    color: var(--text-dim); text-transform: uppercase;
+    border-bottom: 1px solid var(--ink-5);
+  }
+  td {
+    padding: 1rem 1.5rem; font-size: 0.88rem;
+    border-bottom: 1px solid rgba(30,30,30,0.8); color: var(--text);
+  }
+  tr:last-child td { border-bottom: none; }
+  tbody tr { transition: background 0.2s; }
+  tbody tr:hover { background: rgba(212,168,83,0.03); }
+
+  .badge-waiting {
+    display: inline-block;
+    padding: 0.25rem 0.75rem; border-radius: 2px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem; letter-spacing: 0.1em;
+    background: rgba(212,168,83,0.1); color: var(--gold);
+    border: 1px solid rgba(212,168,83,0.2);
+  }
+
+  /* \u2500\u2500 SCROLL REVEAL \u2500\u2500 */
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* \u2500\u2500 DECORATIVE LINE \u2500\u2500 */
+  .deco-line {
+    width: 100%; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(212,168,83,0.2), transparent);
+    margin: 1rem 0;
+  }
+
+  /* \u2500\u2500 RESPONSIVE \u2500\u2500 */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hamburger { display: flex; }
+    .about-grid { grid-template-columns: 1fr; gap: 3rem; }
+    .about-visual { max-width: 280px; margin: 0 auto; }
+    .field-group { grid-template-columns: 1fr; }
+    .pricing-features-list { grid-template-columns: 1fr; }
+    .pricing-top { flex-direction: column; }
+    .pricing-price { text-align: left; }
+    .stat-grid { grid-template-columns: 1fr; }
+    .form-body, .form-header { padding: 1.5rem; }
+    .pricing-top, .pricing-features-list, .pricing-bottom { padding: 1.5rem; }
+  }
+
+  /* \u2500\u2500 MOBILE MENU \u2500\u2500 */
+  #mobile-menu {
+    display: none; position: fixed;
+    top: 72px; left: 0; right: 0; z-index: 99;
+    background: var(--ink-2);
+    border-bottom: 1px solid var(--ink-5);
+    padding: 1.5rem;
+    flex-direction: column; gap: 1rem;
+  }
+  #mobile-menu.open { display: flex; }
+  #mobile-menu a {
+    font-size: 0.9rem; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-dim);
+    text-decoration: none; padding: 0.5rem 0;
+    border-bottom: 1px solid var(--ink-5);
+    transition: color 0.2s;
+  }
+  #mobile-menu a:hover { color: var(--gold); }
+
+  /* Orbit animation */
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(var(--r)) rotate(0deg); }
+    to   { transform: rotate(360deg) translateX(var(--r)) rotate(-360deg); }
+  }
+
+  .orbit-dot {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 6px; height: 6px;
+    margin: -3px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+</style>
 </head>
 <body>
 
-<!-- PARTICLES -->
-<div id="particles"></div>
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-logo" data-text="TUNCER ZEKA">TUNCER ZEKA</div>
+  <div class="loader-line"></div>
+  <div class="loader-sub">Yapay Zeka Platformu \u2014 v3.0</div>
+</div>
 
-<!-- NAV -->
+<!-- BG CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- NAVBAR -->
 <nav id="navbar">
-  <a class="nav-logo" href="#"><span>G</span>azipaşa</a>
-  <div class="nav-links">
-    <a href="#about">Hakkında</a>
-    <a href="#places">Yerler</a>
-    <a href="#gallery">Galeri</a>
-    <a href="#tips">İpuçları</a>
+  <div class="nav-logo" onclick="showHome()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    TUNCER <span>ZEKA</span>
+  </div>
+
+  <ul class="nav-links" id="navLinks">
+    <li><a href="#features">\u00d6zellikler</a></li>
+    <li><a href="#about">Hakk\u0131m\u0131zda</a></li>
+    <li><a href="#pricing">Fiyat</a></li>
+    <li><a href="#preorder">\u0130leti\u015fim</a></li>
+  </ul>
+
+  <div style="display:flex;gap:0.75rem;align-items:center;">
+    <button class="nav-admin-btn" id="navAdminBtn" onclick="openAdminModal()">Y\u00f6netici</button>
+    <a href="#preorder" class="nav-cta" id="navCta">\u00d6n Sipari\u015f</a>
+    <button class="hamburger" id="hamburger" onclick="toggleMobile()">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
 
-<!-- HERO -->
-<section id="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-overlay"></div>
-  <div class="hero-content">
-    <div class="hero-badge">Antalya · Türkiye · Akdeniz</div>
-    <h1 class="hero-title">
-      <span class="line1">Gazipaşa</span>
-      <span class="line2">ahmet tuncer tarafından</span>
-    </h1>
-    <p class="hero-sub">Antik kentler, berrak koylar ve muz bahçelerinin gölgesinde Akdeniz'in dokunulmamış köşesi</p>
-    <div class="hero-scroll">
-      <button class="scroll-btn" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">
-        Keşfet
-        <span class="scroll-line"></span>
-      </button>
-    </div>
-  </div>
-</section>
-
-<!-- ABOUT -->
-<section id="about">
-  <div class="about-inner">
-    <div class="about-img-wrap reveal">
-      <img src="https://images.unsplash.com/photo-1602835026898-e0ef1e55a5a4?w=900&q=85" alt="Gazipaşa sahili" loading="lazy"/>
-    </div>
-    <div class="about-text">
-      <span class="eyebrow reveal">Antalya'nın En Doğu İlçesi</span>
-      <h2 class="reveal reveal-delay-1">Tarihin İzlerini <em>Taşıyan</em> Cennet</h2>
-      <p class="reveal reveal-delay-2">
-        Gazipaşa, Antalya'ya 175 km, Alanya'ya yalnızca 45 km uzaklıkta Akdeniz kıyısında saklı bir ilçedir. 
-        Kalabalık tatil merkezlerinin gürültüsünden uzakta, tarihi M.Ö. 2000'li yıllara uzanan bu kadim topraklar sessizliğiyle büyüler.
-      </p>
-      <p class="reveal reveal-delay-3">
-        Muz bahçeleri, antik kentler, berrak koylar ve sarkıt mağaralarıyla doğa ile tarihin benzersiz biçimde iç içe geçtiği Gazipaşa; 
-        gerçek tatili arayanlar için biçilmiş kaftan.
-      </p>
-      <div class="stats-row">
-        <div class="stat reveal reveal-delay-3">
-          <div class="stat-num">2000+</div>
-          <div class="stat-lbl">Yıllık Tarih</div>
-        </div>
-        <div class="stat reveal reveal-delay-4">
-          <div class="stat-num">8+</div>
-          <div class="stat-lbl">Antik Kent</div>
-        </div>
-        <div class="stat reveal reveal-delay-5">
-          <div class="stat-num">45km</div>
-          <div class="stat-lbl">Alanya'ya Mesafe</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- WAVE -->
-<div class="wave-divider" style="background:#0d1b2a;">
-  <svg viewBox="0 0 1200 80" preserveAspectRatio="none" height="60" xmlns="http://www.w3.org/2000/svg">
-    <path d="M0,40 C200,80 400,0 600,40 C800,80 1000,0 1200,40 L1200,80 L0,80 Z" fill="#0a0d14"/>
-  </svg>
+<!-- MOBILE MENU -->
+<div id="mobile-menu">
+  <a href="#features" onclick="toggleMobile()">\u00d6zellikler</a>
+  <a href="#about" onclick="toggleMobile()">Hakk\u0131m\u0131zda</a>
+  <a href="#pricing" onclick="toggleMobile()">Fiyat</a>
+  <a href="#preorder" onclick="toggleMobile()">\u0130leti\u015fim & \u00d6n Sipari\u015f</a>
 </div>
 
-<!-- PLACES -->
-<section id="places">
-  <div class="section-header">
-    <span class="section-tag reveal">Keşfedilecek Yerler</span>
-    <h2 class="section-title reveal reveal-delay-1">Mutlaka <em>Görmeniz Gereken</em></h2>
-    <div class="section-divider reveal reveal-delay-2"></div>
-  </div>
+<!-- ======== HOME VIEW ======== -->
+<div id="view-home">
 
-  <div class="places-grid">
+  <!-- HERO -->
+  <section id="hero">
+    <div class="floating-stat" style="top:-2%;left:-5%;opacity:0.5;">01</div>
+    <div class="floating-stat" style="bottom:5%;right:-5%;opacity:0.3;">ZK</div>
 
-    <!-- 1 FEATURED -->
-    <div class="place-card featured reveal">
-      <img src="https://share.google/5vEowMppgFktbhOvN" alt="Delik Deniz"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Doğal Güzellik</div>
-        <div class="place-name">Delik Deniz & Kral Koyu</div>
-        <div class="place-desc">Denizin kayalıklara oyduğu tüneller ve turkuaz rengi sularıyla Gazipaşa'nın en fotojenik noktası. Antiochia Ad Cragum antik kentinin kıyısında yer alır.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Muhteşem Manzara</div>
-      </div>
+    <p class="hero-eyebrow">Tasar\u0131mc\u0131: Ahmet Tuncer \u2014 2026</p>
+    <h1 class="hero-title">
+      D\u00fc\u015f\u00fcn.<br>
+      <span class="accent">Konu\u015f.</span>
+      Anla.
+    </h1>
+    <p class="hero-desc">
+      Tuncer Zeka, T\u00fcrk\u00e7e i\u00e7in \u00f6zel geli\u015ftirilmi\u015f \u00e7ok katmanl\u0131 bir yapay zeka platformudur. Anl\u0131k ses tan\u0131ma, derin dil i\u015fleme ve sunucu tabanl\u0131 ak\u0131l y\u00fcr\u00fctme ile bir ad\u0131m \u00f6nde.
+    </p>
+    <div class="hero-buttons">
+      <a href="#preorder" class="btn-primary">\u00d6n Sipari\u015f Ver</a>
+      <a href="#features" class="btn-outline">\u00d6zellikleri G\u00f6r</a>
     </div>
 
-    <!-- 2 -->
-    <div class="place-card reveal reveal-delay-1">
-      <img src="https://share.google/rCqiaroCxsC33drfW"Antik Kent"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Arkeoloji</div>
-        <div class="place-name">Selinus Antik Kenti</div>
-        <div class="place-desc">M.Ö. 6. yüzyıldan kalma liman kenti. Roma İmparatoru Trajan'ın son mekânı.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Tarihi Sit</div>
-      </div>
-    </div>
-
-    <!-- 3 -->
-    <div class="place-card reveal reveal-delay-2">
-      <img src="https://share.google/DYw9ZsvpX4ghLWD8i" alt="Mağara"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Doğa</div>
-        <div class="place-name">Yalan Dünya Mağarası</div>
-        <div class="place-desc">~4 km uzunluğunda, 5 milyon yıllık sarkıt ve dikitlerle dolu gizemli bir dünya.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Serin Kaçış</div>
-      </div>
-    </div>
-
-    <!-- 4 -->
-    <div class="place-card reveal reveal-delay-1">
-      <img src="https://share.google/MrJCs8f48ltAvS9MA"Koru Plajı"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Plaj & Doğa</div>
-        <div class="place-name">Koru Plajı Doğal Havuzlar</div>
-        <div class="place-desc">Kayalıkların arasında oluşan doğal havuzlar — caretta caretta kaplumbağalarının yuvası.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Benzersiz</div>
-      </div>
-    </div>
-
-    <!-- 5 -->
-    <div class="place-card reveal reveal-delay-2">
-      <img src="https://share.google/WzefwmXkw1BGmImQf"Antiochia"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Arkeoloji</div>
-        <div class="place-name">Antiocheia Ad Cragum</div>
-        <div class="place-desc">Roma dönemi mozaikleri ve deniz manzaralı konumuyla nefes kesen bir antik kent.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Mozaik Hazinesi</div>
-      </div>
-    </div>
-
-    <!-- 6 -->
-    <div class="place-card reveal reveal-delay-1">
-      <img 0&q=85" alt="İotape"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Arkeoloji & Deniz</div>
-        <div class="place-name">İotape Antik Kenti</div>
-        <div class="place-desc">Roma İmparatoru'nun eşinin adını taşıyan bu antik kentte kalıntıların hemen yanında denize girebilirsiniz.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Tarih & Deniz</div>
-      </div>
-    </div>
-
-    <!-- 7 -->
-    <div class="place-card reveal reveal-delay-2">
-      <img 00&q=85" alt="Macar Tepesi"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Seyir Terası</div>
-        <div class="place-name">Macar Tepesi</div>
-        <div class="place-desc">Akdeniz'i ve Gazipaşa'yı kuşbakışı izleyebileceğiniz gün batımı noktası.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Panoramik Manzara</div>
-      </div>
-    </div>
-
-    <!-- 8 -->
-    <div class="place-card reveal reveal-delay-3">
-      0&q=85" alt="Muz Bahçeleri"/>
-      <div class="place-card-overlay"></div>
-      <div class="place-card-body">
-        <div class="place-cat">Tarım & Kültür</div>
-        <div class="place-name">Muz Bahçeleri & Muzkent</div>
-        <div class="place-desc">Türkiye'nin muz bahçelerinin kalbi — yeşil seralar ve taze muz aromasıyla dolu eşsiz bir deneyim.</div>
-        <div class="place-tag"><span class="gold-dot"></span> Yöresel Lezzet</div>
-      </div>
-    </div>
-
-  </div>
-</section>
-
-<!-- PANORAMA PARALLAX -->
-<section id="panorama">
-  <div class="panorama-bg"></div>
-  <div class="panorama-overlay"></div>
-  <div class="panorama-content reveal">
-    <blockquote>
-      "Deniz kenarında bakımlı cami ve evler ile <span>yemyeşil dağlara</span> sahiptir."
-    </blockquote>
-    <cite>— Evliya Çelebi, Seyahatname · XVIII. yüzyıl</cite>
-  </div>
-</section>
-
-<!-- GALLERY -->
-<section id="gallery">
-  <div class="section-header">
-    <span class="section-tag reveal">Fotoğraf Galerisi</span>
-    <h2 class="section-title reveal reveal-delay-1">Gazipaşa'nın <em>Renkleri</em></h2>
-    <div class="section-divider reveal reveal-delay-2"></div>
-  </div>
-  <div class="gallery-grid">
-    <div class="gallery-item reveal">
-      <img src="https://images.unsplash.co0&q=85" alt="Akdeniz Kıyısı" loading="lazy"/>
-      <div class="gallery-overlay"></div>
-    </div>
-    <div class="gallery-item reveal reveal-delay-1">
-      <img src="https://images.unsplash.com/photo-15600&q=85" alt="Koy" loading="lazy"/>
-      <div class="gallery-overlay"></div>
-    </div>
-    <div class="gallery-item reveal reveal-delay-2">
-      <img src="https://images.unsplash.com/photo-1590523741600&q=85" alt="Antik" loading="lazy"/>
-      <div class="gallery-overlay"></div>
-    </div>
-    <div class="gallery-item reveal reveal-delay-1">
-      <img src="https://images.unsplash.com/photo-1533105079780-92b9be482077?w=600&q=85" alt="Deniz" loading="lazy"/>
-      <div class="gallery-overlay"></div>
-    </div>
-    <div class="gallery-item reveal reveal-delay-2">
-      <img " alt="Plaj" loading="lazy"/>
-      <div class="gallery-overlay"></div>
-    </div>
-    <div class="gallery-item reveal reveal-delay-3">
-      <img src="Doğa" loading="lazy"/>
-      <div class="gallery-overlay"></div>
-    </div>
-  </div>
-</section>
-
-<!-- TIPS -->
-<section id="tips">
-  <div class="tips-inner">
-    <div class="section-header" style="padding-top:0">
-      <span class="section-tag reveal">Seyahat Rehberi</span>
-      <h2 class="section-title reveal reveal-delay-1">Bilmeniz <em>Gerekenler</em></h2>
-      <div class="section-divider reveal reveal-delay-2"></div>
-    </div>
-    <div class="tips-grid">
-      <div class="tip-card reveal">
-        <div class="tip-icon">✈️</div>
-        <div class="tip-title">Nasıl Gidilir?</div>
-        <div class="tip-text">En yakın havalimanı Gazipaşa–Alanya Havalimanı (GZP). Antalya Havalimanı'ndan yaklaşık 2,5 saatlik sahil yolu keyfi de ayrı bir deneyim sunar.</div>
-      </div>
-      <div class="tip-card reveal reveal-delay-1">
-        <div class="tip-icon">🌞</div>
-        <div class="tip-title">En İyi Zaman</div>
-        <div class="tip-text">Nisan–Haziran ve Eylül–Ekim ayları idealdir. Yaz aylarında sıcaklık 35°C'yi aşabilir; sabah erken saatler antik kentler için en iyi vakittir.</div>
-      </div>
-      <div class="tip-card reveal reveal-delay-2">
-        <div class="tip-icon">🥾</div>
-        <div class="tip-title">Delik Deniz İçin</div>
-        <div class="tip-text">Koya inmek için sarp ve kaygan bir patika bulunur. Sağlam yürüyüş ayakkabısı şart! Alternatif olarak tekne ile de ulaşabilirsiniz.</div>
-      </div>
-      <div class="tip-card reveal reveal-delay-1">
-        <div class="tip-icon">🐢</div>
-        <div class="tip-title">Caretta Caretta</div>
-        <div class="tip-text">Koru Plajı, caretta caretta kaplumbağalarının yuvalama alanıdır. Gece saatlerinde sahilde ateş yakmak ve bağırmaktan kaçının.</div>
-      </div>
-      <div class="tip-card reveal reveal-delay-2">
-        <div class="tip-icon">🍌</div>
-        <div class="tip-title">Yerel Lezzet</div>
-        <div class="tip-text">Gazipaşa muz bahçelerini mutlaka ziyaret edin. Taze muz ve narenciye ürünleri doğrudan çiftçilerden alınabilir — lezzet farkı müthiştir!</div>
-      </div>
-      <div class="tip-card reveal reveal-delay-3">
-        <div class="tip-icon">🏛️</div>
-        <div class="tip-title">Antik Kentler</div>
-        <div class="tip-text">Selinus, Antiocheia Ad Cragum ve İotape antik kentleri aynı güzergâh üzerindedir. Tek bir günde üçünü birden gezebilirsiniz.</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-  <div class="footer-logo"><span>G</span>azipaşa</div>
-  <p class="footer-tagline">Akdeniz'in Gizli Cenneti</p>
-  <div class="footer-divider"></div>
-  <p class="footer-copy">Antalya · Türkiye · Akdeniz Sahili</p>
-</footer>
-
-<script>
-  // ── PARTICLES ──
-  const container = document.getElementById('particles');
-  for (let i = 0; i < 25; i++) {
-    const p = document.createElement('div');
-    p.className = 'particle';
-    const size = Math.random() * 6 + 2;
-    p.style.cssText = `
-      width:${size}px; height:${size}px;
-      left:${Math.random()*100}%;
-      animation-duration:${Math.random()*20+15}s;
-      animation-delay:${Math.random()*15}s;
-    `;
-    container.appendChild(p);
-  }
-
-  // ── NAVBAR SCROLL ──
-  const navbar = document.getElementById('navbar');
-  window.addEventListener('scroll', () => {
-    navbar.classList.toggle('scrolled', window.scrollY > 60);
-  }, { passive: true });
-
-  // ── SCROLL REVEAL ──
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-      }
-    });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
-
-  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-  // ── COUNTER ANIMATION ──
-  function animateCounter(el, target, suffix='') {
-    let current = 0;
-    const step = target / 50;
-    const timer = setInterval(() => {
-      current = Math.min(current + step, target);
-      el.textContent = Math.floor(current) + suffix;
-      if (current >= target) clearInterval(timer);
-    }, 30);
-  }
-
-  const statsObserver = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        const nums = e.target.querySelectorAll('.stat-num');
-        if (nums[0]) animateCounter(nums[0], 2000, '+');
-        if (nums[1]) animateCounter(nums[1], 8, '+');
-        statsObserver.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.5 });
-
-  const statsRow = document.querySelector('.stats-row');
-  if (statsRow) statsObserver.observe(statsRow);
-
-  // ── SMOOTH NAV ACTIVE ──
-  const sections = document.querySelectorAll('section[id]');
-  const navLinks = document.querySelectorAll('.nav-links a');
-  window.addEventListener('scroll', () => {
-    let current = '';
-    sections.forEach(s => {
-      if (window.scrollY >= s.offsetTop - 200) current = s.id;
-    });
-    navLinks.forEach(a => {
-      a.style.color = a.getAttribute('href') === '#' + current
-        ? 'var(--gold)' : '';
-    });
-  }, { passive: true });
-</script>
-</body>
-</html>
+    <div class="hero-scroll">
+      <div class="scroll
