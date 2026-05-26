@@ -1,249 +1,785 @@
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortex | Özür Dileriz</title>
+    <title>Cortex AI - Tuncerlab</title>
+    
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+                    animation: {
+                        'pulse-slow': 'pulseGlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'fade-in-up': 'fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                     },
-                    colors: {
-                        brand: {
-                            500: '#3b82f6', // Mavi
-                            600: '#2563eb',
-                            error: '#ef4444' // Kırmızı (Hata vurgusu)
+                    keyframes: {
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '1', filter: 'drop-shadow(0 0 15px rgba(236, 72, 153, 0.5))' },
+                            '50%': { opacity: '.8', filter: 'drop-shadow(0 0 5px rgba(99, 102, 241, 0.2))' }
+                        },
+                        fadeIn: {
+                            from: { opacity: '0' },
+                            to: { opacity: '1' }
+                        },
+                        fadeInUp: {
+                            from: { opacity: '0', transform: 'translateY(15px)' },
+                            to: { opacity: '1', transform: 'translateY(0)' }
                         }
                     }
                 }
             }
         }
     </script>
+    
+    <!-- İkonlar için Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Google Identity API -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 
     <style>
+        /* İnce Kaydırma Çubuğu */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background-color: #27272a; border-radius: 10px; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        
+        #google-btn-wrapper { min-height: 40px; display: flex; overflow: hidden; border-radius: 12px; }
+
+        /* Birebir Görseldeki Koyu Arayüz Renkleri */
         body {
-            background-color: #0f172a; /* slate-900 */
-            color: #f8fafc;
-            overflow-x: hidden;
+            background-color: #0a0a0c;
         }
 
-        /* Arka plan animasyonları */
-        .bg-animated {
-            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: -2;
+        .chat-area-bg {
+            background: radial-gradient(circle at top right, rgba(168, 85, 247, 0.08), transparent 45%),
+                        radial-gradient(circle at bottom left, rgba(236, 72, 153, 0.05), transparent 40%),
+                        #0a0a0c;
         }
 
-        .blob {
-            position: absolute;
-            filter: blur(80px);
-            z-index: -1;
-            opacity: 0.4;
-            animation: move 10s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .blob-1 {
-            top: 10%;
-            left: 20%;
-            width: 300px;
-            height: 300px;
-            background: #ef4444; /* Hata kırmızımsı */
-            animation-delay: 0s;
-        }
-
-        .blob-2 {
-            bottom: 10%;
-            right: 20%;
-            width: 400px;
-            height: 400px;
-            background: #3b82f6; /* Sistem mavisi */
-            animation-delay: -5s;
-        }
-
-        @keyframes move {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(50px, 50px) scale(1.1); }
-        }
-
-        /* Kart ve içerik animasyonları */
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(59, 130, 246, 0.4);
-            box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3);
-        }
-
-        .fade-in-up {
-            opacity: 0;
-            transform: translateY(30px);
-            animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .delay-1 { animation-delay: 0.2s; }
-        .delay-2 { animation-delay: 0.4s; }
-        .delay-3 { animation-delay: 0.6s; }
-        .delay-4 { animation-delay: 0.8s; }
-
-        /* İkon titreme animasyonu (Hata hissi vermek için) */
-        .glitch-icon {
-            animation: glitch 3s infinite;
-        }
-
-        @keyframes glitch {
-            0%, 95%, 100% { transform: translate(0); color: #ef4444; text-shadow: none; }
-            96% { transform: translate(-2px, 1px); color: #f8fafc; text-shadow: 2px 0 #ef4444, -2px 0 #3b82f6; }
-            97% { transform: translate(2px, -1px); color: #ef4444; }
-            98% { transform: translate(-1px, 2px); color: #f8fafc; text-shadow: -2px 0 #ef4444, 2px 0 #3b82f6; }
-            99% { transform: translate(1px, -2px); color: #ef4444; }
-        }
-
-        /* Dalgalanan çizgi animasyonu */
-        .loader-line {
-            width: 100%;
-            height: 3px;
-            background: rgba(255, 255, 255, 0.1);
-            position: relative;
-            overflow: hidden;
-            border-radius: 3px;
-            margin: 2rem 0;
-        }
-
-        .loader-line::after {
-            content: '';
-            position: absolute;
-            left: -50%;
-            height: 100%;
-            width: 50%;
-            background: linear-gradient(90deg, transparent, #3b82f6, transparent);
-            animation: loading 2s infinite ease-in-out;
-        }
-
-        @keyframes loading {
-            0% { left: -50%; }
-            100% { left: 100%; }
+        /* Glassmorphism ve Neon Efektleri */
+        .neon-border-focus:focus-within {
+            border-color: rgba(236, 72, 153, 0.4);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.1);
         }
     </style>
 </head>
-<body class="antialiased min-h-screen flex flex-col items-center justify-center relative p-4 sm:p-8">
+<body class="text-slate-100 transition-colors duration-300 flex h-screen overflow-hidden font-sans">
 
-    <!-- Dinamik Arka Plan -->
-    <div class="bg-animated"></div>
-    <div class="blob blob-1"></div>
-    <div class="blob blob-2"></div>
+    <!-- MOBİL OVERLAY -->
+    <div id="mobile-overlay" class="fixed inset-0 bg-black/70 z-40 hidden backdrop-blur-sm transition-opacity" onclick="toggleSidebar()"></div>
 
-    <!-- Ana Konteyner -->
-    <main class="max-w-3xl w-full z-10">
+    <!-- YAN MENÜ (SIDEBAR) -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-50 w-72 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col bg-[#0f0f13] border-[#18181c] border-r shadow-2xl md:shadow-none">
         
-        <!-- Üst Bölüm / Logo & İkon -->
-        <div class="text-center mb-8 fade-in-up">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 border border-red-500/30 mb-6">
-                <i class="fa-solid fa-triangle-exclamation text-4xl glitch-icon"></i>
+        <!-- Logo Alanı -->
+        <div class="p-5 flex items-center justify-between border-b border-[#18181c]">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-pink-500 via-purple-500 to-indigo-600 flex items-center justify-center text-white shadow-lg animate-pulse-slow">
+                    <!-- Beyin Logosu (Yenilendi) -->
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                        <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400">Cortex AI</h1>
+                    <p class="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">by Tuncerlab</p>
+                </div>
             </div>
-            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                Cortex Sistem Hatası
-            </h1>
-            <p class="text-xl sm:text-2xl text-slate-400 font-light">
-                Yaşanan gecikme ve aksaklıklar için içtenlikle <span class="text-white font-semibold">özür dileriz.</span>
-            </p>
+            <button class="md:hidden p-2 text-zinc-400 hover:text-white rounded-lg" onclick="toggleSidebar()">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
         </div>
 
-        <div class="loader-line fade-in-up delay-1"></div>
-
-        <!-- Mesaj İçeriği -->
-        <div class="glass-card rounded-2xl p-6 sm:p-10 mb-8 fade-in-up delay-2 shadow-2xl">
-            <h2 class="text-2xl font-semibold mb-4 text-white flex items-center gap-3">
-                <i class="fa-solid fa-server text-brand-500"></i> Durum Güncellemesi
-            </h2>
-            <p class="text-slate-300 leading-relaxed mb-4 text-lg">
-                Değerli kullanıcılarımız,
-            </p>
-            <p class="text-slate-300 leading-relaxed mb-4">
-                Son dönemde Cortex sistem altyapısında meydana gelen beklenmedik teknik arızalar nedeniyle servislerimizde yavaşlamalar ve kesintiler yaşanmıştır. Bu durumun iş akışınızda ve deneyiminizde yarattığı mağduriyetin farkındayız.
-            </p>
-            <p class="text-slate-300 leading-relaxed">
-                Teknik ekiplerimiz, sorunun kök nedenini tespit etmiş olup sistemleri eskisinden daha stabil, hızlı ve güvenli hale getirmek için aralıksız olarak müdahale etmektedir. Gösterdiğiniz sabır ve anlayış için sonsuz teşekkür ederiz.
-            </p>
+        <!-- Yeni Sohbet -->
+        <div class="p-4">
+            <button onclick="createNewChat()" class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#16161f] hover:bg-[#1c1c27] text-zinc-200 hover:text-white border border-[#272732] rounded-xl font-medium transition-all active:scale-95">
+                <i data-lucide="plus" class="w-4 h-4 text-pink-500"></i> Yeni Sinerji Başlat
+            </button>
         </div>
 
-        <!-- İletişim Bölümü -->
-        <div class="fade-in-up delay-3">
-            <h3 class="text-xl font-semibold mb-6 text-center text-slate-200">Destek ve İletişim İçin Bize Ulaşın</h3>
+        <!-- Sohbet Geçmişi -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1 scrollbar-hide" id="chat-history-list">
+            <!-- JS Dolduracak -->
+        </div>
+
+        <!-- Alt Bilgi / Ayarlar -->
+        <div class="p-4 border-t border-[#18181c] space-y-2 bg-[#0c0c10]">
             
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <!-- Telefon Kartı -->
-                <a href="tel:+905076997712" class="glass-card rounded-xl p-6 flex items-center gap-5 group cursor-pointer">
-                    <div class="w-14 h-14 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors duration-300">
-                        <i class="fa-solid fa-phone text-2xl"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-400 mb-1">Telefon</p>
-                        <p class="text-lg font-semibold text-white tracking-wider">0507 699 77 12</p>
-                    </div>
-                </a>
+            <div id="auth-container" class="min-h-[44px] flex flex-col gap-2 w-full justify-center">
+                <!-- Google Login Butonu -->
+            </div>
 
-                <!-- E-posta Kartı -->
-                <a href="mailto:Tuncerlab@gmail.com" class="glass-card rounded-xl p-6 flex items-center gap-5 group cursor-pointer">
-                    <div class="w-14 h-14 rounded-full bg-brand-500/20 flex items-center justify-center text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors duration-300">
-                        <i class="fa-solid fa-envelope text-2xl"></i>
+            <button onclick="openSettings()" class="w-full flex items-center gap-2 px-4 py-2.5 text-xs font-semibold text-zinc-400 hover:text-zinc-200 hover:bg-[#16161f] rounded-xl transition-all border border-transparent hover:border-[#22222a]">
+                <i data-lucide="sliders" class="w-4 h-4 text-purple-500"></i> Sistem Parametreleri
+            </button>
+        </div>
+    </aside>
+
+    <!-- ANA İÇERİK -->
+    <main class="flex-1 flex flex-col min-w-0 relative chat-area-bg">
+        
+        <!-- SOHBET MODU GÖRÜNÜMÜ -->
+        <div id="normal-chat-view" class="flex-1 flex flex-col min-w-0 relative h-full">
+            <!-- Üst Header -->
+            <header class="h-16 flex items-center justify-between px-4 sm:px-6 border-b border-[#18181c]/60 bg-[#0a0a0c]/80 backdrop-blur-md z-10">
+                <div class="flex items-center gap-3">
+                    <button class="md:hidden p-2 -ml-2 text-zinc-400 hover:text-white" onclick="toggleSidebar()">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                    
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center shadow-lg shadow-pink-500/10">
+                            <svg class="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="font-bold text-sm tracking-wide text-zinc-100 flex items-center gap-1.5">
+                                Cortex AI <span class="w-1.5 h-1.5 bg-emerald-500 rounded-full inline-block animate-pulse"></span>
+                            </h2>
+                            <p class="text-[10px] text-zinc-500 font-medium">Sistem aktif ve çevrimiçi</p>
+                        </div>
                     </div>
-                    <div class="overflow-hidden">
-                        <p class="text-sm text-slate-400 mb-1">E-Posta</p>
-                        <p class="text-lg font-semibold text-white truncate">Tuncerlab@gmail.com</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- Sesli Moda Geçiş Butonu (Görseldeki Sağ Ekranı açar) -->
+                    <button onclick="toggleVoiceMode(true)" class="p-2.5 bg-[#16161f] hover:bg-[#1c1c27] text-pink-500 hover:text-pink-400 border border-[#272732] rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-md active:scale-95" title="Sesli İletişim Modu">
+                        <i data-lucide="mic" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Sesli Mod</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- SOHBET ALANI -->
+            <div id="chat-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scrollbar-thin pb-44">
+                <!-- Mesajlar buraya eklenecek -->
+            </div>
+
+            <!-- Normal Sohbet Yazıyor Animasyonu -->
+            <div id="typing-indicator" class="hidden absolute bottom-[100px] left-4 sm:left-6 max-w-3xl w-full mx-auto animate-fade-in z-20">
+                <div class="flex gap-4">
+                    <div class="w-9 h-9 rounded-full shrink-0 bg-gradient-to-br from-[#16161f] to-[#0f0f13] flex items-center justify-center border border-zinc-800 shadow-md">
+                        <svg class="w-4 h-4 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                            <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                        </svg>
                     </div>
-                </a>
+                    <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-[#16161f] border border-zinc-800 shadow-xl flex items-center gap-3">
+                        <img src="https://media.giphy.com/media/xTk9ZvMnbIiIew7IpW/giphy.gif" alt="Yükleniyor..." class="w-6 h-6 object-contain">
+                        <span class="text-xs font-medium text-zinc-400 tracking-wider">Cortex analiz ediyor...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MESAJ YAZMA ALANI -->
+            <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-[#0a0a0c] via-[#0a0a0c]/95 to-transparent z-10">
+                <div class="max-w-4xl mx-auto relative">
+                    <form id="chat-form" class="relative flex items-end gap-2 p-2.5 rounded-3xl border border-[#22222a] neon-border-focus transition-all bg-[#121218]/90 backdrop-blur-md shadow-2xl" onsubmit="handleSend(event)">
+                        <button type="button" class="p-3 shrink-0 rounded-full transition-colors text-zinc-500 hover:text-pink-500 hover:bg-[#1a1a24]" title="Dosya Ekle">
+                            <i data-lucide="plus" class="w-5 h-5"></i>
+                        </button>
+
+                        <textarea id="message-input" placeholder="Mesajınızı yazın..." class="flex-1 max-h-40 min-h-[44px] py-3 px-2 bg-transparent resize-none outline-none text-[15px] text-zinc-100 placeholder-zinc-500" rows="1" onkeydown="handleEnter(event)"></textarea>
+
+                        <!-- Sesli Moda Hızlı Geçiş Mikrafon İkonu -->
+                        <button type="button" onclick="toggleVoiceMode(true)" class="p-3 shrink-0 rounded-full transition-all text-zinc-500 hover:text-purple-400 hover:bg-[#1a1a24]" title="Sesli İletişim">
+                            <i data-lucide="mic" class="w-5 h-5"></i>
+                        </button>
+
+                        <button type="submit" id="send-btn" disabled class="p-3 shrink-0 rounded-full transition-all bg-[#1a1a24] text-zinc-600 cursor-not-allowed">
+                            <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                    <div class="text-center mt-3 text-[10px] text-zinc-600 font-bold tracking-widest uppercase">
+                        Cortex AI • Tuncerlab Güvencesiyle.
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Footer -->
-        <div class="mt-12 text-center text-slate-500 text-sm fade-in-up delay-4 flex items-center justify-center gap-2">
-            <i class="fa-solid fa-shield-check"></i>
-            <span>&copy; 2026 Cortex Sistemleri. Tüm hakları saklıdır. Sistemler kısa süre içinde normale dönecektir.</span>
-        </div>
+        <!-- SESLİ MOD GÖRÜNÜMÜ (GÖRSELDEKİ SAĞ TELEFON EKRANI) -->
+        <div id="voice-chat-view" class="hidden flex-1 flex flex-col items-center justify-between p-6 sm:p-8 h-full bg-[#0a0a0c] z-30 animate-fade-in">
+            <!-- Üst Kontroller -->
+            <div class="w-full flex justify-between items-center max-w-xl">
+                <button onclick="toggleVoiceMode(false)" class="p-3 bg-[#121218] hover:bg-[#1a1a24] border border-[#22222a] text-zinc-400 hover:text-white rounded-2xl transition-all">
+                    <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                </button>
+                <div class="text-center">
+                    <h3 class="text-xs font-bold uppercase tracking-widest text-zinc-500">Sesli Kanal</h3>
+                    <p class="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-400">Cortex Sesli Sinerji</p>
+                </div>
+                <button onclick="toggleVoiceMode(false)" class="p-3 bg-[#121218] hover:bg-[#1a1a24] border border-[#22222a] text-zinc-400 hover:text-white rounded-2xl transition-all">
+                    <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                </button>
+            </div>
 
+            <!-- Orta Bölüm (Belirttiğiniz Trippy Giphy Düşünme Görseli) -->
+            <div class="flex flex-col items-center justify-center space-y-8 my-auto">
+                <div class="relative w-72 h-72 flex items-center justify-center">
+                    <!-- Neon Hale Glow Efekti -->
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-pink-500/20 to-purple-500/20 blur-3xl animate-pulse"></div>
+                    
+                    <!-- İstenen Sesli Düşünme Giphy Dosyası -->
+                    <img id="voice-giphy-indicator" src="https://media.giphy.com/media/RgzryV9nRCMHPVVXPV/giphy.gif" alt="Cortex Sesli Algı" class="w-64 h-64 object-contain rounded-full border border-zinc-800 shadow-2xl relative z-10 transition-transform duration-500 hover:scale-105">
+                </div>
+                <div class="text-center space-y-2 relative z-10">
+                    <p id="voice-status-text" class="text-lg font-semibold tracking-wide text-zinc-100">Dinleniyor...</p>
+                    <p class="text-xs text-zinc-500 max-w-xs mx-auto">Mikrofon butonuna basarak konuşmaya başlayın.</p>
+                </div>
+            </div>
+
+            <!-- Alt Kontrol Paneli -->
+            <div class="w-full flex justify-center items-center gap-6 max-w-xl">
+                <button onclick="resetVoiceChat()" class="p-4 bg-[#121218] hover:bg-[#1a1a24] border border-[#22222a] text-zinc-400 hover:text-white rounded-full transition-all active:scale-95" title="Sıfırla">
+                    <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+                </button>
+
+                <!-- GERÇEK SES TANIMA MİKROFON BUTONU -->
+                <button onclick="toggleVoiceRecording()" class="p-6 bg-gradient-to-tr from-pink-500 to-purple-600 text-white rounded-full shadow-lg shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all duration-300 active:scale-95 flex items-center justify-center" id="voice-mic-button">
+                    <i data-lucide="mic" class="w-8 h-8" id="voice-mic-icon"></i>
+                </button>
+
+                <button onclick="toggleVoiceMode(false)" class="p-4 bg-[#121218] hover:bg-rose-950/20 border border-[#22222a] hover:border-rose-900/40 text-rose-500 rounded-full transition-all active:scale-95" title="Kapat">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
     </main>
 
-    <!-- Etkileşimli arka plan için hafif javascript (Fareyi takip eden pırıltı efekti) -->
+    <!-- AYARLAR MODALI -->
+    <div id="settings-modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="w-full max-w-md p-6 rounded-3xl bg-[#0f0f13] border border-[#22222a] shadow-2xl animate-fade-in-up text-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold flex items-center gap-2"><i data-lucide="sliders" class="text-pink-500 w-5 h-5"></i> Sistem Ayarları</h3>
+                <button onclick="closeSettings()" class="p-2 hover:bg-[#16161f] rounded-full transition-all"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-purple-500"></i> Kimlik Adı</label>
+                    <input type="text" id="username-input" class="w-full p-3.5 rounded-xl border border-[#22222a] bg-[#0c0c10] text-zinc-100 outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/20 transition-all" oninput="state.userName = this.value; saveData();">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center gap-2"><i data-lucide="palette" class="w-4 h-4 text-purple-500"></i> Sistem Teması</label>
+                    <div class="flex gap-2">
+                        <button onclick="setTheme('light')" id="theme-light-btn" class="flex-1 p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 border-[#22222a] text-zinc-400">Açık</button>
+                        <button onclick="setTheme('dark')" id="theme-dark-btn" class="flex-1 p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 border-pink-500 bg-[#16161f] text-pink-400">Koyu</button>
+                    </div>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button onclick="clearAllData()" class="flex-1 p-3.5 text-rose-500 bg-rose-950/10 hover:bg-rose-950/30 rounded-xl font-bold transition-colors flex justify-center items-center gap-2 border border-rose-900/30"><i data-lucide="trash-2" class="w-4 h-4"></i> Belleği Sıfırla</button>
+                    <button onclick="closeSettings()" class="flex-[2] p-3.5 text-white bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 rounded-xl font-bold transition-all flex justify-center items-center gap-2 shadow-lg shadow-pink-500/20"><i data-lucide="check" class="w-5 h-5"></i> Değişiklikleri Uygula</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC (SİSTEM ALTYAPISI BİREBİR KORUNDU) -->
     <script>
-        document.addEventListener('mousemove', (e) => {
-            const blob1 = document.querySelector('.blob-1');
-            const blob2 = document.querySelector('.blob-2');
+        lucide.createIcons();
+
+        // ⚠️ GOOGLE AUTH CLIENT ID BURAYA YAZILACAK ⚠️
+        const GOOGLE_CLIENT_ID = "1086108306224-oaaajektfvmauf2gbrm7dkn5nn8seb1m.apps.googleusercontent.com"; 
+        
+        // SUNUCU ADRESİ
+        const API_BASE = "http://127.0.0.1:5000/api";
+
+        // -- Global State --
+        let state = {
+            chats: [{ id: Date.now(), title: 'Yeni Sinerji', messages: [] }],
+            activeChatId: null,
+            model: 'fast',
+            theme: 'dark', 
+            userName: 'Kullanıcı',
+            userAvatar: null,
+            isLoggedIn: false
+        };
+        state.activeChatId = state.chats[0].id;
+        
+        let isTyping = false;
+
+        // -- DOM Elements --
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sendBtn = document.getElementById('send-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        // -- Local Storage --
+        function saveData() { localStorage.setItem('cortex_v4_state', JSON.stringify(state)); }
+        function loadData() {
+            const saved = localStorage.getItem('cortex_v4_state');
+            if (saved) state = {...state, ...JSON.parse(saved)};
+        }
+        function clearAllData() {
+            if(confirm("Tüm verileriniz silinecek. Onaylıyor musunuz?")) {
+                localStorage.removeItem('cortex_v4_state');
+                location.reload();
+            }
+        }
+
+        // -- Google Identity --
+        function parseJwt(token) {
+            try {
+                return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+            } catch (e) { return null; }
+        }
+
+        function handleGoogleLogin(response) {
+            const payload = parseJwt(response.credential);
+            if (payload) {
+                state.isLoggedIn = true;
+                state.userName = payload.name || 'Kullanıcı';
+                state.userAvatar = payload.picture;
+                
+                document.getElementById('username-input').value = state.userName;
+                saveData(); renderAuthUI(); renderActiveChat();
+            }
+        }
+
+        function renderAuthUI() {
+            const container = document.getElementById('auth-container');
+            if (state.isLoggedIn) {
+                container.innerHTML = `
+                    <div class="flex items-center justify-between px-3 py-2 bg-[#121218] rounded-xl shadow-sm border border-[#22222a]">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <img src="${state.userAvatar}" class="w-8 h-8 rounded-full shadow-sm object-cover bg-zinc-800" onerror="this.src='https://ui-avatars.com/api/?name=${state.userName}&background=ec4899&color=fff'">
+                            <span class="text-xs font-bold text-zinc-300 truncate">${state.userName}</span>
+                        </div>
+                        <button onclick="logout()" class="p-1.5 text-zinc-500 hover:text-rose-500 rounded-lg transition-colors" title="Çıkış Yap">
+                            <i data-lucide="power" class="w-4 h-4"></i>
+                        </button>
+                    </div>`;
+                lucide.createIcons();
+            } else {
+                container.innerHTML = `<div id="google-btn-wrapper" class="w-full flex justify-center"></div>`;
+                if(typeof google !== 'undefined') {
+                    try {
+                        google.accounts.id.renderButton(
+                            document.getElementById("google-btn-wrapper"),
+                            { theme: "filled_black", size: "large", width: 230 }
+                        );
+                    } catch(e) {}
+                }
+            }
+        }
+
+        function logout() { state.isLoggedIn = false; state.userAvatar = null; saveData(); renderAuthUI(); renderActiveChat(); }
+
+        // -- UI Kontrolleri --
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('-translate-x-full');
+            document.getElementById('mobile-overlay').classList.toggle('hidden');
+        }
+
+        function toggleVoiceMode(show) {
+            const chatView = document.getElementById('normal-chat-view');
+            const voiceView = document.getElementById('voice-chat-view');
+            if (show) {
+                chatView.classList.add('hidden');
+                voiceView.classList.remove('hidden');
+            } else {
+                chatView.classList.remove('hidden');
+                voiceView.classList.add('hidden');
+                // Eğer ses dinleniyorsa ve ekranı kapatırsak kaydı durdur
+                if(isRecording && recognition) recognition.stop();
+            }
+        }
+
+        function setTheme(t) {
+            state.theme = t;
+            document.documentElement.className = t;
+            saveData();
             
-            const x = e.clientX / window.innerWidth;
-            const y = e.clientY / window.innerHeight;
-            
-            // Fare hareketine göre hafif paralaks etkisi
-            blob1.style.transform = `translate(${x * 50}px, ${y * 50}px)`;
-            blob2.style.transform = `translate(-${x * 50}px, -${y * 50}px)`;
+            const btnLight = document.getElementById('theme-light-btn');
+            const btnDark = document.getElementById('theme-dark-btn');
+            if (t === 'dark') {
+                btnDark.className = "flex-1 p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 border-pink-500 bg-[#16161f] text-pink-400";
+                btnLight.className = "flex-1 p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 border-[#22222a] text-zinc-500";
+            } else {
+                btnLight.className = "flex-1 p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 border-pink-500 bg-white text-pink-600";
+                btnDark.className = "flex-1 p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 border-[#22222a] text-zinc-500";
+            }
+            if(!state.isLoggedIn) renderAuthUI(); 
+        }
+
+        function openSettings() { document.getElementById('settings-modal').classList.replace('hidden', 'flex'); }
+        function closeSettings() { document.getElementById('settings-modal').classList.replace('flex', 'hidden'); }
+
+        messageInput.addEventListener('input', () => {
+            if (messageInput.value.trim() && !isTyping) {
+                sendBtn.className = "p-3 shrink-0 rounded-full transition-all bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg shadow-pink-500/20 active:scale-95 cursor-pointer";
+                sendBtn.disabled = false;
+            } else {
+                sendBtn.className = "p-3 shrink-0 rounded-full transition-all bg-[#1a1a24] text-zinc-600 cursor-not-allowed";
+                sendBtn.disabled = true;
+            }
+            messageInput.style.height = 'auto';
+            messageInput.style.height = (messageInput.scrollHeight < 120 ? messageInput.scrollHeight : 120) + 'px';
         });
+
+        function handleEnter(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e); } }
+
+        // -- Sohbet Yönetimi --
+        function createNewChat() {
+            const newId = Date.now();
+            state.chats.unshift({ id: newId, title: 'Yeni Sinerji', messages: [] });
+            state.activeChatId = newId;
+            saveData(); renderChatsList(); renderActiveChat();
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        function selectChat(id) {
+            state.activeChatId = id;
+            saveData(); renderChatsList(); renderActiveChat();
+            if (window.innerWidth < 768) toggleSidebar();
+        }
+
+        function renderChatsList() {
+            const list = document.getElementById('chat-history-list');
+            list.innerHTML = `<p class="px-3 text-[10px] font-bold text-zinc-500 mb-2 uppercase tracking-widest">Sinerjiler</p>`;
+            state.chats.forEach(chat => {
+                const isActive = chat.id === state.activeChatId;
+                const classes = isActive ? 'bg-[#16161f] text-pink-400 border border-[#2c2c3a]' : 'text-zinc-400 hover:bg-[#121218] border border-transparent';
+                list.innerHTML += `
+                    <button onclick="selectChat(${chat.id})" class="w-full text-left px-3 py-3 rounded-xl flex items-center gap-3 transition-colors ${classes}">
+                        <i data-lucide="message-square" class="w-4 h-4 shrink-0 opacity-70"></i>
+                        <span class="truncate text-xs font-semibold flex-1 tracking-wide">${chat.title}</span>
+                    </button>`;
+            });
+            lucide.createIcons();
+        }
+
+        function renderActiveChat() {
+            const chat = state.chats.find(c => c.id === state.activeChatId);
+            const userImg = state.isLoggedIn && state.userAvatar ? state.userAvatar : `https://ui-avatars.com/api/?name=${state.userName}&background=ec4899&color=fff`;
+
+            if (!chat || chat.messages.length === 0) {
+                chatContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center max-w-md mx-auto text-center space-y-8 animate-fade-in-up mt-12 pb-24">
+                        <div class="relative">
+                            <div class="absolute inset-0 rounded-full bg-pink-500/20 blur-2xl animate-pulse"></div>
+                            <div class="w-20 h-20 bg-gradient-to-tr from-pink-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl relative z-10">
+                                <svg class="w-10 h-10 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <h2 class="text-2xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-pink-400 via-purple-400 to-indigo-400">Zihnini Cortex ile Genişlet</h2>
+                            <p class="text-zinc-400 text-xs font-semibold tracking-wider max-w-xs mx-auto leading-relaxed">Cortex sinirsel modelleriyle her türlü karmaşık problemi saniyeler içinde çözün.</p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 w-full pt-4">
+                            <button onclick="fillSuggestion('Bana kuantum fiziğini en basit haliyle açıkla.')" class="p-3 text-left rounded-xl bg-[#121218] border border-[#1e1e28] hover:border-pink-500/30 transition-all text-xs">
+                                <span class="block text-pink-400 font-bold mb-1">Bilim</span>
+                                <span class="text-zinc-400">Kuantum Fiziği</span>
+                            </button>
+                            <button onclick="fillSuggestion('JavaScript ile 3D grafikler nasıl oluşturulur?')" class="p-3 text-left rounded-xl bg-[#121218] border border-[#1e1e28] hover:border-purple-500/30 transition-all text-xs">
+                                <span class="block text-purple-400 font-bold mb-1">Yazılım</span>
+                                <span class="text-zinc-400">3D Grafikler</span>
+                            </button>
+                        </div>
+                    </div>`;
+            } else {
+                let html = '<div id="chat-messages-wrapper" class="max-w-3xl mx-auto space-y-6 w-full">';
+                chat.messages.forEach((m, idx) => {
+                    if (m.role === 'user') {
+                        html += `
+                        <div class="flex gap-4 flex-row-reverse animate-fade-in-up">
+                            <div class="w-9 h-9 rounded-full shrink-0 bg-[#16161f] overflow-hidden border border-zinc-800 shadow-md">
+                                <img src="${userImg}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="px-5 py-3.5 rounded-3xl max-w-[85%] bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-600 text-white rounded-tr-none whitespace-pre-wrap break-words text-[14px] shadow-lg shadow-pink-500/10 font-medium leading-relaxed">${m.text}</div>
+                        </div>`;
+                    } else {
+                        const msgId = `msg-${idx}`;
+                        html += `
+                        <div class="flex gap-4 animate-fade-in-up">
+                            <div class="w-9 h-9 rounded-full shrink-0 bg-gradient-to-br from-pink-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-pink-500/20">
+                                <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1 max-w-[85%] space-y-2">
+                                <div class="ai-bubble px-5 py-4 rounded-3xl bg-[#16161f] border border-[#22222a] text-zinc-200 rounded-tl-none whitespace-pre-wrap break-words text-[14px] shadow-xl leading-relaxed font-medium" id="${msgId}-content">${m.text}</div>
+                                
+                                <div class="flex items-center gap-3 pl-2 text-zinc-500 text-xs">
+                                    <button onclick="copyToClipboard('${msgId}-content')" class="hover:text-pink-400 transition-colors" title="Kopyala">
+                                        <i data-lucide="copy" class="w-4 h-4"></i>
+                                    </button>
+                                    <button class="hover:text-purple-400 transition-colors" title="Beğen">
+                                        <i data-lucide="thumbs-up" class="w-4 h-4"></i>
+                                    </button>
+                                    <button class="hover:text-purple-400 transition-colors" title="Seslendir">
+                                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="regenerateLast()" class="hover:text-pink-400 transition-colors" title="Tekrar Oluştur">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+                });
+                html += '</div>';
+                chatContainer.innerHTML = html;
+            }
+            scrollToBottom();
+        }
+
+        function fillSuggestion(text) {
+            messageInput.value = text;
+            messageInput.dispatchEvent(new Event('input'));
+        }
+
+        function scrollToBottom() { 
+            chatContainer.scrollTo({
+                top: chatContainer.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function updateInputState() {
+            messageInput.disabled = false; 
+            messageInput.placeholder = "Cortex'e bir talimat gönder...";
+            messageInput.dispatchEvent(new Event('input')); 
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            const dummy = document.createElement("textarea");
+            document.body.appendChild(dummy);
+            dummy.value = text;
+            dummy.select();
+            document.execCommand("copy");
+            document.body.removeChild(dummy);
+            
+            const alertBox = document.createElement("div");
+            alertBox.className = "fixed bottom-24 right-6 bg-[#16161f] border border-[#22222a] text-pink-400 text-xs font-bold px-4 py-3 rounded-xl z-50 shadow-2xl animate-fade-in";
+            alertBox.innerText = "Sinerji panoya kopyalandı!";
+            document.body.appendChild(alertBox);
+            setTimeout(() => alertBox.remove(), 2000);
+        }
+
+        // -- GERÇEK ZAMANLI SES TANIMA SİSTEMİ (WEB SPEECH API) --
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition = null;
+        let isRecording = false;
+        let finalTranscript = '';
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'tr-TR'; 
+            recognition.interimResults = true; // Söyledikçe ekranda göster
+            recognition.continuous = false;
+
+            recognition.onstart = function() {
+                isRecording = true;
+                finalTranscript = '';
+                document.getElementById('voice-status-text').innerText = "Sizi dinliyorum...";
+                
+                // Kayıt olurken buton tasarımını değiştir
+                const micBtn = document.getElementById('voice-mic-button');
+                micBtn.classList.remove('from-pink-500', 'to-purple-600', 'shadow-pink-500/30');
+                micBtn.classList.add('bg-rose-600', 'animate-pulse', 'shadow-rose-500/50', 'scale-105');
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                // Anlık olarak ekranda göster (görsellik)
+                const displayText = (finalTranscript + interimTranscript).trim();
+                document.getElementById('voice-status-text').innerText = displayText.length > 0 ? displayText : "Sizi dinliyorum...";
+            };
+
+            recognition.onerror = function(event) {
+                console.error("Ses tanıma hatası:", event.error);
+                document.getElementById('voice-status-text').innerText = "Bağlantı hatası: " + event.error;
+                stopRecordingUI();
+            };
+
+            recognition.onend = function() {
+                stopRecordingUI();
+                const textToSend = finalTranscript.trim();
+                
+                if (textToSend.length > 0) {
+                    document.getElementById('voice-status-text').innerText = "Mesaj iletiliyor...";
+                    setTimeout(() => {
+                        // Sesi metne çevirdik, chat moduna dönüp mesajı yollayalım
+                        toggleVoiceMode(false);
+                        messageInput.value = textToSend;
+                        handleSend(new Event('submit'));
+                        finalTranscript = '';
+                    }, 500);
+                } else {
+                    document.getElementById('voice-status-text').innerText = "Ses algılanamadı, mikrofon simgesine tekrar basın.";
+                }
+            };
+        }
+
+        function stopRecordingUI() {
+            isRecording = false;
+            const micBtn = document.getElementById('voice-mic-button');
+            micBtn.classList.remove('bg-rose-600', 'animate-pulse', 'shadow-rose-500/50', 'scale-105');
+            micBtn.classList.add('from-pink-500', 'to-purple-600', 'shadow-pink-500/30');
+        }
+
+        // Butona tıklandığında kaydı başlat/durdur
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                alert("Tarayıcınız ses tanıma özelliğini desteklemiyor. Lütfen Chrome, Edge veya Safari kullanın.");
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    // Zaten çalışıyorsa hatayı yakala
+                }
+            }
+        }
+
+        // Sesli chat ekranında sıfırlama
+        function resetVoiceChat() {
+            if (isRecording) {
+                recognition.stop();
+            }
+            finalTranscript = '';
+            document.getElementById('voice-status-text').innerText = "Bağlantı yenilendi, konuşmaya başlayabilirsiniz.";
+        }
+
+        // -- API GÖNDERME SİSTEMİ (DEĞİŞTİRİLMEDİ) --
+        async function handleSend(e) {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text || isTyping) return;
+
+            const chat = state.chats.find(c => c.id === state.activeChatId);
+            if (chat.messages.length === 0) { chat.title = text.slice(0, 20) + '...'; renderChatsList(); }
+            
+            chat.messages.push({ role: 'user', text: text });
+            messageInput.value = '';
+            messageInput.style.height = 'auto';
+            updateInputState();
+            
+            const aiMsgObj = { role: 'ai', text: '' };
+            chat.messages.push(aiMsgObj);
+            saveData();
+            renderActiveChat();
+            
+            isTyping = true;
+            typingIndicator.classList.remove('hidden');
+            scrollToBottom();
+
+            try {
+                const res = await fetch(`${API_BASE}/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text, model: state.model })
+                });
+
+                if (!res.ok) throw new Error(`HTTP Error: ${res.status}`);
+
+                const data = await res.json();
+                typingIndicator.classList.add('hidden');
+
+                const chatWrapper = document.getElementById('chat-messages-wrapper');
+                const lastMsgElement = chatWrapper.lastElementChild;
+                const aiBubbleElement = lastMsgElement.querySelector('.ai-bubble');
+
+                const responseText = data.response || "Hata: Sunucudan geçersiz veri döndü.";
+                
+                let i = 0;
+                aiMsgObj.text = "";
+                
+                await new Promise(resolve => {
+                    function type() {
+                        const chunkSize = Math.max(1, Math.floor(responseText.length / 50)); 
+                        const chunk = responseText.slice(i, i + chunkSize);
+                        aiMsgObj.text += chunk;
+                        
+                        if (aiBubbleElement) aiBubbleElement.textContent = aiMsgObj.text;
+                        scrollToBottom();
+                        
+                        i += chunkSize;
+                        if (i < responseText.length) {
+                            setTimeout(type, 15);
+                        } else {
+                            aiMsgObj.text = responseText;
+                            if (aiBubbleElement) aiBubbleElement.textContent = responseText;
+                            resolve();
+                        }
+                    }
+                    type();
+                });
+
+                saveData();
+
+            } catch (err) {
+                typingIndicator.classList.add('hidden');
+                aiMsgObj.text = "Cortex sunucusuna ulaşılamıyor.\n\nHata: " + err.message;
+                
+                const chatWrapper = document.getElementById('chat-messages-wrapper');
+                if (chatWrapper) {
+                    const lastMsgElement = chatWrapper.lastElementChild;
+                    const aiBubbleElement = lastMsgElement.querySelector('.ai-bubble');
+                    if (aiBubbleElement) aiBubbleElement.textContent = aiMsgObj.text;
+                }
+                saveData();
+                scrollToBottom();
+            } finally {
+                isTyping = false;
+                typingIndicator.classList.add('hidden');
+                updateInputState();
+                scrollToBottom();
+            }
+        }
+
+        function regenerateLast() {
+            const chat = state.chats.find(c => c.id === state.activeChatId);
+            if (!chat || chat.messages.length < 2) return;
+            chat.messages.pop();
+            const lastUserMsg = chat.messages.pop();
+            messageInput.value = lastUserMsg.text;
+            handleSend(new Event('submit'));
+        }
+
+        // -- INIT --
+        window.onload = () => {
+            loadData();
+            document.getElementById('username-input').value = state.userName;
+            setTheme(state.theme);
+            renderChatsList();
+            renderActiveChat();
+
+            if (typeof google !== 'undefined') {
+                google.accounts.id.initialize({
+                    client_id: GOOGLE_CLIENT_ID,
+                    callback: handleGoogleLogin
+                });
+                renderAuthUI();
+            }
+        };
     </script>
 </body>
 </html>
