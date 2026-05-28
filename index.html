@@ -36,8 +36,8 @@
             Sistemi Başlat (Kamera & VR)
         </button>
         
-        <!-- Video gizli tutulmalı ama DOM'da aktif olmalı -->
-        <video id="webcam" autoplay playsinline style="display:none;"></video>
+        <!-- Video görünmez ama DOM'da aktif olmalı ki MediaPipe çalışsın (Telefonda dondurma sorununun çözümü) -->
+        <video id="webcam" autoplay playsinline style="position: absolute; width: 1px; height: 1px; opacity: 0; z-index: -10;"></video>
         <div id="status-text" class="mt-6 text-sm font-semibold text-yellow-400"></div>
     </div>
 
@@ -118,6 +118,14 @@
             };
         }
 
+        // KAFANIN BAKTIĞI YÖNÜ SUNUCUYA BİLDİRME DÖNGÜSÜ (Baktığın yöne yürüyebilmen için eklendi)
+        let currentYaw = 0;
+        setInterval(() => {
+            if (isConnected && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: 'gaze', yaw: currentYaw }));
+            }
+        }, 50);
+
         // 3. MEDIAPIPE ELLERİ (DOĞRUDAN VR KAMERASINA ENTEGRE)
         function initHandTracking() {
             handsDetector = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
@@ -150,11 +158,10 @@
                     // Avuç içi merkez noktasını al
                     const wrist = landmarks[0];
                     
-                    // Kameraya Göre Yerel Koordinatlar
-                    // MediaPipe X(0,1), Y(0,1) verir. Three.js uzayına çeviriyoruz.
-                    const x = (wrist.x - 0.5) * -1.5; 
-                    const y = -(wrist.y - 0.5) * 1.5; 
-                    const z = -0.5; // Kameranın tam 50cm önünde dursun
+                    // Kameraya Göre Yerel Koordinatlar (Görünürlüğü artırıldı ve 1.2 metre ileri alındı)
+                    const x = (wrist.x - 0.5) * -2.0; 
+                    const y = -(wrist.y - 0.5) * 2.0; 
+                    const z = -1.2; 
 
                     if (label === "Left") {
                         leftHandMesh.position.set(x, y, z);
@@ -187,6 +194,9 @@
                 mainCameraGroup.quaternion.setFromEuler(euler);
                 mainCameraGroup.quaternion.multiply(q1);
                 mainCameraGroup.quaternion.multiply(q0.setFromAxisAngle(zee, -orient));
+                
+                // Yürüme yönü için Yatay (Y) eksenindeki dönüşü kaydet
+                currentYaw = euler.y;
             });
         }
 
@@ -209,9 +219,10 @@
             mainCameraGroup.add(cameraR);
 
             // Kendi Ellerimiz (Gözlüğün önünde kalacak şekilde kameraya ekleniyor!)
-            const handGeo = new THREE.BoxGeometry(0.08, 0.12, 0.08);
-            leftHandMesh = new THREE.Mesh(handGeo, new THREE.MeshStandardMaterial({ color: 0xef4444 })); // Kırmızı Sol El
-            rightHandMesh = new THREE.Mesh(handGeo, new THREE.MeshStandardMaterial({ color: 0x3b82f6 })); // Mavi Sağ El
+            // Karanlıkta bile görünmesi için ışık gerektirmeyen MeshBasicMaterial ve wireframe kullanıldı
+            const handGeo = new THREE.BoxGeometry(0.15, 0.15, 0.15); // Boyutları büyütüldü
+            leftHandMesh = new THREE.Mesh(handGeo, new THREE.MeshBasicMaterial({ color: 0xff4444, wireframe: true })); // Kırmızı Neon
+            rightHandMesh = new THREE.Mesh(handGeo, new THREE.MeshBasicMaterial({ color: 0x4444ff, wireframe: true })); // Mavi Neon
             leftHandMesh.visible = false;
             rightHandMesh.visible = false;
             mainCameraGroup.add(leftHandMesh);
