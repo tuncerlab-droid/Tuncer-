@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -6,64 +7,32 @@
     <title>VR Telefon Kontrolcüsü</title>
     <style>
         body {
-            background-color: #121212;
-            color: #ffffff;
+            background-color: #121212; color: #ffffff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; height: 100vh; margin: 0; overflow: hidden;
         }
         .container {
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            text-align: center;
-            width: 80%;
-            max-width: 400px;
+            background: #1e1e1e; padding: 20px; border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: center;
+            width: 80%; max-width: 400px;
         }
         input[type="text"] {
-            width: 90%;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background: #2d2d2d;
-            color: #fff;
-            font-size: 16px;
-            text-align: center;
+            width: 90%; padding: 10px; margin: 10px 0; border-radius: 6px;
+            border: 1px solid #333; background: #2d2d2d; color: #fff;
+            font-size: 16px; text-align: center;
         }
         button {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 15px 20px;
-            font-size: 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-            font-weight: bold;
+            background: #4CAF50; color: white; border: none; padding: 15px 20px;
+            font-size: 16px; border-radius: 6px; cursor: pointer; width: 100%;
+            margin-top: 10px; font-weight: bold;
         }
         button:active { background: #45a049; }
-        .status {
-            margin-top: 15px;
-            font-size: 14px;
-            color: #aaa;
-        }
+        .status { margin-top: 15px; font-size: 14px; color: #aaa; }
         .debug {
-            margin-top: 15px;
-            font-family: monospace;
-            font-size: 12px;
-            color: #888;
-            text-align: left;
-            background: #111;
-            padding: 10px;
-            border-radius: 6px;
+            margin-top: 15px; font-family: monospace; font-size: 12px;
+            color: #888; text-align: left; background: #111;
+            padding: 10px; border-radius: 6px;
         }
     </style>
 </head>
@@ -71,123 +40,88 @@
 
     <div class="container">
         <h2>VR Kontrol Merkezi</h2>
-        <p>PC IP Adresini Girin:</p>
-        <!-- Buraya PC'nizin IP adresini girin -->
+        <p>PC IP Adresi:</p>
         <input type="text" id="ipInput" value="192.168.10.22">
-        
         <button id="connectBtn" onclick="baslat()">Bağlan ve Sensörleri Aç</button>
-        
         <div class="status" id="statusText">Durum: Bekleniyor...</div>
-        
-        <div class="debug" id="debugInfo">
-            W: False | A: False | S: False | D: False<br>
-            Gyro: Bekleniyor...
-        </div>
+        <div class="debug" id="debugInfo">Sensör verisi bekleniyor...</div>
     </div>
 
     <script>
-        let ws = null;
-        let isConnected = false;
-        
-        // Sensör ve Tuş Durumları
-        let state = {
-            w: false, a: false, s: false, d: false,
-            gyro_x: 0.0, gyro_y: 0.0, gyro_z: 0.0
+        // PC'den bağlandığımızda IP adresini URL'den otomatik çek!
+        window.onload = function() {
+            const hostname = window.location.hostname;
+            if (hostname && hostname !== "" && hostname !== "localhost") {
+                document.getElementById('ipInput').value = hostname;
+            }
         };
 
+        let ws = null;
+        let isConnected = false;
+        let state = { w: false, a: false, s: false, d: false, gyro_x: 0.0, gyro_y: 0.0, gyro_z: 0.0 };
+
         function baslat() {
-            // 1. WebSocket Bağlantısını Kur
             const ip = document.getElementById('ipInput').value;
-            if(ws && ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
+            if(ws && ws.readyState === WebSocket.OPEN) ws.close();
             
-            document.getElementById('statusText').innerText = "Durum: Bağlanılıyor (" + ip + ":5005)...";
+            document.getElementById('statusText').innerText = "Bağlanılıyor (" + ip + ":5005)...";
             document.getElementById('statusText').style.color = "#ffa500";
             
             ws = new WebSocket("ws://" + ip + ":5005");
             
             ws.onopen = function() {
                 isConnected = true;
-                document.getElementById('statusText').innerText = "Durum: Bağlandı! (PC'ye veri gidiyor)";
+                document.getElementById('statusText').innerText = "Bağlandı! (PC'ye veri gidiyor)";
                 document.getElementById('statusText').style.color = "#4CAF50";
-                document.getElementById('connectBtn').innerText = "Bağlantıyı Yenile";
+                
+                // Tam ekran yap (VR için)
+                try { document.documentElement.requestFullscreen(); } catch(e) {}
             };
             
             ws.onclose = function() {
                 isConnected = false;
-                document.getElementById('statusText').innerText = "Durum: Bağlantı Koptu!";
+                document.getElementById('statusText').innerText = "Bağlantı Koptu!";
                 document.getElementById('statusText').style.color = "#f44336";
             };
 
             ws.onerror = function() {
-                document.getElementById('statusText').innerText = "Durum: Bağlantı Hatası!";
+                document.getElementById('statusText').innerText = "Bağlantı Hatası!";
                 document.getElementById('statusText').style.color = "#f44336";
             };
 
-            // 2. Jiroskop (Cihaz Yönelimi) İzinlerini ve Dinleyicisini Başlat
-            // iOS ve bazı yeni Android sürümleri sensörler için kullanıcı tıklaması izni ister.
+            // Sensör İzinleri
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(permissionState => {
-                    if (permissionState === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation);
-                    } else {
-                        alert("Sensör izni reddedildi!");
-                    }
+                    if (permissionState === 'granted') window.addEventListener('deviceorientation', handleOrientation);
+                    else alert("Sensör izni reddedildi!");
                 }).catch(console.error);
             } else {
-                // Normal cihazlar (İzin gerektirmeyen)
                 window.addEventListener('deviceorientation', handleOrientation);
             }
-            
-            // Ekranı tam ekran yapıp uyanık tutmayı dene (Opsiyonel VR deneyimi için)
-            try {
-                document.documentElement.requestFullscreen();
-            } catch(e) {}
         }
 
-        // Jiroskop verilerini oku
         function handleOrientation(event) {
-            // event.beta: Ön-arka eğim [-180, 180]
-            // event.gamma: Sol-sağ eğim [-90, 90]
-            // event.alpha: Pusula yönü [0, 360]
-            
-            if (event.beta !== null && event.gamma !== null) {
-                // MuJoCo dünyasına uyarlamak için değerleri ölçeklendiriyoruz
+            if (event.beta !== null) {
                 state.gyro_x = event.beta;
                 state.gyro_y = event.gamma;
                 state.gyro_z = event.alpha;
             }
         }
 
-        // Klavye tuş basımlarını yakala (Telefona bağlı OTG Klavye için)
-        window.addEventListener("keydown", function(e) {
-            const key = e.key.toLowerCase();
-            if (["w", "a", "s", "d"].includes(key)) {
-                state[key] = true;
-            }
-        });
+        window.addEventListener("keydown", e => { if(["w","a","s","d"].includes(e.key.toLowerCase())) state[e.key.toLowerCase()] = true; });
+        window.addEventListener("keyup", e => { if(["w","a","s","d"].includes(e.key.toLowerCase())) state[e.key.toLowerCase()] = false; });
 
-        window.addEventListener("keyup", function(e) {
-            const key = e.key.toLowerCase();
-            if (["w", "a", "s", "d"].includes(key)) {
-                state[key] = false;
-            }
-        });
-
-        // Verileri PC'ye sürekli (Saniyede 30 defa) gönderen döngü
         setInterval(function() {
-            // Ekrana hata ayıklama bilgisi yazdır
             document.getElementById('debugInfo').innerHTML = 
-                `W: ${state.w} | A: ${state.a} | S: ${state.s} | D: ${state.d}<br>` +
-                `Gyro_X (Beta): ${state.gyro_x.toFixed(2)}<br>` +
-                `Gyro_Y (Gamma): ${state.gyro_y.toFixed(2)}`;
-
-            // Bağlantı varsa PC'ye fırlat
+                `W:${state.w} A:${state.a} S:${state.s} D:${state.d}<br>` +
+                `Gyro X: ${state.gyro_x.toFixed(2)} | Gyro Y: ${state.gyro_y.toFixed(2)}`;
             if (isConnected && ws.readyState === WebSocket.OPEN) {
                 ws.send(JSON.stringify(state));
             }
-        }, 33); // ~30 FPS gönderim
+        }, 33);
     </script>
 </body>
 </html>
+
+
+```
