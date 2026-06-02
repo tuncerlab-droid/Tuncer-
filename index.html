@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VR Evreni - Gelişmiş AI & Sosyal Sosyalleşme Alanı</title>
+    
+    <!-- Google Auth Client ID (Kendi Client ID'nizi buraya yazabilirsiniz) -->
+    <meta name="google-signin-client_id" content="1086108306224-oaaajektfvmauf2gbrm7dkn5nn8seb1m.apps.googleusercontent.com">
+    
+    <!-- Google Identity Services SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
@@ -75,14 +82,6 @@
         .pulse-effect {
             animation: custom-pulse 3s infinite ease-in-out;
         }
-
-        /* Özel yüklenme animasyonu */
-        @keyframes rotate-loader {
-            to { transform: rotate(360deg); }
-        }
-        .spinner {
-            animation: rotate-loader 1s linear infinite;
-        }
     </style>
 </head>
 <body class="aurora-bg text-gray-100 font-sans min-h-screen selection:bg-blue-500 selection:text-white overflow-x-hidden relative">
@@ -112,16 +111,8 @@
 
             <!-- Sağ Taraf (Auth Durumu) -->
             <div id="auth-nav-container" class="flex items-center space-x-4">
-                <button onclick="openGoogleModal()" class="flex items-center space-x-2 px-4 py-2.5 rounded-lg border border-gray-700 bg-gray-900/60 hover:bg-gray-800 text-sm font-semibold text-white transition-all hover:border-gray-600">
-                    <!-- Google SVG Icon -->
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                    </svg>
-                    <span>Google ile Giriş Yap</span>
-                </button>
+                <!-- Dinamik olarak Google Giriş butonu buraya render edilecektir -->
+                <div id="google-btn-navbar"></div>
             </div>
         </div>
     </header>
@@ -151,15 +142,7 @@
             <button onclick="scrollToSimulator()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-white shadow-xl shadow-blue-500/20 transition-all transform hover:-translate-y-0.5">
                 Şimdi Keşfet
             </button>
-            <button onclick="openGoogleModal()" id="hero-auth-btn" class="w-full sm:w-auto flex items-center justify-center space-x-3 px-8 py-4 rounded-xl bg-gray-900/80 border border-gray-700 hover:border-gray-600 hover:bg-gray-800/80 font-bold text-gray-200 transition-all transform hover:-translate-y-0.5">
-                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                </svg>
-                <span>Google ile Hızlı Kaydol</span>
-            </button>
+            <div id="google-btn-hero" class="w-full sm:w-auto flex justify-center"></div>
         </div>
 
         <!-- Hızlı İstatistikler -->
@@ -259,7 +242,7 @@
             <div class="text-center max-w-3xl mx-auto mb-12">
                 <h2 class="font-display font-bold text-3xl md:text-5xl text-white mb-4">Mini VR Evren Lobisi</h2>
                 <p class="text-gray-400">
-                    Aşağıdaki simülatörde avatarınızı yönlendirerek diğer renkli oyuncularla ve merkezdeki Yapay Zeka (AI) yöneticisiyle etkileşime geçebilirsiniz. Giriş yaptığınızda kendi renginizi özelleştirebilirsiniz!
+                    Aşağıdaki simülatörde avatarınızı yönlendirerek diğer renkli oyuncularla ve merkezdeki Yapay Zeka (AI) yöneticisiyle etkileşime geçebilirsiniz. Google hesabınızla giriş yaptığınızda isminiz otomatik güncellenecektir!
                 </p>
             </div>
 
@@ -267,26 +250,27 @@
             <div class="glass-panel p-6 rounded-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
                 <div class="flex items-center space-x-4">
                     <div class="relative">
-                        <div id="user-avatar-indicator" class="w-12 h-12 rounded-xl bg-gray-700 flex items-center justify-center font-bold text-white uppercase text-lg border border-gray-600">
-                            ?
+                        <div id="user-avatar-indicator" class="w-12 h-12 rounded-xl bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-600">
+                            <!-- Profil Resmi veya Harf buraya gelecek -->
+                            <span id="user-avatar-letter" class="font-bold text-white uppercase text-lg">?</span>
                         </div>
                         <span id="user-status-dot" class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-gray-900 rounded-full"></span>
                     </div>
                     <div>
                         <h4 id="user-display-name" class="font-bold text-white">Misafir Kullanıcı</h4>
-                        <p id="user-display-status" class="text-xs text-gray-400">Lütfen Google ile kaydolun/giriş yapın</p>
+                        <p id="user-display-status" class="text-xs text-gray-400">Lütfen yukarıdaki butondan Google ile giriş yapın</p>
                     </div>
                 </div>
 
-                <!-- Özelleştirme Alanı (Sadece giriş yaptıktan sonra aktif/görsel olarak değişecek şekilde) -->
+                <!-- Özelleştirme Alanı (Avatar rengini seçebilme özelliği) -->
                 <div class="flex flex-col items-start md:items-end space-y-2">
                     <span class="text-xs text-gray-400 font-semibold">Aktif Avatar Renginiz:</span>
                     <div class="flex items-center space-x-2">
-                        <button onclick="changeColor('Red', '#EF4444')" class="w-6 h-6 rounded-full bg-red-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Blue', '#3B82F6')" class="w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Green', '#10B981')" class="w-6 h-6 rounded-full bg-green-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Yellow', '#F59E0B')" class="w-6 h-6 rounded-full bg-yellow-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Purple', '#8B5CF6')" class="w-6 h-6 rounded-full bg-purple-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
+                        <button onclick="changeColor('Kırmızı', '#EF4444')" class="w-6 h-6 rounded-full bg-red-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
+                        <button onclick="changeColor('Mavi', '#3B82F6')" class="w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
+                        <button onclick="changeColor('Yeşil', '#10B981')" class="w-6 h-6 rounded-full bg-green-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
+                        <button onclick="changeColor('Sarı', '#F59E0B')" class="w-6 h-6 rounded-full bg-yellow-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
+                        <button onclick="changeColor('Mor', '#8B5CF6')" class="w-6 h-6 rounded-full bg-purple-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
                     </div>
                 </div>
             </div>
@@ -332,7 +316,7 @@
                         </li>
                         <li class="flex items-start space-x-3">
                             <span class="w-6 h-6 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">✓</span>
-                            <span class="text-gray-300 text-sm">Google Kimlik Doğrulama entegrasyonu ile tam güvenlik.</span>
+                            <span class="text-gray-300 text-sm">Gerçek Google OAuth 2.0 kimlik doğrulama protokolü.</span>
                         </li>
                     </ul>
 
@@ -375,100 +359,6 @@
         </div>
     </section>
 
-    <!-- Google Auth Mock Modal -->
-    <div id="googleAuthModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300">
-        <div class="relative max-w-sm w-full bg-white text-gray-900 rounded-2xl shadow-2xl p-6 transform scale-95 transition-transform duration-300" id="googleModalCard">
-            <!-- Modal Kapatma Butonu -->
-            <button onclick="closeGoogleModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-            </button>
-
-            <!-- Google Markalama ve Giriş Ekranı -->
-            <div class="flex flex-col items-center text-center mt-2">
-                <!-- Google Renkli Logo Yazısı -->
-                <div class="flex items-center space-x-1 mb-6 text-xl font-semibold">
-                    <span class="text-blue-600 font-bold">G</span>
-                    <span class="text-red-500 font-bold">o</span>
-                    <span class="text-yellow-500 font-bold">o</span>
-                    <span class="text-blue-600 font-bold">g</span>
-                    <span class="text-green-500 font-bold">l</span>
-                    <span class="text-red-500 font-bold">e</span>
-                </div>
-                
-                <h3 class="text-lg font-bold text-gray-800 mb-1">Hesap Seçin</h3>
-                <p class="text-xs text-gray-500 mb-6">tuncerlab.netlify.app adresine devam etmek için</p>
-
-                <!-- Hesap Listesi -->
-                <div id="google-accounts-list" class="w-full space-y-3 mb-6">
-                    <!-- Hesap 1 -->
-                    <button onclick="simulateAuthSuccess('Ahmet Yılmaz', 'ahmet.yilmaz@gmail.com', 'A')" class="w-full flex items-center justify-between p-3 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all text-left">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                                A
-                            </div>
-                            <div>
-                                <h5 class="text-xs font-bold text-gray-800">Ahmet Yılmaz</h5>
-                                <p class="text-[10px] text-gray-500">ahmet.yilmaz@gmail.com</p>
-                            </div>
-                        </div>
-                        <span class="text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded font-medium">Aktif</span>
-                    </button>
-                    <!-- Hesap 2 -->
-                    <button onclick="simulateAuthSuccess('Elif Demir', 'elif.demir@gmail.com', 'E')" class="w-full flex items-center justify-between p-3 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all text-left">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-9 h-9 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-sm">
-                                E
-                            </div>
-                            <div>
-                                <h5 class="text-xs font-bold text-gray-800">Elif Demir</h5>
-                                <p class="text-[10px] text-gray-500">elif.demir@gmail.com</p>
-                            </div>
-                        </div>
-                    </button>
-                    <!-- Yeni Hesap Ekle -->
-                    <button onclick="showCustomAccountForm()" class="w-full flex items-center space-x-3 p-3 rounded-xl border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all text-left">
-                        <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-sm">
-                            +
-                        </div>
-                        <div>
-                            <h5 class="text-xs font-bold text-gray-700">Başka bir hesap kullan</h5>
-                        </div>
-                    </button>
-                </div>
-
-                <!-- Özel Hesap Formu (Gizli) -->
-                <div id="custom-account-form" class="w-full hidden space-y-4 mb-4 text-left">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Ad Soyad</label>
-                        <input id="custom-name" type="text" placeholder="Adınız Soyadınız" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">E-posta</label>
-                        <input id="custom-email" type="email" placeholder="ornek@gmail.com" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-blue-500">
-                    </div>
-                    <div class="flex space-x-2">
-                        <button onclick="hideCustomAccountForm()" class="w-1/2 py-2 rounded-lg border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-50">Geri Dön</button>
-                        <button onclick="submitCustomAccount()" class="w-1/2 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white shadow-md shadow-blue-500/20">Devam Et</button>
-                    </div>
-                </div>
-
-                <!-- Yükleniyor Durumu (Gizli) -->
-                <div id="auth-loading-state" class="w-full hidden py-8 flex flex-col items-center justify-center">
-                    <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full spinner mb-4"></div>
-                    <p class="text-xs font-bold text-gray-700">Güvenli Kimlik Doğrulaması Yapılıyor...</p>
-                    <p class="text-[10px] text-gray-400 mt-1">Lütfen bekleyin</p>
-                </div>
-
-                <!-- Alt Bilgi -->
-                <div class="border-t border-gray-100 pt-4 w-full text-[10px] text-gray-400 leading-relaxed">
-                    Güvenli giriş, Google Kimlik Hizmetleri tarafından simüle edilmiştir. Gizlilik Politikası ve Hizmet Şartları geçerlidir.
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Minimalist Footer -->
     <footer class="relative z-10 border-t border-gray-900 bg-gray-950 py-12">
         <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -489,106 +379,107 @@
         </div>
     </footer>
 
-    <!-- JavaScript - Tüm Uygulama ve Oyun Döngüsü Logic -->
+    <!-- JavaScript - Tüm Uygulama ve Google Auth Logic -->
     <script>
         // --- KULLANICI / AUTH DURUM YÖNETİMİ ---
         let currentUser = {
             isLoggedIn: false,
             name: "Misafir Kullanıcı",
             email: "",
+            avatarImg: "",
             avatarLetter: "?",
-            color: "#EF4444", // Varsayılan Red
+            color: "#EF4444", // Varsayılan Kırmızı
             colorName: "Kırmızı"
         };
 
-        function openGoogleModal() {
-            const modal = document.getElementById('googleAuthModal');
-            const card = document.getElementById('googleModalCard');
-            modal.classList.remove('opacity-0', 'pointer-events-none');
-            card.classList.remove('scale-95');
-            card.classList.add('scale-100');
-        }
-
-        function closeGoogleModal() {
-            const modal = document.getElementById('googleAuthModal');
-            const card = document.getElementById('googleModalCard');
-            modal.classList.add('opacity-0', 'pointer-events-none');
-            card.classList.remove('scale-100');
-            card.classList.add('scale-95');
-            hideCustomAccountForm();
-        }
-
-        function showCustomAccountForm() {
-            document.getElementById('google-accounts-list').classList.add('hidden');
-            document.getElementById('custom-account-form').classList.remove('hidden');
-        }
-
-        function hideCustomAccountForm() {
-            document.getElementById('google-accounts-list').classList.remove('hidden');
-            document.getElementById('custom-account-form').classList.add('hidden');
-        }
-
-        function submitCustomAccount() {
-            const name = document.getElementById('custom-name').value.trim();
-            const email = document.getElementById('custom-email').value.trim();
+        // Google Auth Initialize İşlemi
+        function handleCredentialResponse(response) {
+            // Google'dan dönen JWT Token'ı çözümlüyoruz
+            const responsePayload = decodeJwtResponse(response.credential);
             
-            if (!name || !email) {
-                alert("Lütfen adınızı ve e-postanızı girin!");
-                return;
-            }
+            currentUser.isLoggedIn = true;
+            currentUser.name = responsePayload.name;
+            currentUser.email = responsePayload.email;
+            currentUser.avatarImg = responsePayload.picture;
+            currentUser.avatarLetter = responsePayload.given_name ? responsePayload.given_name.charAt(0).toUpperCase() : "?";
+
+            updateUIForLoggedInUser();
             
-            const firstLetter = name.charAt(0).toUpperCase();
-            simulateAuthSuccess(name, email, firstLetter);
+            // Simülasyon dünyasındaki oyuncu ismini ve durumunu güncelle
+            myAvatar.name = currentUser.name;
+            myAvatar.isRegistered = true;
+            
+            addLogMessage(`Sisteme başarıyla bağlanıldı: ${currentUser.name}`);
         }
 
-        function simulateAuthSuccess(name, email, letter) {
-            // Hesap seçimleri gizlenip yüklenme simüle ediliyor
-            document.getElementById('google-accounts-list').classList.add('hidden');
-            document.getElementById('custom-account-form').classList.add('hidden');
-            document.getElementById('auth-loading-state').classList.remove('hidden');
+        // JWT token'ı decode eden yardımcı fonksiyon
+        function decodeJwtResponse(token) {
+            let base64Url = token.split('.')[1];
+            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            let jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
 
-            setTimeout(() => {
-                // Durumu Güncelle
-                currentUser.isLoggedIn = true;
-                currentUser.name = name;
-                currentUser.email = email;
-                currentUser.avatarLetter = letter;
-                
-                // Arayüzü Güncelle
-                updateUIForLoggedInUser();
-                
-                // Modalı Kapat
-                closeGoogleModal();
-                
-                // Kullanıcı avatara odaklı simülasyonu tetikleyebiliriz
-                myAvatar.name = name;
-                myAvatar.isRegistered = true;
-                
-                // UI Bilgi Akışı
-                addLogMessage(`Hoş geldiniz ${name}! Artık renk paletinden kendi avatarınızı özelleştirebilirsiniz.`);
-            }, 1800);
+            return JSON.parse(jsonPayload);
+        }
+
+        window.onload = function() {
+            // Google Identity Services'ı başlatıyoruz
+            google.accounts.id.initialize({
+                client_id: "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com", // Burayı kendi Client ID'niz ile güncelleyebilirsiniz
+                callback: handleCredentialResponse
+            });
+
+            // Google One Tap promptunu gösterir (isteğe bağlı)
+            google.accounts.id.prompt();
+
+            // Butonları render et
+            renderGoogleButtons();
+
+            // Simülasyonu başlat
+            renderLoop();
+        };
+
+        function renderGoogleButtons() {
+            // Navbar Butonu
+            google.accounts.id.renderButton(
+                document.getElementById("google-btn-navbar"),
+                { theme: "dark", size: "medium", type: "standard", shape: "pill", text: "signin_with" }
+            );
+
+            // Hero Butonu
+            google.accounts.id.renderButton(
+                document.getElementById("google-btn-hero"),
+                { theme: "dark", size: "large", type: "standard", shape: "rectangular", text: "signup_with", width: "240" }
+            );
         }
 
         function updateUIForLoggedInUser() {
-            // Navbar'ı güncelle
+            // Navbar'ı güncelle (Profil Resmi ve Çıkış Butonu)
             const authContainer = document.getElementById('auth-nav-container');
+            const avatarContent = currentUser.avatarImg 
+                ? `<img src="${currentUser.avatarImg}" class="w-8 h-8 rounded-lg object-cover" alt="Profil">`
+                : `<div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">${currentUser.avatarLetter}</div>`;
+
             authContainer.innerHTML = `
                 <div class="flex items-center space-x-3 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-xl">
-                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                        ${currentUser.avatarLetter}
-                    </div>
+                    ${avatarContent}
                     <div class="hidden sm:block text-left">
                         <h5 class="text-xs font-bold text-white">${currentUser.name}</h5>
-                        <p class="text-[10px] text-gray-500">Giriş yapıldı</p>
+                        <p class="text-[10px] text-gray-500">Bağlantı Kuruldu</p>
                     </div>
                     <button onclick="logout()" class="ml-2 text-xs text-red-400 hover:text-red-300 transition-colors">Çıkış</button>
                 </div>
             `;
 
             // Lobi Kontrol Paneli Görsel Durumunu güncelle
-            document.getElementById('user-avatar-indicator').textContent = currentUser.avatarLetter;
-            document.getElementById('user-avatar-indicator').classList.remove('bg-gray-700');
-            document.getElementById('user-avatar-indicator').style.backgroundColor = currentUser.color;
+            const avatarIndicator = document.getElementById('user-avatar-indicator');
+            if (currentUser.avatarImg) {
+                avatarIndicator.innerHTML = `<img src="${currentUser.avatarImg}" class="w-full h-full object-cover">`;
+            } else {
+                avatarIndicator.innerHTML = `<span id="user-avatar-letter" class="font-bold text-white uppercase text-lg">${currentUser.avatarLetter}</span>`;
+                avatarIndicator.style.backgroundColor = currentUser.color;
+            }
             
             const statusDot = document.getElementById('user-status-dot');
             statusDot.classList.remove('bg-red-500');
@@ -597,70 +488,56 @@
             document.getElementById('user-display-name').textContent = currentUser.name;
             document.getElementById('user-display-status').textContent = `Bağlantı Türü: VR Tarayıcı İstemcisi (${currentUser.colorName})`;
 
-            // Hero Hızlı Butonu Gizle veya Güncelle
-            const heroBtn = document.getElementById('hero-auth-btn');
-            if (heroBtn) {
-                heroBtn.innerHTML = `<span>Düzleme Bağlanıldı</span>`;
-                heroBtn.disabled = true;
-                heroBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            // Hero Hızlı Butonu alanını güncelle (Giriş yapıldığı için gizleyebiliriz veya pasif kılabiliriz)
+            const heroBtnContainer = document.getElementById('google-btn-hero');
+            if (heroBtnContainer) {
+                heroBtnContainer.innerHTML = `
+                    <div class="px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold">
+                        Giriş Yapıldı: Lobiye Geçebilirsiniz
+                    </div>
+                `;
             }
         }
 
         function logout() {
+            // Google Girişini sonlandırıyoruz
+            google.accounts.id.disableAutoSelect();
+            
             currentUser.isLoggedIn = false;
             currentUser.name = "Misafir Kullanıcı";
+            currentUser.avatarImg = "";
             currentUser.avatarLetter = "?";
             
-            // Navbar'ı sıfırla
+            // Navbar'ı ve butonları sıfırla
             const authContainer = document.getElementById('auth-nav-container');
-            authContainer.innerHTML = `
-                <button onclick="openGoogleModal()" class="flex items-center space-x-2 px-4 py-2.5 rounded-lg border border-gray-700 bg-gray-900/60 hover:bg-gray-800 text-sm font-semibold text-white transition-all hover:border-gray-600">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                    </svg>
-                    <span>Google ile Giriş Yap</span>
-                </button>
-            `;
+            authContainer.innerHTML = `<div id="google-btn-navbar"></div>`;
+            
+            const heroBtnContainer = document.getElementById('google-btn-hero');
+            if (heroBtnContainer) {
+                heroBtnContainer.innerHTML = `<div id="google-btn-hero"></div>`;
+            }
+
+            // Google Auth butonlarını tekrar çiz
+            renderGoogleButtons();
 
             // Lobi Kontrol Paneli Sıfırla
-            document.getElementById('user-avatar-indicator').textContent = "?";
-            document.getElementById('user-avatar-indicator').style.backgroundColor = "";
-            document.getElementById('user-avatar-indicator').classList.add('bg-gray-700');
+            const avatarIndicator = document.getElementById('user-avatar-indicator');
+            avatarIndicator.innerHTML = `<span id="user-avatar-letter" class="font-bold text-white uppercase text-lg">?</span>`;
+            avatarIndicator.style.backgroundColor = "";
+            avatarIndicator.classList.add('bg-gray-700');
             
             const statusDot = document.getElementById('user-status-dot');
             statusDot.classList.remove('bg-emerald-500');
             statusDot.classList.add('bg-red-500');
 
             document.getElementById('user-display-name').textContent = "Misafir Kullanıcı";
-            document.getElementById('user-display-status').textContent = "Lütfen Google ile kaydolun/giriş yapın";
+            document.getElementById('user-display-status').textContent = "Lütfen yukarıdaki butondan Google ile giriş yapın";
 
-            // Hero Butonunu sıfırla
-            const heroBtn = document.getElementById('hero-auth-btn');
-            if (heroBtn) {
-                heroBtn.disabled = false;
-                heroBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                heroBtn.innerHTML = `
-                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-                    </svg>
-                    <span>Google ile Hızlı Kaydol</span>
-                `;
-            }
-
-            myAvatar.name = "Misafir";
-            myAvatar.color = "#EF4444"; // default
+            myAvatar.name = "Siz";
+            myAvatar.color = "#EF4444"; // varsayılan kırmızı
             myAvatar.isRegistered = false;
 
-            // Auth yükleme state'lerini sıfırla
-            document.getElementById('google-accounts-list').classList.remove('hidden');
-            document.getElementById('custom-account-form').classList.add('hidden');
-            document.getElementById('auth-loading-state').classList.add('hidden');
+            addLogMessage("Sistem oturumu kapatıldı. Misafir moduna geçildi.");
         }
 
         function changeColor(colorName, colorHex) {
@@ -668,11 +545,14 @@
             currentUser.colorName = colorName;
             
             if (currentUser.isLoggedIn) {
-                document.getElementById('user-avatar-indicator').style.backgroundColor = colorHex;
+                const avatarIndicator = document.getElementById('user-avatar-indicator');
+                if (!currentUser.avatarImg) {
+                    avatarIndicator.style.backgroundColor = colorHex;
+                }
                 document.getElementById('user-display-status').textContent = `Bağlantı Türü: VR Tarayıcı İstemcisi (${colorName})`;
             }
             
-            // Simülasyondaki rengi güncelle
+            // Simülasyondaki karakterimizin rengini güncelle
             myAvatar.color = colorHex;
             addLogMessage(`Karakter renginiz ${colorName} olarak değiştirildi!`);
         }
@@ -696,14 +576,10 @@
         resizeCanvas();
 
         // 3D Düzlem Çizimi İçin Perspektif Dönüşüm Fonksiyonu (Dama Tahtası Zemin)
-        // Kamera yüksekliği, bakış açısı vb. simüle ediliyor
         function to3D(x, y) {
-            // x: -0.5 ile 0.5 arası lobi koordinatları
-            // y: 0 (yakın) ile 1 (uzak) arası derinlik
             const horizon = canvas.height * 0.35; // Ufuk çizgisi
             const scaleY = canvas.height * 0.65;
-            
-            const perspective = 1 / (1 + y * 2.5); // Derinleştikçe daralma katsayısı
+            const perspective = 1 / (1 + y * 2.5); // Derinleştikçe daralma
             
             const screenX = canvas.width / 2 + x * canvas.width * 1.5 * perspective;
             const screenY = horizon + y * scaleY * perspective;
@@ -711,13 +587,11 @@
             return { x: screenX, y: screenY, scale: perspective };
         }
 
-        // Tıklanan ekran koordinatını 3D zemin alanına geri eşleme (Sadece yaklaşık bir yaklaşım)
         function to2D(screenX, screenY) {
             const horizon = canvas.height * 0.35;
             const scaleY = canvas.height * 0.65;
             
             const relativeY = (screenY - horizon) / scaleY;
-            // Perspektif ters denklemi
             const y = relativeY / (1 - relativeY * 2.5);
             const perspective = 1 / (1 + y * 2.5);
             const x = (screenX - canvas.width / 2) / (canvas.width * 1.5 * perspective);
@@ -725,7 +599,7 @@
             return { x: Math.max(-0.5, Math.min(0.5, x)), y: Math.max(0.1, Math.min(0.95, y)) };
         }
 
-        // Log mesaj kutusu için geçici bir mekanizma
+        // Telsiz Akış Log Mekanizması
         let logs = ["Hoş geldiniz! VR Evreni simülatörü başlatıldı.", "Merkezdeki Yapay Zeka (AI) yönetici asistanıdır."];
         function addLogMessage(msg) {
             logs.push(msg);
@@ -735,8 +609,8 @@
         // Avatar Sınıfı Tanımı
         class Avatar {
             constructor(x, y, color, name, isAI = false) {
-                this.x = x; // 2D Lobi X (-0.5 / 0.5)
-                this.y = y; // 2D Lobi Y (0.1 / 0.95)
+                this.x = x; 
+                this.y = y; 
                 this.targetX = x;
                 this.targetY = y;
                 this.color = color;
@@ -744,7 +618,6 @@
                 this.isAI = isAI;
                 this.speed = isAI ? 0.005 : 0.02;
                 
-                // Konuşma Baloncuğu Kontrolleri
                 this.bubbleText = "";
                 this.bubbleTimer = 0;
             }
@@ -755,7 +628,6 @@
             }
 
             update() {
-                // Hedefe doğru yürüme animasyonu
                 const dx = this.targetX - this.x;
                 const dy = this.targetY - this.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
@@ -775,9 +647,8 @@
                     }
                 }
 
-                // AI Karakterlerin rastgele dolaşması
+                // Yapay zeka oyuncuların rastgele gezinmesi
                 if (this.isAI && Math.random() < 0.005) {
-                    // Merkezdeki ana AI hariç diğerleri dolaşabilir
                     if (this.name !== "AI Yönetici") {
                         this.targetX = -0.4 + Math.random() * 0.8;
                         this.targetY = 0.2 + Math.random() * 0.7;
@@ -787,7 +658,7 @@
 
             draw() {
                 const pos = to3D(this.x, this.y);
-                const size = 22 * pos.scale; // Perspektife göre boyut
+                const size = 22 * pos.scale; 
 
                 // Gölge Çizimi
                 ctx.beginPath();
@@ -795,12 +666,11 @@
                 ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
                 ctx.fill();
 
-                // Çöp adam benzeri/mannequin (görselinizdeki robotik avatar tasarımı)
+                // Çöp adam benzeri/mannequin (görseldeki robotik tasarım)
                 ctx.strokeStyle = this.color;
                 ctx.lineWidth = 4 * pos.scale;
                 ctx.lineCap = "round";
 
-                // Gövde / Bacaklar / Kollar
                 // Kafa
                 ctx.beginPath();
                 ctx.arc(pos.x, pos.y, size * 0.5, 0, Math.PI * 2);
@@ -809,32 +679,26 @@
                 ctx.strokeStyle = "rgba(255,255,255,0.2)";
                 ctx.stroke();
 
-                // Omurga / Boyun
+                // Omurga
                 ctx.beginPath();
                 ctx.moveTo(pos.x, pos.y + size * 0.5);
                 ctx.lineTo(pos.x, pos.y + size * 1.4);
-                ctx.strokeStyle = this.color;
                 ctx.stroke();
 
-                // Kollar (Robotik boğumlu yapı hissi)
+                // Kollar
                 ctx.beginPath();
-                // Sol Kol
                 ctx.moveTo(pos.x, pos.y + size * 0.7);
                 ctx.lineTo(pos.x - size * 0.8, pos.y + size * 1.0);
-                // Sağ Kol
                 ctx.moveTo(pos.x, pos.y + size * 0.7);
                 ctx.lineTo(pos.x + size * 0.8, pos.y + size * 1.0);
                 ctx.stroke();
 
                 // Bacaklar
                 ctx.beginPath();
-                // Sol Bacak
                 ctx.moveTo(pos.x, pos.y + size * 1.4);
                 ctx.lineTo(pos.x - size * 0.5, pos.y + size * 2.2);
-                // Sağ Bacak (Görselinizdeki gibi havada kıvrık bir duruş simüle edilebilir)
                 ctx.moveTo(pos.x, pos.y + size * 1.4);
                 if (Math.abs(this.targetX - this.x) > 0.01) {
-                    // Hareket ediyorsa koşma efekti
                     ctx.lineTo(pos.x + size * 0.4, pos.y + size * 1.8);
                     ctx.lineTo(pos.x + size * 0.2, pos.y + size * 2.3);
                 } else {
@@ -842,20 +706,20 @@
                 }
                 ctx.stroke();
 
-                // Elinde Taşıdığı Küre (Görselinizdeki mavi küreyi tutan kırmızı adam gibi!)
-                if (this.name === "Kırmızı Oyuncu" || (this.isRegistered && this.color === "#EF4444")) {
+                // Mavi Küre Taşıma (Kırmızı oyuncu veya kırmızı seçili karakter için)
+                if (this.name === "Kırmızı Oyuncu" || (this.name === currentUser.name && this.color === "#EF4444") || (this.name === "Siz" && this.color === "#EF4444")) {
                     ctx.beginPath();
                     ctx.arc(pos.x - size * 0.2, pos.y + size * 0.9, size * 0.4, 0, Math.PI * 2);
-                    ctx.fillStyle = "#3B82F6"; // Parlak Mavi Küre
+                    ctx.fillStyle = "#3B82F6"; 
                     ctx.fill();
                     ctx.shadowBlur = 10;
                     ctx.shadowColor = "#3B82F6";
                     ctx.strokeStyle = "rgba(255,255,255,0.4)";
                     ctx.stroke();
-                    ctx.shadowBlur = 0; // Sıfırla
+                    ctx.shadowBlur = 0; 
                 }
 
-                // İsim Etiketi Çizimi
+                // İsim Etiketi
                 ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
                 ctx.font = `${Math.max(10, 12 * pos.scale)}px 'Plus Jakarta Sans', sans-serif`;
                 ctx.textAlign = "center";
@@ -874,7 +738,6 @@
                 const width = textWidth + padding * 2;
                 const height = 28 * scale;
                 
-                // Baloncuk Arka Planı
                 ctx.fillStyle = "rgba(22, 31, 48, 0.95)";
                 ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
                 ctx.lineWidth = 1;
@@ -884,7 +747,6 @@
                 ctx.fill();
                 ctx.stroke();
                 
-                // Baloncuk Kuyruğu
                 ctx.beginPath();
                 ctx.moveTo(x - 6, y);
                 ctx.lineTo(x, y + 6);
@@ -893,7 +755,6 @@
                 ctx.fillStyle = "rgba(22, 31, 48, 0.95)";
                 ctx.fill();
                 
-                // Metin
                 ctx.fillStyle = "#FFFFFF";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
@@ -901,20 +762,18 @@
             }
         }
 
-        // Katılımcıların Oluşturulması
+        // Katılımcıların Tanımlanması
         const avatars = [];
         
-        // 1. Merkezdeki AI Yönetici (Karar Merci ve Ortak İletişim Noktası)
-        // Pozisyonu tam orta-derinlikte sabit
+        // 1. Yapay Zeka Lobi Yöneticisi
         const aiAdmin = new Avatar(0, 0.5, "#E9D5FF", "AI Yönetici", true);
         avatars.push(aiAdmin);
 
-        // 2. Kullanıcı Avatarı (Misafir olarak başlar)
+        // 2. Kendi Karakterimiz
         const myAvatar = new Avatar(-0.25, 0.75, "#EF4444", "Siz", false);
-        myAvatar.isRegistered = false;
         avatars.push(myAvatar);
 
-        // 3. Diğer 4 Farklı Renkteki Oyuncular (Görselinizdeki gibi)
+        // 3. Diğer Lobi Oyuncuları
         const bluePlayer = new Avatar(-0.35, 0.45, "#3B82F6", "Mavi Oyuncu", true);
         const greenPlayer = new Avatar(0.3, 0.5, "#10B981", "Yeşil Oyuncu", true);
         const yellowPlayer = new Avatar(0.15, 0.75, "#F59E0B", "Sarı Oyuncu", true);
@@ -922,28 +781,25 @@
 
         avatars.push(bluePlayer, greenPlayer, yellowPlayer, purplePlayer);
 
-        // İlk Konuşma Tetiklemeleri
+        // İlk Konuşma Akışı
         setTimeout(() => aiAdmin.say("VR Evrenine hoş geldiniz! Sormak istediğiniz bir şey var mı?"), 1000);
         setTimeout(() => bluePlayer.say("Merhabalar!"), 3000);
         setTimeout(() => yellowPlayer.say("Sesim net geliyor mu arkadaşlar?"), 6000);
 
-        // Kullanıcı Tıklama Dinleyicisi (Yürüme)
+        // Yürüme için tıklama olayı
         canvas.addEventListener('click', (e) => {
             const rect = canvas.getBoundingClientRect();
             const clickX = e.clientX - rect.left;
             const clickY = e.clientY - rect.top;
 
-            // 3D Alana eşle
             const gamePos = to2D(clickX, clickY);
             
-            // Kullanıcıyı o hedefe yönlendir
             myAvatar.targetX = gamePos.x;
             myAvatar.targetY = gamePos.y;
 
-            // Rastgele eğlenceli bir lobi konuşması yap
             if (!currentUser.isLoggedIn) {
                 if (Math.random() < 0.4) {
-                    myAvatar.say("Google ile giriş yapıp ismimi değiştireceğim!");
+                    myAvatar.say("Google ile giriş yapıp lobi ismimi güncelleyeceğim!");
                 }
             } else {
                 if (Math.random() < 0.3) {
@@ -952,7 +808,6 @@
                 }
             }
 
-            // AI'ye yaklaşıldıysa AI cevap versin
             const distToAI = Math.sqrt(Math.pow(myAvatar.targetX - aiAdmin.x, 2) + Math.pow(myAvatar.targetY - aiAdmin.y, 2));
             if (distToAI < 0.15) {
                 setTimeout(() => {
@@ -967,14 +822,12 @@
             }
         });
 
-        // --- ANA OYUN / RENDERING DÖNGÜSÜ ---
+        // --- RENDER DÖNGÜSÜ ---
         function renderLoop() {
-            // Arka Plan Temizleme (Hafif degrade)
             ctx.fillStyle = "#0B0F19";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dama Tahtası Zemin Çizimi (3D Perspektifli)
-            // Satır satır, derinlik sırasıyla (Arkadan öne doğru çizilmeli)
+            // Dama Tahtası Zemin Çizimi
             const rows = 18;
             const cols = 18;
             for (let r = rows - 1; r >= 0; r--) {
@@ -985,13 +838,11 @@
                     const x1 = -0.5 + (c / cols);
                     const x2 = -0.5 + ((c + 1) / cols);
 
-                    // Köşeleri 3D'ye dönüştür
                     const p1 = to3D(x1, y1);
                     const p2 = to3D(x2, y1);
                     const p3 = to3D(x2, y2);
                     const p4 = to3D(x1, y2);
 
-                    // Renk Belirleme (Dama Tahtası Desen)
                     const isEven = (r + c) % 2 === 0;
                     ctx.fillStyle = isEven ? "#1E293B" : "#0F172A";
 
@@ -1003,14 +854,13 @@
                     ctx.closePath();
                     ctx.fill();
 
-                    // Hafif grid sınır çizgileri
                     ctx.strokeStyle = "rgba(255, 255, 255, 0.015)";
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 }
             }
 
-            // Ufuk Çizgisinde Hafif Parlama Efekti (Aurora / Sis)
+            // Ufuk Çizgisinde Hafif Parlama Efekti
             const horizonY = canvas.height * 0.35;
             const gradient = ctx.createLinearGradient(0, horizonY - 40, 0, horizonY + 20);
             gradient.addColorStop(0, "rgba(59, 130, 246, 0)");
@@ -1019,16 +869,16 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, horizonY - 40, canvas.width, 60);
 
-            // Avatarları Y Derinliğine göre Sırala (Y-Sorting) ki arkadaki öndekinin arkasında kalsın
+            // Avatarları Y Derinliğine göre Sırala (Y-Sorting)
             avatars.sort((a, b) => a.y - b.y);
 
-            // Tüm Avatarları Güncelle ve Çiz
+            // Tüm Avatarları Çiz
             avatars.forEach(av => {
                 av.update();
                 av.draw();
             });
 
-            // Log / Bilgi Konsolu Çizimi (Sol Alt Köşe)
+            // Telsiz Akış Log Penceresi
             ctx.fillStyle = "rgba(11, 15, 25, 0.85)";
             ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
             ctx.beginPath();
@@ -1049,12 +899,6 @@
 
             requestAnimationFrame(renderLoop);
         }
-
-        // Oyun Döngüsünü Başlat
-        window.onload = function() {
-            renderLoop();
-        };
-
     </script>
 </body>
 </html>
