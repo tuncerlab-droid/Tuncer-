@@ -1,114 +1,902 @@
-```html
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>HoloVR Hands</title>
-    <style>
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #020205; font-family: sans-serif; color: #fff; user-select: none; }
-        #canvas-container { width: 100%; height: 100%; display: block; }
-        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; background: radial-gradient(circle, #0f172a 0%, #020205 100%); z-index: 100; text-align: center; padding: 20px; box-sizing: border-box; }
-        h1 { color: #00f0ff; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 15px rgba(0, 240, 255, 0.6); }
-        .btn-group { display: flex; flex-direction: column; gap: 15px; width: 100%; max-width: 300px; }
-        .btn { background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%); border: none; color: #020205; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 30px; cursor: pointer; text-transform: uppercase; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Tuncer VR Hand Lab</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #000;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+  #glCanvas {
+    display: block;
+    width: 100vw; height: 100vh;
+    position: fixed; top: 0; left: 0;
+  }
+  #video {
+    visibility: hidden;
+    position: fixed;
+    width: 1px; height: 1px;
+    pointer-events: none;
+  }
+  /* ── CARDBOARD DIVIDER ── */
+  #sep {
+    position: fixed;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 5px; height: 100%;
+    background: #000;
+    z-index: 10;
+    pointer-events: none;
+  }
+  /* ── HUD ── */
+  .hud-panel {
+    position: fixed;
+    font-family: 'Courier New', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.12em;
+    color: #00ff88;
+    z-index: 20;
+    pointer-events: none;
+    text-transform: uppercase;
+    line-height: 1.6;
+    opacity: 0.8;
+  }
+  #hudL { top: 10px; left: 12px; display: none; }
+  #hudR { top: 10px; left: calc(50% + 12px); display: none; }
+  .hud-label { color: #336644; font-size: 0.5rem; }
+  /* ── GRAB STRIP ── */
+  .grab-strip {
+    position: fixed;
+    bottom: 14px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: #224433;
+    z-index: 20;
+    pointer-events: none;
+    transition: color 0.15s;
+    display: none;
+  }
+  #gL { left: 10%; }
+  #gR { left: 60%; }
+  .grab-strip.on { color: #00ff88; }
+  /* ── SPLASH SCREEN ── */
+  #splash {
+    position: fixed; inset: 0;
+    background: #000;
+    z-index: 100;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    padding: 24px;
+  }
+  .s-logo {
+    font-family: 'Courier New', monospace;
+    font-size: clamp(1.8rem, 7vw, 3.2rem);
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.18em;
+    text-align: center;
+    line-height: 1.0;
+  }
+  .s-logo em { color: #00ff88; font-style: normal; }
+  .s-tag {
+    margin-top: 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.55rem;
+    color: #336644;
+    letter-spacing: 0.35em;
+  }
+  .s-line {
+    width: 80px; height: 1px;
+    background: linear-gradient(90deg, transparent, #00ff88, transparent);
+    margin: 20px 0;
+  }
+  .s-tips {
+    display: flex; flex-direction: column;
+    gap: 9px; max-width: 290px;
+  }
+  .s-tip {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem; color: #556655; line-height: 1.4;
+  }
+  .s-tip-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+  .s-tip strong { color: #99ccaa; }
+  .s-btn {
+    margin-top: 26px;
+    padding: 13px 46px;
+    background: transparent;
+    border: 1px solid #00ff88;
+    color: #00ff88;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    font-weight: bold;
+    letter-spacing: 0.28em;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .s-btn:hover, .s-btn:active { background: #00ff88; color: #000; }
+  /* ── STATUS BAR ── */
+  #statusBar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: #00ff8833;
+    z-index: 30;
+    display: none;
+  }
+  #statusBar::after {
+    content: '';
+    position: absolute; left: 0; top: 0;
+    height: 100%; width: 40%;
+    background: #00ff88;
+    animation: scanBar 2s linear infinite;
+  }
+  @keyframes scanBar { 0%{left:-40%} 100%{left:100%} }
+  /* ── SCORE ── */
+  #scoreL, #scoreR {
+    position: fixed;
+    font-family: 'Courier New', monospace;
+    font-size: 0.62rem;
+    color: #ffcc44;
+    letter-spacing: 0.15em;
+    z-index: 20;
+    pointer-events: none;
+    display: none;
+    bottom: 14px;
+  }
+  #scoreL { left: 10%; }
+  #scoreR { left: 60%; }
+</style>
 </head>
 <body>
 
-    <div id="ui-overlay">
-        <h1>HOLO-HANDS VR</h1>
-        <div class="btn-group">
-            <button class="btn" id="btn-vr-start">VR MODUNU BAŞLAT</button>
-            <button class="btn" id="btn-normal-start">NORMAL MOD</button>
-        </div>
+<canvas id="glCanvas"></canvas>
+<video id="video" autoplay playsinline muted></video>
+<div id="sep"></div>
+<div id="statusBar"></div>
+
+<div class="hud-panel" id="hudL">
+  <div class="hud-label">TUNCER VR LAB</div>
+  <div id="trackL">TARAMA: —</div>
+</div>
+<div class="hud-panel" id="hudR">
+  <div class="hud-label">HAND TRACKING</div>
+  <div id="trackR">TARAMA: —</div>
+</div>
+
+<div class="grab-strip" id="gL">◌ SOL EL</div>
+<div class="grab-strip" id="gR">◌ SAĞ EL</div>
+<div id="scoreL">PUAN: 0</div>
+<div id="scoreR">PUAN: 0</div>
+
+<!-- ═══════════════════════════════════════════════ SPLASH -->
+<div id="splash">
+  <div class="s-logo">TUNCER<br><em>VR</em> LAB</div>
+  <div class="s-tag">HAND TRACKING EDITION v1.0</div>
+  <div class="s-line"></div>
+  <div class="s-tips">
+    <div class="s-tip">
+      <span class="s-tip-icon">📦</span>
+      <span>Küplere yaklaş ve <strong>başparmak + işaret parmağını</strong> birleştir → yakala</span>
     </div>
+    <div class="s-tip">
+      <span class="s-tip-icon">👁️</span>
+      <span>Telefonu <strong>Cardboard gözlüğüne</strong> tak, iki gözle izle</span>
+    </div>
+    <div class="s-tip">
+      <span class="s-tip-icon">🔄</span>
+      <span>Telefonu döndür → <strong>kamera döner</strong>, etrafına bak</span>
+    </div>
+    <div class="s-tip">
+      <span class="s-tip-icon">📷</span>
+      <span>Ön kamera <strong>el hareketlerini</strong> takip eder, arkaplanda gerçek görüntü</span>
+    </div>
+  </div>
+  <button class="s-btn" id="startBtn">BAŞLAT</button>
+</div>
 
-    <div id="canvas-container"></div>
-    <video id="video_input" autoplay playsinline style="display:none"></video>
+<!-- ═══════════════════════════════════════════════ SCRIPTS -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script>
+'use strict';
 
-    <script>
-        let scene, camera, renderer, leftCam, rightCam, vrMode = false, initialized = false;
-        let deviceYaw = 0, devicePitch = 0, deviceRoll = 0;
-        const videoElement = document.getElementById('video_input');
-        
-        document.getElementById('btn-vr-start').addEventListener('click', () => { vrMode = true; startApp(); });
-        document.getElementById('btn-normal-start').addEventListener('click', () => { vrMode = false; startApp(); });
+// ════════════════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════════════════
+const C = {
+  fov: 80,
+  ipd: 0.063,
+  headY: 1.6,
+  handDepth: 0.52,
+  grabDist: 0.13,
+  cubeCount: 9,
+  mpFps: 30,
+};
 
-        async function startApp() {
-            document.getElementById('ui-overlay').style.display = 'none';
-            if (vrMode) await requestSensors();
-            initThree();
-            startMediaPipe();
-        }
+// MediaPipe hand skeleton connections
+const CONN = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [0,9],[9,10],[10,11],[11,12],
+  [0,13],[13,14],[14,15],[15,16],
+  [0,17],[17,18],[18,19],[19,20],
+  [5,9],[9,13],[13,17]
+];
+const TIPS = [4,8,12,16,20];
+const PALMS = [0,1,5,9,13,17];
 
-        async function requestSensors() {
-            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                const res = await DeviceOrientationEvent.requestPermission();
-                if (res === 'granted') window.addEventListener('deviceorientation', handleOrientation, true);
-            } else {
-                window.addEventListener('deviceorientation', handleOrientation, true);
-            }
-        }
+// ════════════════════════════════════════════════════════
+// THREE.JS — RENDERER
+// ════════════════════════════════════════════════════════
+const canvas = document.getElementById('glCanvas');
+const renderer = new THREE.WebGLRenderer({
+  canvas,
+  antialias: true,
+  powerPreference: 'high-performance',
+});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.autoClear = false;
 
-        function handleOrientation(e) {
-            // Cardboard yatay duruş düzeltmesi: beta eksenini 90 derece kaydırarak karşıya bakmasını sağladık
-            deviceYaw = THREE.MathUtils.degToRad(e.alpha);
-            devicePitch = THREE.MathUtils.degToRad(e.beta); 
-            deviceRoll = THREE.MathUtils.degToRad(e.gamma);
-        }
+// ════════════════════════════════════════════════════════
+// SCENES
+// ════════════════════════════════════════════════════════
+const scene = new THREE.Scene();
+const bgScene = new THREE.Scene();
+const bgOrtho = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-        function initThree() {
-            scene = new THREE.Scene();
-            const w = window.innerWidth, h = window.innerHeight;
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(w, h);
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
+// Fog
+scene.fog = new THREE.FogExp2(0x000d08, 0.25);
 
-            camera = new THREE.Group();
-            leftCam = new THREE.PerspectiveCamera(65, (w/(vrMode?2:1))/h, 0.1, 100);
-            rightCam = new THREE.PerspectiveCamera(65, (w/(vrMode?2:1))/h, 0.1, 100);
-            leftCam.position.x = -0.03; rightCam.position.x = 0.03;
-            camera.add(leftCam); camera.add(rightCam);
-            camera.position.set(0, 1.4, 0);
-            scene.add(camera);
+// ════════════════════════════════════════════════════════
+// HEAD + CAMERAS
+// ════════════════════════════════════════════════════════
+const getHalfAspect = () => (window.innerWidth * 0.5) / window.innerHeight;
 
-            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-            scene.add(new THREE.GridHelper(10, 10, 0x00f0ff, 0x222222));
-            initialized = true;
-            animate();
-        }
+const head = new THREE.Group();
+head.position.set(0, C.headY, 0);
+scene.add(head);
 
-        function startMediaPipe() {
-            const hands = new Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${f}` });
-            hands.setOptions({ maxNumHands: 2, modelComplexity: 1 });
-            const cam = new Camera(videoElement, { onFrame: async () => await hands.send({image: videoElement}), width: 640, height: 480 });
-            cam.start();
-        }
+function makeCam(xOff) {
+  const cam = new THREE.PerspectiveCamera(C.fov, getHalfAspect(), 0.005, 60);
+  cam.position.x = xOff;
+  head.add(cam);
+  return cam;
+}
+const camL = makeCam(-C.ipd / 2);
+const camR = makeCam(+C.ipd / 2);
+const camC = makeCam(0); // center — used for hand unprojection
 
-        function animate() {
-            requestAnimationFrame(animate);
-            if (!initialized) return;
+// ════════════════════════════════════════════════════════
+// LIGHTING
+// ════════════════════════════════════════════════════════
+scene.add(new THREE.AmbientLight(0xffffff, 0.35));
 
-            if (vrMode) {
-                // Yatay duruşa göre açıları sahneye uygula
-                camera.rotation.set(devicePitch, deviceYaw, deviceRoll, 'YXZ');
-            }
+const sun = new THREE.DirectionalLight(0xffffff, 1.4);
+sun.position.set(4, 10, 3);
+scene.add(sun);
 
-            const w = window.innerWidth, h = window.innerHeight;
-            if (vrMode) {
-                renderer.setViewport(0, 0, w/2, h); renderer.render(scene, leftCam);
-                renderer.setViewport(w/2, 0, w/2, h); renderer.render(scene, rightCam);
-            } else {
-                renderer.render(scene, leftCam);
-            }
-        }
-    </script>
+const rim = new THREE.DirectionalLight(0x6699ff, 0.7);
+rim.position.set(-5, 3, -4);
+scene.add(rim);
+
+const fill1 = new THREE.PointLight(0x00ff88, 1.2, 7);
+fill1.position.set(0, 4, -1.5);
+scene.add(fill1);
+
+const fill2 = new THREE.PointLight(0xff3366, 0.7, 7);
+fill2.position.set(2, 2.5, -2);
+scene.add(fill2);
+
+// ════════════════════════════════════════════════════════
+// VIDEO BACKGROUND (Camera passthrough)
+// ════════════════════════════════════════════════════════
+let videoTex = null;
+
+function initBg(videoEl) {
+  videoTex = new THREE.VideoTexture(videoEl);
+  videoTex.minFilter = THREE.LinearFilter;
+  videoTex.magFilter = THREE.LinearFilter;
+  const mat = new THREE.MeshBasicMaterial({
+    map: videoTex,
+    depthWrite: false,
+    depthTest: false,
+  });
+  bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat));
+}
+
+// ════════════════════════════════════════════════════════
+// ENVIRONMENT
+// ════════════════════════════════════════════════════════
+const envRefs = {};
+
+function buildEnv() {
+  // Grid floor
+  const gridMat = new THREE.MeshBasicMaterial({
+    color: 0x003322,
+    wireframe: true,
+    transparent: true,
+    opacity: 0.5,
+  });
+  const gridGeo = new THREE.PlaneGeometry(12, 12, 24, 24);
+  const grid = new THREE.Mesh(gridGeo, gridMat);
+  grid.rotation.x = -Math.PI / 2;
+  grid.position.y = 0;
+  scene.add(grid);
+
+  // Floating axis ring
+  const ringGeo = new THREE.TorusGeometry(1.2, 0.004, 8, 72);
+  const ringMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff88,
+    transparent: true,
+    opacity: 0.25,
+  });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  ring.position.set(0, C.headY, -2.5);
+  scene.add(ring);
+  envRefs.ring = ring;
+
+  // Ambient particles
+  const N = 80;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    pos[i * 3 + 0] = (Math.random() - 0.5) * 6;
+    pos[i * 3 + 1] = Math.random() * 4 + 0.2;
+    pos[i * 3 + 2] = (Math.random() - 0.5) * 6 - 0.5;
+  }
+  const ptGeo = new THREE.BufferGeometry();
+  ptGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const ptMat = new THREE.PointsMaterial({
+    color: 0x00ff88,
+    size: 0.012,
+    transparent: true,
+    opacity: 0.3,
+    sizeAttenuation: true,
+  });
+  scene.add(new THREE.Points(ptGeo, ptMat));
+
+  // Score target zones (glowing pads on floor)
+  for (let i = 0; i < 3; i++) {
+    const angle = (i / 3) * Math.PI * 2;
+    const zoneGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.01, 32);
+    const zoneMat = new THREE.MeshBasicMaterial({
+      color: [0x00ffaa, 0xff4488, 0xffcc00][i],
+      transparent: true,
+      opacity: 0.35,
+    });
+    const zone = new THREE.Mesh(zoneGeo, zoneMat);
+    zone.position.set(Math.sin(angle) * 0.55, 0.01, -0.7 + Math.cos(angle) * 0.35);
+    scene.add(zone);
+    envRefs[`zone${i}`] = zone;
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// CUBES
+// ════════════════════════════════════════════════════════
+const PALETTES = [
+  [0xff2244, 0x440011], [0x1188ff, 0x001144], [0x22ff88, 0x003322],
+  [0xffcc00, 0x332200], [0xff44cc, 0x220033], [0x00ddff, 0x002244],
+  [0xff8800, 0x221100], [0x99ff00, 0x223300], [0xaa55ff, 0x220044],
+];
+
+const cubes = [];
+let score = 0;
+
+function buildCubes() {
+  for (let i = 0; i < C.cubeCount; i++) {
+    const s = 0.07 + Math.random() * 0.07;
+    const geo = new THREE.BoxGeometry(s, s, s);
+    const [col, emi] = PALETTES[i % PALETTES.length];
+    const mat = new THREE.MeshPhongMaterial({
+      color: col, emissive: emi,
+      shininess: 140, specular: 0xffffff,
+    });
+    const cube = new THREE.Mesh(geo, mat);
+
+    // Glowing edges
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: col,
+      transparent: true, opacity: 0.6,
+    });
+    cube.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat));
+
+    // Spread in a fan around player
+    const ang = (i / C.cubeCount) * Math.PI * 1.6 - Math.PI * 0.8;
+    const r = 0.35 + Math.random() * 0.28;
+    cube.position.set(
+      Math.sin(ang) * r,
+      C.headY + (Math.random() - 0.5) * 0.55,
+      -0.65 - Math.abs(Math.cos(ang)) * r * 0.4
+    );
+    cube.userData = {
+      baseY: cube.position.y,
+      phase: Math.random() * Math.PI * 2,
+      grabbed: false,
+      color: col,
+    };
+    scene.add(cube);
+    cubes.push(cube);
+  }
+}
+
+function respawnCube(cube) {
+  const ang = Math.random() * Math.PI * 2;
+  const r = 0.35 + Math.random() * 0.28;
+  cube.position.set(
+    Math.sin(ang) * r,
+    C.headY + (Math.random() - 0.5) * 0.55,
+    -0.65 - Math.abs(Math.cos(ang)) * r * 0.4
+  );
+  cube.userData.baseY = cube.position.y;
+  cube.userData.phase = Math.random() * Math.PI * 2;
+  cube.userData.grabbed = false;
+  cube.rotation.set(0, 0, 0);
+}
+
+// ════════════════════════════════════════════════════════
+// HAND 3D OBJECTS
+// ════════════════════════════════════════════════════════
+const handObjs = [null, null];
+
+function buildHand(idx) {
+  const joints = [];
+  for (let j = 0; j < 21; j++) {
+    const isTip = TIPS.includes(j);
+    const isPalm = PALMS.includes(j);
+    const r = isTip ? 0.011 : isPalm ? 0.008 : 0.006;
+    const geo = new THREE.SphereGeometry(r, 8, 6);
+    const mat = new THREE.MeshPhongMaterial({
+      color: isTip ? 0xff9966 : 0xffddcc,
+      emissive: isTip ? 0x331100 : 0x110800,
+      shininess: isTip ? 90 : 50,
+    });
+    const s = new THREE.Mesh(geo, mat);
+    s.visible = false;
+    scene.add(s);
+    joints.push(s);
+  }
+
+  // Bones: cylinders between connected joints
+  const bones = CONN.map(([a, b]) => {
+    const geo = new THREE.CylinderGeometry(0.004, 0.003, 1, 6);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0xeebbaa, emissive: 0x0d0500, shininess: 35,
+    });
+    const cyl = new THREE.Mesh(geo, mat);
+    cyl.visible = false;
+    scene.add(cyl);
+    return { mesh: cyl, a, b };
+  });
+
+  // Pinch glow indicator
+  const pGeo = new THREE.SphereGeometry(0.02, 12, 12);
+  const pMat = new THREE.MeshBasicMaterial({
+    color: 0x00ff88, transparent: true, opacity: 0, depthWrite: false,
+  });
+  const pinchBall = new THREE.Mesh(pGeo, pMat);
+  scene.add(pinchBall);
+
+  handObjs[idx] = { joints, bones, pinchBall };
+}
+
+// ════════════════════════════════════════════════════════
+// LANDMARK → WORLD POSITION
+// Uses the center camera's matrix for correct head-space
+// ════════════════════════════════════════════════════════
+const _v3 = new THREE.Vector3();
+
+function lmToWorld(lm) {
+  const asp = getHalfAspect();
+  const halfFovRad = THREE.MathUtils.degToRad(C.fov / 2);
+  const d = C.handDepth;
+  const h = 2 * d * Math.tan(halfFovRad);
+  const w = h * asp;
+
+  // selfieMode: lm.x is already mirrored, lm.y top=0 bottom=1
+  _v3.set(
+    (0.5 - lm.x) * w,
+    (0.5 - lm.y) * h,
+    -d + (lm.z || 0) * 0.5
+  );
+  _v3.applyMatrix4(camC.matrixWorld);
+  return _v3.clone();
+}
+
+// ════════════════════════════════════════════════════════
+// GRAB STATE
+// ════════════════════════════════════════════════════════
+const grabState = [
+  { pinching: false, cube: null },
+  { pinching: false, cube: null },
+];
+const grabEls = [document.getElementById('gL'), document.getElementById('gR')];
+const labels = ['SOL EL', 'SAĞ EL'];
+
+const _up = new THREE.Vector3(0, 1, 0);
+const _dir = new THREE.Vector3();
+const _mid = new THREE.Vector3();
+
+function processHandResults(idx, landmarks) {
+  if (!handObjs[idx]) return;
+  const { joints, bones, pinchBall } = handObjs[idx];
+
+  // ── Update joint positions ──
+  const wpts = landmarks.map(lmToWorld);
+  for (let j = 0; j < 21; j++) {
+    joints[j].position.copy(wpts[j]);
+    joints[j].visible = true;
+  }
+
+  // ── Update bones (cylinder orientation) ──
+  for (const bone of bones) {
+    const pA = wpts[bone.a];
+    const pB = wpts[bone.b];
+    _mid.copy(pA).add(pB).multiplyScalar(0.5);
+    _dir.copy(pB).sub(pA);
+    const len = _dir.length();
+    bone.mesh.position.copy(_mid);
+    bone.mesh.scale.y = len;
+    if (len > 0.0001) {
+      bone.mesh.quaternion.setFromUnitVectors(_up, _dir.normalize());
+    }
+    bone.mesh.visible = true;
+  }
+
+  // ── Pinch detection: thumb tip (4) vs index tip (8) ──
+  const thumbPt = wpts[4];
+  const indexPt = wpts[8];
+  const pinchDist = thumbPt.distanceTo(indexPt);
+  const isPinching = pinchDist < 0.07;
+
+  const center = thumbPt.clone().add(indexPt).multiplyScalar(0.5);
+  pinchBall.position.copy(center);
+  pinchBall.material.opacity = isPinching ? 0.45 + Math.sin(Date.now() * 0.015) * 0.15 : 0;
+
+  const gs = grabState[idx];
+
+  // Start pinch → find nearest cube
+  if (isPinching && !gs.pinching) {
+    let best = null, bestD = C.grabDist;
+    for (const cube of cubes) {
+      if (cube.userData.grabbed) continue;
+      const d = cube.position.distanceTo(center);
+      if (d < bestD) { best = cube; bestD = d; }
+    }
+    gs.cube = best;
+    if (best) {
+      best.userData.grabbed = true;
+      grabEls[idx].classList.add('on');
+      grabEls[idx].textContent = `◉ ${labels[idx]} — TUTUYOR`;
+      score++;
+      updateScore();
+    }
+  }
+
+  // While pinching → move grabbed cube
+  if (isPinching && gs.cube) {
+    gs.cube.position.lerp(center, 0.28);
+    // Check if dropped on a zone
+    for (let z = 0; z < 3; z++) {
+      const zone = envRefs[`zone${z}`];
+      if (zone && gs.cube.position.distanceTo(zone.position) < 0.3 &&
+          gs.cube.position.y < 0.4) {
+        respawnCube(gs.cube);
+        gs.cube = null;
+        gs.pinching = false;
+        grabEls[idx].classList.remove('on');
+        grabEls[idx].textContent = `◌ ${labels[idx]}`;
+        score += 5;
+        updateScore();
+        return;
+      }
+    }
+  }
+
+  // Stop pinching → release
+  if (!isPinching && gs.pinching && gs.cube) {
+    gs.cube.userData.grabbed = false;
+    gs.cube.userData.baseY = gs.cube.position.y;
+    gs.cube = null;
+    grabEls[idx].classList.remove('on');
+    grabEls[idx].textContent = `◌ ${labels[idx]}`;
+  }
+
+  gs.pinching = isPinching;
+}
+
+function hideHand(idx) {
+  if (!handObjs[idx]) return;
+  const { joints, bones, pinchBall } = handObjs[idx];
+  joints.forEach(j => j.visible = false);
+  bones.forEach(b => b.mesh.visible = false);
+  pinchBall.material.opacity = 0;
+
+  const gs = grabState[idx];
+  if (gs.cube) {
+    gs.cube.userData.grabbed = false;
+    gs.cube.userData.baseY = gs.cube.position.y;
+    gs.cube = null;
+  }
+  gs.pinching = false;
+  grabEls[idx].classList.remove('on');
+  grabEls[idx].textContent = `◌ ${labels[idx]}`;
+}
+
+// ════════════════════════════════════════════════════════
+// MEDIAPIPE HANDS
+// ════════════════════════════════════════════════════════
+let mpHands = null;
+let mpBusy = false;
+let videoEl = null;
+let handCount = 0;
+
+async function initMediaPipe(vid) {
+  mpHands = new Hands({
+    locateFile: f =>
+      `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
+  });
+
+  mpHands.setOptions({
+    maxNumHands: 2,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.7,
+    minTrackingConfidence: 0.5,
+    selfieMode: true,
+  });
+
+  mpHands.onResults(results => {
+    mpBusy = false;
+    const detected = results.multiHandLandmarks?.length ?? 0;
+    handCount = detected;
+
+    for (let h = 0; h < 2; h++) {
+      if (h < detected) {
+        processHandResults(h, results.multiHandLandmarks[h]);
+      } else {
+        hideHand(h);
+      }
+    }
+
+    const txt = detected > 0 ? `EL: ${detected}` : 'ARANIYOR…';
+    document.getElementById('trackL').textContent = txt;
+    document.getElementById('trackR').textContent = txt;
+  });
+
+  // Grab camera stream
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: 'user',
+      width: { ideal: 320 },
+      height: { ideal: 240 },
+      frameRate: { ideal: 30 },
+    }
+  });
+  vid.srcObject = stream;
+  await new Promise(r => { vid.onloadedmetadata = r; });
+  vid.play();
+}
+
+async function mpSend() {
+  if (!mpBusy && mpHands && videoEl && videoEl.readyState >= 2) {
+    mpBusy = true;
+    try { await mpHands.send({ image: videoEl }); }
+    catch { mpBusy = false; }
+  }
+}
+
+function mpLoop() {
+  mpSend();
+  setTimeout(mpLoop, 1000 / C.mpFps);
+}
+
+// ════════════════════════════════════════════════════════
+// GYROSCOPE / HEAD TRACKING
+// ════════════════════════════════════════════════════════
+let alphaOrigin = null;
+let gyroActive = false;
+
+function setupGyro() {
+  const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+  const onOrient = e => {
+    if (e.alpha == null) return;
+    if (alphaOrigin === null) alphaOrigin = e.alpha;
+    gyroActive = true;
+
+    // Convert Android/iOS device orientation to Three.js camera rotation
+    // Assumes phone held landscape (Cardboard mode)
+    const alpha = THREE.MathUtils.degToRad(e.alpha - alphaOrigin);
+    const beta  = THREE.MathUtils.degToRad(e.beta);
+    const gamma = THREE.MathUtils.degToRad(e.gamma);
+
+    // YXZ: yaw, pitch, roll
+    euler.set(
+      THREE.MathUtils.degToRad(e.beta - 90),  // pitch: tilt fwd/back
+      -alpha,                                   // yaw: look L/R
+      -gamma,                                   // roll: tilt L/R
+      'YXZ'
+    );
+    head.quaternion.setFromEuler(euler);
+  };
+
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ requires user gesture to request permission
+    DeviceOrientationEvent.requestPermission()
+      .then(state => {
+        if (state === 'granted') window.addEventListener('deviceorientation', onOrient, { passive: true });
+      })
+      .catch(console.warn);
+  } else {
+    window.addEventListener('deviceorientation', onOrient, { passive: true });
+  }
+}
+
+// Touch drag fallback (desktop testing / no gyro)
+let touchStart = null;
+let yaw = 0, pitch = 0;
+const _eTouch = new THREE.Euler(0, 0, 0, 'YXZ');
+
+canvas.addEventListener('touchstart', e => {
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+
+canvas.addEventListener('touchmove', e => {
+  if (!touchStart || gyroActive) return;
+  yaw   -= (e.touches[0].clientX - touchStart.x) * 0.004;
+  pitch -= (e.touches[0].clientY - touchStart.y) * 0.003;
+  pitch  = Math.max(-1.1, Math.min(1.1, pitch));
+  touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  _eTouch.set(pitch, yaw, 0, 'YXZ');
+  head.quaternion.setFromEuler(_eTouch);
+}, { passive: true });
+
+canvas.addEventListener('touchend', () => { touchStart = null; }, { passive: true });
+
+// ════════════════════════════════════════════════════════
+// SCORE
+// ════════════════════════════════════════════════════════
+function updateScore() {
+  const txt = `PUAN: ${score}`;
+  document.getElementById('scoreL').textContent = txt;
+  document.getElementById('scoreR').textContent = txt;
+}
+
+// ════════════════════════════════════════════════════════
+// RENDER LOOP
+// ════════════════════════════════════════════════════════
+let frame = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  frame++;
+  const t = frame / 60;
+
+  // Cube float + spin
+  for (const cube of cubes) {
+    if (!cube.userData.grabbed) {
+      cube.position.y = cube.userData.baseY + Math.sin(t * 0.85 + cube.userData.phase) * 0.032;
+      cube.rotation.x += 0.005;
+      cube.rotation.y += 0.008;
+    } else {
+      cube.rotation.x += 0.025;
+      cube.rotation.y += 0.018;
+    }
+  }
+
+  // Animate env
+  if (envRefs.ring) {
+    envRefs.ring.rotation.z += 0.004;
+    envRefs.ring.rotation.x = Math.sin(t * 0.35) * 0.15;
+  }
+  for (let i = 0; i < 3; i++) {
+    const zone = envRefs[`zone${i}`];
+    if (zone) zone.material.opacity = 0.2 + Math.sin(t * 1.5 + i) * 0.15;
+  }
+
+  // Animate lights
+  fill1.intensity = 1.0 + Math.sin(t * 1.8) * 0.25;
+  fill2.position.x = Math.sin(t * 0.45) * 2.5;
+  fill2.position.z = Math.cos(t * 0.45) * 2.0 - 1;
+
+  // Update video texture
+  if (videoTex) videoTex.needsUpdate = true;
+
+  // CRITICAL: sync camera matrices before rendering
+  head.updateMatrixWorld(true);
+
+  // ── STEREO RENDER ──
+  const W  = renderer.domElement.width;
+  const H  = renderer.domElement.height;
+  const HW = Math.floor(W / 2);
+
+  renderer.setScissorTest(true);
+
+  // LEFT EYE ─────────────────────────────────────────────
+  renderer.setViewport(0, 0, HW, H);
+  renderer.setScissor(0, 0, HW, H);
+  renderer.clear(true, true, false);
+  if (videoTex) { renderer.render(bgScene, bgOrtho); }
+  renderer.clearDepth();
+  renderer.render(scene, camL);
+
+  // RIGHT EYE ────────────────────────────────────────────
+  renderer.setViewport(HW, 0, W - HW, H);
+  renderer.setScissor(HW, 0, W - HW, H);
+  renderer.clear(true, true, false);
+  if (videoTex) { renderer.render(bgScene, bgOrtho); }
+  renderer.clearDepth();
+  renderer.render(scene, camR);
+
+  renderer.setScissorTest(false);
+}
+
+// ════════════════════════════════════════════════════════
+// RESIZE
+// ════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  const asp = getHalfAspect();
+  [camL, camR, camC].forEach(c => { c.aspect = asp; c.updateProjectionMatrix(); });
+});
+
+// ════════════════════════════════════════════════════════
+// START
+// ════════════════════════════════════════════════════════
+async function startGame() {
+  document.getElementById('splash').style.display = 'none';
+
+  // Show HUD elements
+  ['hudL','hudR','gL','gR','scoreL','scoreR','statusBar'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = el.classList.contains('grab-strip') || id.startsWith('score') ? 'block' : 'block';
+  });
+  document.getElementById('hudL').style.display = 'block';
+  document.getElementById('hudR').style.display = 'block';
+  document.getElementById('gL').style.display = 'block';
+  document.getElementById('gR').style.display = 'block';
+  document.getElementById('scoreL').style.display = 'block';
+  document.getElementById('scoreR').style.display = 'block';
+  document.getElementById('statusBar').style.display = 'block';
+
+  // Build 3D scene
+  buildEnv();
+  buildCubes();
+  buildHand(0);
+  buildHand(1);
+
+  // Gyroscope (must be called inside click handler for iOS)
+  setupGyro();
+
+  // Camera + MediaPipe
+  videoEl = document.getElementById('video');
+  try {
+    await initMediaPipe(videoEl);
+    initBg(videoEl);
+    mpLoop();
+    document.getElementById('trackL').textContent = 'EL ARANIYOR…';
+    document.getElementById('trackR').textContent = 'EL ARANIYOR…';
+  } catch (err) {
+    console.error('Camera error:', err);
+    document.getElementById('trackL').textContent = 'KAMERA YOK';
+    document.getElementById('trackR').textContent = 'KAMERA YOK';
+  }
+
+  animate();
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+</script>
 </body>
 </html>
-
-```
