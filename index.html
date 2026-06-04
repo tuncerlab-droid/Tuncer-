@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cardboard VR - Gerçekçi Çift Ekran</title>
+    <title>Cardboard VR - Koşu Simülatörü</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -22,10 +22,10 @@
             height: 100%;
             overflow: hidden;
             background-color: #000;
-            font-family: monospace;
+            font-family: sans-serif;
         }
 
-        /* VR Göz Pencereleri (Görseldeki Yuvarlatılmış Bükük Çerçeve Tasarımı) */
+        /* VR Göz Pencereleri (Gönderdiğin fotoğraflardaki bükülmüş, yuvarlatılmış Cardboard lens yapısı) */
         #vr-container {
             display: flex;
             width: 100vw;
@@ -45,15 +45,15 @@
             background-color: #000;
         }
 
-        /* Göz maskeleri - Görseldeki gibi oval ve bükük ekran hissi verir */
+        /* Fotoğraflardaki tam yuvarlatılmış ve hafif basık Cardboard lens maskesi */
         .eye-mask {
-            width: 92%;
-            height: 88%;
-            border-radius: 40px / 30px; /* Kenarları yumuşatılmış göz lensi profili */
+            width: 90%;
+            height: 85%;
+            border-radius: 42px / 32px; /* Gözlüğün iç bükümüne tam oturan eliptik form */
             overflow: hidden;
             position: relative;
-            border: 4px solid #111;
-            box-shadow: inset 0 0 40px rgba(0, 0, 0, 1), 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 3px solid #151515;
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 1), 0 0 15px rgba(0, 0, 0, 0.9);
             background-color: #000;
         }
 
@@ -69,8 +69,8 @@
             left: 50%;
             top: 0;
             bottom: 0;
-            width: 4px;
-            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.3), transparent);
+            width: 2px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.25), transparent);
             z-index: 30;
             pointer-events: none;
         }
@@ -85,20 +85,7 @@
             border: 1px solid rgba(255, 255, 255, 0.3);
             z-index: 40;
             object-fit: cover;
-            opacity: 0.4;
-        }
-
-        /* Sol ekran üstündeki yeşil debug verileri */
-        #debug-panel {
-            position: absolute;
-            top: 10%;
-            left: 8%;
-            color: #00ff00;
-            font-size: 11px;
-            line-height: 1.4;
-            pointer-events: none;
-            z-index: 50;
-            text-shadow: 0 0 3px #000;
+            opacity: 0.5;
         }
 
         #landscape-warning {
@@ -113,28 +100,28 @@
 </head>
 <body class="select-none">
 
-    <!-- Cardboard Hizalama Çizgisi -->
+    <!-- Ortadaki Cardboard hizalama çizgisi -->
     <div id="vr-divider"></div>
 
-    <!-- Başlangıç Ekranı / İzin Alma Modalı -->
+    <!-- Başlangıç Ekranı -->
     <div id="welcome-screen" class="fixed inset-0 bg-slate-950 text-white z-50 flex flex-col items-center justify-center p-6 text-center">
         <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl">
             <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
-                VRIDGE STYLE VR 4.0
+                VR Koşu Simülatörü
             </h1>
             <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                Yüklenen görsele uygun <strong>eğimli yuvarlak göz çerçeveleri</strong>, siyah-beyaz çizgisel dünya, düzeltilmiş yürüme yönü ve <strong>tam ekran desteği</strong> ile hazırlandı.
+                Yatay modda, bükülmüş <strong>Cardboard lens pencereleri</strong> ile tasarlanmış pürüzsüz simülasyon dünyası.
             </p>
             
             <div class="bg-slate-950 p-4 rounded-lg mb-6 text-left border border-slate-800 text-xs text-slate-400 space-y-2">
-                <p class="font-bold text-white mb-1">🕶️ Yapılan Güncellemeler:</p>
-                <p>• <strong>Doğru Yön:</strong> Baktığın yönün tersine değil, tam olarak baktığın yere yürürsün.</p>
-                <p>• <strong>Tam Ekran:</strong> Başlat düğmesine bastığında tarayıcı otomatik tam ekrana geçer.</p>
-                <p>• <strong>Görsel Tasarım:</strong> Çift ekran pencereleri görseldeki gibi yumuşatılmış çerçevelere sahiptir.</p>
+                <p class="font-bold text-white mb-1">🕶️ Bilgiler:</p>
+                <p>• <strong>Bakış Yönü:</strong> Baktığın yöne doğru kusursuzca ilerlersin.</p>
+                <p>• <strong>Lens Çerçevesi:</strong> Gözlerinize tam oturan, kenarları yumuşatılmış çift ekran.</p>
+                <p>• <strong>Tam Ekran:</strong> Başlatınca tarayıcı otomatik tam ekran moduna geçer.</p>
             </div>
 
             <button id="start-btn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
-                Tam Ekran Başlat
+                Gözlüğü Tak ve Başlat
             </button>
         </div>
     </div>
@@ -144,30 +131,20 @@
         <svg class="w-16 h-16 text-emerald-400 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
         </svg>
-        <p class="text-xl font-bold">Telefonu Yatay Tutun</p>
-        <p class="text-slate-400 text-sm mt-2">VR Dual-Eye görünümü için yatay duruş zorunludur.</p>
+        <p class="text-xl font-bold">Lütfen Telefonu Yan Çevirin</p>
+        <p class="text-slate-400 text-sm mt-2">Cardboard görünümü için cihazı yatay tutmalısınız.</p>
     </div>
 
-    <!-- Web Kamerası Arka Plan Algılayıcı (Görünmez/Soluk Önizleme) -->
+    <!-- Arka Kamera Video Önizlemesi -->
     <video id="webcam" autoplay playsinline></video>
 
     <!-- VR Göz Çerçeve Kapsayıcısı -->
     <div id="vr-container">
-        <!-- Sol Göz Bölümü -->
+        <!-- Sol Göz -->
         <div class="eye-window">
-            <div id="debug-panel">
-                Backend: VRidge_Cardboard_Direct<br>
-                Packets rx: 1 (60.00)<br>
-                Packets tx: 1 (60.00)<br>
-                Frames rendered: <span id="fps-val">60</span><br>
-                Speed: <span id="speed-val">0.0</span> m/s<br>
-                Left Hand: <span id="lhand-val">Aranıyor</span><br>
-                Right Hand: <span id="rhand-val">Aranıyor</span><br>
-                Gyroscope: <span id="gyro-val">Pasif</span>
-            </div>
             <div class="eye-mask" id="left-eye-container"></div>
         </div>
-        <!-- Sağ Göz Bölümü -->
+        <!-- Sağ Göz -->
         <div class="eye-window">
             <div class="eye-mask" id="right-eye-container"></div>
         </div>
@@ -178,7 +155,7 @@
         let scene, renderer;
         let cameraGroup;
         let cameraLeft, cameraRight; 
-        const IPD = 0.062; // Gözler arası mesafe (6 inç telefon için en dengeli oran)
+        const IPD = 0.064; // Gözbebekleri arası mesafe (6 inç telefon için en dengeli oran)
 
         let leftHandGroup, rightHandGroup;
         let handPointsLeft = [], handPointsRight = [];
@@ -188,57 +165,33 @@
         const deceleration = 0.94; 
         const moveDirection = new THREE.Vector3();
         
-        // Koşma algılama
+        // Koşma algılama değişkenleri
         let prevYLeft = 0;
         let prevYRight = 0;
         let totalHandYMovement = 0;
         let lastMovementTime = Date.now();
 
-        // Jiroskop
+        // Jiroskop durumları
         let deviceAlpha = 0, deviceBeta = 0, deviceGamma = 0;
         let hasGyro = false;
         let screenOrientationAngle = 0;
 
-        // Masaüstü test
+        // Masaüstü fare kontrolleri
         let isMouseDown = false;
         let targetRotationX = 0, targetRotationY = 0;
-        let keysPressed = {};
-
-        // Objeler ve Robotlar
-        let grabObjects = [];
-        let humanoids = [];
-        const GRAVITY = -9.8;
-
-        // Kendi bedenimiz
-        let playerBodyGroup, playerLeftLeg, playerRightLeg;
-
-        // El Etkileşim Durumları
-        const handsState = {
-            Left: { isGrabbing: false, grabbedObj: null, lastPos: new THREE.Vector3(), velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() },
-            Right: { isGrabbing: false, grabbedObj: null, lastPos: new THREE.Vector3(), velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() }
-        };
 
         const startBtn = document.getElementById('start-btn');
         const welcomeScreen = document.getElementById('welcome-screen');
         const videoElement = document.getElementById('webcam');
 
-        // UI Debug Alanları
-        const fpsVal = document.getElementById('fps-val');
-        const speedVal = document.getElementById('speed-val');
-        const lhandVal = document.getElementById('lhand-val');
-        const rhandVal = document.getElementById('rhand-val');
-        const gyroVal = document.getElementById('gyro-val');
-
-        // --- Başlatıcı (Tam Ekran Tetiklemeli) ---
+        // --- Başlatıcı ve Tam Ekran Aktivasyonu ---
         startBtn.addEventListener('click', async () => {
-            // 1. TAM EKRAN MODUNU BAŞLATMA
             triggerFullscreen();
 
-            // Ekran açısı ayarı
             getScreenOrientation();
             window.addEventListener('orientationchange', getScreenOrientation);
 
-            // Jiroskop
+            // Jiroskop izni alımı
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const permission = await DeviceOrientationEvent.requestPermission();
@@ -246,7 +199,7 @@
                         initGyro();
                     }
                 } catch (e) {
-                    console.error("Jiroskop hatası:", e);
+                    console.error("Jiroskop izni alınamadı:", e);
                 }
             } else {
                 initGyro();
@@ -261,12 +214,10 @@
             const docEl = document.documentElement;
             if (docEl.requestFullscreen) {
                 docEl.requestFullscreen();
-            } else if (docEl.mozRequestFullScreen) { // Firefox
-                docEl.mozRequestFullScreen();
-            } else if (docEl.webkitRequestFullscreen) { // Chrome, Safari ve Opera
+            } else if (docEl.webkitRequestFullscreen) {
                 docEl.webkitRequestFullscreen();
-            } else if (docEl.msRequestFullscreen) { // IE/Edge
-                docEl.msRequestFullscreen();
+            } else if (docEl.mozRequestFullScreen) {
+                docEl.mozRequestFullScreen();
             }
         }
 
@@ -281,14 +232,11 @@
                     deviceAlpha = event.alpha;
                     deviceBeta = event.beta;
                     deviceGamma = event.gamma;
-                    gyroVal.textContent = "Aktif (Sensör)";
                 }
             }, true);
         }
 
-        // Klavye / Fare Kontrolleri
-        window.addEventListener('keydown', (e) => { keysPressed[e.key.toLowerCase()] = true; });
-        window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+        // Bilgisayarda test etmek için fare yedek kontrolü
         window.addEventListener('mousedown', () => isMouseDown = true);
         window.addEventListener('mouseup', () => isMouseDown = false);
         window.addEventListener('mousemove', (e) => {
@@ -299,175 +247,65 @@
             }
         });
 
-        // --- Robot Oluşturucu ---
-        function createHumanoidModel(colorHex) {
-            const group = new THREE.Group();
-            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
-            const headMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5 });
-
-            // Gövde
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.55, 0.2), bodyMat);
-            torso.position.y = 0.8;
-            group.add(torso);
-
-            // Kafa
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), headMat);
-            head.position.y = 1.15;
-            group.add(head);
-
-            // Vizör ışığı
-            const visor = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.08), new THREE.MeshBasicMaterial({ color: 0x00ffcc }));
-            visor.position.set(0, 1.15, 0.1);
-            group.add(visor);
-
-            // Uzuvlar
-            const armGeo = new THREE.CylinderGeometry(0.04, 0.035, 0.45, 8);
-            const leftArm = new THREE.Mesh(armGeo, bodyMat);
-            leftArm.position.set(-0.25, 0.75, 0);
-            group.add(leftArm);
-
-            const rightArm = new THREE.Mesh(armGeo, bodyMat);
-            rightArm.position.set(0.25, 0.75, 0);
-            group.add(rightArm);
-
-            const legGeo = new THREE.CylinderGeometry(0.05, 0.04, 0.55, 8);
-            const leftLeg = new THREE.Mesh(legGeo, bodyMat);
-            leftLeg.position.set(-0.11, 0.27, 0);
-            group.add(leftLeg);
-
-            const rightLeg = new THREE.Mesh(legGeo, bodyMat);
-            rightLeg.position.set(0.11, 0.27, 0);
-            group.add(rightLeg);
-
-            group.userData = {
-                leftArm, rightArm, leftLeg, rightLeg,
-                isKnockedDown: false,
-                knockDownTime: 0
-            };
-
-            return group;
-        }
-
-        // --- Three.js Kurulumu (Görseldeki Gibi Çizgisel Dünya) ---
+        // --- Three.js Gündüz Dünyası Kurulumu ---
         function initThree() {
-            // Siyah arka planlı sahne
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000); 
-            scene.fog = new THREE.FogExp2(0x000000, 0.015); 
+            scene.background = new THREE.Color(0x87CEEB); // Açık Gökyüzü Mavisi
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.008); 
 
-            // Kamera Kafası Grubu
+            // Kamera Kafası ve Gözler (Stereoskopik)
             cameraGroup = new THREE.Group();
             cameraGroup.position.set(0, 1.6, 0); 
             scene.add(cameraGroup);
 
-            // Sol ve Sağ Göz Kameraları (Görseldeki gibi odakları ayarlanmış)
+            // Sol Göz
             cameraLeft = new THREE.PerspectiveCamera(70, (window.innerWidth / 2) / window.innerHeight, 0.05, 1000);
             cameraLeft.position.set(-IPD / 2, 0, 0);
             cameraGroup.add(cameraLeft);
 
+            // Sağ Göz
             cameraRight = new THREE.PerspectiveCamera(70, (window.innerWidth / 2) / window.innerHeight, 0.05, 1000);
             cameraRight.position.set(IPD / 2, 0, 0);
             cameraGroup.add(cameraRight);
 
-            // Çizgisel Zemin Aydınlatması (Hafif Mavi Gece Havası)
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-            dirLight.position.set(10, 50, 10);
-            scene.add(dirLight);
+            // Gündüz Işığı (Güneş)
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 1.2);
+            sunLight.position.set(30, 80, 50);
+            scene.add(sunLight);
 
-            const ambientLight = new THREE.AmbientLight(0x111122, 0.5);
+            const ambientLight = new THREE.AmbientLight(0xbfdbfe, 0.6);
             scene.add(ambientLight);
 
-            // GÖRSELDEKİ ÇİZGİSEL VE DAMALI ZEMİN TASARIMI (Siyah-Beyaz Izgara/Damalı Stil)
+            // Siyah Beyaz Damalı Zemin (Eski haline getirildi)
             const canvas = document.createElement('canvas');
-            canvas.width = 256;
-            canvas.height = 256;
+            canvas.width = 128;
+            canvas.height = 128;
             const ctx = canvas.getContext('2d');
-            
-            // Siyah arka plan üzerine ince beyaz çizgilerle damalı ağ örüyoruz
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(0, 0, 256, 256);
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 4;
-            
-            // Kare sınırları çizeceğiz (Grid hissi)
-            ctx.strokeRect(0, 0, 256, 256);
-            ctx.strokeRect(0, 0, 128, 128);
-            ctx.strokeRect(128, 128, 128, 128);
+            ctx.fillStyle = '#ffffff'; 
+            ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#111111'; 
+            ctx.fillRect(0, 0, 64, 64);
+            ctx.fillRect(64, 64, 64, 64);
 
             const texture = new THREE.CanvasTexture(canvas);
             texture.wrapS = THREE.RepeatWrapping;
             texture.wrapT = THREE.RepeatWrapping;
-            texture.repeat.set(500, 500); 
+            texture.repeat.set(1000, 1000); 
             texture.anisotropy = 16;
 
-            const floorMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0.1 });
-            const floor = new THREE.Mesh(new THREE.PlaneGeometry(2500, 2500), floorMat);
+            const floorMaterial = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.7, metalness: 0.1 });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), floorMaterial);
             floor.rotation.x = -Math.PI / 2;
             scene.add(floor);
 
-            // Kendi Bedenimiz (Aşağı bakınca görebileceğimiz gövde)
-            playerBodyGroup = new THREE.Group();
-            playerBodyGroup.position.set(0, -0.6, -0.05); 
-            cameraGroup.add(playerBodyGroup);
-
-            const torsoMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 });
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.45, 0.18), torsoMat);
-            playerBodyGroup.add(torso);
-
-            playerLeftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.45, 8), torsoMat);
-            playerLeftLeg.position.set(-0.09, -0.35, 0);
-            playerBodyGroup.add(playerLeftLeg);
-
-            playerRightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.035, 0.45, 8), torsoMat);
-            playerRightLeg.position.set(0.09, -0.35, 0);
-            playerBodyGroup.add(playerRightLeg);
-
-            // NPC Humanoidleri Ekleme
-            const robotColors = [0x555555, 0x888888, 0x333333, 0x666666];
-            for (let i = 0; i < 12; i++) {
-                const robot = createHumanoidModel(robotColors[i % robotColors.length]);
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 6 + Math.random() * 14;
-                robot.position.set(Math.cos(angle) * distance, 0, Math.sin(angle) * distance);
-
-                robot.userData.direction = new THREE.Vector3((Math.random() - 0.5) * 2, 0, (Math.random() - 0.5) * 2).normalize();
-                robot.userData.speed = 1.0 + Math.random() * 1.2;
-                scene.add(robot);
-                humanoids.push(robot);
-            }
-
-            // Etkileşimli Küpler (Fırlatmalık neon küpler)
-            const boxGeo = new THREE.BoxGeometry(0.2, 0.2, 0.2);
-            for (let i = 0; i < 15; i++) {
-                const material = new THREE.MeshStandardMaterial({
-                    color: 0x00ff00, // Yeşil parlayan küpler
-                    emissive: 0x004400,
-                    roughness: 0.2
-                });
-                const mesh = new THREE.Mesh(boxGeo, material);
-                const angle = Math.random() * Math.PI * 2;
-                const distance = 3 + Math.random() * 4;
-                mesh.position.set(Math.cos(angle) * distance, 0.1 + Math.random() * 1.5, Math.sin(angle) * distance);
-
-                mesh.userData = {
-                    velocity: new THREE.Vector3(0, 0, 0),
-                    isGrabbed: false,
-                    grabbedBy: null,
-                    isFloating: true,
-                    floatOffset: Math.random() * 100
-                };
-
-                scene.add(mesh);
-                grabObjects.push(mesh);
-            }
-
-            // Çift El Grupları
+            // Elleri Çizmek İçin Gruplar (Kafaya Bağlı)
             leftHandGroup = new THREE.Group();
             rightHandGroup = new THREE.Group();
             cameraGroup.add(leftHandGroup);
             cameraGroup.add(rightHandGroup);
 
-            const jointGeo = new THREE.SphereGeometry(0.018, 8, 8);
+            // Parmak kürecikleri
+            const jointGeo = new THREE.SphereGeometry(0.02, 10, 10);
             const leftJointMat = new THREE.MeshStandardMaterial({ color: 0x39ff14, emissive: 0x116605 });
             const rightJointMat = new THREE.MeshStandardMaterial({ color: 0xff073a, emissive: 0x660210 });
 
@@ -481,15 +319,14 @@
                 handPointsRight.push(jointR);
             }
 
-            // Renderer
+            // WebGL Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.autoClear = false;
 
-            // Görseldeki gibi çift göz penceresine render bağlama
+            // Çift ekran göz maskelerine render'ı bağlıyoruz
             document.getElementById('left-eye-container').appendChild(renderer.domElement);
-            // İki container da aynı WebGL ekranını paylaşacak
             document.getElementById('right-eye-container').appendChild(renderer.domElement);
 
             window.addEventListener('resize', onWindowResize);
@@ -508,7 +345,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // --- Arka Kamera ve MediaPipe Setup ---
+        // --- Arka Kamera ve MediaPipe El Algılama ---
         async function startRearCameraAndMediaPipe() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
@@ -547,76 +384,33 @@
                 };
 
             } catch (err) {
-                console.error("Kamera başlatılamadı:", err);
+                console.error("Kamera başlatma hatası:", err);
             }
         }
 
-        // --- El Hareketlerinin İşlenmesi ---
+        // --- El Takipleri & Koşma Hareketi ---
         function onHandResults(results) {
             handPointsLeft.forEach(p => p.visible = false);
             handPointsRight.forEach(p => p.visible = false);
 
-            lhandVal.textContent = "Aranıyor";
-            rhandVal.textContent = "Aranıyor";
-
-            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
-                releaseObject('Left');
-                releaseObject('Right');
-                return;
-            }
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) return;
 
             results.multiHandLandmarks.forEach((landmarks, index) => {
                 const label = results.multiHandedness[index].label; 
                 const activePoints = (label === 'Left') ? handPointsLeft : handPointsRight;
-                const handState = handsState[label];
-
-                if (label === 'Left') lhandVal.textContent = "Aktif";
-                else rhandVal.textContent = "Aktif";
 
                 let avgY = 0;
                 landmarks.forEach((landmark, i) => {
                     const point = activePoints[i];
                     point.visible = true;
 
-                    point.position.x = (landmark.x - 0.5) * 1.1;
-                    point.position.y = (0.5 - landmark.y) * 1.1 - 0.15;
-                    point.position.z = -0.5 - (landmark.z * 1.0);
+                    // Kameranın lokal uzayındaki konumu (Göz hizasından biraz aşağıda ve ileride)
+                    point.position.x = (landmark.x - 0.5) * 1.2;
+                    point.position.y = (0.5 - landmark.y) * 1.2 - 0.15;
+                    point.position.z = -0.55 - (landmark.z * 1.0);
 
                     avgY += landmark.y;
                 });
-
-                const wristMesh = activePoints[0];
-                const worldWrist = new THREE.Vector3();
-                wristMesh.getWorldPosition(worldWrist);
-                
-                handState.velocity.subVectors(worldWrist, handState.wristWorldPos).divideScalar(0.016);
-                handState.wristWorldPos.copy(worldWrist);
-
-                // Yumruk/Açık el hesabı
-                let totalFingerDistance = 0;
-                const fingerTips = [8, 12, 16, 20];
-                const fingerBases = [5, 9, 13, 17];
-                for (let i = 0; i < 4; i++) {
-                    const tip = landmarks[fingerTips[i]];
-                    const base = landmarks[fingerBases[i]];
-                    const dist = Math.sqrt(Math.pow(tip.x - base.x, 2) + Math.pow(tip.y - base.y, 2) + Math.pow(tip.z - base.z, 2));
-                    totalFingerDistance += dist;
-                }
-
-                const isFist = totalFingerDistance < 0.28;
-
-                if (isFist) {
-                    if (label === 'Left') lhandVal.textContent = "TUTUYOR";
-                    else rhandVal.textContent = "TUTUYOR";
-
-                    if (!handState.isGrabbing) {
-                        tryGrabObject(worldWrist, label);
-                    }
-                } else {
-                    if (handState.isGrabbing) {
-                        releaseAndThrowObject(label);
-                    }
-                }
 
                 avgY /= landmarks.length;
                 if (label === 'Left') {
@@ -628,89 +422,26 @@
                 }
             });
 
+            // Koşu ivmelenmesi
             const now = Date.now();
             const deltaTime = (now - lastMovementTime) / 1000.0;
             lastMovementTime = now;
 
             if (deltaTime > 0) {
-                const threshold = 0.03;
+                const threshold = 0.035;
                 if (totalHandYMovement > threshold) {
-                    moveSpeed += totalHandYMovement * 15.0;
+                    moveSpeed += totalHandYMovement * 16.0;
                     if (moveSpeed > maxSpeed) moveSpeed = maxSpeed;
                 }
                 totalHandYMovement = 0;
             }
         }
 
-        function tryGrabObject(handWorldPos, handLabel) {
-            const handState = handsState[handLabel];
-            let closestObj = null;
-            let minDist = 0.5; 
-
-            grabObjects.forEach(obj => {
-                if (!obj.userData.isGrabbed) {
-                    const dist = obj.position.distanceTo(handWorldPos);
-                    if (dist < minDist) {
-                        minDist = dist;
-                        closestObj = obj;
-                    }
-                }
-            });
-
-            if (closestObj) {
-                handState.isGrabbing = true;
-                handState.grabbedObj = closestObj;
-                closestObj.userData.isGrabbed = true;
-                closestObj.userData.grabbedBy = handLabel;
-                closestObj.userData.isFloating = false;
-            }
-        }
-
-        function releaseAndThrowObject(handLabel) {
-            const handState = handsState[handLabel];
-            const obj = handState.grabbedObj;
-
-            if (obj) {
-                obj.userData.isGrabbed = false;
-                obj.userData.grabbedBy = null;
-                const throwForce = handState.velocity.clone().multiplyScalar(1.6);
-                if (throwForce.length() > 25) throwForce.setLength(25);
-                obj.userData.velocity.copy(throwForce);
-            }
-
-            handState.isGrabbing = false;
-            handState.grabbedObj = null;
-        }
-
-        function releaseObject(handLabel) {
-            const handState = handsState[handLabel];
-            const obj = handState.grabbedObj;
-            if (obj) {
-                obj.userData.isGrabbed = false;
-                obj.userData.grabbedBy = null;
-                obj.userData.velocity.set(0, 0, 0);
-            }
-            handState.isGrabbing = false;
-            handState.grabbedObj = null;
-        }
-
         // --- Oyun Döngüsü ---
-        let lastFrameTime = Date.now();
-        let frameCount = 0;
-
         function animate() {
             requestAnimationFrame(animate);
 
             const dt = 0.016; 
-            const time = Date.now() * 0.003;
-
-            // FPS Hesabı
-            frameCount++;
-            if (Date.now() - lastFrameTime >= 1000) {
-                fpsVal.textContent = frameCount;
-                frameCount = 0;
-                lastFrameTime = Date.now();
-            }
 
             // 1. Kafa Yönlendirmesi (Jiroskop)
             if (hasGyro) {
@@ -743,122 +474,35 @@
                 cameraGroup.quaternion.setFromEuler(euler);
             }
 
-            // 2. Yürüme Fizikleri (Ters Yürüme Sorunu Çözümü)
-            let currentMoveSpeed = moveSpeed;
-            if (keysPressed['w']) currentMoveSpeed = 4.0;
-
-            if (currentMoveSpeed > 0.05) {
-                // Kameranın gerçek dünya yönünü alıyoruz
+            // 2. Yönelimli Yürüme Kontrolü (Hata Giderildi)
+            if (moveSpeed > 0.05) {
                 cameraGroup.getWorldDirection(moveDirection);
                 
-                // TERS YÖNE GİTME SORUNUNUN ÇÖZÜMÜ: 
-                // Three.js'te getWorldDirection vektörü varsayılan olarak GERİYE (pozitif Z eksenine) işaret eder.
-                // Bu yüzden kameranın tam baktığı yöne (İLERİYE) gitmek için yön vektörünü ters yönde uygulamıyoruz.
-                // Bazı tarayıcılarda bu işaret yönü sapar. İleri gitmek için işareti sabitledik:
+                // İLERİ GİTME DÜZELTMESİ:
+                // Three.js'te .getWorldDirection() kameranın -Z (bakış) yönüne bakar.
+                // Bu yüzden kameranın tam baktığı yöne (ileri) gitmek için yön vektörünü doğrudan ekliyoruz.
                 moveDirection.y = 0; 
                 moveDirection.normalize(); 
                 
-                // Pozisyon ekleme
-                cameraGroup.position.addScaledVector(moveDirection, currentMoveSpeed * dt);
-                
-                if (!keysPressed['w']) moveSpeed *= deceleration;
-
-                // Kendi bacak hareketlerimiz
-                playerLeftLeg.rotation.x = Math.sin(time * 3) * 0.5;
-                playerRightLeg.rotation.x = -Math.sin(time * 3) * 0.5;
+                cameraGroup.position.addScaledVector(moveDirection, moveSpeed * dt);
+                moveSpeed *= deceleration;
             } else {
                 moveSpeed = 0;
-                playerLeftLeg.rotation.x = 0;
-                playerRightLeg.rotation.x = 0;
             }
 
-            // Hız Debug güncelleme
-            speedVal.textContent = Math.max(moveSpeed, keysPressed['w'] ? 4.0 : 0).toFixed(1);
-
-            // 3. Robotların Animasyonu
-            humanoids.forEach(robot => {
-                if (robot.userData.isKnockedDown) {
-                    if (Date.now() - robot.userData.knockDownTime > 4000) {
-                        robot.userData.isKnockedDown = false;
-                        robot.rotation.z = 0; 
-                    }
-                    return; 
-                }
-
-                robot.position.addScaledVector(robot.userData.direction, robot.userData.speed * dt);
-                
-                robot.userData.leftLeg.rotation.x = Math.sin(time * robot.userData.speed * 2) * 0.6;
-                robot.userData.rightLeg.rotation.x = -Math.sin(time * robot.userData.speed * 2) * 0.6;
-
-                if (robot.position.length() > 50) {
-                    robot.userData.direction.negate();
-                }
-            });
-
-            // 4. Fizik Küpleri & Devirme
-            grabObjects.forEach(obj => {
-                if (obj.userData.isGrabbed) {
-                    const label = obj.userData.grabbedBy;
-                    const handState = handsState[label];
-                    const activePoints = (label === 'Left') ? handPointsLeft : handPointsRight;
-                    
-                    const wristMesh = activePoints[0];
-                    const targetWorldPos = new THREE.Vector3();
-                    wristMesh.getWorldPosition(targetWorldPos);
-
-                    const forward = new THREE.Vector3();
-                    cameraGroup.getWorldDirection(forward);
-                    targetWorldPos.addScaledVector(forward, 0.1); 
-
-                    obj.position.lerp(targetWorldPos, 0.35);
-                    obj.userData.velocity.set(0, 0, 0);
-                } else if (obj.userData.isFloating) {
-                    obj.rotation.x += 0.01;
-                    obj.position.y = 1.0 + Math.sin(Date.now() * 0.002 + obj.userData.floatOffset) * 0.1;
-                } else {
-                    obj.userData.velocity.y += GRAVITY * dt;
-                    obj.position.addScaledVector(obj.userData.velocity, dt);
-
-                    if (obj.position.y <= 0.1) {
-                        obj.position.y = 0.1;
-                        if (Math.abs(obj.userData.velocity.y) > 0.8) {
-                            obj.userData.velocity.y = -obj.userData.velocity.y * 0.4;
-                        } else {
-                            obj.userData.velocity.set(0, 0, 0);
-                        }
-                    }
-
-                    // Robot Devirme Kontrolü
-                    if (obj.userData.velocity.length() > 2.0) {
-                        humanoids.forEach(robot => {
-                            if (!robot.userData.isKnockedDown) {
-                                const robotCore = robot.position.clone().add(new THREE.Vector3(0, 0.8, 0));
-                                const dist = obj.position.distanceTo(robotCore);
-                                if (dist < 0.5) {
-                                    robot.userData.isKnockedDown = true;
-                                    robot.userData.knockDownTime = Date.now();
-                                    robot.rotation.z = Math.PI / 2.2; 
-                                    obj.userData.velocity.multiplyScalar(-0.3); 
-                                }
-                            }
-                        });
-                    }
-                }
-            });
-
-            // 5. STEREOSCOPIC VR RENDERING (Yan yana çizim)
+            // 3. Çift Ekran Stereoscopic Render
             const width = window.innerWidth;
             const height = window.innerHeight;
 
             renderer.clear();
 
-            // Sol Göz (Sol taraftaki pencereli alan)
+            // Sol gözün render edilmesi
             renderer.setViewport(0, 0, width / 2, height);
             renderer.setScissor(0, 0, width / 2, height);
             renderer.setScissorTest(true);
             renderer.render(scene, cameraLeft);
 
-            // Sağ Göz (Sağ taraftaki pencereli alan)
+            // Sağ gözün render edilmesi
             renderer.setViewport(width / 2, 0, width / 2, height);
             renderer.setScissor(width / 2, 0, width / 2, height);
             renderer.setScissorTest(true);
