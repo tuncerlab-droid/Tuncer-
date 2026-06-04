@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cardboard VR - Fizik Dünyası</title>
+    <title>Cardboard VR - Gerçekçi Eller & Fizik</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -57,7 +57,7 @@
         .lens-cutout {
             width: 90%;
             height: 85%;
-            /* Fotoğraftaki gibi bükümlü oval/dikdörtgen lens çerçevesi */
+            /* Fotoğraftaki bükümlü oval/dikdörtgen lens çerçevesi */
             border-radius: 15% / 25%;
             /* Dışını simsiyah boyayan sihirli gölge hilesi */
             box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
@@ -96,22 +96,22 @@
     <!-- Başlangıç Ekranı -->
     <div id="welcome-screen" class="fixed inset-0 bg-slate-950 text-white z-50 flex flex-col items-center justify-center p-6 text-center">
         <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl">
-            <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-emerald-400 to-teal-500 bg-clip-text text-transparent">
-                VR Fizik & Humanoid 5.0
+            <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+                VR Gerçekçi Eller & Fizik
             </h1>
             <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                Ters yürüme sorunu çözüldü! Küpler ve robotlar geri getirildi. Ekran daralması düzeltilip gerçek <strong>Cardboard Lens Maskesi</strong> uygulandı.
+                İskelet el modelleri yerine, eklemleri bükülebilen <strong>ten rengi gerçekçi 3D el modelleri</strong> entegre edildi! Artık parmaklarınızı oynattığınızı görebilirsiniz.
             </p>
             
-            <button id="start-btn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
-                Tam Ekran Başla
+            <button id="start-btn" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
+                Gözlüğü Tak ve Başla
             </button>
         </div>
     </div>
 
     <!-- Telefon Döndürme Uyarısı -->
     <div id="landscape-warning" class="fixed inset-0 bg-slate-950 z-40 text-white flex flex-col items-center justify-center p-6 text-center">
-        <svg class="w-16 h-16 text-emerald-400 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg class="w-16 h-16 text-amber-400 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
         </svg>
         <p class="text-xl font-bold">Lütfen Telefonu Yan Çevirin</p>
@@ -141,8 +141,11 @@
         let cameraGroup, cameraLeft, cameraRight; 
         const IPD = 0.064; 
 
+        // Gelişmiş Gerçekçi El Modelleri İçin Yapılar
         let leftHandGroup, rightHandGroup;
-        let handPointsLeft = [], handPointsRight = [];
+        let handBonesLeft = [], handBonesRight = [];
+        let handKnucklesLeft = [], handKnucklesRight = [];
+        let palmMeshLeft, palmMeshRight;
         
         let moveSpeed = 0;
         const maxSpeed = 12.0; 
@@ -166,6 +169,23 @@
             Left: { isGrabbing: false, grabbedObj: null, velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() },
             Right: { isGrabbing: false, grabbedObj: null, velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() }
         };
+
+        // Parmak Bağlantı Sırası (MediaPipe Landmark İndeksleri)
+        // Her parmak için eklem çiftlerini tanımlar
+        const FINGER_BONES = [
+            // Başparmak (Thumb)
+            [0, 1], [1, 2], [2, 3], [3, 4],
+            // İşaret Parmağı (Index)
+            [0, 5], [5, 6], [6, 7], [7, 8],
+            // Orta Parmak (Middle)
+            [9, 10], [10, 11], [11, 12],
+            // Yüzük Parmağı (Ring)
+            [13, 14], [14, 15], [15, 16],
+            // Serçe Parmak (Pinky)
+            [0, 17], [17, 18], [18, 19], [19, 20],
+            // Avuç içi sabitlemeleri
+            [5, 9], [9, 13], [13, 17]
+        ];
 
         // --- Başlatıcı (Tam Ekran) ---
         document.getElementById('start-btn').addEventListener('click', async () => {
@@ -257,6 +277,50 @@
             return group;
         }
 
+        // --- Gerçekçi 3D El Modeli Tasarımcısı ---
+        function setupRealisticHand(handGroup, handBones, handKnuckles, skinColor) {
+            // Gerçekçi ten dokusu ve rengi matı
+            const handMat = new THREE.MeshStandardMaterial({
+                color: skinColor,
+                roughness: 0.6,
+                metalness: 0.05,
+                bumpScale: 0.05
+            });
+
+            // 1. Eklem Noktaları (Parmak Boğumları)
+            const knuckleGeo = new THREE.SphereGeometry(0.016, 8, 8);
+            for (let i = 0; i < 21; i++) {
+                const sphere = new THREE.Mesh(knuckleGeo, handMat);
+                sphere.visible = false;
+                handGroup.add(sphere);
+                handKnuckles.push(sphere);
+            }
+
+            // 2. Kemik Silindirleri (Eklemler Arası Bağlantı Meshleri)
+            const boneGeo = new THREE.CylinderGeometry(0.014, 0.012, 1, 8);
+            // Rotasyonu kolaylaştırmak için pivotu alt tabana çekiyoruz
+            boneGeo.translate(0, 0.5, 0);
+            boneGeo.rotateX(Math.PI / 2);
+
+            FINGER_BONES.forEach(() => {
+                const cylinder = new THREE.Mesh(boneGeo, handMat);
+                cylinder.visible = false;
+                handGroup.add(cylinder);
+                handBones.push(cylinder);
+            });
+        }
+
+        // --- İki Nokta Arasında Kemik Silindirini Güncelleyen Matematiksel Fonksiyon ---
+        function updateBoneSegment(boneMesh, posA, posB) {
+            const distance = posA.distanceTo(posB);
+            if (distance === 0) return;
+
+            boneMesh.position.copy(posA);
+            boneMesh.scale.set(1, 1, distance);
+            boneMesh.lookAt(posB);
+            boneMesh.visible = true;
+        }
+
         // --- Three.js Kurulumu (Gündüz & Fizik Dünyası) ---
         function initThree() {
             const container = document.getElementById('canvas-container');
@@ -326,29 +390,22 @@
                 grabObjects.push(mesh);
             }
 
-            // Elleri Oluştur
+            // --- Gerçekçi Çift El Gruplarını Kameraya Bağla ---
             leftHandGroup = new THREE.Group();
             rightHandGroup = new THREE.Group();
             cameraGroup.add(leftHandGroup);
             cameraGroup.add(rightHandGroup);
 
-            const jointGeo = new THREE.SphereGeometry(0.02, 8, 8);
-            const matL = new THREE.MeshStandardMaterial({ color: 0x39ff14 });
-            const matR = new THREE.MeshStandardMaterial({ color: 0xff073a });
-
-            for (let i = 0; i < 21; i++) {
-                const jl = new THREE.Mesh(jointGeo, matL); leftHandGroup.add(jl); handPointsLeft.push(jl);
-                const jr = new THREE.Mesh(jointGeo, matR); rightHandGroup.add(jr); handPointsRight.push(jr);
-            }
+            // Sol el ten rengi (Daha açık) ve Sağ el ten rengi (Hafif farklı kılalım)
+            setupRealisticHand(leftHandGroup, handBonesLeft, handKnucklesLeft, 0xe0ac69);
+            setupRealisticHand(rightHandGroup, handBonesRight, handKnucklesRight, 0xe0ac69);
 
             // Renderer - Tam ekranı kaplar
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.autoClear = false; // Stereoscopic split screen için gerekli
+            renderer.autoClear = false; 
             
-            // Render alanını id'ye değil, doğrudan kapsayıcı div'e atıyoruz.
-            // Üstündeki maske CSS ile çalışıyor.
             container.appendChild(renderer.domElement);
 
             window.addEventListener('resize', onWindowResize);
@@ -385,8 +442,11 @@
         }
 
         function onHandResults(results) {
-            handPointsLeft.forEach(p => p.visible = false);
-            handPointsRight.forEach(p => p.visible = false);
+            // Başlangıçta tüm kemikleri ve eklem kürelerini sakla
+            handKnucklesLeft.forEach(k => k.visible = false);
+            handBonesLeft.forEach(b => b.visible = false);
+            handKnucklesRight.forEach(k => k.visible = false);
+            handBonesRight.forEach(b => b.visible = false);
 
             if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
                 releaseObject('Left'); releaseObject('Right'); return;
@@ -394,27 +454,37 @@
 
             results.multiHandLandmarks.forEach((landmarks, index) => {
                 const label = results.multiHandedness[index].label; 
-                const activePoints = (label === 'Left') ? handPointsLeft : handPointsRight;
                 const handState = handsState[label];
+                
+                const activeKnuckles = (label === 'Left') ? handKnucklesLeft : handKnucklesRight;
+                const activeBones = (label === 'Left') ? handBonesLeft : handBonesRight;
 
-                let avgY = 0;
+                // 1. Eklem Kürelerinin Pozisyonlarını Güncelle
                 landmarks.forEach((landmark, i) => {
-                    const point = activePoints[i];
-                    point.visible = true;
-                    point.position.x = (landmark.x - 0.5) * 1.3;
-                    point.position.y = (0.5 - landmark.y) * 1.3 - 0.15;
-                    point.position.z = -0.6 - (landmark.z * 1.0);
-                    avgY += landmark.y;
+                    const k = activeKnuckles[i];
+                    k.visible = true;
+                    // MediaPipe koordinatlarından VR dünyasına eşleme
+                    k.position.x = (landmark.x - 0.5) * 1.3;
+                    k.position.y = (0.5 - landmark.y) * 1.3 - 0.15;
+                    k.position.z = -0.6 - (landmark.z * 1.0);
                 });
 
-                const wrist = activePoints[0];
+                // 2. Kemik Silindirlerinin Konum ve Rotasyonlarını Güncelle
+                FINGER_BONES.forEach((boneIndices, i) => {
+                    const pA = activeKnuckles[boneIndices[0]].position;
+                    const pB = activeKnuckles[boneIndices[1]].position;
+                    updateBoneSegment(activeBones[i], pA, pB);
+                });
+
+                // Bilek (Wrist) ve elin hızı
+                const wrist = activeKnuckles[0];
                 const worldWrist = new THREE.Vector3();
                 wrist.getWorldPosition(worldWrist);
                 
                 handState.velocity.subVectors(worldWrist, handState.wristWorldPos).divideScalar(0.016);
                 handState.wristWorldPos.copy(worldWrist);
 
-                // Yumruk (Tutma) Mantığı
+                // Yumruk (Tutma) Algoritması
                 let totalDist = 0;
                 const tips = [8, 12, 16, 20], bases = [5, 9, 13, 17];
                 for (let i = 0; i < 4; i++) {
@@ -428,7 +498,11 @@
                     if (handState.isGrabbing) releaseAndThrow(label);
                 }
 
+                // Koşma Hareketi Algılama
+                let avgY = 0;
+                landmarks.forEach(l => avgY += l.y);
                 avgY /= landmarks.length;
+
                 if (label === 'Left') {
                     if (prevYLeft !== 0) totalHandYMovement += Math.abs(avgY - prevYLeft);
                     prevYLeft = avgY;
@@ -438,7 +512,7 @@
                 }
             });
 
-            // Koşu İvmesi
+            // Koşu İvmesi Tetikleyici
             const now = Date.now();
             if ((now - lastMovementTime) / 1000.0 > 0) {
                 if (totalHandYMovement > 0.035) {
@@ -511,7 +585,7 @@
                 cameraGroup.quaternion.setFromEuler(new THREE.Euler(targetRotationX, targetRotationY, 0, 'YXZ'));
             }
 
-            // 2. TERS YÜRÜME DÜZELTMESİ (Bakılan Yöne Gitme)
+            // 2. Yönelimli Yürüme Kontrolü (İleriye Yürüme Düzeltmesi)
             let currentMoveSpeed = moveSpeed;
             if (keysPressed['w']) currentMoveSpeed = 4.0;
 
@@ -519,9 +593,7 @@
                 cameraGroup.getWorldDirection(moveDirection);
                 moveDirection.y = 0; moveDirection.normalize();
                 
-                // HATA BURADAYDI: getWorldDirection bize -Z (ileri) vektörünü verir.
-                // Senin cihazında bu seni geriye atıyorsa, vektörün tam tersine (negatifine) yürümeliyiz!
-                // "-1" ile çarparak senin dediğin "Ters yürüyor" hatasını TAM TERSİNE ÇEVİRİP düzeltiyoruz.
+                // "-1" ile çarparak senin dediğin "Ters yürüyor" hatasını düzeltiyoruz.
                 cameraGroup.position.addScaledVector(moveDirection, currentMoveSpeed * dt * -1);
                 
                 if (!keysPressed['w']) moveSpeed *= deceleration;
@@ -543,9 +615,9 @@
             grabObjects.forEach(obj => {
                 if (obj.userData.isGrabbed) {
                     const label = obj.userData.grabbedBy;
-                    const activePoints = (label === 'Left') ? handPointsLeft : handPointsRight;
+                    const activeKnuckles = (label === 'Left') ? handKnucklesLeft : handKnucklesRight;
                     const wristWorld = new THREE.Vector3();
-                    activePoints[0].getWorldPosition(wristWorld);
+                    activeKnuckles[0].getWorldPosition(wristWorld);
                     
                     const fwd = new THREE.Vector3();
                     cameraGroup.getWorldDirection(fwd);
@@ -583,7 +655,7 @@
                 }
             });
 
-            // 5. STEREOSKOPİK VR RENDER (2 Ekranın tek Canvas'a yan yana çizilmesi)
+            // 5. STEREOSKOPİK VR RENDER
             const w = window.innerWidth;
             const h = window.innerHeight;
 
