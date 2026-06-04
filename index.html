@@ -1,904 +1,897 @@
 
 <!DOCTYPE html>
-<html lang="tr" class="scroll-smooth">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VR Evreni - Gelişmiş AI & Sosyal Sosyalleşme Alanı</title>
-    
-    <!-- Google Auth Client ID -->
-    <meta name="google-signin-client_id" content="307341520038-as65gibjh3rgj375nhf24kboanpqhkuq.apps.googleusercontent.com">
-    
-    <!-- Google Identity Services SDK -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    
+    <title>Tuncerlab VR Evreni</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Plus Jakarta Sans & Space Grotesk -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Plus Jakarta Sans', 'sans-serif'],
-                        display: ['Space Grotesk', 'sans-serif'],
-                    },
-                    colors: {
-                        vr: {
-                            dark: '#0B0F19',
-                            card: '#161F30',
-                            accent: '#3B82F6',
-                            purple: '#A855F7',
-                            emerald: '#10B981',
-                        }
-                    }
-                }
+    <!-- Google Identity Services (GIS) SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        :root {
+            --primary: #00f3ff;
+            --primary-glow: rgba(0, 243, 255, 0.5);
+            --secondary: #ff007f;
+            --secondary-glow: rgba(255, 0, 127, 0.5);
+            --bg-dark: #070913;
+            --grid-color: rgba(0, 243, 255, 0.1);
+        }
+
+        /* Özel Tema Tanımlamaları */
+        .theme-nebula {
+            --primary: #00f3ff;
+            --primary-glow: rgba(0, 243, 255, 0.5);
+            --secondary: #ff007f;
+            --secondary-glow: rgba(255, 0, 127, 0.5);
+            --bg-dark: #070913;
+        }
+
+        .theme-matrix {
+            --primary: #39ff14;
+            --primary-glow: rgba(57, 255, 20, 0.5);
+            --secondary: #00ffcc;
+            --secondary-glow: rgba(0, 255, 204, 0.3);
+            --bg-dark: #020804;
+        }
+
+        .theme-cyberpunk {
+            --primary: #ffe600;
+            --primary-glow: rgba(255, 230, 0, 0.5);
+            --secondary: #ff0055;
+            --secondary-glow: rgba(255, 0, 85, 0.5);
+            --bg-dark: #12011a;
+        }
+
+        .theme-deepspace {
+            --primary: #8a2be2;
+            --primary-glow: rgba(138, 43, 226, 0.5);
+            --secondary: #00e5ff;
+            --secondary-glow: rgba(0, 229, 255, 0.5);
+            --bg-dark: #03030a;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #f3f4f6;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Neon Glow Efektleri */
+        .neon-text-primary {
+            text-shadow: 0 0 10px var(--primary-glow), 0 0 20px var(--primary-glow);
+        }
+
+        .neon-text-secondary {
+            text-shadow: 0 0 10px var(--secondary-glow), 0 0 20px var(--secondary-glow);
+        }
+
+        .neon-border-primary {
+            box-shadow: 0 0 15px var(--primary-glow);
+            border-color: var(--primary);
+        }
+
+        .neon-border-secondary {
+            box-shadow: 0 0 15px var(--secondary-glow);
+            border-color: var(--secondary);
+        }
+
+        /* Görseldeki 3B Perspektif Dama Tahtası Zemini (Hero Bölümü İçin) */
+        .checkerboard-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            overflow: hidden;
+            perspective: 200px;
+        }
+
+        .checkerboard-floor {
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(45deg, #111 25%, transparent 25%), 
+                linear-gradient(-45deg, #111 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #1d1f2f 75%), 
+                linear-gradient(-45deg, transparent 75%, #1d1f2f 75%);
+            background-size: 80px 80px;
+            background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
+            transform: rotateX(60deg);
+            transform-origin: top center;
+            animation: gridScroll 15s linear infinite;
+            opacity: 0.85;
+            box-shadow: inset 0 100px 100px var(--bg-dark);
+        }
+
+        @keyframes gridScroll {
+            0% {
+                background-position: 0 0, 0 40px, 40px -40px, -40px 0px;
+            }
+            100% {
+                background-position: 0 800px, 0 840px, 40px 760px, -40px 800px;
             }
         }
-    </script>
-    <style>
-        /* Aurora arka plan efekti */
-        .aurora-bg {
-            background: radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 80% 70%, rgba(168, 85, 247, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 50% 10%, rgba(16, 185, 129, 0.1) 0%, transparent 30%),
-                        #0B0F19;
-        }
-        
-        /* Grid efekti */
-        .grid-overlay {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
+
+        /* Arka plan siber ağ animasyonları */
+        .cyber-nodes {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: radial-gradient(circle at 20% 30%, var(--primary-glow) 0%, transparent 15%),
+                              radial-gradient(circle at 80% 60%, var(--secondary-glow) 0%, transparent 20%);
+            opacity: 0.6;
+            mix-blend-mode: screen;
         }
 
-        /* Glassmorphism */
-        .glass-panel {
-            background: rgba(22, 31, 48, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+        /* Özelleştirilmiş Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        /* Kart hover efektleri */
-        .interactive-card {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        ::-webkit-scrollbar-track {
+            background: var(--bg-dark);
         }
-        .interactive-card:hover {
-            transform: translateY(-6px);
-            border-color: rgba(59, 130, 246, 0.4);
-            box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.3);
-        }
-
-        /* Nabız animasyonu */
-        @keyframes custom-pulse {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.05); opacity: 1; }
-        }
-        .pulse-effect {
-            animation: custom-pulse 3s infinite ease-in-out;
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
         }
     </style>
 </head>
-<body class="aurora-bg text-gray-100 font-sans min-h-screen selection:bg-blue-500 selection:text-white overflow-x-hidden relative">
-    
-    <div class="absolute inset-0 grid-overlay pointer-events-none z-0"></div>
+<body class="theme-nebula">
+
+    <!-- Siber Arka Plan -->
+    <div class="cyber-nodes"></div>
 
     <!-- Üst Menü / Navbar -->
-    <header class="relative z-10 w-full border-b border-gray-800/80 glass-panel sticky top-0">
-        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-            <!-- Logo (Yazı Tabanlı Modern Tasarım) -->
-            <a href="https://tuncervr.netlify.app" target="_blank" class="flex items-center space-x-3 group">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 flex items-center justify-center font-display font-bold text-xl text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-                    V
+    <nav class="sticky top-0 z-50 backdrop-blur-md bg-opacity-70 bg-[#070913] border-b border-gray-800 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Sol Logo ve Marka -->
+            <div class="flex items-center space-x-3">
+                <svg class="w-10 h-10 text-[var(--primary)] drop-shadow-[0_0_8px_var(--primary-glow)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                <div>
+                    <span class="text-xl font-bold tracking-widest text-[var(--primary)] neon-text-primary">TUNCERLAB</span>
+                    <span class="text-xs block text-gray-400 font-semibold tracking-wider">VR EVRENİ</span>
                 </div>
-                <span class="font-display font-bold text-xl tracking-wide bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
-                    VREvreni
-                </span>
-            </a>
+            </div>
 
-            <!-- Navigasyon -->
-            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-400">
-                <a href="#ozellikler" class="hover:text-white transition-colors">Özellikler</a>
-                <a href="#simulasyon" class="hover:text-white transition-colors">Evren Simülatörü</a>
-                <a href="#hakkimizda" class="hover:text-white transition-colors">Hakkımızda</a>
-                <a href="https://tuncerlab.netlify.app" target="_blank" class="text-blue-400 hover:text-blue-300 transition-colors">TuncerLab</a>
-            </nav>
+            <!-- Sağ Menü & Auth -->
+            <div class="flex items-center space-x-4">
+                <!-- Tema Seçici (Dropdown Hızlı Seçim) -->
+                <div class="relative group">
+                    <button class="flex items-center space-x-2 bg-gray-900 border border-gray-700 rounded-full px-4 py-1.5 text-xs font-semibold hover:border-[var(--primary)] transition-all">
+                        <svg class="w-4 h-4 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                        </svg>
+                        <span>Tema Değiştir</span>
+                    </button>
+                    <!-- Açılır Menü -->
+                    <div class="absolute right-0 mt-2 w-48 bg-gray-900 border border-gray-800 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 p-2">
+                        <button onclick="setTheme('nebula')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-gray-800 flex items-center space-x-2 text-cyan-400">
+                            <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
+                            <span>Neon Nebula</span>
+                        </button>
+                        <button onclick="setTheme('matrix')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-gray-800 flex items-center space-x-2 text-green-400">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-400 inline-block"></span>
+                            <span>Matrix Yeşil</span>
+                        </button>
+                        <button onclick="setTheme('cyberpunk')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-gray-800 flex items-center space-x-2 text-yellow-400">
+                            <span class="w-2.5 h-2.5 rounded-full bg-yellow-400 inline-block"></span>
+                            <span>Siberpunk Sarı</span>
+                        </button>
+                        <button onclick="setTheme('deepspace')" class="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-gray-800 flex items-center space-x-2 text-purple-400">
+                            <span class="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>
+                            <span>Derin Uzay</span>
+                        </button>
+                    </div>
+                </div>
 
-            <!-- Sağ Taraf (Auth Durumu) -->
-            <div id="auth-nav-container" class="flex items-center space-x-4">
-                <!-- Dinamik olarak Google Giriş butonu buraya render edilecektir -->
-                <div id="google-btn-navbar"></div>
+                <!-- Google Auth Container -->
+                <div id="authContainer" class="flex items-center space-x-3">
+                    <div id="googleBtn" class="scale-90 sm:scale-100 origin-right"></div>
+                    <!-- Başarılı Giriş Durumu (Varsayılan Gizli) -->
+                    <div id="userInfo" class="hidden flex items-center space-x-3 bg-gray-900 border border-gray-800 rounded-full px-3 py-1">
+                        <img id="userAvatar" src="" alt="Avatar" class="w-7 h-7 rounded-full border border-[var(--primary)]">
+                        <span id="userName" class="text-xs font-semibold max-w-[100px] truncate">Misafir</span>
+                        <button onclick="logout()" class="text-gray-400 hover:text-[var(--secondary)] text-xs font-bold px-1" title="Çıkış Yap">
+                            ✕
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-    </header>
+    </nav>
 
-    <!-- Ana Sayfa Giriş / Hero Bölümü -->
-    <section class="relative z-10 max-w-7xl mx-auto px-6 pt-16 pb-24 md:pt-24 md:pb-32 flex flex-col items-center text-center">
-        <!-- Bilgilendirme Rozeti -->
-        <div class="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-semibold text-blue-400 mb-8 uppercase tracking-wider pulse-effect">
-            <span>Yeni Nesil Sosyal VR Evreni Aktif</span>
+    <!-- Giriş Yapıldı Bildirimi / Toast -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 bg-gray-900 border border-[var(--primary)] rounded-xl p-4 shadow-2xl flex items-center space-x-3 translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-[var(--primary)] bg-opacity-20 p-2 rounded-lg">
+            <svg class="w-6 h-6 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </div>
+        <div>
+            <h4 class="text-sm font-bold text-white">Bağlantı Başarılı</h4>
+            <p id="toastMessage" class="text-xs text-gray-400">Giriş yapıldı.</p>
+        </div>
+    </div>
+
+    <!-- Hero / Tanıtım Bölümü -->
+    <section class="relative pt-12 pb-6 flex flex-col items-center justify-center text-center px-4 overflow-hidden">
+        <div class="max-w-4xl mx-auto z-10">
+            <!-- Kürelerin Arasında Duran Humanoid Simgesi -->
+            <div class="relative w-36 h-36 mx-auto mb-8 animate-pulse">
+                <div class="absolute inset-0 rounded-full bg-[var(--primary)] bg-opacity-10 filter blur-xl"></div>
+                <!-- Mini Poster İllüstrasyonu (SVG) -->
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_15px_var(--primary-glow)]">
+                    <!-- Bağlantı çizgileri -->
+                    <line x1="20" y1="50" x2="50" y2="25" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3" />
+                    <line x1="80" y1="40" x2="50" y2="25" stroke="var(--primary)" stroke-width="1.5" stroke-dasharray="3" />
+                    <line x1="20" y1="50" x2="50" y2="55" stroke="var(--secondary)" stroke-width="1.5" />
+                    <line x1="80" y1="40" x2="50" y2="55" stroke="var(--secondary)" stroke-width="1.5" />
+                    
+                    <!-- Ortadaki Baş (Humanoid) -->
+                    <circle cx="50" cy="42" r="8" fill="#e5a97c" stroke="#fff" stroke-width="1" />
+                    <!-- Gövde eklemleri -->
+                    <circle cx="50" cy="56" r="6" fill="#ca8a04" />
+                    <circle cx="50" cy="68" r="5" fill="#ca8a04" />
+                    <!-- Kollar -->
+                    <line x1="50" y1="56" x2="25" y2="50" stroke="#ca8a04" stroke-width="4" stroke-linecap="round" />
+                    <line x1="50" y1="56" x2="75" y2="44" stroke="#ca8a04" stroke-width="4" stroke-linecap="round" />
+                    
+                    <!-- Küreler -->
+                    <circle cx="20" cy="50" r="7" fill="url(#sphereGrad)" class="animate-bounce" />
+                    <circle cx="80" cy="40" r="9" fill="url(#sphereGrad)" />
+                    <circle cx="50" cy="25" r="11" fill="url(#sphereGrad)" />
+                    
+                    <defs>
+                        <radialGradient id="sphereGrad" cx="30%" cy="30%" r="70%">
+                            <stop offset="0%" stop-color="#fff" />
+                            <stop offset="40%" stop-color="#00f3ff" />
+                            <stop offset="100%" stop-color="#002244" />
+                        </radialGradient>
+                    </defs>
+                </svg>
+            </div>
+
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight mb-4">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-300 to-[var(--primary)]">TUNCERLAB VR</span>
+                <span class="block text-[var(--secondary)] neon-text-secondary mt-1 font-mono tracking-widest text-3xl md:text-5xl">EVRENİ</span>
+            </h1>
+            
+            <p class="text-gray-400 text-sm md:text-lg max-w-2xl mx-auto mb-8">
+                Geleceğin sanal dünyası şimdi tarayıcınızda. Görseldeki humanoid yapay zeka ile veri kürelerini kontrol etme gücünü, gelişmiş Cloud VR teknolojimizle deneyimleyin.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
+                <!-- Asıl Oyuna Git Butonu -->
+                <a href="https://tuncervr.netlify.app" target="_blank" class="w-full sm:w-auto relative group inline-flex items-center justify-center p-0.5 mb-2 mr-2 overflow-hidden text-sm font-medium text-white rounded-xl group bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] hover:text-white dark:text-white focus:ring-4 focus:outline-none focus:ring-cyan-800 transition-all duration-300 hover:shadow-[0_0_25px_var(--primary-glow)]">
+                    <span class="w-full sm:w-auto px-8 py-3.5 transition-all ease-in duration-75 bg-[#070913] rounded-xl group-hover:bg-opacity-0 flex items-center justify-center space-x-3">
+                        <svg class="w-5 h-5 text-[var(--primary)] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span class="font-bold tracking-wider">TUNCER VR ASIL OYUNA GİT</span>
+                    </span>
+                </a>
+
+                <!-- Mini Oyuna Kaydır Butonu -->
+                <button onclick="scrollToGame()" class="w-full sm:w-auto px-8 py-4 text-sm font-bold text-gray-300 hover:text-white bg-gray-900 border border-gray-800 hover:border-[var(--primary)] rounded-xl transition-all duration-300 flex items-center justify-center space-x-2">
+                    <span>Eğitimi ve Mini Oyunu Oyna</span>
+                    <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
 
-        <!-- Ana Başlık -->
-        <h1 class="font-display font-extrabold text-4xl md:text-7xl leading-tight tracking-tight max-w-5xl mb-6">
-            Geleceğin Sosyal Dünyasına <br>
-            <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-500">
-                Birlikte Adım Atalım
-            </span>
-        </h1>
-
-        <!-- Açıklama -->
-        <p class="text-gray-400 text-lg md:text-xl max-w-2xl mb-10 leading-relaxed">
-            Yapay zeka asistanları ile yönetilen, düşük bütçeli donanımlarla dahi kusursuz çalışan, sesli sohbet destekli ve çok oyunculu yepyeni bir sanal gerçeklik evreni sizi bekliyor.
-        </p>
-
-        <!-- CTA Butonları -->
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto mb-16">
-            <button onclick="scrollToSimulator()" class="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 font-bold text-white shadow-xl shadow-blue-500/20 transition-all transform hover:-translate-y-0.5">
-                Şimdi Keşfet
-            </button>
-            <div id="google-btn-hero" class="w-full sm:w-auto flex justify-center"></div>
-        </div>
-
-        <!-- Hızlı İstatistikler -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl w-full border-t border-gray-800/80 pt-10">
-            <div class="flex flex-col items-center">
-                <span class="font-display font-bold text-3xl md:text-4xl text-white">100ms</span>
-                <span class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-1">Düşük Gecikme</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <span class="font-display font-bold text-3xl md:text-4xl text-white">99.9%</span>
-                <span class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-1">Ulaşılabilirlik</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <span class="font-display font-bold text-3xl md:text-4xl text-white">5 Farklı</span>
-                <span class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-1">Avatar Rengi</span>
-            </div>
-            <div class="flex flex-col items-center">
-                <span class="font-display font-bold text-3xl md:text-4xl text-white">Yapay Zeka</span>
-                <span class="text-xs uppercase text-gray-500 font-semibold tracking-wider mt-1">Yönetici Destekli</span>
-            </div>
+        <!-- Görseldeki Gibi 3B Dama Tahtası Tabanı -->
+        <div class="checkerboard-container mt-4">
+            <div class="checkerboard-floor"></div>
+            <!-- Ekstra gölgeleme / derinlik için overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-dark)] via-transparent to-transparent"></div>
         </div>
     </section>
 
-    <!-- Özellikler Bölümü -->
-    <section id="ozellikler" class="relative z-10 py-24 bg-gray-950/40 border-y border-gray-900">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center max-w-3xl mx-auto mb-16">
-                <h2 class="font-display font-bold text-3xl md:text-5xl text-white mb-4">Evrenimizin Gücü ve Özellikleri</h2>
-                <p class="text-gray-400">İnternet tarayıcınızdan veya VR gözlüğünüzden tek tıkla bağlanıp deneyimleyebileceğiniz yenilikçi bir sosyal katman.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Kart 1: Gelişmiş AI Yönetici -->
-                <div class="glass-panel p-8 rounded-2xl interactive-card flex flex-col justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 mb-6">
-                            <!-- AI/Chip SVG -->
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-semibold text-xl text-white mb-3">Yapay Zeka Yönetici</h3>
-                        <p class="text-gray-400 text-sm leading-relaxed">
-                            Her an yardıma hazır, sorularınızı yanıtlayan ve oyun etkinliklerini koordine eden akıllı bir yapay zeka lideri.
-                        </p>
-                    </div>
-                    <div class="mt-6 pt-6 border-t border-gray-800/60 text-xs text-purple-400 font-semibold uppercase tracking-wider">
-                        Süreç Kontrolü ve Güvenlik
-                    </div>
-                </div>
-
-                <!-- Kart 2: Ucuz & Ulaşılabilir Donanım -->
-                <div class="glass-panel p-8 rounded-2xl interactive-card flex flex-col justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-6">
-                            <!-- VR Headset SVG -->
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-semibold text-xl text-white mb-3">Ekonomik VR Çözümü</h3>
-                        <p class="text-gray-400 text-sm leading-relaxed">
-                            Pahalı bilgisayarlara ve başlık donanımlarına ihtiyaç duymadan, mobil cihazlar ve tarayıcı entegrasyonuyla mükemmel akıcılık.
-                        </p>
-                    </div>
-                    <div class="mt-6 pt-6 border-t border-gray-800/60 text-xs text-blue-400 font-semibold uppercase tracking-wider">
-                        Herkes İçin Erişilebilir Teknoloji
-                    </div>
-                </div>
-
-                <!-- Kart 3: Çok Oyunculu & Sesli Sohbet -->
-                <div class="glass-panel p-8 rounded-2xl interactive-card flex flex-col justify-between">
-                    <div>
-                        <div class="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-6">
-                            <!-- Speech Bubble SVG -->
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                        </div>
-                        <h3 class="font-display font-semibold text-xl text-white mb-3">Uzamsal Sesli Sohbet</h3>
-                        <p class="text-gray-400 text-sm leading-relaxed">
-                            Diğer oyunculara yaklaştıkça seslerinin yönünü ve mesafesini algılayabildiğiniz üç boyutlu gerçek zamanlı ses sistemi
-                        </p>
-                    </div>
-                    <div class="mt-6 pt-6 border-t border-gray-800/60 text-xs text-emerald-400 font-semibold uppercase tracking-wider">
-                        Maksimum Sosyal Etkileşim
-                    </div>
-                </div>
-            </div>
+    <!-- Cloud VR Tanıtım Bölümü -->
+    <section class="max-w-7xl mx-auto px-4 py-16">
+        <div class="text-center mb-12">
+            <h2 class="text-2xl md:text-4xl font-extrabold tracking-tight mb-3">
+                <span class="text-[var(--primary)] neon-text-primary font-mono">CLOUD VR</span> SİSTEMİ NEDİR?
+            </h2>
+            <div class="w-24 h-1 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] mx-auto rounded-full"></div>
+            <p class="text-gray-400 text-sm mt-4 max-w-xl mx-auto">
+                Tuncerlab VR evreninin arkasındaki bulut akış teknolojisi sayesinde donanım sınırlarına veda edin.
+            </p>
         </div>
-    </section>
 
-    <!-- İnteraktif VR Simülasyon Alanı -->
-    <section id="simulasyon" class="relative z-10 py-24">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="text-center max-w-3xl mx-auto mb-12">
-                <h2 class="font-display font-bold text-3xl md:text-5xl text-white mb-4">Mini VR Evren Lobisi</h2>
-                <p class="text-gray-400">
-                    Aşağıdaki simülatörde avatarınızı yönlendirerek diğer renkli oyuncularla ve merkezdeki Yapay Zeka (AI) yöneticisiyle etkileşime geçebilirsiniz. Google hesabınızla giriş yaptığınızda isminiz otomatik güncellenecektir!
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <!-- Kart 1: Bulut Grafik Gücü -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-[var(--primary)] transition-all duration-300 group hover:-translate-y-2">
+                <div class="bg-cyan-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-black transition-colors duration-300">
+                    <!-- Bulut Sunucu Logosu -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Bulut Grafik İşleme (GPU)</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Tüm karmaşık 3B renderlama ve humanoid fizik hesaplamaları bulut sunucularımızda yapılır. Cihazınız ısınmaz ve bataryanız tükenmez.
                 </p>
             </div>
 
-            <!-- Giriş Durumu Bilgilendirmesi / Kontroller -->
-            <div class="glass-panel p-6 rounded-2xl mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div class="flex items-center space-x-4">
-                    <div class="relative">
-                        <div id="user-avatar-indicator" class="w-12 h-12 rounded-xl bg-gray-700 flex items-center justify-center overflow-hidden border border-gray-600">
-                            <!-- Profil Resmi veya Harf buraya gelecek -->
-                            <span id="user-avatar-letter" class="font-bold text-white uppercase text-lg">?</span>
-                        </div>
-                        <span id="user-status-dot" class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-red-500 border-2 border-gray-900 rounded-full"></span>
-                    </div>
-                    <div>
-                        <h4 id="user-display-name" class="font-bold text-white">Misafir Kullanıcı</h4>
-                        <p id="user-display-status" class="text-xs text-gray-400">Lütfen yukarıdaki butondan Google ile giriş yapın</p>
-                    </div>
+            <!-- Kart 2: Sıfır Gecikme -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-[var(--secondary)] transition-all duration-300 group hover:-translate-y-2">
+                <div class="bg-pink-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-[var(--secondary)] group-hover:bg-[var(--secondary)] group-hover:text-white transition-colors duration-300">
+                    <!-- Gecikme/Hız Simgesi -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
                 </div>
-
-                <!-- Özelleştirme Alanı (Avatar rengini seçebilme özelliği) -->
-                <div class="flex flex-col items-start md:items-end space-y-2">
-                    <span class="text-xs text-gray-400 font-semibold">Aktif Avatar Renginiz:</span>
-                    <div class="flex items-center space-x-2">
-                        <button onclick="changeColor('Kırmızı', '#EF4444')" class="w-6 h-6 rounded-full bg-red-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Mavi', '#3B82F6')" class="w-6 h-6 rounded-full bg-blue-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Yeşil', '#10B981')" class="w-6 h-6 rounded-full bg-green-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Sarı', '#F59E0B')" class="w-6 h-6 rounded-full bg-yellow-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                        <button onclick="changeColor('Mor', '#8B5CF6')" class="w-6 h-6 rounded-full bg-purple-500 border-2 border-transparent hover:border-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all"></button>
-                    </div>
-                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Ultra Düşük Gecikme</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    5G ve fiber altyapı optimizasyonumuz ile hareketleriniz eş zamanlı olarak buluta iletilir. 10ms altı tepki süresiyle kesintisiz VR hissi sağlar.
+                </p>
             </div>
 
-            <!-- Canvas Simülasyonu -->
-            <div class="relative w-full rounded-2xl overflow-hidden glass-panel border border-gray-800 shadow-2xl bg-gray-950">
-                <!-- Simülatör Bilgi Katmanı -->
-                <div class="absolute top-4 left-4 z-10 px-3 py-1.5 rounded-lg bg-gray-900/80 backdrop-blur border border-gray-800 text-xs text-gray-300">
-                    Kılavuz: <span class="text-blue-400 font-bold">Haritada yürümek için herhangi bir noktaya tıklayın.</span>
+            <!-- Kart 3: Çapraz Cihaz Desteği -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-[var(--primary)] transition-all duration-300 group hover:-translate-y-2">
+                <div class="bg-cyan-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-black transition-colors duration-300">
+                    <!-- Cihazlar Simgesi -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
                 </div>
-                
-                <div class="absolute top-4 right-4 z-10 px-3 py-1.5 rounded-lg bg-gray-900/80 backdrop-blur border border-gray-800 text-xs text-gray-300 flex items-center space-x-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                    <span>mini game</span>
-                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Çapraz Cihaz Desteği</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Sadece pahalı VR başlıklarıyla sınırlı değilsiniz. Mobil cihazlar, tabletler, bilgisayarlar ve tarayıcılar üzerinden her an bağlanabilirsiniz.
+                </p>
+            </div>
 
-                <canvas id="vrCanvas" class="w-full h-[500px] block cursor-pointer"></canvas>
+            <!-- Kart 4: Akıllı Yapay Zeka -->
+            <div class="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 hover:border-[var(--secondary)] transition-all duration-300 group hover:-translate-y-2">
+                <div class="bg-pink-500/10 w-12 h-12 rounded-xl flex items-center justify-center mb-4 text-[var(--secondary)] group-hover:bg-[var(--secondary)] group-hover:text-white transition-colors duration-300">
+                    <!-- AI Mannequin Simgesi -->
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-white mb-2">Yapay Zeka Entegrasyonu</h3>
+                <p class="text-xs text-gray-400 leading-relaxed">
+                    Görseldeki humanoid yapay zeka kuklası, buluttan aldığı akıllı hareket motoru (IK) ile fizik kurallarına göre gerçekçi bir şekilde dengede durur.
+                </p>
             </div>
         </div>
     </section>
 
-    <!-- Hakkımızda / Detay Bölümü -->
-    <section id="hakkimizda" class="relative z-10 py-24 bg-gray-950/20 border-t border-gray-900">
-        <div class="max-w-7xl mx-auto px-6">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                <div>
-                    <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-400 mb-6 uppercase tracking-wider">
-                        Geliştirici Odaklı Yapı
-                    </div>
-                    <h2 class="font-display font-bold text-3xl md:text-5xl text-white mb-6">Herkes İçin Tamamen Optimize Edilmiş Altyapı</h2>
-                    <p class="text-gray-400 mb-6 leading-relaxed">
-                        Yapay zekanın ve VR teknolojilerinin kesişiminde, kullanıcıların tarayıcılarından doğrudan tek tıkla arkadaşlarıyla buluşabileceği, sesli sohbet edip interaktif oyunlar oynayabileceği evrensel bir sosyal merkez hedefliyoruz.
-                    </p>
-                    
-                    <ul class="space-y-4 mb-8">
-                        <li class="flex items-start space-x-3">
-                            <span class="w-6 h-6 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">✓</span>
-                            <span class="text-gray-300 text-sm">Tarayıcı tabanlı ultra hızlı WebGL render motoru.</span>
-                        </li>
-                        <li class="flex items-start space-x-3">
-                            <span class="w-6 h-6 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">✓</span>
-                            <span class="text-gray-300 text-sm">Gelişmiş doğal dil işleme destekli AI yönetici asistanı.</span>
-                        </li>
-                        <li class="flex items-start space-x-3">
-                            <span class="w-6 h-6 rounded bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">✓</span>
-                            <span class="text-gray-300 text-sm">Gerçek Google OAuth 2.0 kimlik doğrulama protokolü.</span>
-                        </li>
-                    </ul>
-
-                    <a href="https://tuncervr.netlify.app" target="_blank" class="inline-flex items-center space-x-2 px-6 py-3 rounded-xl border border-gray-700 hover:border-gray-600 bg-gray-900/60 hover:bg-gray-800 text-sm font-semibold text-white transition-all">
-                        <span>Geliştirici Portfolyosu</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                        </svg>
-                    </a>
-                </div>
-                
-                <!-- Sağ Blok - VR Görsel/Glow Detayı -->
-                <div class="relative flex justify-center">
-                    <div class="absolute -inset-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-3xl opacity-20 blur-3xl"></div>
-                    <div class="relative glass-panel p-8 rounded-3xl max-w-md w-full border border-gray-800 flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-center justify-between mb-8">
-                                <span class="text-xs uppercase font-semibold text-gray-400 tracking-wider">Aktif İstemci Durumu</span>
-                                <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold border border-emerald-500/20">Online</span>
-                            </div>
-                            <h4 class="font-display font-semibold text-lg text-white mb-2">VREvreni V1.2.0</h4>
-                            <p class="text-gray-400 text-sm mb-6">Yapay Zeka sistemi yükleniyor... Ses kanalları ve şifreli sunucular hazırlandı.</p>
-                        </div>
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between text-xs text-gray-500">
-                                <span>Gecikme (Ping)</span>
-                                <span class="text-gray-300 font-mono">14 ms</span>
-                            </div>
-                            <div class="flex items-center justify-between text-xs text-gray-500">
-                                <span>Kapsama Alanı</span>
-                                <span class="text-gray-300 font-mono">Global CDN</span>
-                            </div>
-                            <div class="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden mt-2">
-                                <div class="bg-blue-500 h-full w-4/5 rounded-full"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Minimalist Footer -->
-    <footer class="relative z-10 border-t border-gray-900 bg-gray-950 py-12">
-        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white text-sm">
-                    V
-                </div>
-                <span class="font-display font-semibold text-base text-white tracking-wide">
-                    VREvreni © 2026
-                </span>
-            </div>
+    <!-- Mini Game Section -->
+    <section id="gameSection" class="max-w-5xl mx-auto px-4 py-12">
+        <div class="bg-gray-900/90 border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-[var(--primary-glow)] rounded-full filter blur-3xl opacity-20"></div>
             
-            <div class="flex items-center space-x-6 text-sm text-gray-500">
-                <a href="https://tuncervr.netlify.app" target="_blank" class="hover:text-white transition-colors">TuncerLab Portfolyo</a>
-                <span>•</span>
-                <span class="text-gray-600">Her Hakkı Saklıdır.</span>
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div>
+                    <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-white flex items-center space-x-2">
+                        <span class="w-2.5 h-6 bg-[var(--primary)] rounded-full inline-block"></span>
+                        <span>MİNİ OYUN: Küre Kontrolörü</span>
+                    </h2>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Sola/sağa hareket ederek yukarıdan düşen parıldayan mavi VR kürelerini toplayın. Kırmızı parazitlerden kaçının!
+                    </p>
+                </div>
+                
+                <!-- Oyun Skor Tablosu -->
+                <div class="flex items-center space-x-4 bg-black/40 px-4 py-2 rounded-xl border border-gray-800 self-start">
+                    <div class="text-center">
+                        <span class="text-[10px] text-gray-500 uppercase font-bold block">SKOR</span>
+                        <span id="gameScore" class="text-xl font-mono font-bold text-[var(--primary)]">0</span>
+                    </div>
+                    <div class="w-px h-8 bg-gray-800"></div>
+                    <div class="text-center">
+                        <span class="text-[10px] text-gray-500 uppercase font-bold block">EN YÜKSEK</span>
+                        <span id="gameHighScore" class="text-xl font-mono font-bold text-[var(--secondary)]">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Oyun Ekranı (Canvas) Container -->
+            <div class="relative w-full aspect-[16/9] md:aspect-[21/9] bg-[#020308] rounded-2xl overflow-hidden border border-gray-800 group">
+                <canvas id="gameCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+                
+                <!-- Oyun Başlangıç / Bitiş Ekranı (Overlay) -->
+                <div id="gameOverlay" class="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-center p-4 transition-all duration-300">
+                    <div class="max-w-md">
+                        <svg class="w-16 h-16 text-[var(--primary)] mx-auto mb-4 drop-shadow-[0_0_10px_var(--primary-glow)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
+                        </svg>
+                        <h3 id="overlayTitle" class="text-2xl font-bold text-white mb-2">Tuncerlab VR Antrenmanı</h3>
+                        <p id="overlayDesc" class="text-xs text-gray-400 mb-6">
+                            Farenizi veya parmağınızı ekranda sürükleyerek Humanoid robotun ellerini kontrol edin ve parıldayan siber veri kürelerini yakalayın!
+                        </p>
+                        <button onclick="startGame()" class="px-8 py-3 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] text-white font-bold text-sm rounded-xl hover:shadow-[0_0_20px_var(--primary-glow)] transition-all duration-300">
+                            Simülasyonu Başlat
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobil Kontrol Desteği Bildirimi -->
+                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 pointer-events-none text-[10px] text-gray-500 bg-black/60 px-3 py-1 rounded-full border border-gray-800">
+                    Dokunmatik ekranlarda kaydırarak oynayabilirsiniz.
+                </div>
+            </div>
+
+            <!-- Mini Game Kontrolleri -->
+            <div class="mt-4 flex justify-between items-center text-xs text-gray-500">
+                <span id="playerStatus" class="flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-yellow-500 animate-ping inline-block"></span>
+                    <span>Sanal Dünya Aktif</span>
+                </span>
+                <span class="font-semibold text-[var(--primary)]">Ses efektleri otomatik olarak çalınır (Web Audio API).</span>
             </div>
         </div>
+    </section>
+
+    <!-- Alt Kısım / Footer -->
+    <footer class="bg-[#04060c] border-t border-gray-900 mt-20 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8 relative z-10">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <!-- Sol Logo -->
+                <div class="flex items-center space-x-3">
+                    <svg class="w-8 h-8 text-[var(--primary)]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path>
+                    </svg>
+                    <div>
+                        <span class="text-md font-bold tracking-widest text-white">TUNCERLAB VR</span>
+                        <span class="text-[10px] block text-gray-500 font-semibold tracking-wider">Bulut Tabanlı Sanal Gerçeklik Geleceği</span>
+                    </div>
+                </div>
+
+                <!-- Orta Linkler -->
+                <div class="flex flex-wrap items-center justify-center gap-6 text-xs text-gray-400">
+                    <a href="https://tuncervr.netlify.app" target="_blank" class="hover:text-[var(--primary)] transition-colors">Orijinal Oyunu Aç</a>
+                    <span class="text-gray-800">|</span>
+                    <a href="#gameSection" class="hover:text-[var(--primary)] transition-colors">Mini Oyuna Dön</a>
+                    <span class="text-gray-800">|</span>
+                    <span class="text-gray-600">Altyapı: Cloud VR v2.5</span>
+                </div>
+
+                <!-- Sağ Yazar ve Marka Bilgisi -->
+                <div class="text-center md:text-right">
+                    <p class="text-xs text-gray-500">Tüm Hakları Saklıdır © 2026</p>
+                    <p class="text-sm font-bold text-white mt-1">
+                        <span class="text-gray-400 font-normal text-xs">Tasarlayan ve Geliştiren: </span>
+                        <span class="text-[var(--primary)] hover:underline cursor-pointer">Tuncerlab</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+        <!-- Arka Plan İnce Çizgi Detayı -->
+        <div class="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[var(--primary)] via-[var(--secondary)] to-[var(--primary)] opacity-50"></div>
     </footer>
 
-    <!-- JavaScript - Tüm Uygulama ve Google Auth Logic -->
+    <!-- Oyun / Mantık Script Bölümü -->
     <script>
-        // --- KULLANICI / AUTH DURUM YÖNETİMİ ---
-        let currentUser = {
-            isLoggedIn: false,
-            name: "Misafir Kullanıcı",
-            email: "",
-            avatarImg: "",
-            avatarLetter: "?",
-            color: "#EF4444", // Varsayılan Kırmızı
-            colorName: "Kırmızı"
-        };
+        // Sayfa Yüklendiğinde Google One Tap & Auth Yapısı
+        window.onload = function () {
+            // Google Girişi Başlatma
+            if (typeof google !== 'undefined') {
+                google.accounts.id.initialize({
+                    client_id: "307341520038-as65gibjh3rgj375nhf24kboanpqhkuq.apps.googleusercontent.com",
+                    callback: handleCredentialResponse
+                });
+                google.accounts.id.renderButton(
+                    document.getElementById("googleBtn"),
+                    { theme: "dark", size: "large", shape: "pill", text: "signin_with" }
+                );
+            }
 
-        // Google Auth Initialize İşlemi
-        function handleCredentialResponse(response) {
-            // Google'dan dönen JWT Token'ı çözümlüyoruz
-            const responsePayload = decodeJwtResponse(response.credential);
-            
-            currentUser.isLoggedIn = true;
-            currentUser.name = responsePayload.name;
-            currentUser.email = responsePayload.email;
-            currentUser.avatarImg = responsePayload.picture;
-            currentUser.avatarLetter = responsePayload.given_name ? responsePayload.given_name.charAt(0).toUpperCase() : "?";
-
-            updateUIForLoggedInUser();
-            
-            // Simülasyon dünyasındaki oyuncu ismini ve durumunu güncelle
-            myAvatar.name = currentUser.name;
-            myAvatar.isRegistered = true;
-            
-            addLogMessage(`Sisteme başarıyla bağlanıldı: ${currentUser.name}`);
+            // Canvas Boyutlandırma ve Hazırlık
+            initGameCanvas();
         }
 
-        // JWT token'ı decode eden yardımcı fonksiyon
-        function decodeJwtResponse(token) {
-            let base64Url = token.split('.')[1];
-            let base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            let jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        // Google Auth Yanıt Yakalayıcı
+        function handleCredentialResponse(response) {
+            // JWT Payload çözümü
+            const base64Url = response.credential.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+                return '%' + ('0' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
 
-            return JSON.parse(jsonPayload);
+            const user = JSON.parse(jsonPayload);
+            
+            if (user) {
+                // UI Güncelleme
+                document.getElementById("googleBtn").classList.add("hidden");
+                document.getElementById("userInfo").classList.remove("hidden");
+                
+                document.getElementById("userAvatar").src = user.picture;
+                document.getElementById("userName").innerText = user.given_name || user.name;
+
+                // Bilgilendirme Toastı Göster
+                showToast(`Hoş geldin, ${user.name}! VR Evreni bağlantın kuruldu.`);
+            }
         }
 
-        window.onload = function() {
-            // Google Identity Services'ı başlatıyoruz
-            google.accounts.id.initialize({
-                client_id: "307341520038-as65gibjh3rgj375nhf24kboanpqhkuq.apps.googleusercontent.com",
-                callback: handleCredentialResponse
-            });
+        // Çıkış Yapma Fonksiyonu
+        function logout() {
+            document.getElementById("googleBtn").classList.remove("hidden");
+            document.getElementById("userInfo").classList.add("hidden");
+            showToast("VR Evreni bağlantısı kesildi.");
+        }
 
-            // Google One Tap promptunu gösterir (isteğe bağlı)
-            google.accounts.id.prompt();
+        // Toast Bildirimi Yönetimi
+        function showToast(message) {
+            const toast = document.getElementById("toastNotification");
+            document.getElementById("toastMessage").innerText = message;
+            toast.classList.remove("translate-y-24", "opacity-0");
+            toast.classList.add("translate-y-0", "opacity-100");
 
-            // Butonları render et
-            renderGoogleButtons();
+            setTimeout(() => {
+                toast.classList.remove("translate-y-0", "opacity-100");
+                toast.classList.add("translate-y-24", "opacity-0");
+            }, 4000);
+        }
 
-            // Simülasyonu başlat
-            renderLoop();
+        // Tema Seçici Fonksiyonu
+        function setTheme(themeName) {
+            const body = document.body;
+            body.className = ''; // Tüm sınıfları temizle
+            body.classList.add(`theme-${themeName}`);
+            showToast(`Tema değiştirildi: ${themeName.toUpperCase()}`);
+        }
+
+        // Sayfa İçi Kaydırma
+        function scrollToGame() {
+            const el = document.getElementById("gameSection");
+            el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        /* -----------------------------------------
+           MİNİ GAME KODU (HUMANOID KÜRE KONTROLÖRÜ)
+        -------------------------------------------- */
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        let animationFrameId;
+        let gameActive = false;
+        let score = 0;
+        let highScore = localStorage.getItem("tuncerlab_highscore") || 0;
+        document.getElementById("gameHighScore").innerText = highScore;
+
+        // Ses Efektleri İçin Web Audio API
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSynthSound(freq, type, duration) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type || 'sine';
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                // Tarayıcı ses izinlerini engelleyebilir
+            }
+        }
+
+        // Oyuncu (Humanoid) Özellikleri
+        const player = {
+            x: 0,
+            y: 0,
+            width: 80,
+            height: 90,
+            targetX: 0
         };
 
-        function renderGoogleButtons() {
-            // Navbar Butonu
-            google.accounts.id.renderButton(
-                document.getElementById("google-btn-navbar"),
-                { theme: "dark", size: "medium", type: "standard", shape: "pill", text: "signin_with" }
-            );
+        // Küre Dizisi
+        let spheres = [];
+        const sphereConfig = {
+            blueProb: 0.82, // İyi küre düşme ihtimali
+            speedMin: 2,
+            speedMax: 5
+        };
 
-            // Hero Butonu
-            google.accounts.id.renderButton(
-                document.getElementById("google-btn-hero"),
-                { theme: "dark", size: "large", type: "standard", shape: "rectangular", text: "signup_with", width: "240" }
-            );
-        }
-
-        function updateUIForLoggedInUser() {
-            // Navbar'ı güncelle (Profil Resmi ve Çıkış Butonu)
-            const authContainer = document.getElementById('auth-nav-container');
-            const avatarContent = currentUser.avatarImg 
-                ? `<img src="${currentUser.avatarImg}" class="w-8 h-8 rounded-lg object-cover" alt="Profil">`
-                : `<div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center font-bold text-white text-sm">${currentUser.avatarLetter}</div>`;
-
-            authContainer.innerHTML = `
-                <div class="flex items-center space-x-3 bg-gray-900/80 border border-gray-800 px-3 py-1.5 rounded-xl">
-                    ${avatarContent}
-                    <div class="hidden sm:block text-left">
-                        <h5 class="text-xs font-bold text-white">${currentUser.name}</h5>
-                        <p class="text-[10px] text-gray-500">Bağlantı Kuruldu</p>
-                    </div>
-                    <button onclick="logout()" class="ml-2 text-xs text-red-400 hover:text-red-300 transition-colors">Çıkış</button>
-                </div>
-            `;
-
-            // Lobi Kontrol Paneli Görsel Durumunu güncelle
-            const avatarIndicator = document.getElementById('user-avatar-indicator');
-            if (currentUser.avatarImg) {
-                avatarIndicator.innerHTML = `<img src="${currentUser.avatarImg}" class="w-full h-full object-cover">`;
-            } else {
-                avatarIndicator.innerHTML = `<span id="user-avatar-letter" class="font-bold text-white uppercase text-lg">${currentUser.avatarLetter}</span>`;
-                avatarIndicator.style.backgroundColor = currentUser.color;
-            }
-            
-            const statusDot = document.getElementById('user-status-dot');
-            statusDot.classList.remove('bg-red-500');
-            statusDot.classList.add('bg-emerald-500');
-
-            document.getElementById('user-display-name').textContent = currentUser.name;
-            document.getElementById('user-display-status').textContent = `Bağlantı Türü: VR Tarayıcı İstemcisi (${currentUser.colorName})`;
-
-            // Hero Hızlı Butonu alanını güncelle
-            const heroBtnContainer = document.getElementById('google-btn-hero');
-            if (heroBtnContainer) {
-                heroBtnContainer.innerHTML = `
-                    <div class="px-6 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold">
-                        Giriş Yapıldı: Lobiye Geçebilirsiniz
-                    </div>
-                `;
-            }
-        }
-
-        function logout() {
-            // Google Girişini sonlandırıyoruz
-            google.accounts.id.disableAutoSelect();
-            
-            currentUser.isLoggedIn = false;
-            currentUser.name = "Misafir Kullanıcı";
-            currentUser.avatarImg = "";
-            currentUser.avatarLetter = "?";
-            
-            // Navbar'ı ve butonları sıfırla
-            const authContainer = document.getElementById('auth-nav-container');
-            authContainer.innerHTML = `<div id="google-btn-navbar"></div>`;
-            
-            const heroBtnContainer = document.getElementById('google-btn-hero');
-            if (heroBtnContainer) {
-                heroBtnContainer.innerHTML = `<div id="google-btn-hero"></div>`;
-            }
-
-            // Google Auth butonlarını tekrar çiz
-            renderGoogleButtons();
-
-            // Lobi Kontrol Paneli Sıfırla
-            const avatarIndicator = document.getElementById('user-avatar-indicator');
-            avatarIndicator.innerHTML = `<span id="user-avatar-letter" class="font-bold text-white uppercase text-lg">?</span>`;
-            avatarIndicator.style.backgroundColor = "";
-            avatarIndicator.classList.add('bg-gray-700');
-            
-            const statusDot = document.getElementById('user-status-dot');
-            statusDot.classList.remove('bg-emerald-500');
-            statusDot.classList.add('bg-red-500');
-
-            document.getElementById('user-display-name').textContent = "Misafir Kullanıcı";
-            document.getElementById('user-display-status').textContent = "Lütfen yukarıdaki butondan Google ile giriş yapın";
-
-            myAvatar.name = "Siz";
-            myAvatar.color = "#EF4444"; // varsayılan kırmızı
-            myAvatar.isRegistered = false;
-
-            addLogMessage("Sistem oturumu kapatıldı. Misafir moduna geçildi.");
-        }
-
-        function changeColor(colorName, colorHex) {
-            currentUser.color = colorHex;
-            currentUser.colorName = colorName;
-            
-            if (currentUser.isLoggedIn) {
-                const avatarIndicator = document.getElementById('user-avatar-indicator');
-                if (!currentUser.avatarImg) {
-                    avatarIndicator.style.backgroundColor = colorHex;
-                }
-                document.getElementById('user-display-status').textContent = `Bağlantı Türü: VR Tarayıcı İstemcisi (${colorName})`;
-            }
-            
-            // Simülasyondaki karakterimizin rengini güncelle
-            myAvatar.color = colorHex;
-            addLogMessage(`Karakter renginiz ${colorName} olarak değiştirildi!`);
-        }
-
-        function scrollToSimulator() {
-            document.getElementById('simulasyon').scrollIntoView({ behavior: 'smooth' });
-        }
-
-
-        // --- mini LOBİ VE 3D PERSPEKTİFLİ CANVAS SIMÜLATÖRÜ ---
-        const canvas = document.getElementById('vrCanvas');
-        const ctx = canvas.getContext('2d');
-
-        // Canvas Boyutlandırma
-        function resizeCanvas() {
-            const containerWidth = canvas.parentElement.clientWidth;
-            canvas.width = containerWidth;
-            canvas.height = 500;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        // 3D Düzlem Çizimi İçin Perspektif Dönüşüm Fonksiyonu (Dama Tahtası Zemin)
-        function to3D(x, y) {
-            const horizon = canvas.height * 0.35; // Ufuk çizgisi
-            const scaleY = canvas.height * 0.65;
-            const perspective = 1 / (1 + y * 2.5); // Derinleştikçe daralma
-            
-            const screenX = canvas.width / 2 + x * canvas.width * 1.5 * perspective;
-            const screenY = horizon + y * scaleY * perspective;
-            
-            return { x: screenX, y: screenY, scale: perspective };
-        }
-
-        function to2D(screenX, screenY) {
-            const horizon = canvas.height * 0.35;
-            const scaleY = canvas.height * 0.65;
-            
-            const relativeY = (screenY - horizon) / scaleY;
-            const y = relativeY / (1 - relativeY * 2.5);
-            const perspective = 1 / (1 + y * 2.5);
-            const x = (screenX - canvas.width / 2) / (canvas.width * 1.5 * perspective);
-            
-            return { x: Math.max(-0.5, Math.min(0.5, x)), y: Math.max(0.1, Math.min(0.95, y)) };
-        }
-
-        // Telsiz Akış Log Mekanizması
-        let logs = ["Hoş geldiniz! VR Evreni simülatörü başlatıldı.", "Merkezdeki Yapay Zeka (AI) yönetici asistanıdır."];
-        function addLogMessage(msg) {
-            logs.push(msg);
-            if (logs.length > 5) logs.shift();
-        }
-
-        // Avatar Sınıfı Tanımı
-        class Avatar {
-            constructor(x, y, color, name, isAI = false) {
-                this.x = x; 
-                this.y = y; 
-                this.targetX = x;
-                this.targetY = y;
-                this.color = color;
-                this.name = name;
-                this.isAI = isAI;
-                this.speed = isAI ? 0.005 : 0.02;
-                
-                this.bubbleText = "";
-                this.bubbleTimer = 0;
-            }
-
-            say(text, duration = 180) {
-                this.bubbleText = text;
-                this.bubbleTimer = duration;
-            }
-
-            update() {
-                const dx = this.targetX - this.x;
-                const dy = this.targetY - this.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-
-                if (dist > 0.01) {
-                    this.x += (dx / dist) * this.speed;
-                    this.y += (dy / dist) * this.speed;
-                } else {
-                    this.x = this.targetX;
-                    this.y = this.targetY;
-                }
-
-                if (this.bubbleTimer > 0) {
-                    this.bubbleTimer--;
-                    if (this.bubbleTimer === 0) {
-                        this.bubbleText = "";
-                    }
-                }
-
-                // Yapay zeka oyuncuların rastgele gezinmesi
-                if (this.isAI && Math.random() < 0.005) {
-                    if (this.name !== "AI Yönetici") {
-                        this.targetX = -0.4 + Math.random() * 0.8;
-                        this.targetY = 0.2 + Math.random() * 0.7;
-                    }
-                }
-            }
-
-            draw() {
-                const pos = to3D(this.x, this.y);
-                const size = 22 * pos.scale; 
-
-                // Gölge Çizimi
-                ctx.beginPath();
-                ctx.ellipse(pos.x, pos.y + size * 1.8, size * 0.8, size * 0.3, 0, 0, Math.PI * 2);
-                ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
-                ctx.fill();
-
-                // Çöp adam benzeri/mannequin (görseldeki robotik tasarım)
-                ctx.strokeStyle = this.color;
-                ctx.lineWidth = 4 * pos.scale;
-                ctx.lineCap = "round";
-
-                // Kafa
-                ctx.beginPath();
-                ctx.arc(pos.x, pos.y, size * 0.5, 0, Math.PI * 2);
-                ctx.fillStyle = this.color;
-                ctx.fill();
-                ctx.strokeStyle = "rgba(255,255,255,0.2)";
-                ctx.stroke();
-
-                // Omurga
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y + size * 0.5);
-                ctx.lineTo(pos.x, pos.y + size * 1.4);
-                ctx.stroke();
-
-                // Kollar
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y + size * 0.7);
-                ctx.lineTo(pos.x - size * 0.8, pos.y + size * 1.0);
-                ctx.moveTo(pos.x, pos.y + size * 0.7);
-                ctx.lineTo(pos.x + size * 0.8, pos.y + size * 1.0);
-                ctx.stroke();
-
-                // Bacaklar
-                ctx.beginPath();
-                ctx.moveTo(pos.x, pos.y + size * 1.4);
-                ctx.lineTo(pos.x - size * 0.5, pos.y + size * 2.2);
-                ctx.moveTo(pos.x, pos.y + size * 1.4);
-                if (Math.abs(this.targetX - this.x) > 0.01) {
-                    ctx.lineTo(pos.x + size * 0.4, pos.y + size * 1.8);
-                    ctx.lineTo(pos.x + size * 0.2, pos.y + size * 2.3);
-                } else {
-                    ctx.lineTo(pos.x + size * 0.5, pos.y + size * 2.2);
-                }
-                ctx.stroke();
-
-                // Mavi Küre Taşıma (Kırmızı oyuncu veya kırmızı seçili karakter için)
-                if (this.name === "Kırmızı Oyuncu" || (this.name === currentUser.name && this.color === "#EF4444") || (this.name === "Siz" && this.color === "#EF4444")) {
-                    ctx.beginPath();
-                    ctx.arc(pos.x - size * 0.2, pos.y + size * 0.9, size * 0.4, 0, Math.PI * 2);
-                    ctx.fillStyle = "#3B82F6"; 
-                    ctx.fill();
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = "#3B82F6";
-                    ctx.strokeStyle = "rgba(255,255,255,0.4)";
-                    ctx.stroke();
-                    ctx.shadowBlur = 0; 
-                }
-
-                // İsim Etiketi
-                ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
-                ctx.font = `${Math.max(10, 12 * pos.scale)}px 'Plus Jakarta Sans', sans-serif`;
-                ctx.textAlign = "center";
-                ctx.fillText(this.name, pos.x, pos.y - size * 0.8);
-
-                // Konuşma Baloncuğu
-                if (this.bubbleText) {
-                    this.drawSpeechBubble(pos.x, pos.y - size * 1.2, this.bubbleText, pos.scale);
-                }
-            }
-
-            drawSpeechBubble(x, y, text, scale) {
-                ctx.font = `${Math.max(11, 13 * scale)}px sans-serif`;
-                const padding = 10;
-                const textWidth = ctx.measureText(text).width;
-                const width = textWidth + padding * 2;
-                const height = 28 * scale;
-                
-                ctx.fillStyle = "rgba(22, 31, 48, 0.95)";
-                ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
+        // Dama Tahtası Perspektif Çizgileri Sınıfı
+        const perspectiveGrid = {
+            offset: 0,
+            speed: 1.5,
+            draw: function() {
+                ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--grid-color') || 'rgba(0, 243, 255, 0.15)';
                 ctx.lineWidth = 1;
-                
-                ctx.beginPath();
-                ctx.roundRect(x - width / 2, y - height, width, height, 6);
-                ctx.fill();
-                ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.moveTo(x - 6, y);
-                ctx.lineTo(x, y + 6);
-                ctx.lineTo(x + 6, y);
-                ctx.closePath();
-                ctx.fillStyle = "rgba(22, 31, 48, 0.95)";
-                ctx.fill();
-                
-                ctx.fillStyle = "#FFFFFF";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(text, x, y - height / 2);
+
+                // Derinlemesine dikey çizgiler (Vanishing point'e gidenler)
+                const vpX = canvas.width / 2;
+                const vpY = -canvas.height * 0.2; // Kaybolma noktası ekranın üstünde dışarıda
+
+                for (let x = -canvas.width; x <= canvas.width * 2; x += 60) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, canvas.height);
+                    ctx.lineTo(vpX, vpY);
+                    ctx.stroke();
+                }
+
+                // Yatay çizgiler (Perspektife göre sıklaşan)
+                this.offset += this.speed;
+                if (this.offset >= 40) {
+                    this.offset = 0;
+                }
+
+                for (let y = 0; y < canvas.height; y += 15) {
+                    // Üstel oranla yatay çizgileri alt kısımlara doğru daha seyrek çiz
+                    const ratio = y / canvas.height;
+                    const screenY = canvas.height * Math.pow(ratio, 1.8);
+                    ctx.beginPath();
+                    ctx.moveTo(0, screenY + this.offset);
+                    ctx.lineTo(canvas.width, screenY + this.offset);
+                    ctx.stroke();
+                }
             }
+        };
+
+        function initGameCanvas() {
+            // Responsive canvas boyutu ayarı
+            const rect = canvas.parentNode.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 75;
+            player.targetX = player.x;
+
+            // Arka planı siyah doldur
+            ctx.fillStyle = "#020308";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Katılımcıların Tanımlanması
-        const avatars = [];
-        
-        // 1. Yapay Zeka Lobi Yöneticisi
-        const aiAdmin = new Avatar(0, 0.5, "#E9D5FF", "AI Yönetici", true);
-        avatars.push(aiAdmin);
+        // Pencere Boyutu Değiştiğinde Canvas Yenileme
+        window.addEventListener('resize', initGameCanvas);
 
-        // 2. Kendi Karakterimiz
-        const myAvatar = new Avatar(-0.25, 0.75, "#EF4444", "Siz", false);
-        avatars.push(myAvatar);
-
-        // 3. Diğer Lobi Oyuncuları
-        const bluePlayer = new Avatar(-0.35, 0.45, "#3B82F6", "Mavi Oyuncu", true);
-        const greenPlayer = new Avatar(0.3, 0.5, "#10B981", "Yeşil Oyuncu", true);
-        const yellowPlayer = new Avatar(0.15, 0.75, "#F59E0B", "Sarı Oyuncu", true);
-        const purplePlayer = new Avatar(0.35, 0.65, "#8B5CF6", "Mor Oyuncu", true);
-
-        avatars.push(bluePlayer, greenPlayer, yellowPlayer, purplePlayer);
-
-        // İlk Konuşma Akışı
-        setTimeout(() => aiAdmin.say("VR Evrenine hoş geldiniz! Sormak istediğiniz bir şey var mı?"), 1000);
-        setTimeout(() => bluePlayer.say("Merhabalar!"), 3000);
-        setTimeout(() => yellowPlayer.say("Sesim net geliyor mu arkadaşlar?"), 6000);
-
-        // Yürüme için tıklama olayı
-        canvas.addEventListener('click', (e) => {
+        // Fare ve Dokunmatik Kontrolleri Ekleme
+        canvas.addEventListener('mousemove', function(e) {
             const rect = canvas.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const clickY = e.clientY - rect.top;
-
-            const gamePos = to2D(clickX, clickY);
-            
-            myAvatar.targetX = gamePos.x;
-            myAvatar.targetY = gamePos.y;
-
-            if (!currentUser.isLoggedIn) {
-                if (Math.random() < 0.4) {
-                    myAvatar.say("Google ile giriş yapıp lobi ismimi güncelleyeceğim!");
-                }
-            } else {
-                if (Math.random() < 0.3) {
-                    const phrases = ["Gelişmiş AI sistemi harika!", "Bu dama tahtası zemin çok nostaljik.", "Yeni VR donanımımı çok ucuza aldım!", "Hadi lobi oyunlarına katılalım!"];
-                    myAvatar.say(phrases[Math.floor(Math.random() * phrases.length)]);
-                }
-            }
-
-            const distToAI = Math.sqrt(Math.pow(myAvatar.targetX - aiAdmin.x, 2) + Math.pow(myAvatar.targetY - aiAdmin.y, 2));
-            if (distToAI < 0.15) {
-                setTimeout(() => {
-                    const aiAnswers = [
-                        "Bize katıldığınız için teşekkürler! Harika bir topluluğuz.",
-                        "Gelişmiş AI yöneticiniz olarak lobi akışını kontrol ediyorum.",
-                        "Burası tamamen optimize edilmiş, çok ucuz VR cihazlarında bile çalışan bir dünya!",
-                        "Arkadaşlarınızla dilediğinizce takılın ve eğlenin!"
-                    ];
-                    aiAdmin.say(aiAnswers[Math.floor(Math.random() * aiAnswers.length)]);
-                }, 1000);
-            }
+            const root = document.documentElement;
+            // Canvas içi pozisyonu al
+            player.targetX = e.clientX - rect.left;
         });
 
-        // --- RENDER DÖNGÜSÜ ---
-        function renderLoop() {
-            ctx.fillStyle = "#0B0F19";
+        canvas.addEventListener('touchmove', function(e) {
+            if (e.touches.length > 0) {
+                const rect = canvas.getBoundingClientRect();
+                player.targetX = e.touches[0].clientX - rect.left;
+                e.preventDefault(); // Ekran kaymasını önle
+            }
+        }, { passive: false });
+
+        // Küre Ekleme Fonksiyonu
+        function spawnSphere() {
+            if (Math.random() < 0.05) {
+                const isGood = Math.random() < sphereConfig.blueProb;
+                spheres.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: -20,
+                    radius: Math.random() * 8 + 6,
+                    speed: Math.random() * (sphereConfig.speedMax - sphereConfig.speedMin) + sphereConfig.speedMin,
+                    type: isGood ? 'good' : 'bad', // Good: Mavi Veri, Bad: Kırmızı Parazit
+                    pulse: 0
+                });
+            }
+        }
+
+        // Humanoid Robotu Çizen Fonksiyon (Afişteki Mannequin Tarzı)
+        function drawHumanoid(x, y) {
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = getComputedStyle(document.body).getPropertyValue('--primary-glow');
+
+            // Ahşap/Metalik Ton Eklem Rengi
+            const jointColor = '#d97706'; // Turuncu/Koyu Sarı tonu
+            const bodyColor = '#ca8a04';  // Altın sarısı/Ahşap tonu
+
+            // 1. Kollar (Mavi küreleri kucaklamak için yukarı kalkık, görsele benzer)
+            ctx.strokeStyle = jointColor;
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+
+            // Sol Kol
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y + 25); // Omuz
+            ctx.lineTo(x - 35, y + 10); // Dirsek
+            ctx.lineTo(x - 45, y - 5);  // El
+            ctx.stroke();
+
+            // Sağ Kol
+            ctx.beginPath();
+            ctx.moveTo(x + 10, y + 25); // Omuz
+            ctx.lineTo(x + 35, y + 10); // Dirsek
+            ctx.lineTo(x + 45, y - 5);  // El
+            ctx.stroke();
+
+            // Ellerde mini siber pırıltı efekti
+            ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--primary');
+            ctx.beginPath();
+            ctx.arc(x - 45, y - 5, 4, 0, Math.PI * 2);
+            ctx.arc(x + 45, y - 5, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Kafa (Orijinal afişteki gibi oval, sade pürüzsüz)
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(x, y + 5, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Göğüs Kafesi Eklemleri
+            ctx.fillStyle = bodyColor;
+            ctx.beginPath();
+            ctx.arc(x, y + 25, 9, 0, Math.PI * 2); // Üst Gövde
+            ctx.arc(x, y + 42, 7, 0, Math.PI * 2); // Orta Bölme
+            ctx.arc(x, y + 55, 8, 0, Math.PI * 2); // Kalça Eklem
+            ctx.fill();
+
+            // 4. Bağlantı Metal Çubukları (Kemikler)
+            ctx.strokeStyle = '#e5e7eb';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x, y + 12);
+            ctx.lineTo(x, y + 25);
+            ctx.moveTo(x, y + 34);
+            ctx.lineTo(x, y + 42);
+            ctx.moveTo(x, y + 49);
+            ctx.lineTo(x, y + 55);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Oyun Döngüsü
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Ekranı temizle ve siber havayı çiz
+            ctx.fillStyle = "#04060c";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Dama Tahtası Zemin Çizimi
-            const rows = 18;
-            const cols = 18;
-            for (let r = rows - 1; r >= 0; r--) {
-                const y1 = r / rows;
-                const y2 = (r + 1) / rows;
+            // Perspektif 3B Tabloyu Çiz
+            perspectiveGrid.draw();
 
-                for (let c = 0; c < cols; c++) {
-                    const x1 = -0.5 + (c / cols);
-                    const x2 = -0.5 + ((c + 1) / cols);
+            // Humanoid Pozisyon Güncellemesi (Sürükleme Yumuşatması)
+            player.x += (player.targetX - player.x) * 0.15;
+            // Sınırlar içinde tut
+            if (player.x < 50) player.x = 50;
+            if (player.x > canvas.width - 50) player.x = canvas.width - 50;
 
-                    const p1 = to3D(x1, y1);
-                    const p2 = to3D(x2, y1);
-                    const p3 = to3D(x2, y2);
-                    const p4 = to3D(x1, y2);
+            // Humanoid Avatarı Çiz
+            drawHumanoid(player.x, player.y);
 
-                    const isEven = (r + c) % 2 === 0;
-                    ctx.fillStyle = isEven ? "#1E293B" : "#0F172A";
+            // Kürelerin Oluşumu ve Güncellemesi
+            spawnSphere();
 
-                    ctx.beginPath();
-                    ctx.moveTo(p1.x, p1.y);
-                    ctx.lineTo(p2.x, p2.y);
-                    ctx.lineTo(p3.x, p3.y);
-                    ctx.lineTo(p4.x, p4.y);
-                    ctx.closePath();
-                    ctx.fill();
+            for (let i = spheres.length - 1; i >= 0; i--) {
+                const s = spheres[i];
+                s.y += s.speed;
+                s.pulse += 0.08;
 
-                    ctx.strokeStyle = "rgba(255, 255, 255, 0.015)";
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
+                // Kürenin Işıma Çapı Hesaplaması
+                const currentRadius = s.radius + Math.sin(s.pulse) * 2;
+
+                ctx.save();
+                ctx.shadowBlur = 15;
+
+                if (s.type === 'good') {
+                    // Mavi parlayan veri küreleri (Görseldekilerle birebir)
+                    ctx.shadowColor = getComputedStyle(document.body).getPropertyValue('--primary-glow');
+                    const grad = ctx.createRadialGradient(s.x - 2, s.y - 2, 1, s.x, s.y, currentRadius);
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.3, getComputedStyle(document.body).getPropertyValue('--primary'));
+                    grad.addColorStop(1, '#052a44');
+                    ctx.fillStyle = grad;
+                } else {
+                    // Kırmızı parazit küreler
+                    ctx.shadowColor = getComputedStyle(document.body).getPropertyValue('--secondary-glow');
+                    const grad = ctx.createRadialGradient(s.x - 2, s.y - 2, 1, s.x, s.y, currentRadius);
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.3, getComputedStyle(document.body).getPropertyValue('--secondary'));
+                    grad.addColorStop(1, '#3b0213');
+                    ctx.fillStyle = grad;
+                }
+
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, currentRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // Çarpışma Kontrolü (Sol El / Sağ El Kapsama Alanları)
+                const distLeftHand = Math.hypot(s.x - (player.x - 45), s.y - (player.y - 5));
+                const distRightHand = Math.hypot(s.x - (player.x + 45), s.y - (player.y - 5));
+                const headDistance = Math.hypot(s.x - player.x, s.y - player.y);
+
+                if (distLeftHand < s.radius + 25 || distRightHand < s.radius + 25 || headDistance < s.radius + 20) {
+                    // Yakalama başarılı
+                    if (s.type === 'good') {
+                        score += 10;
+                        playSynthSound(440 + score, 'sine', 0.15); // Her başarıda yükselen retro ses
+                        document.getElementById("gameScore").innerText = score;
+                    } else {
+                        // Kötü küreye çarptı, can/puan kaybı
+                        score = Math.max(0, score - 20);
+                        playSynthSound(120, 'sawtooth', 0.3); // Hata sesi
+                        document.getElementById("gameScore").innerText = score;
+                        // Ekran sallantısı tetiklemesi
+                        triggerGlitchEffect();
+                    }
+                    spheres.splice(i, 1);
+                    continue;
+                }
+
+                // Ekrandan çıkan küreleri sil
+                if (s.y > canvas.height + 20) {
+                    if (s.type === 'good') {
+                        // Kaçırılan iyi küre oyunu kaybettirmez, ancak puan azaltabilir
+                        score = Math.max(0, score - 2);
+                        document.getElementById("gameScore").innerText = score;
+                    }
+                    spheres.splice(i, 1);
                 }
             }
 
-            // Ufuk Çizgisinde Hafif Parlama Efekti
-            const horizonY = canvas.height * 0.35;
-            const gradient = ctx.createLinearGradient(0, horizonY - 40, 0, horizonY + 20);
-            gradient.addColorStop(0, "rgba(59, 130, 246, 0)");
-            gradient.addColorStop(0.5, "rgba(168, 85, 247, 0.1)");
-            gradient.addColorStop(1, "rgba(11, 15, 25, 0)");
-            ctx.fillStyle = gradient;
-            ctx.fillRect(0, horizonY - 40, canvas.width, 60);
-
-            // Avatarları Y Derinliğine göre Sırala (Y-Sorting)
-            avatars.sort((a, b) => a.y - b.y);
-
-            // Tüm Avatarları Çiz
-            avatars.forEach(av => {
-                av.update();
-                av.draw();
-            });
-
-            // Telsiz Akış Log Penceresi
-            ctx.fillStyle = "rgba(11, 15, 25, 0.85)";
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
-            ctx.beginPath();
-            ctx.roundRect(16, canvas.height - 130, 380, 114, 8);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
-            ctx.font = "10px monospace";
-            ctx.textAlign = "left";
-            ctx.fillText("EVREN GÜNLÜKLERİ / TELSİZ AKIŞI", 24, canvas.height - 114);
-
-            ctx.font = "11px sans-serif";
-            logs.forEach((log, index) => {
-                ctx.fillStyle = index === logs.length - 1 ? "#60A5FA" : "rgba(255,255,255,0.7)";
-                ctx.fillText(`• ${log}`, 24, canvas.height - 94 + (index * 18));
-            });
-
-            requestAnimationFrame(renderLoop);
+            animationFrameId = requestAnimationFrame(gameLoop);
         }
+
+        // Glitch (Hata/Ekran Sallama) Efekti
+        function triggerGlitchEffect() {
+            canvas.style.transform = 'translate(5px, -5px)';
+            setTimeout(() => { canvas.style.transform = 'translate(-5px, 5px)'; }, 50);
+            setTimeout(() => { canvas.style.transform = 'translate(0px, 0px)'; }, 100);
+        }
+
+        // Oyunu Başlat
+        function startGame() {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            // Değişkenleri Sıfırla
+            score = 0;
+            document.getElementById("gameScore").innerText = score;
+            spheres = [];
+            gameActive = true;
+
+            // UI Güncelle
+            document.getElementById("gameOverlay").classList.add("hidden");
+
+            // Döngüyü Başlat
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            gameLoop();
+            playSynthSound(587.33, 'triangle', 0.4); // Giriş sesi
+        }
+
+        // Oyunu Durdur/Bitir
+        function stopGame(isWin) {
+            gameActive = false;
+            cancelAnimationFrame(animationFrameId);
+
+            // Skor Kontrolü ve Kaydı
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem("tuncerlab_highscore", highScore);
+                document.getElementById("gameHighScore").innerText = highScore;
+            }
+
+            // Arayüz Değiştir
+            document.getElementById("overlayTitle").innerText = "Simülasyon Tamamlandı";
+            document.getElementById("overlayDesc").innerHTML = `Antrenman skorunuz: <b class="text-[var(--primary)] text-lg">${score}</b><br>Veri küreleri başarıyla depolandı! Tekrar denemek için butona tıklayabilirsiniz.`;
+            document.getElementById("gameOverlay").classList.remove("hidden");
+        }
+
+        // Skor 500'e ulaştığında veya istendiğinde oyunu bitirmek için dinleyici ekleyebilirsiniz.
     </script>
 </body>
 </html>
