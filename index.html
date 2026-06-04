@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cardboard VR - Kusursuz Eller</title>
+    <title>Cardboard VR - Hologram Hands & Physics</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -34,6 +33,7 @@
             z-index: 1;
         }
 
+        /* Cardboard Gözlük Maskesi */
         #vr-mask-overlay {
             position: absolute;
             inset: 0;
@@ -72,7 +72,7 @@
             border-radius: 6px;
             z-index: 20;
             object-fit: cover;
-            opacity: 0.3;
+            opacity: 0.25;
             pointer-events: none;
         }
 
@@ -88,23 +88,25 @@
 </head>
 <body class="select-none">
 
+    <!-- Başlangıç Ekranı -->
     <div id="welcome-screen" class="fixed inset-0 bg-slate-950 text-white z-50 flex flex-col items-center justify-center p-6 text-center">
         <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl">
-            <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-amber-400 to-red-500 bg-clip-text text-transparent">
-                VR Kusursuz Eller
+            <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                VR Hologram Eller & Fizik
             </h1>
             <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                Havada uçuşan kemik hatası giderildi. Eklemler arasına tam oturan silindir matematiği ile kopmayan, bütünleşik <strong>VR avatar elleri</strong> oluşturuldu!
+                Görseldeki gibi kenarları parıldayan, içi saydam <strong>Mavi/Beyaz Hologram El Tasarımı (Glow Fresnel)</strong> başarıyla entegre edildi!
             </p>
             
-            <button id="start-btn" class="w-full bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
-                Tam Ekran Başla
+            <button id="start-btn" class="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
+                Gözlüğü Tak ve Başla
             </button>
         </div>
     </div>
 
+    <!-- Telefon Döndürme Uyarısı -->
     <div id="landscape-warning" class="fixed inset-0 bg-slate-950 z-40 text-white flex flex-col items-center justify-center p-6 text-center">
-        <svg class="w-16 h-16 text-amber-400 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg class="w-16 h-16 text-cyan-400 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
         </svg>
         <p class="text-xl font-bold">Lütfen Telefonu Yan Çevirin</p>
@@ -124,7 +126,7 @@
         let cameraGroup, cameraLeft, cameraRight; 
         const IPD = 0.064; 
 
-        // El Veri Yapıları
+        // Hologram El Verileri
         let leftHandGroup, rightHandGroup;
         let handBonesLeft = [], handBonesRight = [];
         let handKnucklesLeft = [], handKnucklesRight = [];
@@ -151,14 +153,16 @@
             Right: { isGrabbing: false, grabbedObj: null, velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() }
         };
 
-        // KUSURSUZ EL İSKELET BAĞLANTILARI
+        // BÜTÜNLEŞİK HOLOGRAM EL İSKELET BAĞLANTILARI
         const FINGER_BONES = [
             [0, 1], [1, 2], [2, 3], [3, 4],       // Başparmak
-            [0, 5], [5, 6], [6, 7], [7, 8],       // İşaret Parmağı
-            [0, 9], [9, 10], [10, 11], [11, 12],  // Orta Parmak
-            [0, 13], [13, 14], [14, 15], [15, 16],// Yüzük Parmağı
-            [0, 17], [17, 18], [18, 19], [19, 20],// Serçe Parmak
-            [5, 9], [9, 13], [13, 17]             // Parmak dipleri arası ağ (Webbing)
+            [0, 5], [5, 6], [6, 7], [7, 8],       // İşaret
+            [0, 9], [9, 10], [10, 11], [11, 12],  // Orta
+            [0, 13], [13, 14], [14, 15], [15, 16],// Yüzük
+            [0, 17], [17, 18], [18, 19], [19, 20],// Serçe
+            // Avuç içi alanını dolduran hacimsel ağ çizgileri (Organik dolgu hissi için)
+            [5, 9], [9, 13], [13, 17],
+            [1, 5], [2, 9], [3, 13], [4, 17]
         ];
 
         document.getElementById('start-btn').addEventListener('click', async () => {
@@ -234,55 +238,85 @@
             return group;
         }
 
-        // --- DÜZELTİLMİŞ KUSURSUZ EL OLUŞTURUCU ---
-        function setupRealisticHand(handGroup, handBones, handKnuckles) {
-            const skinMaterial = new THREE.MeshPhysicalMaterial({
-                color: 0xedbc91,
-                roughness: 0.5,
-                metalness: 0.0,
-                clearcoat: 0.1,
-                clearcoatRoughness: 0.4
+        // --- GÖRSELDEKİ GİBİ FRESNEL HOLOGRAM (GLOW) EL OLUŞTURUCU ---
+        function setupHologramHand(handGroup, handBones, handKnuckles) {
+            // Özel WebGL Fresnel Shader: Kenarlara beyaz/mavi parlama verir, iç kısmı boş/saydam gösterir
+            const hologramShader = {
+                vertexShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    void main() {
+                        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                        vNormal = normalize(normalMatrix * normal);
+                        vViewPosition = -mvPosition.xyz;
+                        gl_Position = projectionMatrix * mvPosition;
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vNormal;
+                    varying vec3 vViewPosition;
+                    void main() {
+                        vec3 normal = normalize(vNormal);
+                        vec3 viewDir = normalize(vViewPosition);
+                        
+                        // Fresnel Efekti: Bakış açısı dikleştikçe saydamlık azalır, kenarlar parıldar
+                        float fresnel = 1.0 - clamp(abs(dot(normal, viewDir)), 0.0, 1.0);
+                        fresnel = pow(fresnel, 2.2); // Parlama yayılım keskinliği
+                        
+                        // Görseldeki gibi tatlı buz mavisi ve parlak beyaz tonları
+                        vec3 glowColor = vec3(0.55, 0.85, 1.0); 
+                        vec3 coreColor = vec3(0.3, 0.6, 0.9);
+                        
+                        vec3 finalColor = mix(coreColor, vec3(1.0), fresnel);
+                        
+                        // İç hacim hafif dumanlı mavi, dış çeperler kuvvetli neon parlak
+                        float alpha = clamp(fresnel * 0.95 + 0.15, 0.0, 1.0);
+                        
+                        gl_FragColor = vec4(finalColor * (fresnel * 1.5 + 0.4), alpha);
+                    }
+                `
+            };
+
+            const hologramMaterial = new THREE.ShaderMaterial({
+                vertexShader: hologramShader.vertexShader,
+                fragmentShader: hologramShader.fragmentShader,
+                transparent: true,
+                blending: THREE.AdditiveBlending, // Üst üste binen eklemler görseldeki gibi pürüzsüzce kaynaşır
+                depthWrite: false, // Arka plan parçaların çirkin kesişmelerini gizler, akıcılık katar
+                side: THREE.DoubleSide
             });
 
-            // Eklem kalınlığı
-            const thickness = 0.014;
+            const thickness = 0.016; // Hologram el et kalınlığı
 
-            // Küre Eklemler
+            // Eklem Küreleri
             const knuckleGeo = new THREE.SphereGeometry(thickness, 16, 16);
             for (let i = 0; i < 21; i++) {
-                const sphere = new THREE.Mesh(knuckleGeo, skinMaterial);
+                const sphere = new THREE.Mesh(knuckleGeo, hologramMaterial);
                 sphere.visible = false;
-                sphere.castShadow = true;
                 handGroup.add(sphere);
                 handKnuckles.push(sphere);
             }
 
-            // DÜZELTİLMİŞ Kemik Silindirleri
-            // Translate kullanmıyoruz, merkezi tam ortada (0,0,0) bırakıyoruz.
-            const boneGeo = new THREE.CylinderGeometry(thickness, thickness, 1, 12);
-            boneGeo.rotateX(Math.PI / 2); // Z eksenine hizalama (lookAt'in doğru çalışması için)
+            // Kemik Segmentleri (Bağlantılar)
+            const boneGeo = new THREE.CylinderGeometry(thickness, thickness, 1, 16);
+            boneGeo.rotateX(Math.PI / 2);
 
             FINGER_BONES.forEach(() => {
-                const cylinder = new THREE.Mesh(boneGeo, skinMaterial);
+                const cylinder = new THREE.Mesh(boneGeo, hologramMaterial);
                 cylinder.visible = false;
-                cylinder.castShadow = true;
                 handGroup.add(cylinder);
                 handBones.push(cylinder);
             });
         }
 
-        // DÜZELTİLMİŞ Kemik Güncelleme Matematiği
+        // Kemikleri birbirine kusursuz kenetleme
         function updateBoneSegment(boneMesh, posA, posB) {
             const distance = posA.distanceTo(posB);
             if (distance < 0.001) return;
 
-            // Silindiri tam olarak A ve B'nin orta noktasına koy!
             boneMesh.position.lerpVectors(posA, posB, 0.5);
-            // Silindirin Z eksenindeki uzunluğunu mesafeye eşitle
             boneMesh.scale.set(1, 1, distance);
-            // Silindiri B noktasına doğru baktır
             boneMesh.lookAt(posB);
-            
             boneMesh.visible = true;
         }
 
@@ -316,6 +350,7 @@
             scene.add(sunLight);
             scene.add(new THREE.AmbientLight(0x606080, 1.2));
 
+            // Siyah Beyaz Damalı Zemin
             const canvas = document.createElement('canvas');
             canvas.width = 128; canvas.height = 128;
             const ctx = canvas.getContext('2d');
@@ -360,8 +395,9 @@
             cameraGroup.add(leftHandGroup);
             cameraGroup.add(rightHandGroup);
 
-            setupRealisticHand(leftHandGroup, handBonesLeft, handKnucklesLeft);
-            setupRealisticHand(rightHandGroup, handBonesRight, handKnucklesRight);
+            // Gelişmiş Fresnel Hologram El Modellerini Kurma
+            setupHologramHand(leftHandGroup, handBonesLeft, handKnucklesLeft);
+            setupHologramHand(rightHandGroup, handBonesRight, handKnucklesRight);
 
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
             renderer.setPixelRatio(window.devicePixelRatio);
@@ -425,14 +461,13 @@
                 landmarks.forEach((landmark, i) => {
                     const k = activeKnuckles[i];
                     k.visible = true;
-                    // Ölçekleme ve Derinlik
                     k.position.x = (landmark.x - 0.5) * 1.3;
                     k.position.y = (0.5 - landmark.y) * 1.3 - 0.15;
                     k.position.z = -0.55 - (landmark.z * 1.0);
                     avgY += landmark.y;
                 });
 
-                // 2. Kemik Silindirlerini Kusursuz Bağlama
+                // 2. Kemik Silindirlerini Kusursuz Bağlama (Yeni Fresnel/Hologram yapısıyla)
                 FINGER_BONES.forEach((boneIndices, i) => {
                     updateBoneSegment(activeBones[i], activeKnuckles[boneIndices[0]].position, activeKnuckles[boneIndices[1]].position);
                 });
@@ -445,7 +480,7 @@
                 handState.velocity.subVectors(worldWrist, handState.wristWorldPos).divideScalar(0.016);
                 handState.wristWorldPos.copy(worldWrist);
 
-                // Yumruk
+                // Yumruk/Tutma
                 let totalDist = 0;
                 const tips = [8, 12, 16, 20], bases = [5, 9, 13, 17];
                 for (let i = 0; i < 4; i++) {
@@ -459,7 +494,7 @@
                     if (handState.isGrabbing) releaseAndThrow(label);
                 }
 
-                // Yürüme
+                // Yürüme ivmesi
                 avgY /= landmarks.length;
                 if (label === 'Left') {
                     if (prevYLeft !== 0) totalHandYMovement += Math.abs(avgY - prevYLeft);
@@ -545,7 +580,6 @@
             if (currentMoveSpeed > 0.05) {
                 cameraGroup.getWorldDirection(moveDirection);
                 moveDirection.y = 0; moveDirection.normalize();
-                // Ters yön düzeltmesi aktif
                 cameraGroup.position.addScaledVector(moveDirection, currentMoveSpeed * dt * -1);
                 if (!keysPressed['w']) moveSpeed *= deceleration;
             } else { moveSpeed = 0; }
