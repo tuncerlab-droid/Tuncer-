@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VR Holografik El Takip Oyunu</title>
+    <title>HoloVR Hands - Düzeltilmiş Sürüm</title>
     <style>
         html, body {
             margin: 0;
@@ -12,23 +11,36 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background-color: #050508;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #020205;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         #canvas-container {
             width: 100%;
             height: 100%;
-            display: none; /* Giriş ekranından sonra açılacak */
+            display: block;
         }
 
         #video_input {
-            display: none;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 120px;
+            height: 90px;
+            border: 2px solid #00f0ff;
+            border-radius: 8px;
+            z-index: 20;
+            transform: scaleX(-1); /* Ayna görüntüsü */
+            background: #000;
+            object-fit: cover;
+            display: none; /* Arka planda çalışsın ama ekranı kapatmasın */
         }
 
-        /* Başlangıç ve İzin Arayüzü */
-        #setup-screen {
+        /* Giriş ve Kontrol Paneli */
+        #ui-overlay {
             position: absolute;
             top: 0;
             left: 0;
@@ -38,470 +50,436 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: radial-gradient(circle at center, #111a2e 0%, #050508 100%);
+            background: radial-gradient(circle at center, #0f172a 0%, #020205 100%);
             z-index: 100;
             text-align: center;
             padding: 20px;
             box-sizing: border-box;
+            transition: opacity 0.5s ease;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(0, 255, 255, 0.2);
-            border-radius: 16px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid #00f0ff;
+            border-radius: 20px;
             padding: 30px;
-            max-width: 500px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 8px 32px 0 rgba(0, 255, 255, 0.1);
+            max-width: 480px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3);
         }
 
         h1 {
-            color: #00ffff;
-            font-size: 28px;
-            margin-bottom: 10px;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
-            letter-spacing: 1px;
+            color: #00f0ff;
+            font-size: 32px;
+            margin: 0 0 15px 0;
+            text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+            letter-spacing: 2px;
         }
 
         p {
-            color: #ccc;
-            font-size: 15px;
+            color: #94a3b8;
+            font-size: 14px;
             line-height: 1.6;
             margin-bottom: 25px;
         }
 
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
         .btn {
-            background: linear-gradient(135deg, #00ffff 0%, #0088cc 100%);
+            background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%);
             border: none;
-            color: #000;
-            padding: 14px 30px;
+            color: #020205;
+            padding: 15px 25px;
             font-size: 16px;
             font-weight: bold;
             border-radius: 30px;
             cursor: pointer;
-            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 240, 255, 0.3);
+            transition: all 0.2s ease;
             text-transform: uppercase;
         }
 
-        .btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 25px rgba(0, 255, 255, 0.7);
+        .btn:active {
+            transform: scale(0.98);
         }
 
-        /* VR Ekran Bölücü Çizgi */
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* Canlı Sistem Log Penceresi */
+        #debug-console {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: calc(100% - 20px);
+            max-width: 320px;
+            max-height: 150px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #ff0055;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 11px;
+            color: #ff3366;
+            overflow-y: auto;
+            z-index: 1000;
+            pointer-events: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 2px;
+        }
+        .log-success { color: #00ffcc; }
+        .log-info { color: #00bfff; }
+
+        /* VR Bölücü Çizgi */
         #vr-divider {
             position: absolute;
             left: 50%;
             top: 0;
             width: 2px;
             height: 100%;
-            background: rgba(255, 255, 255, 0.15);
-            z-index: 5;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            z-index: 50;
             display: none;
             pointer-events: none;
         }
 
-        /* Bilgilendirme Göstergeleri */
-        .hud-info {
+        /* Ekran modu göstergesi */
+        #mode-indicator {
             position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 100px; /* Her iki göz için ortalanmış HUD */
-            pointer-events: none;
-            z-index: 10;
-            display: none;
-        }
-
-        .hud-panel {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            border-radius: 8px;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
             padding: 8px 15px;
+            border-radius: 20px;
             font-size: 12px;
-            text-align: center;
-            min-width: 140px;
-            color: #00ffff;
-            text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
-        }
-
-        #loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(5, 5, 8, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 90;
-            display: none;
-            font-size: 18px;
-            color: #00ffff;
-        }
-
-        .spinner {
-            border: 4px solid rgba(0, 255, 255, 0.1);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #00ffff;
-            animation: spin 1s linear infinite;
-            margin-right: 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            border: 1px solid #00f0ff;
+            z-index: 80;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <!-- Başlangıç ve İzin Ekranı -->
-    <div id="setup-screen">
+    <!-- Hata ve Bilgi Konsolu -->
+    <div id="debug-console">
+        <div class="log-entry log-info">[Sistem] Başlatılmaya hazır. Hatalar burada görünecektir.</div>
+    </div>
+
+    <!-- Giriş Arayüzü -->
+    <div id="ui-overlay">
         <div class="card">
-            <h1>VR HOLO-HANDS</h1>
+            <h1>HOLO-HANDS VR</h1>
             <p>
-                Google Cardboard VR gözlüğünüzü hazırlayın! Bu oyun telefon kameranızı kullanarak ellerinizi 3D holografik modele dönüştürür. Jiroskop ile etrafınıza bakabilir, <b>başparmak ve işaret parmağınızı birleştirerek (Pinch)</b> Jenga benzeri ahşap blokları taşıyabilirsiniz.
+                Kameranızı kullanarak ellerinizi 3D siber dünyaya aktarın! <br>
+                <b>Google Cardboard kullanıyorsanız ellerinizi gözlüğün önündeki kameraya göstermelisiniz.</b><br>
+                İşaret ve başparmağınızı birleştirerek (Pinch) blokları taşıyabilirsiniz.
             </p>
-            <button class="btn" id="start-btn">Kamera ve VR Başlat</button>
+            <div class="btn-group">
+                <button class="btn" id="btn-vr-start">VR (Cardboard) MODUNDA BAŞLAT</button>
+                <button class="btn btn-secondary" id="btn-normal-start">TEK EKRAN (NORMAL) BAŞLAT</button>
+            </div>
         </div>
     </div>
 
-    <!-- Yükleme Ekranı -->
-    <div id="loading-overlay">
-        <div class="spinner"></div>
-        <span id="loading-text">Kamera ve El Algılama Modeli Başlatılıyor...</span>
-    </div>
-
-    <!-- Ekranı Ortadan Bölen VR Çizgisi -->
     <div id="vr-divider"></div>
+    <div id="mode-indicator">Mod: Beklemede</div>
 
-    <!-- İki Göz İçin Bilgi Ekranı (HUD) -->
-    <div class="hud-info" id="hud">
-        <div class="hud-panel">SOL GÖZ<br><span id="hud-status-l">El Aranıyor...</span></div>
-        <div class="hud-panel">SAĞ GÖZ<br><span id="hud-status-r">El Aranıyor...</span></div>
-    </div>
+    <!-- Gizli/Görünür Kamera Akışı -->
+    <video id="video_input" autoplay playsinline></video>
 
-    <!-- Video Girişi (Gizli) -->
-    <video id="video_input" playsinline></video>
-
-    <!-- 3D Sahne Alanı -->
+    <!-- WebGL Canvas -->
     <div id="canvas-container"></div>
 
-    <!-- Three.js ve MediaPipe Kütüphaneleri -->
+    <!-- Three.js ve MediaPipe Bağlantıları (Güvenli CDN) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 
     <script>
-        // --- DEĞİŞKENLER VE AYARLAR ---
-        let scene, camera, renderer, container;
-        let leftCamera, rightCamera; // VR Çift kamera simülasyonu
-        let deviceYaw = 0, devicePitch = 0, deviceRoll = 0; // Jiroskop verileri
-        let videoElement = document.getElementById('video_input');
-        
-        // El takibi görselleştirme elemanları
-        let handsData = [];
-        let leftHandMesh = { joints: [], bones: [] };
-        let rightHandMesh = { joints: [], bones: [] };
-        
-        // Bloklar ve fizik simülasyonu
-        let blocks = [];
-        const GRAVITY = -0.05;
-        
-        // Etkileşim durumu (Tutulan nesne takibi)
-        let grabbedBlock = { left: null, right: null };
-        
-        // Ses Sentezleyici (Web Audio API) - Herhangi bir harici dosya indirmemek için
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        function playSound(type) {
-            try {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                if (type === 'grab') {
-                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.1);
-                } else if (type === 'release') {
-                    osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                    osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.15);
-                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.15);
-                } else if (type === 'collision') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-                    osc.start();
-                    osc.stop(audioCtx.currentTime + 0.2);
-                }
-            } catch(e) { console.log("Ses çalınamadı", e); }
+        // --- GELİŞMİŞ HATA YAKALAMA VE LOG SİSTEMİ ---
+        const debugConsole = document.getElementById('debug-console');
+        function log(message, type = 'error') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+            debugConsole.appendChild(entry);
+            debugConsole.scrollTop = debugConsole.scrollHeight;
+            console.log(message);
         }
 
-        // --- BAŞLANGIÇ TETİKLEYİCİSİ (İzinler ve Başlatma) ---
-        document.getElementById('start-btn').addEventListener('click', async () => {
-            // Ses bağlamını etkinleştir
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+        // Global Hataları Yakala
+        window.onerror = function(msg, url, line) {
+            log(`HATA: ${msg} (Satır: ${line})`, 'error');
+            return false;
+        };
 
-            document.getElementById('setup-screen').style.display = 'none';
-            document.getElementById('loading-overlay').style.display = 'flex';
+        // --- GLOBAL DEĞİŞKENLER ---
+        let scene = null;
+        let camera = null;
+        let renderer = null;
+        let container = null;
+        let leftCamera = null;
+        let rightCamera = null;
+        let vrMode = false;
+        let initialized = false; // Oyun yüklendi mi kontrolü
+        
+        let deviceYaw = 0, devicePitch = 0, deviceRoll = 0;
+        let videoElement = document.getElementById('video_input');
+        
+        let leftHandMesh = { joints: [], bones: [] };
+        let rightHandMesh = { joints: [], bones: [] };
+        let blocks = [];
+        let grabbedBlock = { left: null, right: null };
 
-            // iOS 13+ için Jiroskop/Sensör İzni
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permissionState = await DeviceOrientationEvent.requestPermission();
-                    if (permissionState === 'granted') {
-                        window.addEventListener('deviceorientation', handleOrientation, true);
-                    } else {
-                        alert('Jiroskop izni verilmedi. VR kafa takibi çalışmayacak.');
-                    }
-                } catch (error) {
-                    console.error(error);
-                }
-            } else {
-                // Standart Android cihazlar ve eski iOS
-                window.addEventListener('deviceorientation', handleOrientation, true);
-            }
+        const GRAVITY = -0.04;
 
-            // Kamerayı başlat
+        // Web Audio API Ses Sentezleyici
+        let audioCtx = null;
+        function initAudio() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: 640, height: 480 }
-                });
-                videoElement.srcObject = stream;
-                videoElement.play();
-                
-                // Kameradan sonra el takip modelini başlat
-                initGame();
-            } catch (err) {
-                alert('Kamera izni alınamadı: ' + err.message);
-                document.getElementById('setup-screen').style.display = 'flex';
-                document.getElementById('loading-overlay').style.display = 'none';
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                log("Ses motoru başarıyla başlatıldı.", "success");
+            } catch(e) {
+                log("Ses motoru başlatılamadı: " + e.message, "error");
             }
+        }
+
+        function playSound(freq, duration, type='sine') {
+            if (!audioCtx) return;
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // --- GİRİŞ SEÇENEKLERİ ---
+        document.getElementById('btn-vr-start').addEventListener('click', () => {
+            vrMode = true;
+            startSequence();
         });
 
-        // --- JİROSKOP VERİ ALICI ---
+        document.getElementById('btn-normal-start').addEventListener('click', () => {
+            vrMode = false;
+            startSequence();
+        });
+
+        async function startSequence() {
+            initAudio();
+            document.getElementById('ui-overlay').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('ui-overlay').style.display = 'none';
+            }, 500);
+
+            if (vrMode) {
+                document.getElementById('vr-divider').style.display = 'block';
+                document.getElementById('mode-indicator').innerText = "Mod: Cardboard VR";
+                await requestSensors();
+            } else {
+                document.getElementById('mode-indicator').innerText = "Mod: Normal Ekran (3D)";
+            }
+
+            // Kamerayı ve ardından Three.js dünyasını çalıştır
+            await initCameraAndTracking();
+        }
+
+        // Jiroskop Sensör İzni Al (iOS & Android)
+        async function requestSensors() {
+            log("Sensör izinleri kontrol ediliyor...", "info");
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        log("Jiroskop erişimi onaylandı.", "success");
+                    } else {
+                        log("Jiroskop izni reddedildi. Kafa takibi çalışmayacak.", "error");
+                    }
+                } catch(e) {
+                    log("Sensör izni istenirken hata oluştu: " + e.message, "error");
+                }
+            } else {
+                window.addEventListener('deviceorientation', handleOrientation, true);
+                log("Varsayılan sensör dinleyici bağlandı.", "info");
+            }
+        }
+
         function handleOrientation(event) {
-            // Cardboard gözlüğü takılıyken telefon yatay (Landscape-Left) konumdadır.
-            // Bu yüzden alpha (yaw), beta (pitch), gamma (roll) eksenlerini adapte ediyoruz.
             if (event.alpha !== null) {
-                // VR kafa dönüş açıları (Radyan cinsinden)
+                // Cardboard modu için telefon yatay duracağından eksenleri yönlendiriyoruz
                 deviceYaw = THREE.MathUtils.degToRad(event.alpha);
-                devicePitch = THREE.MathUtils.degToRad(event.beta - 90); // Yatay konuma göre ofset
+                devicePitch = THREE.MathUtils.degToRad(event.beta - 90);
                 deviceRoll = THREE.MathUtils.degToRad(event.gamma);
             }
         }
 
-        // --- OYUN ALANI VE SAHNE KURULUMU ---
-        function initGame() {
+        // --- KAMERA VE MEDIAPIPE BAŞLATICI ---
+        async function initCameraAndTracking() {
+            log("Kamera erişimi aranıyor...", "info");
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'user', // Selfie kamerası
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
+                };
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoElement.srcObject = stream;
+                log("Kamera akışı başarıyla bağlandı.", "success");
+                
+                // Three.js Kurulumunu yap
+                initThreeJS();
+                
+                // MediaPipe Başlat
+                startMediaPipe();
+
+            } catch(err) {
+                log("Kamera başlatılamadı: " + err.message + ". Arka kamerayı deniyor...", "error");
+                try {
+                    // Arka kamerayı dene
+                    const backStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    videoElement.srcObject = backStream;
+                    initThreeJS();
+                    startMediaPipe();
+                } catch(err2) {
+                    log("Kritik Hata: Hiçbir kameraya erişilemedi! Oyunu başlatmak için kamera izni şarttır.", "error");
+                }
+            }
+        }
+
+        // --- THREE.JS KURULUMU ---
+        function initThreeJS() {
+            log("Three.js sahnesi yükleniyor...", "info");
             container = document.getElementById('canvas-container');
-            container.style.display = 'block';
-            document.getElementById('vr-divider').style.display = 'block';
-            document.getElementById('hud').style.display = 'flex';
 
-            // 1. Sahne (Scene)
+            // Sahne
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x05050d); // Koyu dijital uzay teması
-            scene.fog = new THREE.FogExp2(0x05050d, 0.15);
+            scene.background = new THREE.Color(0x020208);
+            scene.fog = new THREE.FogExp2(0x020208, 0.15);
 
-            // 2. Kameralar (Stereoscopic Cardboard Setup)
-            // İki göz için hafif yatay mesafeli iki kamera tanımlıyoruz (Interpupillary Distance ~ 0.064m)
-            const aspect = (window.innerWidth / 2) / window.innerHeight;
-            leftCamera = new THREE.PerspectiveCamera(60, aspect, 0.05, 100);
-            rightCamera = new THREE.PerspectiveCamera(60, aspect, 0.05, 100);
-            
-            // Ana kamera taşıyıcısı (Kafayı temsil eder)
+            // Çift Göz Kameraları (Stereo)
+            const aspect = (window.innerWidth / (vrMode ? 2 : 1)) / window.innerHeight;
+            leftCamera = new THREE.PerspectiveCamera(65, aspect, 0.05, 100);
+            rightCamera = new THREE.PerspectiveCamera(65, aspect, 0.05, 100);
+
+            // Ana kafa grubu
             camera = new THREE.Group();
-            camera.position.set(0, 1.4, 0.8); // Göz hizası ve biraz geride
+            camera.position.set(0, 1.4, 0.8); // Göz hizasında konumlandır
             camera.add(leftCamera);
             camera.add(rightCamera);
             scene.add(camera);
 
-            // Göz mesafelerini ayarla
+            // Göz mesafeleri (IPD)
             leftCamera.position.set(-0.032, 0, 0);
             rightCamera.position.set(0.032, 0, 0);
 
-            // 3. Renderer
-            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            // WebGL Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // 4. Işıklandırmalar
-            const ambientLight = new THREE.AmbientLight(0x0a1128, 1.5);
-            scene.add(ambientLight);
+            // Ortam ve Işıklandırma
+            const ambient = new THREE.AmbientLight(0x0f172a, 1.5);
+            scene.add(ambient);
 
-            const neonLight = new THREE.DirectionalLight(0x00ffff, 1.5);
-            neonLight.position.set(0, 5, 2);
-            neonLight.castShadow = true;
+            const neonLight = new THREE.DirectionalLight(0x00f0ff, 1.5);
+            neonLight.position.set(0, 4, 3);
             scene.add(neonLight);
 
-            // 5. Zemin (Holografik Grid)
-            const gridHelper = new THREE.GridHelper(30, 60, 0x00ffff, 0x112233);
-            gridHelper.position.y = 0;
-            scene.add(gridHelper);
+            // Grid Zemin
+            const grid = new THREE.GridHelper(30, 40, 0x00f0ff, 0x1e293b);
+            scene.add(grid);
 
-            // Parlayan zemin dairesi
-            const ringGeo = new THREE.RingGeometry(0.1, 1.5, 32);
-            const ringMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, side: THREE.DoubleSide, transparent: true, opacity: 0.1 });
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.PI / 2;
-            ring.position.y = 0.01;
-            scene.add(ring);
-
-            // 6. Masa / Jenga Alanı
-            const tableGeo = new THREE.BoxGeometry(0.8, 0.6, 0.8);
+            // Masa
+            const tableGeo = new THREE.BoxGeometry(0.9, 0.6, 0.9);
             const tableMat = new THREE.MeshStandardMaterial({ 
-                color: 0x101525, 
-                roughness: 0.4, 
-                metalness: 0.8,
-                emissive: 0x001122
+                color: 0x0f172a, 
+                roughness: 0.3,
+                metalness: 0.8
             });
             const table = new THREE.Mesh(tableGeo, tableMat);
-            table.position.set(0, 0.3, -0.4); // Kameranın tam karşısında, aşağıda
+            table.position.set(0, 0.3, -0.4);
             scene.add(table);
 
-            // 7. Blokların Oluşturulması (Jenga Yapısı)
-            buildJengaStack();
+            // Nesneleri ve Elleri Oluştur
+            buildPhysicsObjects();
+            buildHands();
 
-            // 8. Holografik El Modellerinin Oluşturulması
-            buildHologramHands();
-
-            // 9. Pencere Boyut Değişimi Dinleyicisi
             window.addEventListener('resize', onWindowResize);
-
-            // 10. MediaPipe El Algılayıcıyı Bağla
-            initMediaPipe();
-        }
-
-        // --- PARLAYAN HOLOGRAFİK EL MATERYALLERİ VE MODELLERİ ---
-        function buildHologramHands() {
-            // Fotoğraftaki gibi yarı saydam, mavi neon görünümlü materyaller
-            const jointMaterial = new THREE.MeshBasicMaterial({
-                color: 0x00ffff,
-                transparent: true,
-                opacity: 0.6
-            });
-
-            const boneMaterial = new THREE.LineBasicMaterial({
-                color: 0x00aaff,
-                transparent: true,
-                opacity: 0.8,
-                linewidth: 2 // WebGL standartlarında çoğunlukla 1 piksel kalır, ancak görseli güçlendiririz
-            });
-
-            const jointGeo = new THREE.SphereGeometry(0.012, 8, 8); // Küçük el boğum noktaları
-
-            // Sol ve Sağ el için 21 eklem noktası ve bağlantı çizgileri
-            ['left', 'right'].forEach(side => {
-                const handGroup = new THREE.Group();
-                scene.add(handGroup);
-
-                const list = side === 'left' ? leftHandMesh : rightHandMesh;
-                list.group = handGroup;
-
-                // 21 eklem küresi oluştur
-                for (let i = 0; i < 21; i++) {
-                    const joint = new THREE.Mesh(jointGeo, jointMaterial);
-                    handGroup.add(joint);
-                    list.joints.push(joint);
-                }
-
-                // Parmak kemik bağlantılarını tanımlayalım (MediaPipe iskelet indeksi)
-                const connections = [
-                    [0,1], [1,2], [2,3], [3,4],       // Başparmak
-                    [0,5], [5,6], [6,7], [7,8],       // İşaret Parmağı
-                    [5,9], [9,10], [10,11], [11,12],  // Orta Parmak
-                    [9,13], [13,14], [14,15], [15,16],// Yüzük Parmağı
-                    [0,17], [17,18], [18,19], [19,20],// Serçe parmak
-                    [5,17] // Avuç içi tabanı kapatma çizgisi
-                ];
-
-                connections.forEach(() => {
-                    const lineGeo = new THREE.BufferGeometry();
-                    const positions = new Float32Array(6); // 2 nokta x 3 eksen
-                    lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-                    const line = new THREE.Line(lineGeo, boneMaterial);
-                    handGroup.add(line);
-                    list.bones.push({ line, indices: null });
-                });
-
-                // Bağlantı indeks haritasını kaydet
-                list.connections = connections;
-            });
-        }
-
-        // --- BLOKLARIN OLUŞTURULMASI (FİZİKSEL JENGA YAPISI) ---
-        function buildJengaStack() {
-            const blockWidth = 0.24;
-            const blockLength = 0.08;
-            const blockHeight = 0.04;
             
-            const colors = [0xff0055, 0x00ffaa, 0x00aaff, 0xffaa00, 0x9900ff];
+            // Sahne tamamen hazır olduğunda bayrağı kaldır
+            initialized = true;
+            log("Three.js sahnesi başarıyla hazırlandı.", "success");
+        }
 
-            // 6 katmanlı ahşap görünümlü neon kenarlı bloklar oluşturalım
-            let layerCount = 6;
-            for (let layer = 0; layer < layerCount; layer++) {
-                const yPos = 0.6 + (layer * blockHeight) + (blockHeight / 2); // Masa üstü y=0.6'dan başlar
+        // --- FİZİK BLOKLARININ OLUŞTURULMASI (ÜST ÜSTE JENGA BLOKLARI) ---
+        function buildPhysicsObjects() {
+            const w = 0.24, h = 0.04, l = 0.08;
+            const colors = [0x00f0ff, 0xff0055, 0x00ffcc, 0xffaa00, 0x9900ff];
 
+            // 5 katmanlı siber blok kulesi
+            for (let layer = 0; layer < 5; layer++) {
+                const yPos = 0.6 + (layer * h) + (h / 2);
                 for (let i = 0; i < 3; i++) {
                     const blockGeo = new THREE.BoxGeometry(
-                        layer % 2 === 0 ? blockLength : blockWidth,
-                        blockHeight,
-                        layer % 2 === 0 ? blockWidth : blockLength
+                        layer % 2 === 0 ? l : w,
+                        h,
+                        layer % 2 === 0 ? w : l
                     );
-                    
+
+                    const color = colors[layer % colors.length];
                     const blockMat = new THREE.MeshStandardMaterial({
-                        color: colors[layer % colors.length],
-                        roughness: 0.2,
-                        metalness: 0.1,
-                        emissive: colors[layer % colors.length],
-                        emissiveIntensity: 0.15
+                        color: color,
+                        emissive: color,
+                        emissiveIntensity: 0.2,
+                        roughness: 0.1
                     });
 
-                    const block = new THREE.Mesh(blockGeo, blockMat);
+                    const mesh = new THREE.Mesh(blockGeo, blockMat);
 
-                    // Katmana göre 90 derece döndürerek konumlandırma
                     let xOffset = 0;
-                    let zOffset = -0.4; // Masa merkezi z=-0.4
-
+                    let zOffset = -0.4; // Masa merkezi
                     const spacing = 0.082;
+
                     if (layer % 2 === 0) {
                         xOffset = (i - 1) * spacing;
                     } else {
                         zOffset = -0.4 + (i - 1) * spacing;
                     }
 
-                    block.position.set(xOffset, yPos, zOffset);
-                    scene.add(block);
+                    mesh.position.set(xOffset, yPos, zOffset);
+                    scene.add(mesh);
 
-                    // Blok fiziksel özellikleri
                     blocks.push({
-                        mesh: block,
+                        mesh: mesh,
                         size: {
-                            x: layer % 2 === 0 ? blockLength : blockWidth,
-                            y: blockHeight,
-                            z: layer % 2 === 0 ? blockWidth : blockLength
+                            x: layer % 2 === 0 ? l : w,
+                            y: h,
+                            z: layer % 2 === 0 ? w : l
                         },
                         velocity: new THREE.Vector3(0, 0, 0),
                         isGrabbed: false
@@ -510,22 +488,87 @@
             }
         }
 
-        // --- MEDIAPIPE ENTEGRASYONU ---
-        function initMediaPipe() {
-            const hands = new Hands({
+        // --- FOTOĞRAFTAKİ GİBİ HOLOGRAFİK ELLER ---
+        function buildHands() {
+            const jointMat = new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.7
+            });
+
+            const boneMat = new THREE.LineBasicMaterial({
+                color: 0x0088ff,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const jointGeo = new THREE.SphereGeometry(0.012, 8, 8);
+
+            ['left', 'right'].forEach(side => {
+                const group = new THREE.Group();
+                scene.add(group);
+
+                const data = side === 'left' ? leftHandMesh : rightHandMesh;
+                data.group = group;
+
+                // 21 Eklem Noktası
+                for (let i = 0; i < 21; i++) {
+                    const joint = new THREE.Mesh(jointGeo, jointMat);
+                    group.add(joint);
+                    data.joints.push(joint);
+                }
+
+                // Parmak İskelet Bağlantıları
+                const connections = [
+                    [0,1], [1,2], [2,3], [3,4],       // Başparmak
+                    [0,5], [5,6], [6,7], [7,8],       // İşaret Parmağı
+                    [5,9], [9,10], [10,11], [11,12],  // Orta Parmak
+                    [9,13], [13,14], [14,15], [15,16],// Yüzük Parmağı
+                    [0,17], [17,18], [18,19], [19,20],// Serçe
+                    [5,17]
+                ];
+
+                connections.forEach(conn => {
+                    const lineGeo = new THREE.BufferGeometry();
+                    const positions = new Float32Array(6);
+                    lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                    const line = new THREE.Line(lineGeo, boneMat);
+                    group.add(line);
+                    data.bones.push({ line, indices: conn });
+                });
+
+                group.visible = false;
+            });
+        }
+
+        // --- MEDIAPIPE GÜVENLİ EL ALGINALAYICI BAŞLATICI ---
+        function startMediaPipe() {
+            log("MediaPipe El Modeli yükleniyor...", "info");
+            
+            if (!window.Hands) {
+                log("Kritik Hata: MediaPipe Hands kütüphanesi yüklenemedi! İnternet bağlantınızı kontrol edin.", "error");
+                return;
+            }
+
+            const hands = new window.Hands({
                 locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
             });
 
             hands.setOptions({
                 maxNumHands: 2,
                 modelComplexity: 1,
-                minDetectionConfidence: 0.7,
-                minTrackingConfidence: 0.7
+                minDetectionConfidence: 0.65,
+                minTrackingConfidence: 0.65
             });
 
-            hands.onResults(onHandResults);
+            hands.onResults(processHandTracking);
 
-            const cameraHelper = new Camera(videoElement, {
+            if (!window.Camera) {
+                log("Kritik Hata: MediaPipe CameraUtils yüklenemedi!", "error");
+                return;
+            }
+
+            const cam = new window.Camera(videoElement, {
                 onFrame: async () => {
                     await hands.send({ image: videoElement });
                 },
@@ -533,16 +576,16 @@
                 height: 480
             });
 
-            cameraHelper.start().then(() => {
-                document.getElementById('loading-overlay').style.display = 'none';
+            cam.start().then(() => {
+                log("MediaPipe takip aktif ve çalışıyor!", "success");
+            }).catch(e => {
+                log("Takip kamerası başlatılamadı: " + e.message, "error");
             });
         }
 
-        // --- EL ALGILAMA SONUÇLARI VE ETKİLEŞİM ---
-        function onHandResults(results) {
-            // El bulunamadığında HUD güncelleme
-            document.getElementById('hud-status-l').innerText = "El Aranıyor...";
-            document.getElementById('hud-status-r').innerText = "El Aranıyor...";
+        // --- EL VERİLERİNİ DÜNYAYA AKTARMA VE ETKİLEŞİM ---
+        function processHandTracking(results) {
+            if (!initialized) return; // Sahne hazır değilse işlem yapma
 
             leftHandMesh.group.visible = false;
             rightHandMesh.group.visible = false;
@@ -550,137 +593,130 @@
             if (results.multiHandLandmarks && results.multiHandedness) {
                 results.multiHandLandmarks.forEach((landmarks, index) => {
                     const handedness = results.multiHandedness[index];
-                    // Mobil ön kamerada görüntüler ayna yansımasıdır, bunu düzeltelim
-                    const isLeft = handedness.label === 'Left'; 
-                    const currentHand = isLeft ? leftHandMesh : rightHandMesh;
+                    const isLeft = handedness.label === 'Left';
+                    const hand = isLeft ? leftHandMesh : rightHandMesh;
                     const sideKey = isLeft ? 'left' : 'right';
 
-                    document.getElementById(`hud-status-${isLeft ? 'l' : 'r'}`).innerText = `${isLeft ? 'Sol' : 'Sağ'} El Aktif`;
-                    currentHand.group.visible = true;
+                    hand.group.visible = true;
 
-                    // 1. Eklem Noktalarını Güncelle
+                    // Koordinatları 3D Dünyaya Çevir
                     landmarks.forEach((pt, i) => {
-                        // Kamera koordinat uzayını (0-1) VR dünya uzayına dönüştür.
-                        // Masa önünde (z yaklaşık -0.4) rahat hareket edebilmek için derinliği ve ölçeği ayarlıyoruz.
-                        const scaleX = 1.4;
-                        const scaleY = 1.0;
-                        
-                        // X eksenini aynalıyoruz (user-facing kameradan ötürü)
-                        const x = -(pt.x - 0.5) * scaleX; 
-                        const y = (0.5 - pt.y) * scaleY + 1.2; // Göz seviyesine yaklaştır
-                        const z = -0.2 + (pt.z * 1.2); // Masaya doğru uzat
+                        const x = -(pt.x - 0.5) * 1.5; // Genişlik ölçeği
+                        const y = (0.5 - pt.y) * 1.2 + 1.2; // Yükseklik
+                        const z = -0.15 + (pt.z * 1.0); // Derinlik
 
-                        currentHand.joints[i].position.set(x, y, z);
+                        if (hand.joints[i]) {
+                            hand.joints[i].position.set(x, y, z);
+                        }
                     });
 
-                    // 2. Parmak Kemik Çizgilerini Güncelle
-                    const pos = currentHand.joints;
-                    currentHand.connections.forEach((conn, lineIdx) => {
-                        const line = currentHand.bones[lineIdx].line;
-                        const pStart = pos[conn[0]].position;
-                        const pEnd = pos[conn[1]].position;
-
-                        const positions = line.geometry.attributes.position.array;
-                        positions[0] = pStart.x;
-                        positions[1] = pStart.y;
-                        positions[2] = pStart.z;
-                        positions[3] = pEnd.x;
-                        positions[4] = pEnd.y;
-                        positions[5] = pEnd.z;
-                        line.geometry.attributes.position.needsUpdate = true;
+                    // Çizgileri/Kemikleri güncelle
+                    hand.bones.forEach(b => {
+                        if (hand.joints[b.indices[0]] && hand.joints[b.indices[1]]) {
+                            const pStart = hand.joints[b.indices[0]].position;
+                            const pEnd = hand.joints[b.indices[1]].position;
+                            const positions = b.line.geometry.attributes.position.array;
+                            
+                            positions[0] = pStart.x;
+                            positions[1] = pStart.y;
+                            positions[2] = pStart.z;
+                            positions[3] = pEnd.x;
+                            positions[4] = pEnd.y;
+                            positions[5] = pEnd.z;
+                            
+                            b.line.geometry.attributes.position.needsUpdate = true;
+                        }
                     });
 
-                    // 3. Pinch (Kıstırma/Tutma) Algılama: Başparmak ucu (4) ve İşaret parmağı ucu (8) arası mesafe
-                    const thumbTip = pos[4].position;
-                    const indexTip = pos[8].position;
-                    const distance = thumbTip.distanceTo(indexTip);
+                    // Pinch (Tutma) Eylemi Algıla
+                    if (hand.joints[4] && hand.joints[8]) {
+                        const thumb = hand.joints[4].position;
+                        const indexTip = hand.joints[8].position;
+                        const dist = thumb.distanceTo(indexTip);
 
-                    // Parmak uçlarını birleştirdiğinde eklemin rengini sarıya dönüştür (Görsel geri bildirim)
-                    if (distance < 0.08) {
-                        pos[4].material.color.setHex(0xffff00);
-                        pos[8].material.color.setHex(0xffff00);
-                        
-                        // Tutma eylemini gerçekleştir
-                        const midpoint = new THREE.Vector3().addVectors(thumbTip, indexTip).multiplyScalar(0.5);
-                        tryGrab(sideKey, midpoint);
-                    } else {
-                        pos[4].material.color.setHex(0x00ffff);
-                        pos[8].material.color.setHex(0x00ffff);
-                        
-                        // Tutulan nesne varsa serbest bırak
-                        tryRelease(sideKey);
-                    }
+                        if (dist < 0.08) {
+                            hand.joints[4].material.color.setHex(0x00ff00);
+                            hand.joints[8].material.color.setHex(0x00ff00);
 
-                    // Eğer bir nesne tutuluyorsa konumunu güncelle
-                    if (grabbedBlock[sideKey]) {
-                        const midpoint = new THREE.Vector3().addVectors(thumbTip, indexTip).multiplyScalar(0.5);
-                        grabbedBlock[sideKey].mesh.position.copy(midpoint);
-                        grabbedBlock[sideKey].velocity.set(0, 0, 0); // Taşınırken fizik sıfırlanır
+                            const mid = new THREE.Vector3().addVectors(thumb, indexTip).multiplyScalar(0.5);
+                            tryGrabBlock(sideKey, mid);
+                        } else {
+                            hand.joints[4].material.color.setHex(0x00ffff);
+                            hand.joints[8].material.color.setHex(0x00ffff);
+                            tryReleaseBlock(sideKey);
+                        }
+
+                        // Blok taşınıyorsa konumu güncelle
+                        if (grabbedBlock[sideKey]) {
+                            const mid = new THREE.Vector3().addVectors(thumb, indexTip).multiplyScalar(0.5);
+                            grabbedBlock[sideKey].mesh.position.copy(mid);
+                            grabbedBlock[sideKey].velocity.set(0, 0, 0);
+                        }
                     }
                 });
             }
         }
 
-        // --- TUTMA VE BIRAKMA SİSTEMİ ---
-        function tryGrab(side, touchPoint) {
-            if (grabbedBlock[side]) return; // Zaten tutuyorsa es geç
+        // --- TUTMA / SERBEST BIRAKMA ---
+        function tryGrabBlock(side, point) {
+            if (grabbedBlock[side]) return;
 
-            // Parmak uçlarının orta noktasına en yakın bloğu bul
-            let closestBlock = null;
-            let minDist = 0.15; // Maksimum tutma menzili (15 cm)
+            let target = null;
+            let minDist = 0.15;
 
             blocks.forEach(b => {
-                if (b.isGrabbed) return; // Başka el tarafından tutuluyorsa geç
-                const dist = b.mesh.position.distanceTo(touchPoint);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closestBlock = b;
+                if (b.isGrabbed) return;
+                const d = b.mesh.position.distanceTo(point);
+                if (d < minDist) {
+                    minDist = d;
+                    target = b;
                 }
             });
 
-            if (closestBlock) {
-                grabbedBlock[side] = closestBlock;
-                closestBlock.isGrabbed = true;
-                closestBlock.mesh.material.emissiveIntensity = 0.8; // Tutulunca parlamayı artır
-                playSound('grab');
+            if (target) {
+                grabbedBlock[side] = target;
+                target.isGrabbed = true;
+                target.mesh.material.emissiveIntensity = 0.7;
+                playSound(600, 0.1, 'triangle');
+                log(`${side.toUpperCase()} el bir blok yakaladı!`, 'info');
             }
         }
 
-        function tryRelease(side) {
+        function tryReleaseBlock(side) {
             if (!grabbedBlock[side]) return;
-            
             const b = grabbedBlock[side];
             b.isGrabbed = false;
-            b.mesh.material.emissiveIntensity = 0.15; // Normal parlaklığa dön
+            b.mesh.material.emissiveIntensity = 0.2;
             grabbedBlock[side] = null;
-            playSound('release');
+            playSound(300, 0.15, 'sine');
+            log(`${side.toUpperCase()} el bloğu serbest bıraktı.`, 'info');
         }
 
-        // --- BASİT FİZİK MOTORU (YERÇEKİMİ VE ÇARPIŞMALAR) ---
+        // --- BASİT VE KARARLI FİZİK SİMÜLASYONU ---
         function updatePhysics() {
-            const tableTop = 0.6; // Masanın üst yüzey yüksekliği
-            
-            blocks.forEach(b => {
-                if (b.isGrabbed) return; // El ile taşınan bloka fizik uygulanmaz
+            if (!initialized) return;
+            const floor = 0.6; // Masa üst seviyesi
 
-                // 1. Yerçekimi Uygula
+            blocks.forEach(b => {
+                if (b.isGrabbed) return;
+
+                // Yerçekimi ivmesi
                 b.velocity.y += GRAVITY * 0.1;
                 b.mesh.position.add(b.velocity);
 
-                // 2. Masa Yüzeyi Çarpışma Kontrolü
-                const halfHeight = b.size.y / 2;
-                if (b.mesh.position.y - halfHeight <= tableTop) {
-                    b.mesh.position.y = tableTop + halfHeight;
+                // Masayla Çarpışma
+                const halfH = b.size.y / 2;
+                if (b.mesh.position.y - halfH <= floor) {
+                    b.mesh.position.y = floor + halfH;
                     b.velocity.y = 0;
-                    b.velocity.x *= 0.8; // Sürtünme etkisi
-                    b.velocity.z *= 0.8;
+                    b.velocity.x *= 0.7; // Sürtünme
+                    b.velocity.z *= 0.7;
                 }
 
-                // 3. Diğer Bloklarla Üst Üste Binme/Yığılma Kontrolü (Hızlı AABB Çarpışması)
+                // Diğer Bloklarla Çarpışma
                 blocks.forEach(other => {
                     if (b === other) return;
 
-                    // Blokların sınır alanlarını hesapla
                     const bMinX = b.mesh.position.x - b.size.x/2, bMaxX = b.mesh.position.x + b.size.x/2;
                     const bMinY = b.mesh.position.y - b.size.y/2, bMaxY = b.mesh.position.y + b.size.y/2;
                     const bMinZ = b.mesh.position.z - b.size.z/2, bMaxZ = b.mesh.position.z + b.size.z/2;
@@ -689,83 +725,92 @@
                     const oMinY = other.mesh.position.y - other.size.y/2, oMaxY = other.mesh.position.y + other.size.y/2;
                     const oMinZ = other.mesh.position.z - other.size.z/2, oMaxZ = other.mesh.position.z + other.size.z/2;
 
-                    // Çakışma var mı?
-                    const dX = Math.min(bMaxX, oMaxX) - Math.max(bMinX, oMinX);
-                    const dY = Math.min(bMaxY, oMaxY) - Math.max(bMinY, oMinY);
-                    const dZ = Math.min(bMaxZ, oMaxZ) - Math.max(bMinZ, oMinZ);
+                    const overlapX = Math.min(bMaxX, oMaxX) - Math.max(bMinX, oMinX);
+                    const overlapY = Math.min(bMaxY, oMaxY) - Math.max(bMinY, oMinY);
+                    const overlapZ = Math.min(bMaxZ, oMaxZ) - Math.max(bMinZ, oMinZ);
 
-                    if (dX > 0 && dY > 0 && dZ > 0) {
-                        // En küçük kesişim yönünde dışarı it
-                        if (dY < dX && dY < dZ) {
+                    if (overlapX > 0 && overlapY > 0 && overlapZ > 0) {
+                        if (overlapY < overlapX && overlapY < overlapZ) {
                             if (b.mesh.position.y > other.mesh.position.y) {
-                                b.mesh.position.y += dY;
-                                if(b.velocity.y < -0.01) playSound('collision');
+                                b.mesh.position.y += overlapY;
+                                if (b.velocity.y < -0.01) playSound(120, 0.05, 'sawtooth');
                                 b.velocity.y = 0;
                             } else {
-                                b.mesh.position.y -= dY;
+                                b.mesh.position.y -= overlapY;
                                 b.velocity.y = 0;
                             }
-                        } else if (dX < dZ) {
+                        } else if (overlapX < overlapZ) {
                             const dir = Math.sign(b.mesh.position.x - other.mesh.position.x);
-                            b.mesh.position.x += dX * (dir === 0 ? 1 : dir);
+                            b.mesh.position.x += overlapX * (dir === 0 ? 1 : dir);
                             b.velocity.x = 0;
                         } else {
                             const dir = Math.sign(b.mesh.position.z - other.mesh.position.z);
-                            b.mesh.position.z += dZ * (dir === 0 ? 1 : dir);
+                            b.mesh.position.z += overlapZ * (dir === 0 ? 1 : dir);
                             b.velocity.z = 0;
                         }
                     }
                 });
-            }
-        );
+            });
         }
 
-        // --- PENCERE BOYUTLANDIRMA ---
+        // --- PENCERE BOYUTLANDIRICI ---
         function onWindowResize() {
+            if (!initialized) return;
             const w = window.innerWidth;
             const h = window.innerHeight;
-            
             renderer.setSize(w, h);
-            
-            // Stereo Kameraları güncelle
-            const aspect = (w / 2) / h;
+
+            const aspect = (w / (vrMode ? 2 : 1)) / h;
             leftCamera.aspect = aspect;
             leftCamera.updateProjectionMatrix();
-            
             rightCamera.aspect = aspect;
             rightCamera.updateProjectionMatrix();
         }
 
-        // --- ANA OYUN DÖNGÜSÜ (ANIMATION LOOP) ---
+        // --- ANIMASYON VE RENDER DÖNGÜSÜ ---
         function animate() {
             requestAnimationFrame(animate);
 
-            // 1. Jiroskoptan Gelen Veriyle Kafayı (Kamerayı) Döndür
-            // Cardboard modunda kafa dönüşü (DeviceOrientation)
-            const euler = new THREE.Euler(devicePitch, deviceYaw, deviceRoll, 'YXZ');
-            camera.quaternion.setFromEuler(euler);
+            // KRİTİK GÜVENLİK FİLTRESİ: Eğer her şey tam olarak kurulmadıysa döngüyü işletme!
+            if (!initialized || !camera || !renderer || !scene) return;
 
-            // 2. Blokların Fizik Güncellemesi
+            // 1. Jiroskopla Kamerayı Döndür
+            if (vrMode) {
+                const euler = new THREE.Euler(devicePitch, deviceYaw, deviceRoll, 'YXZ');
+                camera.quaternion.setFromEuler(euler);
+            } else {
+                // Normal ekran modu için hafif bir otomatik salınım
+                camera.rotation.y = Math.sin(Date.now() * 0.0005) * 0.15;
+            }
+
+            // 2. Fizik Motorunu Güncelle
             updatePhysics();
 
-            // 3. Stereo Rendering (Ekranı ikiye bölüp her iki göze çizim yapma)
+            // 3. Render Et
             const w = window.innerWidth;
             const h = window.innerHeight;
 
-            // Sol Göz Çizimi
-            renderer.setViewport(0, 0, w / 2, h);
-            renderer.setScissor(0, 0, w / 2, h);
-            renderer.setScissorTest(true);
-            renderer.render(scene, leftCamera);
+            if (vrMode) {
+                // SOL GÖZ
+                renderer.setViewport(0, 0, w / 2, h);
+                renderer.setScissor(0, 0, w / 2, h);
+                renderer.setScissorTest(true);
+                renderer.render(scene, leftCamera);
 
-            // Sağ Göz Çizimi
-            renderer.setViewport(w / 2, 0, w / 2, h);
-            renderer.setScissor(w / 2, 0, w / 2, h);
-            renderer.setScissorTest(true);
-            renderer.render(scene, rightCamera);
+                // SAĞ GÖZ
+                renderer.setViewport(w / 2, 0, w / 2, h);
+                renderer.setScissor(w / 2, 0, w / 2, h);
+                renderer.setScissorTest(true);
+                renderer.render(scene, rightCamera);
+            } else {
+                // Tek ekran normal render
+                renderer.setViewport(0, 0, w, h);
+                renderer.setScissorTest(false);
+                renderer.render(scene, leftCamera);
+            }
         }
 
-        // Döngüyü başlat
+        // Döngüyü ateşle (Güvenli filtre sayesinde artık başlangıçta çökmeyecektir)
         animate();
     </script>
 </body>
