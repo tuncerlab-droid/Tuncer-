@@ -4,99 +4,698 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cardboard VR - 6DoF Tracking</title>
+    <title>Cardboard VR - Tam Ölçü Lens & Tahta Eller & 6DOF Takip</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- MediaPipe Hands -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
 
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: sans-serif; }
-        #canvas-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
-        #vr-mask-overlay { position: absolute; inset: 0; display: flex; z-index: 10; pointer-events: none; }
-        .lens-container { flex: 1; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-        .lens-cutout-left { width: 96%; height: 94%; border-radius: 18% 2% 2% 18% / 50% 3% 3% 50%; box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8); }
-        .lens-cutout-right { width: 96%; height: 94%; border-radius: 2% 18% 18% 2% / 3% 50% 50% 3%; box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8); }
-        .cardboard-marker { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 3px; height: 20%; background-color: #fff; z-index: 20; }
-        #webcam { position: absolute; bottom: 12px; right: 12px; width: 100px; height: 75px; border-radius: 6px; z-index: 30; object-fit: cover; opacity: 0.2; pointer-events: none; }
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+            font-family: sans-serif;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* BİREBİR FOTOĞRAFTAKİ MASKE TASARIMI */
+        #vr-mask-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Siyah gölgelerin birbirini örtmesini (siyah ekran hatasını) engelleyen kapsayıcılar */
+        .lens-container {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* KRİTİK DÜZELTME: Gölgelerin taşmasını önler */
+            position: relative;
+        }
+
+        /* Sol Lens: Solu kavisli (şişkin), sağı düz */
+        .lens-cutout-left {
+            width: 96%; 
+            height: 94%;
+            border-radius: 18% 2% 2% 18% / 50% 3% 3% 50%;
+            box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        /* Sağ Lens: Sağı kavisli (şişkin), solu düz */
+        .lens-cutout-right {
+            width: 96%;
+            height: 94%;
+            border-radius: 2% 18% 18% 2% / 3% 50% 50% 3%;
+            box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        /* Fotoğraftaki alt merkezde bulunan beyaz hizalama çizgisi */
+        .cardboard-marker {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 3px;
+            height: 20%;
+            background-color: #fff;
+            z-index: 20;
+        }
+
+        #webcam {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            width: 100px;
+            height: 75px;
+            border-radius: 6px;
+            z-index: 30;
+            object-fit: cover;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        #landscape-warning {
+            display: none;
+        }
+        @media screen and (orientation: portrait) {
+            #landscape-warning {
+                display: flex;
+            }
+        }
     </style>
 </head>
 <body class="select-none">
 
+    <!-- Başlangıç Ekranı -->
     <div id="welcome-screen" class="fixed inset-0 bg-slate-950 text-white z-50 flex flex-col items-center justify-center p-6 text-center">
-        <h1 class="text-3xl font-bold mb-6 text-yellow-500">VR Hazır (6DoF Tracking)</h1>
-        <button id="start-btn" class="bg-gradient-to-r from-yellow-700 to-amber-800 text-white font-bold py-4 px-10 rounded-xl shadow-lg">Gözlüğü Tak ve Başla</button>
+        <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl">
+            <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-yellow-600 to-amber-700 bg-clip-text text-transparent">
+                VR Cardboard (6DOF Takip)
+            </h1>
+            <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+                Artık gerçek hayatta <strong>eğildiğinizde</strong> ve <strong>yürüdüğünüzde</strong> kameranız da hareket edecek! Ayrıca el hareketlerinizle de yürümeye devam edebilirsiniz.
+            </p>
+            
+            <button id="start-btn" class="w-full bg-gradient-to-r from-yellow-700 to-amber-800 hover:from-yellow-600 hover:to-amber-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
+                Gözlüğü Tak ve Başla
+            </button>
+        </div>
+    </div>
+
+    <!-- Telefon Döndürme Uyarısı -->
+    <div id="landscape-warning" class="fixed inset-0 bg-slate-950 z-40 text-white flex flex-col items-center justify-center p-6 text-center">
+        <svg class="w-16 h-16 text-yellow-600 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+        </svg>
+        <p class="text-xl font-bold">Lütfen Telefonu Yan Çevirin</p>
     </div>
 
     <video id="webcam" autoplay playsinline></video>
+
+    <!-- 3D Dünyanın Çizildiği Alan -->
     <div id="canvas-container"></div>
+
+    <!-- BİREBİR FOTOĞRAF ODAKLI LENS MASKESİ -->
     <div id="vr-mask-overlay">
-        <div class="lens-container"><div class="lens-cutout-left"></div></div>
-        <div class="lens-container"><div class="lens-cutout-right"></div></div>
+        <!-- Sol Lens Kutusu -->
+        <div class="lens-container">
+            <div class="lens-cutout-left"></div>
+        </div>
+        <!-- Sağ Lens Kutusu -->
+        <div class="lens-container">
+            <div class="lens-cutout-right"></div>
+        </div>
+        <!-- Orta Beyaz Çizgi -->
         <div class="cardboard-marker"></div>
     </div>
 
     <script>
-        let scene, renderer, cameraGroup, cameraLeft, cameraRight;
-        let posVelocity = new THREE.Vector3();
-        let currentPos = new THREE.Vector3(0, 1.6, 0);
+        let scene, renderer;
+        let cameraGroup, cameraLeft, cameraRight; 
+        const IPD = 0.062; 
+
+        // Tahta El Noktaları ve Bağlantıları
+        let leftHandGroup, rightHandGroup;
+        let handBonesLeft = [], handBonesRight = [];
+        let handKnucklesLeft = [], handKnucklesRight = [];
+        
+        let moveSpeed = 0;
+        const maxSpeed = 12.0; 
+        const deceleration = 0.94; 
+        const moveDirection = new THREE.Vector3();
+        
+        let prevYLeft = 0, prevYRight = 0, totalHandYMovement = 0;
+        let lastMovementTime = Date.now();
+
+        // Sensör Değişkenleri (Rotasyon)
+        let deviceAlpha = 0, deviceBeta = 0, deviceGamma = 0;
+        let hasGyro = false, screenOrientationAngle = 0;
+        let isMouseDown = false, targetRotationX = 0, targetRotationY = 0;
+        let keysPressed = {};
+
+        // 6DOF Fiziksel Hareket Entegrasyonu Değişkenleri (YENİ EKLENDİ)
+        let devPos = new THREE.Vector3(0, 1.6, 0); // Başlangıç kamera pozisyonu
+        let devVel = new THREE.Vector3(0, 0, 0);
+        let deviceAccel = new THREE.Vector3(0, 0, 0);
+
+        let grabObjects = [];
+        let humanoids = [];
+        const GRAVITY = -9.8;
+
+        const handsState = {
+            Left: { isGrabbing: false, grabbedObj: null, velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() },
+            Right: { isGrabbing: false, grabbedObj: null, velocity: new THREE.Vector3(), wristWorldPos: new THREE.Vector3() }
+        };
+
+        const FINGER_BONES = [
+            [0, 1], [1, 2], [2, 3], [3, 4],
+            [0, 5], [5, 6], [6, 7], [7, 8],
+            [0, 9], [9, 10], [10, 11], [11, 12],
+            [0, 13], [13, 14], [14, 15], [15, 16],
+            [0, 17], [17, 18], [18, 19], [19, 20],
+            [5, 9], [9, 13], [13, 17]
+        ];
 
         document.getElementById('start-btn').addEventListener('click', async () => {
+            const docEl = document.documentElement;
+            if (docEl.requestFullscreen) docEl.requestFullscreen();
+            else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
+
+            screenOrientationAngle = screen.orientation ? screen.orientation.angle : (window.orientation || 0);
+            window.addEventListener('orientationchange', () => {
+                screenOrientationAngle = screen.orientation ? screen.orientation.angle : (window.orientation || 0);
+            });
+
+            // Gyroscope (Yön) ve İvmeölçer (Hareket) izinlerini al (iOS/Android)
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                            await DeviceMotionEvent.requestPermission();
+                        }
+                        initGyro();
+                    }
+                } catch (e) {}
+            } else { initGyro(); }
+
             document.getElementById('welcome-screen').style.display = 'none';
-            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
             initThree();
-            startTracking();
+            await startRearCameraAndMediaPipe();
         });
 
+        function initGyro() {
+            // Baş Rotasyonu (3DOF)
+            window.addEventListener('deviceorientation', (e) => {
+                if (e.alpha !== null) {
+                    hasGyro = true;
+                    deviceAlpha = e.alpha; deviceBeta = e.beta; deviceGamma = e.gamma;
+                }
+            }, true);
+
+            // Fiziksel İvmelenme, Eğilme ve Yürüme Takibi (6DOF - YENİ EKLENDİ)
+            window.addEventListener('devicemotion', (e) => {
+                if (e.acceleration) {
+                    // Cihazın yerçekimsiz ham ivmesini alıyoruz
+                    let ax = e.acceleration.x || 0;
+                    let ay = e.acceleration.y || 0;
+                    let az = e.acceleration.z || 0;
+
+                    // Sensör parazitlerini önlemek için küçük titreşimleri yok sayan "Deadzone" (Ölü bölge)
+                    const deadzone = 0.15; 
+                    ax = Math.abs(ax) < deadzone ? 0 : ax;
+                    ay = Math.abs(ay) < deadzone ? 0 : ay;
+                    az = Math.abs(az) < deadzone ? 0 : az;
+
+                    // Telefon yatay modda Cardboard içine yerleştirildiğinde eksenler Three.js'in yerel eksenleriyle uyumludur
+                    deviceAccel.set(ax, ay, az);
+                }
+            }, true);
+        }
+
+        window.addEventListener('keydown', (e) => { keysPressed[e.key.toLowerCase()] = true; });
+        window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+        window.addEventListener('mousedown', () => isMouseDown = true);
+        window.addEventListener('mouseup', () => isMouseDown = false);
+        window.addEventListener('mousemove', (e) => {
+            if (!hasGyro && isMouseDown) {
+                targetRotationY -= e.movementX * 0.003;
+                targetRotationX -= e.movementY * 0.003;
+                targetRotationX = Math.max(-Math.PI/2.5, Math.min(Math.PI/2.5, targetRotationX));
+            }
+        });
+
+        function createHumanoidModel(colorHex) {
+            const group = new THREE.Group();
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xdddddd });
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.55, 0.2), bodyMat);
+            torso.position.y = 0.8;
+            torso.castShadow = true; torso.receiveShadow = true;
+            group.add(torso);
+
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 16), headMat);
+            head.position.y = 1.15; head.castShadow = true;
+            group.add(head);
+
+            const visor = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.08), new THREE.MeshBasicMaterial({ color: 0x00ffcc }));
+            visor.position.set(0, 1.15, 0.11);
+            group.add(visor);
+
+            const armGeo = new THREE.CylinderGeometry(0.04, 0.035, 0.45, 8);
+            const leftArm = new THREE.Mesh(armGeo, bodyMat); leftArm.position.set(-0.25, 0.75, 0); leftArm.castShadow = true; group.add(leftArm);
+            const rightArm = new THREE.Mesh(armGeo, bodyMat); rightArm.position.set(0.25, 0.75, 0); rightArm.castShadow = true; group.add(rightArm);
+
+            const legGeo = new THREE.CylinderGeometry(0.05, 0.04, 0.55, 8);
+            const leftLeg = new THREE.Mesh(legGeo, bodyMat); leftLeg.position.set(-0.11, 0.27, 0); leftLeg.castShadow = true; group.add(leftLeg);
+            const rightLeg = new THREE.Mesh(legGeo, bodyMat); rightLeg.position.set(0.11, 0.27, 0); rightLeg.castShadow = true; group.add(rightLeg);
+
+            group.userData = { leftArm, rightArm, leftLeg, rightLeg, isKnockedDown: false, knockDownTime: 0, speed: 1.5, direction: new THREE.Vector3(1,0,0) };
+            return group;
+        }
+
+        // --- NORMAL TAHTA EL TASARIMI ---
+        function setupWoodenHand(handGroup, handBones, handKnuckles) {
+            const woodMaterial = new THREE.MeshStandardMaterial({
+                color: 0x8b5a2b, 
+                roughness: 0.9,  
+                metalness: 0.05
+            });
+
+            const thickness = 0.015;
+
+            // Eklem Küreleri
+            const knuckleGeo = new THREE.SphereGeometry(thickness, 16, 16);
+            for (let i = 0; i < 21; i++) {
+                const sphere = new THREE.Mesh(knuckleGeo, woodMaterial);
+                sphere.visible = false;
+                sphere.castShadow = true;
+                sphere.receiveShadow = true;
+                handGroup.add(sphere);
+                handKnuckles.push(sphere);
+            }
+
+            // Kopmayan Kemik Silindirleri
+            const boneGeo = new THREE.CylinderGeometry(thickness * 0.85, thickness * 0.85, 1, 12);
+            boneGeo.rotateX(Math.PI / 2);
+
+            FINGER_BONES.forEach(() => {
+                const cylinder = new THREE.Mesh(boneGeo, woodMaterial);
+                cylinder.visible = false;
+                cylinder.castShadow = true;
+                cylinder.receiveShadow = true;
+                handGroup.add(cylinder);
+                handBones.push(cylinder);
+            });
+        }
+
+        function updateBoneSegment(boneMesh, posA, posB) {
+            const distance = posA.distanceTo(posB);
+            if (distance < 0.001) return;
+
+            boneMesh.position.lerpVectors(posA, posB, 0.5);
+            boneMesh.scale.set(1, 1, distance);
+            boneMesh.lookAt(posB);
+            boneMesh.visible = true;
+        }
+
         function initThree() {
+            const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB);
+            scene.background = new THREE.Color(0x87CEEB); 
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.006); 
+
             cameraGroup = new THREE.Group();
-            cameraGroup.position.copy(currentPos);
+            cameraGroup.position.copy(devPos); // Kamera pozisyonunu 6DOF değişkenine bağladık
             scene.add(cameraGroup);
 
-            cameraLeft = new THREE.PerspectiveCamera(70, 0.5, 0.05, 1000);
-            cameraLeft.position.set(-0.031, 0, 0);
+            cameraLeft = new THREE.PerspectiveCamera(70, (window.innerWidth / 2) / window.innerHeight, 0.05, 1000);
+            cameraLeft.position.set(-IPD / 2, 0, 0);
             cameraGroup.add(cameraLeft);
 
-            cameraRight = new THREE.PerspectiveCamera(70, 0.5, 0.05, 1000);
-            cameraRight.position.set(0.031, 0, 0);
+            cameraRight = new THREE.PerspectiveCamera(70, (window.innerWidth / 2) / window.innerHeight, 0.05, 1000);
+            cameraRight.position.set(IPD / 2, 0, 0);
             cameraGroup.add(cameraRight);
 
-            renderer = new THREE.WebGLRenderer({ antialias: true });
+            const sunLight = new THREE.DirectionalLight(0xfffaed, 1.3);
+            sunLight.position.set(20, 40, 30);
+            sunLight.castShadow = true; 
+            sunLight.shadow.mapSize.width = 1024;
+            sunLight.shadow.mapSize.height = 1024;
+            scene.add(sunLight);
+            scene.add(new THREE.AmbientLight(0x606080, 1.2));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 128, 128);
+            ctx.fillStyle = '#111111'; ctx.fillRect(0, 0, 64, 64); ctx.fillRect(64, 64, 64, 64);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(800, 800); 
+            
+            const floorMat = new THREE.MeshStandardMaterial({ map: texture, roughness: 0.8, metalness: 0.1 });
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true; 
+            scene.add(floor);
+
+            const colors = [0xff595e, 0xffca3a, 0x8ac926, 0x1982c4, 0x6a4c93];
+            for (let i = 0; i < 15; i++) {
+                const robot = createHumanoidModel(colors[i % colors.length]);
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 5 + Math.random() * 15;
+                robot.position.set(Math.cos(angle) * dist, 0, Math.sin(angle) * dist);
+                robot.userData.direction.set((Math.random() - 0.5)*2, 0, (Math.random() - 0.5)*2).normalize();
+                scene.add(robot);
+                humanoids.push(robot);
+            }
+
+            const boxGeo = new THREE.BoxGeometry(0.25, 0.25, 0.25);
+            for (let i = 0; i < 20; i++) {
+                const mat = new THREE.MeshStandardMaterial({ color: 0x00ffcc, emissive: 0x002211, roughness: 0.3 });
+                const mesh = new THREE.Mesh(boxGeo, mat);
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 2 + Math.random() * 6;
+                mesh.position.set(Math.cos(angle) * dist, 0.15 + Math.random() * 1.5, Math.sin(angle) * dist);
+                mesh.castShadow = true; mesh.receiveShadow = true;
+                mesh.userData = { velocity: new THREE.Vector3(), isGrabbed: false, grabbedBy: null, isFloating: true, floatOffset: Math.random() * 100 };
+                scene.add(mesh);
+                grabObjects.push(mesh);
+            }
+
+            leftHandGroup = new THREE.Group();
+            rightHandGroup = new THREE.Group();
+            cameraGroup.add(leftHandGroup);
+            cameraGroup.add(rightHandGroup);
+
+            setupWoodenHand(leftHandGroup, handBonesLeft, handKnucklesLeft);
+            setupWoodenHand(rightHandGroup, handBonesRight, handKnucklesRight);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            renderer.autoClear = false;
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; 
+            container.appendChild(renderer.domElement);
+
+            window.addEventListener('resize', onWindowResize);
             animate();
         }
 
-        // GERÇEK DÜNYA HAREKET TAKİBİ (6DoF)
-        function startTracking() {
-            window.addEventListener('devicemotion', (event) => {
-                const acc = event.accelerationIncludingGravity;
-                if (!acc.x) return;
+        function onWindowResize() {
+            cameraLeft.aspect = (window.innerWidth / 2) / window.innerHeight;
+            cameraLeft.updateProjectionMatrix();
+            cameraRight.aspect = (window.innerWidth / 2) / window.innerHeight;
+            cameraRight.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-                // İvmeölçer verilerini filtreleyerek kamera pozisyonuna ekle
-                // Telefonu yukarı-aşağı (eğilme) veya ileri-geri hareket ettirince kamera yansıtacak
-                posVelocity.x += acc.x * 0.001;
-                posVelocity.y += (acc.y - 9.8) * 0.001; // Yerçekimini çıkar
-                posVelocity.z += acc.z * 0.001;
+        async function startRearCameraAndMediaPipe() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false
+                });
+                const videoEl = document.getElementById('webcam');
+                videoEl.srcObject = stream;
+
+                const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+                hands.setOptions({ maxNumHands: 2, modelComplexity: 1, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+                hands.onResults(onHandResults);
+
+                async function processVideoFrame() {
+                    if (videoEl.readyState >= 2) await hands.send({ image: videoEl });
+                    requestAnimationFrame(processVideoFrame);
+                }
+                videoEl.onloadedmetadata = () => processVideoFrame();
+            } catch (err) {}
+        }
+
+        function onHandResults(results) {
+            handKnucklesLeft.forEach(k => k.visible = false);
+            handBonesLeft.forEach(b => b.visible = false);
+            handKnucklesRight.forEach(k => k.visible = false);
+            handBonesRight.forEach(b => b.visible = false);
+
+            if (!results.multiHandLandmarks || results.multiHandLandmarks.length === 0) {
+                releaseObject('Left'); releaseObject('Right'); return;
+            }
+
+            results.multiHandLandmarks.forEach((landmarks, index) => {
+                const label = results.multiHandedness[index].label; 
+                const handState = handsState[label];
+                
+                const activeKnuckles = (label === 'Left') ? handKnucklesLeft : handKnucklesRight;
+                const activeBones = (label === 'Left') ? handBonesLeft : handBonesRight;
+
+                let avgY = 0;
+                landmarks.forEach((landmark, i) => {
+                    const k = activeKnuckles[i];
+                    k.visible = true;
+                    k.position.x = (landmark.x - 0.5) * 1.35;
+                    k.position.y = (0.5 - landmark.y) * 1.35 - 0.15;
+                    k.position.z = -0.55 - (landmark.z * 1.0);
+                    avgY += landmark.y;
+                });
+
+                FINGER_BONES.forEach((boneIndices, i) => {
+                    updateBoneSegment(activeBones[i], activeKnuckles[boneIndices[0]].position, activeKnuckles[boneIndices[1]].position);
+                });
+
+                const wrist = activeKnuckles[0];
+                const worldWrist = new THREE.Vector3();
+                wrist.getWorldPosition(worldWrist);
+                
+                handState.velocity.subVectors(worldWrist, handState.wristWorldPos).divideScalar(0.016);
+                handState.wristWorldPos.copy(worldWrist);
+
+                let totalDist = 0;
+                const tips = [8, 12, 16, 20], bases = [5, 9, 13, 17];
+                for (let i = 0; i < 4; i++) {
+                    const t = landmarks[tips[i]], b = landmarks[bases[i]];
+                    totalDist += Math.sqrt(Math.pow(t.x-b.x,2)+Math.pow(t.y-b.y,2)+Math.pow(t.z-b.z,2));
+                }
+
+                if (totalDist < 0.28) {
+                    if (!handState.isGrabbing) tryGrab(worldWrist, label);
+                } else {
+                    if (handState.isGrabbing) releaseAndThrow(label);
+                }
+
+                avgY /= landmarks.length;
+                if (label === 'Left') {
+                    if (prevYLeft !== 0) totalHandYMovement += Math.abs(avgY - prevYLeft);
+                    prevYLeft = avgY;
+                } else {
+                    if (prevYRight !== 0) totalHandYMovement += Math.abs(avgY - prevYRight);
+                    prevYRight = avgY;
+                }
             });
+
+            const now = Date.now();
+            if ((now - lastMovementTime) / 1000.0 > 0) {
+                if (totalHandYMovement > 0.035) {
+                    moveSpeed += totalHandYMovement * 16.0;
+                    if (moveSpeed > maxSpeed) moveSpeed = maxSpeed;
+                }
+                totalHandYMovement = 0;
+            }
+            lastMovementTime = now;
+        }
+
+        function tryGrab(worldPos, label) {
+            const state = handsState[label];
+            let closest = null, minDist = 0.5;
+            grabObjects.forEach(obj => {
+                if (!obj.userData.isGrabbed && obj.position.distanceTo(worldPos) < minDist) {
+                    minDist = obj.position.distanceTo(worldPos);
+                    closest = obj;
+                }
+            });
+            if (closest) {
+                state.isGrabbing = true; state.grabbedObj = closest;
+                closest.userData.isGrabbed = true; closest.userData.grabbedBy = label; closest.userData.isFloating = false;
+            }
+        }
+
+        function releaseAndThrow(label) {
+            const state = handsState[label];
+            const obj = state.grabbedObj;
+            if (obj) {
+                obj.userData.isGrabbed = false; obj.userData.grabbedBy = null;
+                const force = state.velocity.clone().multiplyScalar(1.6);
+                if (force.length() > 25) force.setLength(25);
+                obj.userData.velocity.copy(force);
+            }
+            state.isGrabbing = false; state.grabbedObj = null;
+        }
+
+        function releaseObject(label) {
+            const state = handsState[label];
+            if (state.grabbedObj) {
+                state.grabbedObj.userData.isGrabbed = false;
+                state.grabbedObj.userData.grabbedBy = null;
+                state.grabbedObj.userData.velocity.set(0,0,0);
+            }
+            state.isGrabbing = false; state.grabbedObj = null;
         }
 
         function animate() {
             requestAnimationFrame(animate);
-            
-            // Pozisyonu yumuşakça güncelle (Friction)
-            posVelocity.multiplyScalar(0.92);
-            currentPos.add(posVelocity);
-            
-            // Kamera yüksekliğini sınırlama (zeminin altına geçmesin)
-            if(currentPos.y < 0.5) currentPos.y = 0.5;
-            cameraGroup.position.copy(currentPos);
+            const dt = 0.016; 
+            const time = Date.now() * 0.003;
 
-            const w = window.innerWidth, h = window.innerHeight;
+            // Kafa Dönüşü (3DOF)
+            if (hasGyro) {
+                const a = THREE.MathUtils.degToRad(deviceAlpha);
+                const b = THREE.MathUtils.degToRad(deviceBeta);
+                const g = THREE.MathUtils.degToRad(deviceGamma);
+                const o = THREE.MathUtils.degToRad(screenOrientationAngle);
+                
+                const qDev = new THREE.Quaternion();
+                qDev.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), a));
+                qDev.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), b));
+                qDev.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0), g));
+                qDev.multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,0,1), -o));
+                qDev.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI/2));
+                cameraGroup.quaternion.copy(qDev);
+
+                // --- 6DOF (KONUMSAL FİZİKSEL HAREKET) HESAPLAMASI ---
+                // Yerel cihaz ivmesini dünyanın rotasyonuna göre uyarlıyoruz
+                const worldAccel = deviceAccel.clone().applyQuaternion(cameraGroup.quaternion);
+
+                // İvmeyi Hıza entegre et (Hareket hissini biraz güçlendiriyoruz - 1.5 çarpan)
+                devVel.addScaledVector(worldAccel, dt * 1.5);
+
+                // Sürtünme ve Sönümleme (Damping) - Sonsuz kaymayı engeller
+                if (deviceAccel.lengthSq() < 0.01) {
+                    devVel.multiplyScalar(0.6); // Eğer hareket durduysa hızlıca fren yap
+                } else {
+                    devVel.multiplyScalar(0.9); // Normal yürürken sürtünme
+                }
+
+                // Hızı Pozisyona entegre et
+                devPos.addScaledVector(devVel, dt);
+
+                // Eğilme limitleri (Yerin altına girmemek veya çok uçmamak için)
+                if (devPos.y < 0.3) { 
+                    devPos.y = 0.3; 
+                    devVel.y = 0; 
+                } else if (devPos.y > 2.5) { 
+                    devPos.y = 2.5; 
+                    devVel.y = 0; 
+                }
+            } else {
+                cameraGroup.quaternion.setFromEuler(new THREE.Euler(targetRotationX, targetRotationY, 0, 'YXZ'));
+            }
+
+            // Orijinal El Sallayarak ve Klavye İle Yürüme Mekaniği (Mevcudun Üzerine Eklenir)
+            let currentMoveSpeed = moveSpeed;
+            if (keysPressed['w']) currentMoveSpeed = 4.0;
+
+            if (currentMoveSpeed > 0.05) {
+                cameraGroup.getWorldDirection(moveDirection);
+                moveDirection.y = 0; moveDirection.normalize();
+                
+                // Kamera yerine devPos (Genel takip vektörü) güncelleniyor
+                devPos.addScaledVector(moveDirection, currentMoveSpeed * dt * -1);
+                
+                if (!keysPressed['w']) moveSpeed *= deceleration;
+            } else { 
+                moveSpeed = 0; 
+            }
+
+            // Final Pozisyonu Kameraya Uygula
+            cameraGroup.position.copy(devPos);
+
+            humanoids.forEach(robot => {
+                if (robot.userData.isKnockedDown) {
+                    if (Date.now() - robot.userData.knockDownTime > 4000) { robot.userData.isKnockedDown = false; robot.rotation.z = 0; }
+                    return;
+                }
+                robot.position.addScaledVector(robot.userData.direction, robot.userData.speed * dt);
+                robot.userData.leftLeg.rotation.x = Math.sin(time * robot.userData.speed * 2) * 0.6;
+                robot.userData.rightLeg.rotation.x = -Math.sin(time * robot.userData.speed * 2) * 0.6;
+                if (robot.position.length() > 60) robot.userData.direction.negate();
+            });
+
+            grabObjects.forEach(obj => {
+                if (obj.userData.isGrabbed) {
+                    const label = obj.userData.grabbedBy;
+                    const activeKnuckles = (label === 'Left') ? handKnucklesLeft : handKnucklesRight;
+                    const wristWorld = new THREE.Vector3();
+                    activeKnuckles[0].getWorldPosition(wristWorld);
+                    
+                    const fwd = new THREE.Vector3();
+                    cameraGroup.getWorldDirection(fwd);
+                    wristWorld.addScaledVector(fwd, -0.1); 
+                    obj.position.lerp(wristWorld, 0.35);
+                    obj.userData.velocity.set(0,0,0);
+                } else if (obj.userData.isFloating) {
+                    obj.rotation.x += 0.01; obj.position.y = 1.0 + Math.sin(Date.now() * 0.002 + obj.userData.floatOffset) * 0.1;
+                } else {
+                    obj.userData.velocity.y += GRAVITY * dt;
+                    obj.position.addScaledVector(obj.userData.velocity, dt);
+                    obj.rotation.x += obj.userData.velocity.z * 0.02; obj.rotation.y += obj.userData.velocity.x * 0.02;
+
+                    if (obj.position.y <= 0.125) {
+                        obj.position.y = 0.125;
+                        if (Math.abs(obj.userData.velocity.y) > 0.8) obj.userData.velocity.y *= -0.4;
+                        else obj.userData.velocity.set(0,0,0);
+                    }
+
+                    if (obj.userData.velocity.length() > 2.0) {
+                        humanoids.forEach(robot => {
+                            if (!robot.userData.isKnockedDown) {
+                                const core = robot.position.clone().add(new THREE.Vector3(0, 0.8, 0));
+                                if (obj.position.distanceTo(core) < 0.6) {
+                                    robot.userData.isKnockedDown = true;
+                                    robot.userData.knockDownTime = Date.now();
+                                    robot.rotation.z = Math.PI / 2.2;
+                                    obj.userData.velocity.multiplyScalar(-0.3);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            renderer.clear();
+            
             renderer.setViewport(0, 0, w / 2, h);
+            renderer.setScissor(0, 0, w / 2, h);
+            renderer.setScissorTest(true);
             renderer.render(scene, cameraLeft);
+
             renderer.setViewport(w / 2, 0, w / 2, h);
+            renderer.setScissor(w / 2, 0, w / 2, h);
+            renderer.setScissorTest(true);
             renderer.render(scene, cameraRight);
         }
     </script>
