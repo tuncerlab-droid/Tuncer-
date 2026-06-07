@@ -1,4 +1,3 @@
-a
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -43,26 +42,13 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 .bb.r{color:var(--c3);border-top-color:rgba(255,68,85,.3);}
 .bb.o{color:var(--c2);border-top-color:rgba(255,136,0,.3);}
 #reticle-lbl{position:fixed;top:50%;left:50%;transform:translate(-50%,40px);color:rgba(0,255,204,.5);font-size:8px;letter-spacing:2px;pointer-events:none;display:none;}
-
-/* ── FINGER CURSOR (world-space fingertip overlay) ── */
-#finger-dot{
-  position:fixed;width:22px;height:22px;border-radius:50%;
-  border:2px solid var(--c);background:rgba(0,255,204,.18);
-  box-shadow:0 0 12px var(--c);pointer-events:none;
-  transform:translate(-50%,-50%);display:none;z-index:60;
-  transition:background .15s,border-color .15s;
-}
-#finger-dot.grab{
-  background:rgba(0,255,204,.55);border-color:#fff;
-  box-shadow:0 0 22px var(--c),0 0 6px #fff;
-}
 </style>
 </head>
 <body>
 
 <div id="overlay">
   <div class="ot">TUNCER AR MODELER</div>
-  <div class="os" id="ovr-desc">Nesneler gerçek ortama sabitlenir — odaya geri dönünce aynı yerde durur.</div>
+  <div class="os">Nesneler gerçek ortama sabitlenir — odaya geri dönünce aynı yerde durur.</div>
   <div id="lbar-w"><div id="lbar"></div></div>
   <div id="load-msg"></div>
   <div id="err-box"></div>
@@ -84,11 +70,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <div id="scanlines"></div>
 </div>
 
-<!-- Parmak ucu görsel göstergesi -->
-<div id="finger-dot"></div>
-
 <div id="reticle-lbl">▼ DOKUN: YERLEŞTİR</div>
-
 <div id="bar">
   <button class="bb on" id="bb-cube"     onclick="pick('cube')">◻<br>CUBE</button>
   <button class="bb"    id="bb-sphere"   onclick="pick('sphere')">●<br>SPHERE</button>
@@ -99,8 +81,10 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <button class="bb r"                   onclick="delSel()">✕<br>SİL</button>
 </div>
 
-<canvas id="c" style="position:fixed;inset:0;z-index:10;touch-action:none;width:100%;height:100%;"></canvas>
-<canvas id="bg" style="position:fixed;inset:0;z-index:0;display:none;"></canvas>
+<!-- z katmanları: bg(0) → three.js canvas(10) → el iskeleti(20) → ui(50) → bar(100) -->
+<canvas id="c"    style="position:fixed;inset:0;z-index:10;touch-action:none;width:100%;height:100%;"></canvas>
+<canvas id="bg"   style="position:fixed;inset:0;z-index:0;display:none;"></canvas>
+<canvas id="hand-canvas" style="position:fixed;inset:0;z-index:20;pointer-events:none;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -123,9 +107,8 @@ let colorIdx = 0;
 let dragObj = null, dragDepth = 0, pointerMoved = false;
 let pStart = {x:0,y:0};
 
-// ── HAND GRAB (yeni) ──
-let handGrabObj  = null;   // pinch ile tutulan nesne
-let handGrabDepth = 0;     // unproject derinliği
+// Hand grab
+let handGrabObj = null, handGrabDepth = 0;
 
 // Gestures
 let gestureL='NONE', gestureR='NONE', gCool=0;
@@ -146,6 +129,84 @@ let vidBack = null, vidFront = null;
 // Raycaster
 const raycaster = new THREE.Raycaster();
 
+// ── El iskeleti canvas ──
+const handCanvas = document.getElementById('hand-canvas');
+const handCtx    = handCanvas.getContext('2d');
+handCanvas.width = W; handCanvas.height = H;
+
+// MediaPipe standart bağlantıları
+const HAND_CONN = [
+  [0,1],[1,2],[2,3],[3,4],          // baş parmak
+  [0,5],[5,6],[6,7],[7,8],          // işaret
+  [0,9],[9,10],[10,11],[11,12],     // orta
+  [0,13],[13,14],[14,15],[15,16],   // yüzük
+  [0,17],[17,18],[18,19],[19,20],   // serçe
+  [5,9],[9,13],[13,17]              // avuç içi yatay
+];
+
+// Son frame landmarkları (render loop'ta temizleme için)
+let lastHandsData = null;
+
+// ─────────────────────────────────────────────────────────
+//  EL İSKELETİ ÇİZ
+// ─────────────────────────────────────────────────────────
+function drawSkeleton(allLms, allGestures) {
+  handCtx.clearRect(0, 0, W, H);
+  if(!allLms || allLms.length === 0) return;
+
+  allLms.forEach((lms, hi) => {
+    const g      = allGestures[hi] || 'NONE';
+    const isPinch = g === 'PINCH';
+    // Pinch'te beyaz-parlak, normalde cyan
+    const lineCol  = isPinch ? 'rgba(255,255,255,0.85)' : 'rgba(0,255,204,0.70)';
+    const jointCol = isPinch ? '#ffffff'                : '#00ffcc';
+    const glowCol  = isPinch ? '#ffffff'                : '#00ffcc';
+
+    // Selfie kamera yatay aynalı → x = 1 - lm.x
+    const sx = lm => (1 - lm.x) * W;
+    const sy = lm => lm.y * H;
+
+    // Kemikler
+    handCtx.lineWidth   = 2.2;
+    handCtx.strokeStyle = lineCol;
+    handCtx.shadowColor = glowCol;
+    handCtx.shadowBlur  = 6;
+    HAND_CONN.forEach(([a, b]) => {
+      handCtx.beginPath();
+      handCtx.moveTo(sx(lms[a]), sy(lms[a]));
+      handCtx.lineTo(sx(lms[b]), sy(lms[b]));
+      handCtx.stroke();
+    });
+
+    // Eklemler
+    lms.forEach((lm, i) => {
+      const isTip = [4,8,12,16,20].includes(i);
+      const r     = isTip ? 7 : 4;
+      handCtx.beginPath();
+      handCtx.arc(sx(lm), sy(lm), r, 0, Math.PI * 2);
+      handCtx.fillStyle   = jointCol;
+      handCtx.shadowColor = glowCol;
+      handCtx.shadowBlur  = isTip ? 14 : 7;
+      handCtx.fill();
+    });
+
+    // Pinch noktası büyük daire
+    if(isPinch) {
+      const mx = (sx(lms[4]) + sx(lms[8])) / 2;
+      const my = (sy(lms[4]) + sy(lms[8])) / 2;
+      handCtx.beginPath();
+      handCtx.arc(mx, my, 16, 0, Math.PI * 2);
+      handCtx.strokeStyle = '#ffffff';
+      handCtx.lineWidth   = 2.5;
+      handCtx.shadowColor = '#ffffff';
+      handCtx.shadowBlur  = 20;
+      handCtx.stroke();
+    }
+
+    handCtx.shadowBlur = 0;
+  });
+}
+
 // ─────────────────────────────────────────────────────────
 //  THREE.JS INIT
 // ─────────────────────────────────────────────────────────
@@ -157,7 +218,7 @@ function initThree() {
   renderer = new THREE.WebGLRenderer({canvas:c, alpha:true, antialias:true, logarithmicDepthBuffer:true});
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0,0);
+  renderer.setClearColor(0, 0);
   renderer.autoClear = false;
 
   scene  = new THREE.Scene();
@@ -188,7 +249,7 @@ function initThree() {
 //  AR BUTTONS
 // ─────────────────────────────────────────────────────────
 const BDEFS = [
-  {id:'cube',    sym:'◻',lbl:'CUBE',  col:0x00ffcc},
+  {id:'cube',    sym:'◻',lbl:'CUBE', col:0x00ffcc},
   {id:'sphere',  sym:'●',lbl:'SHP',  col:0x00ccff},
   {id:'cylinder',sym:'⬡',lbl:'CYL',  col:0x00ffcc},
   {id:'cone',    sym:'▲',lbl:'CONE', col:0x00ffcc},
@@ -216,11 +277,11 @@ function bTex(sym,lbl,col,active,prog){
 function mkBtn(def,pos){
   const geo = new THREE.PlaneGeometry(0.18,0.1);
   const mat = new THREE.MeshBasicMaterial({map:bTex(def.sym,def.lbl,def.col,false,0),transparent:true,side:THREE.DoubleSide,depthTest:false});
-  const m = new THREE.Mesh(geo,mat);
-  m.renderOrder=50;
-  const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:.65,depthTest:false}));
-  el.renderOrder=51; m.add(el);
-  m.userData={...def,edge:el,hoverStart:0,prog:0};
+  const m   = new THREE.Mesh(geo,mat);
+  m.renderOrder = 50;
+  const el  = new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:.65,depthTest:false}));
+  el.renderOrder = 51; m.add(el);
+  m.userData = {...def, edge:el, hoverStart:0, prog:0};
   m.position.copy(pos);
   btnGroup.add(m); arBtns.push(m); return m;
 }
@@ -235,15 +296,13 @@ function spawnButtons(centerWorld){
   });
   saveBtnPos();
 }
-
 function placeBtnsInFront(dist=2){
   const center = new THREE.Vector3(0,0,-dist).applyQuaternion(camera.quaternion).add(camera.position);
   center.y = camera.position.y - 0.25;
   spawnButtons(center);
 }
-
 function recall(){ placeBtnsInFront(1.8); setMode('MENÜ ÇAĞRILDI'); }
-window.recall=recall;
+window.recall = recall;
 
 function saveBtnPos(){
   try{localStorage.setItem('tARbtn4',JSON.stringify(arBtns.map(b=>({x:+b.position.x.toFixed(3),y:+b.position.y.toFixed(3),z:+b.position.z.toFixed(3)}))));}catch(e){}
@@ -253,41 +312,42 @@ function loadBtnPos(){
 }
 
 let hoverBtn=null, hoverT=0;
-const BTN_HOLD=1200;
+const BTN_HOLD = 1200;
 
 function refreshBtn(b,active,prog){
   if(b.material.map) b.material.map.dispose();
-  b.material.map=bTex(b.userData.sym,b.userData.lbl,b.userData.col,active,prog);
-  b.material.map.needsUpdate=true;
-  b.userData.edge.material.opacity=active?.95:.65;
+  b.material.map = bTex(b.userData.sym,b.userData.lbl,b.userData.col,active,prog);
+  b.material.map.needsUpdate = true;
+  b.userData.edge.material.opacity = active ? .95 : .65;
 }
 
 function updateBtns(){
-  let anyVis=false;
+  let anyVis = false;
   arBtns.forEach(b=>{
     b.lookAt(camera.position);
-    const p=b.position.clone().project(camera);
-    if(p.z<1&&Math.abs(p.x)<1.2&&Math.abs(p.y)<1.2) anyVis=true;
+    const p = b.position.clone().project(camera);
+    if(p.z<1 && Math.abs(p.x)<1.2 && Math.abs(p.y)<1.2) anyVis=true;
   });
-  const arr=document.getElementById('menu-arrow');
-  if(!anyVis&&arBtns.length>0){
-    const mid=arBtns[Math.floor(arBtns.length/2)];
-    const p=mid.position.clone().project(camera);
-    const ang=Math.atan2(-p.y,p.x);
-    const arrows=['→','↗','↑','↖','←','↙','↓','↘'];
-    const ai=Math.round(((ang*180/Math.PI+180)/45))%8;
-    arr.textContent=arrows[ai]+' MENÜ';
-    arr.style.opacity='1';
-    const ex=Math.cos(ang),ey=-Math.sin(ang);
-    arr.style.left=(W/2+ex*(W/2-58))+'px'; arr.style.top=(H/2+ey*(H/2-58))+'px';
-    arr.style.transform='translate(-50%,-50%)';
-  }else arr.style.opacity='0';
+  const arr = document.getElementById('menu-arrow');
+  if(!anyVis && arBtns.length>0){
+    const mid = arBtns[Math.floor(arBtns.length/2)];
+    const p   = mid.position.clone().project(camera);
+    const ang = Math.atan2(-p.y,p.x);
+    const arrows = ['→','↗','↑','↖','←','↙','↓','↘'];
+    const ai = Math.round(((ang*180/Math.PI+180)/45))%8;
+    arr.textContent = arrows[ai]+' MENÜ';
+    arr.style.opacity = '1';
+    const ex=Math.cos(ang), ey=-Math.sin(ang);
+    arr.style.left  = (W/2+ex*(W/2-58))+'px';
+    arr.style.top   = (H/2+ey*(H/2-58))+'px';
+    arr.style.transform = 'translate(-50%,-50%)';
+  } else arr.style.opacity='0';
 }
 
 // ─────────────────────────────────────────────────────────
 //  OBJECTS
 // ─────────────────────────────────────────────────────────
-const GEOS={
+const GEOS = {
   cube:     ()=>new THREE.BoxGeometry(0.18,0.18,0.18),
   sphere:   ()=>new THREE.SphereGeometry(0.11,22,22),
   cylinder: ()=>new THREE.CylinderGeometry(0.07,0.07,0.22,22),
@@ -295,26 +355,31 @@ const GEOS={
   torus:    ()=>new THREE.TorusGeometry(0.09,0.035,14,30),
 };
 function spawnObj(type,pos,color,id){
-  const geo=(GEOS[type]||GEOS.cube)();
-  const col=color!==undefined?color:PALETTE[colorIdx];
-  const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.25,metalness:.4,roughness:.4,transparent:true,opacity:.88});
-  const m=new THREE.Mesh(geo,mat);
+  const geo = (GEOS[type]||GEOS.cube)();
+  const col = color!==undefined ? color : PALETTE[colorIdx];
+  const mat = new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.25,metalness:.4,roughness:.4,transparent:true,opacity:.88});
+  const m   = new THREE.Mesh(geo,mat);
   m.add(new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:.2})));
-  const ring=new THREE.Mesh(new THREE.RingGeometry(.14,.17,32),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:.28}));
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.14,.17,32),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:.28}));
   ring.rotation.x=-Math.PI/2; ring.position.y=-.13; m.add(ring);
   m.position.copy(pos);
-  m.userData={type,color:col,id:id||(Date.now()+Math.random()),ring};
+  m.userData = {type,color:col,id:id||(Date.now()+Math.random()),ring};
   modelGroup.add(m); modelObjects.push(m);
   updCnt(); saveSc(); return m;
 }
 function destroyObj(o){
-  if(!o)return; modelGroup.remove(o);
-  const i=modelObjects.indexOf(o); if(i>-1)modelObjects.splice(i,1);
+  if(!o) return;
+  modelGroup.remove(o);
+  const i = modelObjects.indexOf(o); if(i>-1) modelObjects.splice(i,1);
   if(selectedObj===o){selectedObj=null;updSel(null);}
-  if(handGrabObj===o) handGrabObj=null;   // grab temizle
+  if(handGrabObj===o) handGrabObj=null;
   updCnt(); saveSc();
 }
-function highlight(o,on){if(!o)return;o.material.emissiveIntensity=on?.72:.25;if(o.userData.ring)o.userData.ring.material.opacity=on?.7:.28;}
+function highlight(o,on){
+  if(!o) return;
+  o.material.emissiveIntensity = on ? .72 : .25;
+  if(o.userData.ring) o.userData.ring.material.opacity = on ? .7 : .28;
+}
 
 // ─────────────────────────────────────────────────────────
 //  PERSISTENCE
@@ -332,33 +397,23 @@ function setupPointer(){
   document.body.addEventListener('pointermove', onPM, {passive:true});
   document.body.addEventListener('pointerup',   onPU, {passive:true});
 }
-
 function ndcFromEvent(e){
   const r = document.getElementById('c').getBoundingClientRect();
   return {x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1};
 }
-
 function onPD(e){
   if(e.target.closest('#bar')||e.target.closest('#overlay')) return;
   e.preventDefault();
   pStart={x:e.clientX,y:e.clientY}; pointerMoved=false;
-
-  const ndc = ndcFromEvent(e);
-  const cam = getActiveCamera();
-  raycaster.setFromCamera(ndc, cam);
-
-  const bhits = raycaster.intersectObjects(btnGroup.children, true);
+  const ndc=ndcFromEvent(e), cam=getActiveCamera();
+  raycaster.setFromCamera(ndc,cam);
+  const bhits=raycaster.intersectObjects(btnGroup.children,true);
   if(bhits.length>0){
     let btn=bhits[0].object;
     while(btn.parent&&btn.parent!==btnGroup) btn=btn.parent;
-    if(arBtns.includes(btn)){
-      doBtn(btn.userData.id);
-      refreshBtn(btn,true,1); setTimeout(()=>refreshBtn(btn,false,0),350);
-      return;
-    }
+    if(arBtns.includes(btn)){doBtn(btn.userData.id);refreshBtn(btn,true,1);setTimeout(()=>refreshBtn(btn,false,0),350);return;}
   }
-
-  const ohits = raycaster.intersectObjects(modelGroup.children, true);
+  const ohits=raycaster.intersectObjects(modelGroup.children,true);
   if(ohits.length>0){
     let o=ohits[0].object;
     while(o.parent&&o.parent!==modelGroup) o=o.parent;
@@ -366,14 +421,11 @@ function onPD(e){
       if(selectedObj&&selectedObj!==o) highlight(selectedObj,false);
       selectedObj=o; highlight(o,true); updSel(o);
       dragObj=o; dragDepth=o.position.clone().project(cam).z;
-      setMode('SEÇİLDİ: '+o.userData.type.toUpperCase());
-      return;
+      setMode('SEÇİLDİ: '+o.userData.type.toUpperCase()); return;
     }
   }
-
   dragObj=null;
 }
-
 function onPM(e){
   if(!dragObj) return;
   const dx=e.clientX-pStart.x, dy=e.clientY-pStart.y;
@@ -384,31 +436,23 @@ function onPM(e){
     dragObj.position.copy(v); setMode('TAŞINIYOR'); saveSc();
   }
 }
-
 function onPU(e){
   if(e.target.closest('#bar')||e.target.closest('#overlay')) return;
   if(dragObj){dragObj=null;saveSc();}
   if(!pointerMoved){
     if(mode==='webxr'&&window.reticle&&window.reticle.visible){
       const pos=new THREE.Vector3().setFromMatrixPosition(window.reticle.matrix);
-      spawnObj(addShape,pos);
-      setMode('EKLENDİ: '+addShape.toUpperCase());
+      spawnObj(addShape,pos); setMode('EKLENDİ: '+addShape.toUpperCase());
     } else if(mode==='gyro'){
-      const ndc=ndcFromEvent(e);
-      const cam=getActiveCamera();
+      const ndc=ndcFromEvent(e), cam=getActiveCamera();
       const fwd=new THREE.Vector3(0,0,-2).applyQuaternion(cam.quaternion).add(cam.position);
       const plN=new THREE.Vector3(0,0,1).applyQuaternion(cam.quaternion);
       raycaster.setFromCamera(ndc,cam);
       const t=plN.dot(fwd.clone().sub(cam.position))/plN.dot(raycaster.ray.direction);
-      if(t>0){
-        const pos=cam.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(t));
-        spawnObj(addShape,pos);
-        setMode('EKLENDİ: '+addShape.toUpperCase());
-      }
+      if(t>0){const pos=cam.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(t));spawnObj(addShape,pos);setMode('EKLENDİ: '+addShape.toUpperCase());}
     }
   }
 }
-
 function onXRSelect(){
   if(window.reticle&&window.reticle.visible){
     const pos=new THREE.Vector3().setFromMatrixPosition(window.reticle.matrix);
@@ -430,7 +474,7 @@ function pick(s){
   const el=document.getElementById('bb-'+s); if(el) el.classList.add('on');
   setMode('EKLE: '+s.toUpperCase());
 }
-function delSel(){ if(selectedObj){destroyObj(selectedObj);setMode('SİLİNDİ');}else setMode('ÖNCE NESNE SEÇ');}
+function delSel(){if(selectedObj){destroyObj(selectedObj);setMode('SİLİNDİ');}else setMode('ÖNCE NESNE SEÇ');}
 window.pick=pick; window.delSel=delSel;
 
 // ─────────────────────────────────────────────────────────
@@ -449,15 +493,14 @@ function detG(lms){
   return'NONE';
 }
 
-// ── Düğme hover — işaret parmağı ile bak + bekle ──
+// İşaret parmağı düğmeye bakma (hover + hold)
 function gestureButtonCheck(lms){
   if(!lms) return;
-  // İşaret parmağı ucu (lms[8]) — MediaPipe koordinatı yatay aynalı (selfie)
-  // x: sağdan sola, ekranda soldan sağa → 1-x ile düzelt
-  const tip=lms[8];
-  const ndcTip={x:(1-tip.x)*2-1, y:-(tip.y*2-1)};
+  const tip = lms[8];
+  // Selfie kamera aynası: x = 1 - lm.x
+  const ndcTip = {x:(1-tip.x)*2-1, y:-(tip.y*2-1)};
   raycaster.setFromCamera(ndcTip, getActiveCamera());
-  const hits=raycaster.intersectObjects(btnGroup.children,true);
+  const hits = raycaster.intersectObjects(btnGroup.children, true);
   if(hits.length>0){
     let btn=hits[0].object;
     while(btn.parent&&btn.parent!==btnGroup) btn=btn.parent;
@@ -472,100 +515,98 @@ function gestureButtonCheck(lms){
   if(hoverBtn){refreshBtn(hoverBtn,false,0);hoverBtn=null;}
 }
 
-// ── Parmak ucu CSS göstergesi ──
-const fingerDot = document.getElementById('finger-dot');
-function updateFingerDot(lms, isGrab){
-  if(!lms){ fingerDot.style.display='none'; return; }
-  const tip = lms[8];
-  // Selfie kamera x aynalı → 1-tip.x
-  fingerDot.style.left = ((1-tip.x)*W)+'px';
-  fingerDot.style.top  = (tip.y*H)+'px';
-  fingerDot.style.display = 'block';
-  if(isGrab) fingerDot.classList.add('grab');
-  else       fingerDot.classList.remove('grab');
-}
-
 function onHands(res){
-  if(!res.multiHandLandmarks||res.multiHandLandmarks.length===0){
+  const now = Date.now();
+
+  // El yok → temizle
+  if(!res.multiHandLandmarks || res.multiHandLandmarks.length===0){
     gestureL=gestureR='NONE';
     document.getElementById('hs').textContent='';
-    updateFingerDot(null,false);
-    // El kalktı → grab bırak
-    if(handGrabObj){ highlight(handGrabObj,false); handGrabObj=null; saveSc(); }
+    drawSkeleton([], []);
+    if(handGrabObj){highlight(handGrabObj,false); handGrabObj=null; saveSc();}
+    if(hoverBtn){refreshBtn(hoverBtn,false,0); hoverBtn=null;}
     return;
   }
+
   const hands=res.multiHandLandmarks, sides=res.multiHandedness;
   document.getElementById('hs').textContent='◉ '+hands.length+' EL';
-  let lLms=null,rLms=null;
-  sides.forEach((s,i)=>{if(s.label==='Right')lLms=hands[i];else rLms=hands[i];});
-  if(lLms)gestureL=detG(lLms);else gestureL='NONE';
-  if(rLms)gestureR=detG(rLms);else gestureR='NONE';
-  const activeG=rLms?gestureR:gestureL;
-  const activeLms=rLms||lLms;
 
-  // Parmak nokta göstergesi güncelle
-  updateFingerDot(activeLms, activeG==='PINCH');
+  let lLms=null, rLms=null;
+  sides.forEach((s,i)=>{
+    // MediaPipe label: 'Right' = kameranın sağı = kullanıcının sol eli (selfie)
+    if(s.label==='Right') lLms=hands[i]; else rLms=hands[i];
+  });
+  if(lLms) gestureL=detG(lLms); else gestureL='NONE';
+  if(rLms) gestureR=detG(rLms); else gestureR='NONE';
+
+  // İskelet çiz
+  const allGestures = sides.map((s,i)=> detG(hands[i]));
+  drawSkeleton(hands, allGestures);
+
+  const activeG   = rLms ? gestureR : gestureL;
+  const activeLms = rLms || lLms;
 
   // İşaret parmağı → düğme hover
   gestureButtonCheck(activeLms);
 
   // ── İki el: ölçek + döndürme ──
-  const now=Date.now();
-  if(lLms&&rLms&&selectedObj){
-    const cam=getActiveCamera();
+  if(lLms && rLms && selectedObj){
+    const cam = getActiveCamera();
     const fovH=THREE.MathUtils.degToRad(cam.fov/2);
-    const ph=2*Math.tan(fovH),pw=ph*(W/H);
-    const l2=(lm)=>{const v=new THREE.Vector3((lm.x-.5)*pw*2,(0.5-lm.y)*ph*2,-2);v.applyMatrix4(cam.matrixWorld);return v;};
-    const lp=l2(lLms[8]),rp=l2(rLms[8]);
+    const ph=2*Math.tan(fovH), pw=ph*(W/H);
+    const l2=(lm)=>{
+      // Selfie aynası: x'i ters çevir
+      const v=new THREE.Vector3(((1-lm.x)-.5)*pw*2,(0.5-lm.y)*ph*2,-2);
+      v.applyMatrix4(cam.matrixWorld); return v;
+    };
+    const lp=l2(lLms[8]), rp=l2(rLms[8]);
     const cd=lp.distanceTo(rp);
-    const lG=detG(lLms),rG=detG(rLms);
+    const lG=detG(lLms), rG=detG(rLms);
     if((lG==='PINCH'||lG==='FIST')&&(rG==='PINCH'||rG==='FIST')){
       if(!twoAct){twoAct=true;twoD0=cd;twoS0.copy(selectedObj.scale);twoA0=Math.atan2(rp.x-lp.x,rp.z-lp.z);twoR0=selectedObj.rotation.y;}
       else{if(twoD0>0.01)selectedObj.scale.copy(twoS0.clone().multiplyScalar(THREE.MathUtils.clamp(cd/twoD0,.1,8)));selectedObj.rotation.y=twoR0+(Math.atan2(rp.x-lp.x,rp.z-lp.z)-twoA0);saveSc();}
-      handGrabObj=null; // iki-el modunda grab iptal
-      return;
-    }else twoAct=false;
-  }else twoAct=false;
+      handGrabObj=null; return;
+    } else twoAct=false;
+  } else twoAct=false;
 
   // ── Tek el PINCH → nesne tut & taşı ──
   if(activeLms){
-    const cam = getActiveCamera();
-    // Pinch merkezi: başparmak (4) + işaret parmağı (8) orta noktası
-    const px = (activeLms[4].x + activeLms[8].x) / 2;
-    const py = (activeLms[4].y + activeLms[8].y) / 2;
-    // Selfie kamera x aynalı
-    const pNdc = { x: (1-px)*2-1, y: -(py*2-1) };
+    const cam   = getActiveCamera();
+    // Pinch merkezi (baş parmak ucu + işaret parmağı ucu ortası), ayna düzeltmeli
+    const px    = 1 - (activeLms[4].x + activeLms[8].x) / 2;
+    const py    =     (activeLms[4].y + activeLms[8].y) / 2;
+    const pNdc  = {x: px*2-1, y: -(py*2-1)};
     raycaster.setFromCamera(pNdc, cam);
 
     if(activeG === 'PINCH'){
       if(!handGrabObj){
-        // Yakındaki nesneyi yakala
-        const hits = raycaster.intersectObjects(modelGroup.children, true);
-        if(hits.length > 0){
-          let o = hits[0].object;
-          while(o.parent && o.parent !== modelGroup) o = o.parent;
+        // Nesne yakala
+        const hits=raycaster.intersectObjects(modelGroup.children, true);
+        if(hits.length>0){
+          let o=hits[0].object;
+          while(o.parent&&o.parent!==modelGroup) o=o.parent;
           if(modelObjects.includes(o)){
-            handGrabObj = o;
+            handGrabObj   = o;
             handGrabDepth = o.position.clone().project(cam).z;
-            if(selectedObj && selectedObj !== o) highlight(selectedObj, false);
-            selectedObj = o; highlight(o, true); updSel(o);
+            if(selectedObj&&selectedObj!==o) highlight(selectedObj,false);
+            selectedObj=o; highlight(o,true); updSel(o);
             setMode('✋ TUTULDU: '+o.userData.type.toUpperCase());
           }
         }
       } else {
-        // Nesneyi parmakla sürükle
-        const v = new THREE.Vector3(pNdc.x, pNdc.y, handGrabDepth).unproject(cam);
+        // Nesneyi taşı
+        const v=new THREE.Vector3(pNdc.x, pNdc.y, handGrabDepth).unproject(cam);
         handGrabObj.position.copy(v);
         setMode('✋ TAŞINIYOR');
         saveSc();
       }
     } else {
-      // PINCH değil → bırak
-      if(handGrabObj){ saveSc(); handGrabObj = null; }
+      // Bırak
+      if(handGrabObj){saveSc(); handGrabObj=null;}
     }
   }
 
-  // ── Diğer jest kısayolları ──
+  // ── Jest kısayolları ──
   if(activeG==='THUMBS_DOWN'&&now>gCool&&selectedObj){destroyObj(selectedObj);gCool=now+900;}
   if(activeG==='PEACE'&&now>gCool){colorIdx=(colorIdx+1)%PALETTE.length;updSwatch();if(selectedObj){const nc=PALETTE[colorIdx];selectedObj.material.color.setHex(nc);selectedObj.material.emissive.setHex(nc);selectedObj.userData.color=nc;saveSc();}gCool=now+700;}
   if(activeG==='OPEN'&&selectedObj&&now>gCool){highlight(selectedObj,false);selectedObj=null;updSel(null);gCool=now+300;}
@@ -577,15 +618,18 @@ async function startMP(){
     hands.setOptions({maxNumHands:2,modelComplexity:0,minDetectionConfidence:.65,minTrackingConfidence:.5});
     hands.onResults(onHands);
     vidFront=document.createElement('video');
-    vidFront.setAttribute('playsinline','');vidFront.muted=true;
+    vidFront.setAttribute('playsinline',''); vidFront.muted=true;
     vidFront.style.cssText='position:fixed;width:1px;height:1px;opacity:0;z-index:-1;';
     document.body.appendChild(vidFront);
     const fs=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
     vidFront.srcObject=fs;
     await new Promise(r=>{vidFront.onloadedmetadata=r;}); await vidFront.play();
-    async function sf(){if(vidFront.readyState>=2&&!vidFront.paused){try{await hands.send({image:vidFront});}catch(e){}}requestAnimationFrame(sf);}
+    async function sf(){
+      if(vidFront.readyState>=2&&!vidFront.paused){try{await hands.send({image:vidFront});}catch(e){}}
+      requestAnimationFrame(sf);
+    }
     sf();
-  }catch(e){console.warn('MP:',e);}
+  }catch(e){console.warn('MediaPipe başlatılamadı:',e);}
 }
 
 // ─────────────────────────────────────────────────────────
@@ -594,12 +638,12 @@ async function startMP(){
 const _Q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
 let gyroOn=false;
 function onOrient(e){
-  if(!gyroOn)return;
-  const{alpha,beta,gamma}=e; if(alpha==null)return;
+  if(!gyroOn) return;
+  const{alpha,beta,gamma}=e; if(alpha==null) return;
   const oa=screen.orientation?.angle??(window.orientation||0);
   const eu=new THREE.Euler();
-  if(oa===0||oa===180)eu.set(THREE.MathUtils.degToRad(beta),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(-gamma),'YXZ');
-  else eu.set(THREE.MathUtils.degToRad(gamma),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(beta),'YXZ');
+  if(oa===0||oa===180) eu.set(THREE.MathUtils.degToRad(beta),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(-gamma),'YXZ');
+  else                 eu.set(THREE.MathUtils.degToRad(gamma),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(beta),'YXZ');
   camera.quaternion.setFromEuler(eu).multiply(_Q1);
 }
 async function startGyroSensor(){
@@ -609,8 +653,8 @@ async function startGyroSensor(){
 }
 
 function drawBg(){
-  if(!bgCtx||!vidBack||vidBack.readyState<2)return;
-  const vw=vidBack.videoWidth||640,vh=vidBack.videoHeight||480;
+  if(!bgCtx||!vidBack||vidBack.readyState<2) return;
+  const vw=vidBack.videoWidth||640, vh=vidBack.videoHeight||480;
   const s=Math.max(W/vw,H/vh);
   bgCtx.clearRect(0,0,W,H);
   bgCtx.drawImage(vidBack,(W-vw*s)/2,(H-vh*s)/2,vw*s,vh*s);
@@ -625,30 +669,23 @@ async function startWebXR(){
     if(!navigator.xr) throw new Error('WebXR API bulunamadı');
     const sup=await navigator.xr.isSessionSupported('immersive-ar');
     if(!sup) throw new Error('immersive-ar desteklenmiyor (ARCore gerekli)');
-
     showLoad('AR OTURUMU BAŞLATILIYOR...');
     renderer.xr.enabled=true;
-
     xrSess=await navigator.xr.requestSession('immersive-ar',{
       requiredFeatures:['hit-test'],
       optionalFeatures:['dom-overlay','local-floor'],
       domOverlay:{root:document.getElementById('ui')}
     });
     await renderer.xr.setSession(xrSess);
-
     xrSess.addEventListener('end',()=>{xrSess=null;htSrc=null;htReq=false;renderer.xr.enabled=false;mode='none';});
     xrSess.addEventListener('select',onXRSelect);
-
     renderer.setAnimationLoop(xrLoop);
-    mode='webxr';
-    hideOverlay();
+    mode='webxr'; hideOverlay();
     document.getElementById('reticle-lbl').style.display='block';
     setMode('YÜZEYE TAP → NESNE YERLEŞTİR');
     setSts('WebXR AR — Yüzeyi tara');
-
     if(!loadBtnPos()) placeBtnsInFront(1.8);
     loadSc(); startMP();
-
   }catch(e){
     console.error(e);
     showErr('WebXR başarısız:\n'+e.message+'\n\nARCore kurulu değil veya desteklenmiyor.\nJiroskop modunu dene ↓');
@@ -659,21 +696,15 @@ window.startWebXR=startWebXR;
 function xrLoop(time,frame){
   const t=(time||0)/1000;
   if(frame){
-    const sess=renderer.xr.getSession();
-    const rs=renderer.xr.getReferenceSpace();
+    const sess=renderer.xr.getSession(), rs=renderer.xr.getReferenceSpace();
     if(!htReq&&sess){
       htReq=true;
-      sess.requestReferenceSpace('viewer').then(vs=>{
-        sess.requestHitTestSource({space:vs}).then(src=>{htSrc=src;});
-      });
+      sess.requestReferenceSpace('viewer').then(vs=>{sess.requestHitTestSource({space:vs}).then(src=>{htSrc=src;});});
     }
     if(htSrc&&rs){
       const hits=frame.getHitTestResults(htSrc);
-      if(hits.length>0){
-        window.reticle.visible=true;
-        window.reticle.matrix.fromArray(hits[0].getPose(rs).transform.matrix);
-        window.reticle.updateMatrixWorld(true);
-      }else window.reticle.visible=false;
+      if(hits.length>0){window.reticle.visible=true;window.reticle.matrix.fromArray(hits[0].getPose(rs).transform.matrix);window.reticle.updateMatrixWorld(true);}
+      else window.reticle.visible=false;
     }
   }
   animObjs(t); updateBtns();
@@ -688,23 +719,19 @@ async function startGyro(){
   await startGyroSensor();
   try{
     vidBack=document.createElement('video');
-    vidBack.setAttribute('playsinline','');vidBack.muted=true;
+    vidBack.setAttribute('playsinline',''); vidBack.muted=true;
     vidBack.style.cssText='position:fixed;width:1px;height:1px;opacity:0;z-index:-1;';
     document.body.appendChild(vidBack);
     const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
     vidBack.srcObject=s;
     await new Promise(r=>{vidBack.onloadedmetadata=r;}); await vidBack.play();
-    bgEl.style.display='block';
-    bgEl.width=W; bgEl.height=H;
+    bgEl.style.display='block'; bgEl.width=W; bgEl.height=H;
     bgCtx=bgEl.getContext('2d');
   }catch(e){console.warn('BackCam:',e);}
-
   renderer.setAnimationLoop(gyroLoop);
-  mode='gyro';
-  hideOverlay();
+  mode='gyro'; hideOverlay();
   setMode('JIROSKOP — TAP: NESNE YERLEŞTİR (2m önde)');
   setSts('Kameraya bak + TAP = nesne yerleştir');
-
   if(!loadBtnPos()) placeBtnsInFront(1.8);
   loadSc(); startMP();
 }
@@ -723,9 +750,9 @@ function gyroLoop(time){
 // ─────────────────────────────────────────────────────────
 function animObjs(t){
   modelObjects.forEach((o,i)=>{
-    if(o===handGrabObj) return; // tutulan nesneyi titretme
-    o.position.y+=Math.sin(t*1.2+i*1.7)*.00022;
-    if(o.userData.ring)o.userData.ring.rotation.y=t*.4+i;
+    if(o===handGrabObj) return;  // tutulan nesneyi titretme
+    o.position.y += Math.sin(t*1.2+i*1.7)*.00022;
+    if(o.userData.ring) o.userData.ring.rotation.y=t*.4+i;
   });
   if(window.reticle&&window.reticle.visible){
     const s=1+.12*Math.sin(t*4);
@@ -737,9 +764,9 @@ function animObjs(t){
 //  UI HELPERS
 // ─────────────────────────────────────────────────────────
 function setMode(t){document.getElementById('mode-lbl').textContent='◈ '+t;}
-function setSts(t){document.getElementById('status').textContent=t;}
-function updCnt(){document.getElementById('cnt').textContent='NESNE: '+modelObjects.length;}
-function updSel(o){const el=document.getElementById('sel');if(o){el.textContent='▶ '+o.userData.type.toUpperCase();el.style.opacity='1';}else el.style.opacity='0';}
+function setSts(t) {document.getElementById('status').textContent=t;}
+function updCnt()  {document.getElementById('cnt').textContent='NESNE: '+modelObjects.length;}
+function updSel(o) {const el=document.getElementById('sel');if(o){el.textContent='▶ '+o.userData.type.toUpperCase();el.style.opacity='1';}else el.style.opacity='0';}
 function updSwatch(){const h='#'+PALETTE[colorIdx].toString(16).padStart(6,'0');const s=document.getElementById('sw');s.style.background=h;s.style.boxShadow='0 0 8px '+h;}
 
 function showLoad(msg){
@@ -766,8 +793,9 @@ function showErr(msg){
 //  RESIZE
 // ─────────────────────────────────────────────────────────
 window.addEventListener('resize',()=>{
-  W=window.innerWidth;H=window.innerHeight;
-  const c=document.getElementById('c');c.width=W;c.height=H;
+  W=window.innerWidth; H=window.innerHeight;
+  const c=document.getElementById('c'); c.width=W; c.height=H;
+  handCanvas.width=W; handCanvas.height=H;
   if(bgEl){bgEl.width=W;bgEl.height=H;}
   if(renderer&&!renderer.xr.isPresenting){renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
 });
@@ -778,7 +806,7 @@ window.addEventListener('resize',()=>{
 function init(){
   initThree(); setupPointer(); updSwatch();
   navigator.xr?.isSessionSupported('immersive-ar').then(s=>{
-    if(!s){ document.getElementById('btn-webxr').textContent='◈ AR BAŞLAT (ARCore Yok?)'; document.getElementById('btn-webxr').classList.add('disabled'); }
+    if(!s){document.getElementById('btn-webxr').textContent='◈ AR BAŞLAT (ARCore Yok?)';document.getElementById('btn-webxr').classList.add('disabled');}
   }).catch(()=>{});
 }
 init();
