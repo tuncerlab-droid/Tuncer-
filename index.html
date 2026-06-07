@@ -9,8 +9,6 @@
 :root{--c:#00ffcc;--c2:#ff8800;--c3:#ff4455;}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace;}
-
-/* === OVERLAY (start screen) === */
 #overlay{position:fixed;inset:0;background:rgba(0,10,18,.96);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--c);padding:24px;text-align:center;}
 .ot{font-size:16px;letter-spacing:6px;text-shadow:0 0 22px var(--c);}
 .os{font-size:9px;letter-spacing:2px;opacity:.55;line-height:16px;max-width:300px;}
@@ -23,8 +21,6 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 @keyframes ls{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
 #load-msg{font-size:9px;letter-spacing:2px;opacity:.6;display:none;}
 #err-box{color:var(--c3);font-size:9px;letter-spacing:1px;line-height:15px;display:none;border:1px solid rgba(255,68,85,.3);padding:10px;max-width:280px;}
-
-/* === MAIN UI === */
 #ui{position:fixed;inset:0;z-index:50;pointer-events:none;}
 .corner{position:absolute;width:18px;height:18px;border:1.5px solid var(--c);opacity:.6;animation:cp 3s ease-in-out infinite;}
 .tl{top:10px;left:10px;border-right:none;border-bottom:none}
@@ -40,21 +36,29 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 #sw{position:absolute;bottom:52px;right:12px;width:16px;height:16px;border:1px solid rgba(0,255,204,.4);}
 #scanlines{position:absolute;inset:0;z-index:6;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);}
 #menu-arrow{position:absolute;color:var(--c);font-size:10px;letter-spacing:1px;text-shadow:0 0 10px var(--c);background:rgba(0,8,14,.75);padding:3px 9px;border:1px solid rgba(0,255,204,.3);opacity:0;transition:opacity .4s;pointer-events:none;}
-
-/* === BOTTOM BAR === */
 #bar{position:fixed;bottom:0;left:0;width:100%;display:flex;z-index:100;pointer-events:all;}
 .bb{flex:1;background:rgba(0,8,16,.92);border-top:1px solid rgba(0,255,204,.2);border-right:1px solid rgba(0,255,204,.1);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;padding:8px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:center;}
 .bb:active,.bb.on{background:rgba(0,255,204,.14);border-top-color:var(--c);}
 .bb.r{color:var(--c3);border-top-color:rgba(255,68,85,.3);}
 .bb.o{color:var(--c2);border-top-color:rgba(255,136,0,.3);}
-
-/* === RETICLE LABEL === */
 #reticle-lbl{position:fixed;top:50%;left:50%;transform:translate(-50%,40px);color:rgba(0,255,204,.5);font-size:8px;letter-spacing:2px;pointer-events:none;display:none;}
+
+/* ── FINGER CURSOR (world-space fingertip overlay) ── */
+#finger-dot{
+  position:fixed;width:22px;height:22px;border-radius:50%;
+  border:2px solid var(--c);background:rgba(0,255,204,.18);
+  box-shadow:0 0 12px var(--c);pointer-events:none;
+  transform:translate(-50%,-50%);display:none;z-index:60;
+  transition:background .15s,border-color .15s;
+}
+#finger-dot.grab{
+  background:rgba(0,255,204,.55);border-color:#fff;
+  box-shadow:0 0 22px var(--c),0 0 6px #fff;
+}
 </style>
 </head>
 <body>
 
-<!-- START OVERLAY -->
 <div id="overlay">
   <div class="ot">TUNCER AR MODELER</div>
   <div class="os" id="ovr-desc">Nesneler gerçek ortama sabitlenir — odaya geri dönünce aynı yerde durur.</div>
@@ -66,7 +70,6 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <div class="os" style="opacity:.35">WebXR: Android Chrome + ARCore gerekir<br>Jiroskop: Her telefonda çalışır, yön tabanlı</div>
 </div>
 
-<!-- MAIN UI -->
 <div id="ui">
   <div class="corner tl"></div><div class="corner tr"></div>
   <div class="corner bl"></div><div class="corner br"></div>
@@ -80,9 +83,11 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <div id="scanlines"></div>
 </div>
 
+<!-- Parmak ucu görsel göstergesi -->
+<div id="finger-dot"></div>
+
 <div id="reticle-lbl">▼ DOKUN: YERLEŞTİR</div>
 
-<!-- BOTTOM BAR -->
 <div id="bar">
   <button class="bb on" id="bb-cube"     onclick="pick('cube')">◻<br>CUBE</button>
   <button class="bb"    id="bb-sphere"   onclick="pick('sphere')">●<br>SPHERE</button>
@@ -93,10 +98,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <button class="bb r"                   onclick="delSel()">✕<br>SİL</button>
 </div>
 
-<!-- THREE.JS CANVAS (full screen, z=1) -->
 <canvas id="c" style="position:fixed;inset:0;z-index:10;touch-action:none;width:100%;height:100%;"></canvas>
-
-<!-- FALLBACK BG CANVAS (z=0, behind Three.js) -->
 <canvas id="bg" style="position:fixed;inset:0;z-index:0;display:none;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
@@ -116,9 +118,13 @@ let addShape = 'cube';
 const PALETTE = [0x00ffcc,0xff4455,0xff8800,0x4488ff,0xffee00,0xcc44ff,0x44ff88,0xff66aa];
 let colorIdx = 0;
 
-// Drag
+// Touch drag
 let dragObj = null, dragDepth = 0, pointerMoved = false;
 let pStart = {x:0,y:0};
+
+// ── HAND GRAB (yeni) ──
+let handGrabObj  = null;   // pinch ile tutulan nesne
+let handGrabDepth = 0;     // unproject derinliği
 
 // Gestures
 let gestureL='NONE', gestureR='NONE', gCool=0;
@@ -126,7 +132,7 @@ let twoAct=false, twoD0=0, twoA0=0;
 let twoS0 = new THREE.Vector3(), twoR0 = 0;
 
 // Modes
-let mode = 'none'; // 'webxr' | 'gyro'
+let mode = 'none';
 
 // WebXR
 let xrSess=null, htSrc=null, htReq=false;
@@ -168,7 +174,6 @@ function initThree() {
   stereoCamera = new THREE.StereoCamera();
   stereoCamera.eyeSep = 0.064;
 
-  // Reticle
   const rg = new THREE.RingGeometry(0.06,0.09,32);
   const rm = new THREE.MeshBasicMaterial({color:0x00ffcc,side:THREE.DoubleSide,transparent:true,opacity:0.85});
   window.reticle = new THREE.Mesh(rg,rm);
@@ -179,7 +184,7 @@ function initThree() {
 }
 
 // ─────────────────────────────────────────────────────────
-//  AR BUTTONS  — world space, raycasted with Three.js
+//  AR BUTTONS
 // ─────────────────────────────────────────────────────────
 const BDEFS = [
   {id:'cube',    sym:'◻',lbl:'CUBE',  col:0x00ffcc},
@@ -212,7 +217,6 @@ function mkBtn(def,pos){
   const mat = new THREE.MeshBasicMaterial({map:bTex(def.sym,def.lbl,def.col,false,0),transparent:true,side:THREE.DoubleSide,depthTest:false});
   const m = new THREE.Mesh(geo,mat);
   m.renderOrder=50;
-  // Glow edge
   const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:.65,depthTest:false}));
   el.renderOrder=51; m.add(el);
   m.userData={...def,edge:el,hoverStart:0,prog:0};
@@ -257,7 +261,6 @@ function refreshBtn(b,active,prog){
   b.userData.edge.material.opacity=active?.95:.65;
 }
 
-// Billboard + off-screen arrow
 function updateBtns(){
   let anyVis=false;
   arBtns.forEach(b=>{
@@ -281,7 +284,7 @@ function updateBtns(){
 }
 
 // ─────────────────────────────────────────────────────────
-//  OBJECTS — world space
+//  OBJECTS
 // ─────────────────────────────────────────────────────────
 const GEOS={
   cube:     ()=>new THREE.BoxGeometry(0.18,0.18,0.18),
@@ -307,6 +310,7 @@ function destroyObj(o){
   if(!o)return; modelGroup.remove(o);
   const i=modelObjects.indexOf(o); if(i>-1)modelObjects.splice(i,1);
   if(selectedObj===o){selectedObj=null;updSel(null);}
+  if(handGrabObj===o) handGrabObj=null;   // grab temizle
   updCnt(); saveSc();
 }
 function highlight(o,on){if(!o)return;o.material.emissiveIntensity=on?.72:.25;if(o.userData.ring)o.userData.ring.material.opacity=on?.7:.28;}
@@ -318,15 +322,11 @@ function saveSc(){try{localStorage.setItem('tARv5',JSON.stringify(modelObjects.m
 function loadSc(){try{const r=localStorage.getItem('tARv5');if(!r)return;JSON.parse(r).forEach(d=>{const o=spawnObj(d.t,new THREE.Vector3(d.px,d.py,d.pz),d.c,d.id);o.rotation.set(d.rx,d.ry,d.rz);o.scale.set(d.sx,d.sy,d.sz);});}catch(e){}}
 
 // ─────────────────────────────────────────────────────────
-//  TOUCH / POINTER — raycast for 3D button hit
+//  TOUCH / POINTER
 // ─────────────────────────────────────────────────────────
-function getActiveCamera(){
-  // In WebXR, camera is updated by XR system; use same camera variable
-  return camera;
-}
+function getActiveCamera(){ return camera; }
 
 function setupPointer(){
-  // Listen on BODY so WebXR dom-overlay touches are caught too
   document.body.addEventListener('pointerdown', onPD, {passive:false});
   document.body.addEventListener('pointermove', onPM, {passive:true});
   document.body.addEventListener('pointerup',   onPU, {passive:true});
@@ -338,7 +338,6 @@ function ndcFromEvent(e){
 }
 
 function onPD(e){
-  // Ignore bar/overlay clicks
   if(e.target.closest('#bar')||e.target.closest('#overlay')) return;
   e.preventDefault();
   pStart={x:e.clientX,y:e.clientY}; pointerMoved=false;
@@ -347,7 +346,6 @@ function onPD(e){
   const cam = getActiveCamera();
   raycaster.setFromCamera(ndc, cam);
 
-  // 1) Hit AR buttons first (world-space raycast)
   const bhits = raycaster.intersectObjects(btnGroup.children, true);
   if(bhits.length>0){
     let btn=bhits[0].object;
@@ -359,7 +357,6 @@ function onPD(e){
     }
   }
 
-  // 2) Hit model objects
   const ohits = raycaster.intersectObjects(modelGroup.children, true);
   if(ohits.length>0){
     let o=ohits[0].object;
@@ -373,7 +370,6 @@ function onPD(e){
     }
   }
 
-  // 3) No hit — prepare for potential place
   dragObj=null;
 }
 
@@ -392,7 +388,6 @@ function onPU(e){
   if(e.target.closest('#bar')||e.target.closest('#overlay')) return;
   if(dragObj){dragObj=null;saveSc();}
   if(!pointerMoved){
-    // Tap on empty = place object
     if(mode==='webxr'&&window.reticle&&window.reticle.visible){
       const pos=new THREE.Vector3().setFromMatrixPosition(window.reticle.matrix);
       spawnObj(addShape,pos);
@@ -400,7 +395,6 @@ function onPU(e){
     } else if(mode==='gyro'){
       const ndc=ndcFromEvent(e);
       const cam=getActiveCamera();
-      // Place on a plane 2m in front of camera
       const fwd=new THREE.Vector3(0,0,-2).applyQuaternion(cam.quaternion).add(cam.position);
       const plN=new THREE.Vector3(0,0,1).applyQuaternion(cam.quaternion);
       raycaster.setFromCamera(ndc,cam);
@@ -414,7 +408,6 @@ function onPU(e){
   }
 }
 
-// XR select event = air tap
 function onXRSelect(){
   if(window.reticle&&window.reticle.visible){
     const pos=new THREE.Vector3().setFromMatrixPosition(window.reticle.matrix);
@@ -440,7 +433,7 @@ function delSel(){ if(selectedObj){destroyObj(selectedObj);setMode('SİLİNDİ')
 window.pick=pick; window.delSel=delSel;
 
 // ─────────────────────────────────────────────────────────
-//  MEDIAPIPE (front cam — gestures)
+//  MEDIAPIPE — El takibi
 // ─────────────────────────────────────────────────────────
 function extd(lms,t,p){return lms[t].y<lms[p].y-.025;}
 function pDist(lms){const dx=lms[4].x-lms[8].x,dy=lms[4].y-lms[8].y;return Math.sqrt(dx*dx+dy*dy);}
@@ -455,11 +448,13 @@ function detG(lms){
   return'NONE';
 }
 
-// Gesture hover on AR buttons (point + hold)
+// ── Düğme hover — işaret parmağı ile bak + bekle ──
 function gestureButtonCheck(lms){
   if(!lms) return;
-  const tip=lms[8]; // index fingertip in image space (0-1)
-  const ndcTip={x:tip.x*2-1, y:-(tip.y*2-1)};
+  // İşaret parmağı ucu (lms[8]) — MediaPipe koordinatı yatay aynalı (selfie)
+  // x: sağdan sola, ekranda soldan sağa → 1-x ile düzelt
+  const tip=lms[8];
+  const ndcTip={x:(1-tip.x)*2-1, y:-(tip.y*2-1)};
   raycaster.setFromCamera(ndcTip, getActiveCamera());
   const hits=raycaster.intersectObjects(btnGroup.children,true);
   if(hits.length>0){
@@ -476,9 +471,27 @@ function gestureButtonCheck(lms){
   if(hoverBtn){refreshBtn(hoverBtn,false,0);hoverBtn=null;}
 }
 
+// ── Parmak ucu CSS göstergesi ──
+const fingerDot = document.getElementById('finger-dot');
+function updateFingerDot(lms, isGrab){
+  if(!lms){ fingerDot.style.display='none'; return; }
+  const tip = lms[8];
+  // Selfie kamera x aynalı → 1-tip.x
+  fingerDot.style.left = ((1-tip.x)*W)+'px';
+  fingerDot.style.top  = (tip.y*H)+'px';
+  fingerDot.style.display = 'block';
+  if(isGrab) fingerDot.classList.add('grab');
+  else       fingerDot.classList.remove('grab');
+}
+
 function onHands(res){
   if(!res.multiHandLandmarks||res.multiHandLandmarks.length===0){
-    gestureL=gestureR='NONE'; document.getElementById('hs').textContent=''; return;
+    gestureL=gestureR='NONE';
+    document.getElementById('hs').textContent='';
+    updateFingerDot(null,false);
+    // El kalktı → grab bırak
+    if(handGrabObj){ highlight(handGrabObj,false); handGrabObj=null; saveSc(); }
+    return;
   }
   const hands=res.multiHandLandmarks, sides=res.multiHandedness;
   document.getElementById('hs').textContent='◉ '+hands.length+' EL';
@@ -489,10 +502,13 @@ function onHands(res){
   const activeG=rLms?gestureR:gestureL;
   const activeLms=rLms||lLms;
 
-  // Gesture-based button hover
+  // Parmak nokta göstergesi güncelle
+  updateFingerDot(activeLms, activeG==='PINCH');
+
+  // İşaret parmağı → düğme hover
   gestureButtonCheck(activeLms);
 
-  // Two-hand scale+rotate
+  // ── İki el: ölçek + döndürme ──
   const now=Date.now();
   if(lLms&&rLms&&selectedObj){
     const cam=getActiveCamera();
@@ -505,10 +521,50 @@ function onHands(res){
     if((lG==='PINCH'||lG==='FIST')&&(rG==='PINCH'||rG==='FIST')){
       if(!twoAct){twoAct=true;twoD0=cd;twoS0.copy(selectedObj.scale);twoA0=Math.atan2(rp.x-lp.x,rp.z-lp.z);twoR0=selectedObj.rotation.y;}
       else{if(twoD0>0.01)selectedObj.scale.copy(twoS0.clone().multiplyScalar(THREE.MathUtils.clamp(cd/twoD0,.1,8)));selectedObj.rotation.y=twoR0+(Math.atan2(rp.x-lp.x,rp.z-lp.z)-twoA0);saveSc();}
+      handGrabObj=null; // iki-el modunda grab iptal
       return;
     }else twoAct=false;
   }else twoAct=false;
 
+  // ── Tek el PINCH → nesne tut & taşı ──
+  if(activeLms){
+    const cam = getActiveCamera();
+    // Pinch merkezi: başparmak (4) + işaret parmağı (8) orta noktası
+    const px = (activeLms[4].x + activeLms[8].x) / 2;
+    const py = (activeLms[4].y + activeLms[8].y) / 2;
+    // Selfie kamera x aynalı
+    const pNdc = { x: (1-px)*2-1, y: -(py*2-1) };
+    raycaster.setFromCamera(pNdc, cam);
+
+    if(activeG === 'PINCH'){
+      if(!handGrabObj){
+        // Yakındaki nesneyi yakala
+        const hits = raycaster.intersectObjects(modelGroup.children, true);
+        if(hits.length > 0){
+          let o = hits[0].object;
+          while(o.parent && o.parent !== modelGroup) o = o.parent;
+          if(modelObjects.includes(o)){
+            handGrabObj = o;
+            handGrabDepth = o.position.clone().project(cam).z;
+            if(selectedObj && selectedObj !== o) highlight(selectedObj, false);
+            selectedObj = o; highlight(o, true); updSel(o);
+            setMode('✋ TUTULDU: '+o.userData.type.toUpperCase());
+          }
+        }
+      } else {
+        // Nesneyi parmakla sürükle
+        const v = new THREE.Vector3(pNdc.x, pNdc.y, handGrabDepth).unproject(cam);
+        handGrabObj.position.copy(v);
+        setMode('✋ TAŞINIYOR');
+        saveSc();
+      }
+    } else {
+      // PINCH değil → bırak
+      if(handGrabObj){ saveSc(); handGrabObj = null; }
+    }
+  }
+
+  // ── Diğer jest kısayolları ──
   if(activeG==='THUMBS_DOWN'&&now>gCool&&selectedObj){destroyObj(selectedObj);gCool=now+900;}
   if(activeG==='PEACE'&&now>gCool){colorIdx=(colorIdx+1)%PALETTE.length;updSwatch();if(selectedObj){const nc=PALETTE[colorIdx];selectedObj.material.color.setHex(nc);selectedObj.material.emissive.setHex(nc);selectedObj.userData.color=nc;saveSc();}gCool=now+700;}
   if(activeG==='OPEN'&&selectedObj&&now>gCool){highlight(selectedObj,false);selectedObj=null;updSel(null);gCool=now+300;}
@@ -532,7 +588,7 @@ async function startMP(){
 }
 
 // ─────────────────────────────────────────────────────────
-//  DEVICE ORIENTATION (gyro fallback)
+//  DEVICE ORIENTATION
 // ─────────────────────────────────────────────────────────
 const _Q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
 let gyroOn=false;
@@ -551,7 +607,6 @@ async function startGyroSensor(){
   }else{window.addEventListener('deviceorientation',onOrient);gyroOn=true;}
 }
 
-// Fallback bg canvas (cover-crop video)
 function drawBg(){
   if(!bgCtx||!vidBack||vidBack.readyState<2)return;
   const vw=vidBack.videoWidth||640,vh=vidBack.videoHeight||480;
@@ -590,7 +645,6 @@ async function startWebXR(){
     setMode('YÜZEYE TAP → NESNE YERLEŞTİR');
     setSts('WebXR AR — Yüzeyi tara');
 
-    // Buttons + scene
     if(!loadBtnPos()) placeBtnsInFront(1.8);
     loadSc(); startMP();
 
@@ -601,7 +655,6 @@ async function startWebXR(){
 }
 window.startWebXR=startWebXR;
 
-// WebXR render loop
 function xrLoop(time,frame){
   const t=(time||0)/1000;
   if(frame){
@@ -627,7 +680,7 @@ function xrLoop(time,frame){
 }
 
 // ─────────────────────────────────────────────────────────
-//  GYRO FALLBACK MODE
+//  GYRO FALLBACK
 // ─────────────────────────────────────────────────────────
 async function startGyro(){
   showLoad('JIROSKOP + KAMERA BAŞLATILIYOR...');
@@ -669,10 +722,10 @@ function gyroLoop(time){
 // ─────────────────────────────────────────────────────────
 function animObjs(t){
   modelObjects.forEach((o,i)=>{
+    if(o===handGrabObj) return; // tutulan nesneyi titretme
     o.position.y+=Math.sin(t*1.2+i*1.7)*.00022;
     if(o.userData.ring)o.userData.ring.rotation.y=t*.4+i;
   });
-  // Reticle pulse
   if(window.reticle&&window.reticle.visible){
     const s=1+.12*Math.sin(t*4);
     window.reticle.scale.set(s,s,s);
