@@ -58,6 +58,8 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 </div>
 
 <div id="ui">
+  <!-- El iskeleti — #ui içinde olduğu için WebXR domOverlay'de de görünür -->
+  <canvas id="hand-canvas" style="position:absolute;inset:0;pointer-events:none;"></canvas>
   <div class="corner tl"></div><div class="corner tr"></div>
   <div class="corner bl"></div><div class="corner br"></div>
   <div id="mode-lbl">◈ TUNCER AR MODELER</div>
@@ -81,10 +83,9 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <button class="bb r"                   onclick="delSel()">✕<br>SİL</button>
 </div>
 
-<!-- z katmanları: bg(0) → three.js canvas(10) → el iskeleti(20) → ui(50) → bar(100) -->
-<canvas id="c"    style="position:fixed;inset:0;z-index:10;touch-action:none;width:100%;height:100%;"></canvas>
-<canvas id="bg"   style="position:fixed;inset:0;z-index:0;display:none;"></canvas>
-<canvas id="hand-canvas" style="position:fixed;inset:0;z-index:20;pointer-events:none;"></canvas>
+<!-- z katmanları: bg(0) → three.js canvas(10) → ui(50) [hand-canvas ui içinde] → bar(100) -->
+<canvas id="c"  style="position:fixed;inset:0;z-index:10;touch-action:none;width:100%;height:100%;"></canvas>
+<canvas id="bg" style="position:fixed;inset:0;z-index:0;display:none;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
@@ -674,7 +675,7 @@ async function startWebXR(){
     xrSess=await navigator.xr.requestSession('immersive-ar',{
       requiredFeatures:['hit-test'],
       optionalFeatures:['dom-overlay','local-floor'],
-      domOverlay:{root:document.getElementById('ui')}
+      domOverlay:{root:document.body}
     });
     await renderer.xr.setSession(xrSess);
     xrSess.addEventListener('end',()=>{xrSess=null;htSrc=null;htReq=false;renderer.xr.enabled=false;mode='none';});
