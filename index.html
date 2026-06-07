@@ -10,14 +10,8 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace;}
 #container{position:relative;width:100vw;height:100vh;}
-
-/* ── 2D background canvas (video cover-crop + VR split) ── */
 #bg-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;}
-
-/* ── Three.js — transparent overlay ── */
 #c3d{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;touch-action:none;}
-
-/* ── HUD ── */
 #hud{position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none;}
 .corner{position:absolute;width:20px;height:20px;border:1.5px solid var(--c);opacity:.7;animation:cp 3s ease-in-out infinite;}
 .tl{top:10px;left:10px;border-right:none;border-bottom:none}
@@ -25,18 +19,22 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 .bl{bottom:10px;left:10px;border-right:none;border-top:none;animation-delay:1.5s}
 .br{bottom:10px;right:10px;border-left:none;border-top:none;animation-delay:2.25s}
 @keyframes cp{0%,100%{opacity:.4}50%{opacity:1}}
-#mode-label{position:absolute;top:14px;left:50%;transform:translateX(-50%);color:var(--c);font-size:11px;letter-spacing:4px;text-shadow:0 0 14px var(--c);background:rgba(0,8,14,.78);padding:5px 18px;border:1px solid rgba(0,255,204,.22);white-space:nowrap;}
-#gesture-label{position:absolute;bottom:56px;left:50%;transform:translateX(-50%);color:#00ff88;font-size:10px;letter-spacing:2px;text-shadow:0 0 8px #00ff88;background:rgba(0,8,14,.6);padding:4px 14px;white-space:nowrap;min-width:160px;text-align:center;}
+#mode-label{position:absolute;top:14px;left:50%;transform:translateX(-50%);color:var(--c);font-size:11px;letter-spacing:4px;text-shadow:0 0 14px var(--c);background:rgba(0,8,14,.82);padding:5px 18px;border:1px solid rgba(0,255,204,.22);white-space:nowrap;}
+#gesture-label{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);color:#00ff88;font-size:10px;letter-spacing:2px;text-shadow:0 0 8px #00ff88;background:rgba(0,8,14,.6);padding:4px 14px;white-space:nowrap;min-width:160px;text-align:center;}
 #obj-count{position:absolute;top:14px;right:14px;color:var(--c2);font-size:10px;letter-spacing:2px;text-shadow:0 0 8px var(--c2);}
 #hand-status{position:absolute;top:14px;left:14px;color:rgba(0,255,204,.65);font-size:10px;letter-spacing:2px;}
-#sel-info{position:absolute;bottom:56px;left:14px;color:var(--c2);font-size:9px;letter-spacing:2px;opacity:0;transition:opacity .3s;}
-#color-swatch{position:absolute;bottom:56px;right:14px;width:18px;height:18px;border:1px solid rgba(0,255,204,.5);}
-#help{position:absolute;top:46px;left:14px;color:rgba(0,255,204,.35);font-size:8.5px;letter-spacing:.8px;line-height:14px;}
+#sel-info{position:absolute;bottom:100px;left:14px;color:var(--c2);font-size:9px;letter-spacing:2px;opacity:0;transition:opacity .3s;}
+#color-swatch{position:absolute;bottom:100px;right:14px;width:18px;height:18px;border:1px solid rgba(0,255,204,.5);}
+#help{position:absolute;top:46px;left:14px;color:rgba(0,255,204,.35);font-size:8px;letter-spacing:.8px;line-height:14px;}
+/* Off-screen button indicator */
+#menu-arrow{position:absolute;color:var(--c);font-size:12px;letter-spacing:1px;text-shadow:0 0 10px var(--c);background:rgba(0,8,14,.7);padding:3px 10px;border:1px solid rgba(0,255,204,.3);pointer-events:none;transition:opacity .3s;opacity:0;}
 #scanlines{position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);}
 #vr-div{display:none;position:absolute;top:0;left:50%;width:2px;height:100%;background:rgba(0,255,204,.4);z-index:15;}
-#vr-btn{position:absolute;bottom:14px;right:14px;background:rgba(0,8,14,.85);border:1px solid var(--c);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:8px 14px;z-index:20;cursor:pointer;pointer-events:all;-webkit-tap-highlight-color:transparent;}
-#vr-btn:active{background:rgba(0,255,204,.2);}
-
+/* Bottom button row */
+#btns-row{position:absolute;bottom:14px;left:0;width:100%;display:flex;justify-content:center;gap:8px;z-index:20;padding:0 10px;}
+.ui-btn{background:rgba(0,8,14,.85);border:1px solid var(--c);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;padding:7px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex:1;max-width:120px;text-align:center;}
+.ui-btn:active{background:rgba(0,255,204,.2);}
+.ui-btn.red{border-color:var(--c3);color:var(--c3);}
 /* Loading */
 #loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#000a0e;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--c);text-align:center;}
 .ttl{font-size:18px;letter-spacing:6px;text-shadow:0 0 24px var(--c);}
@@ -44,6 +42,12 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 #lbar-wrap{width:180px;height:2px;background:rgba(0,255,204,.15);overflow:hidden;}
 #lbar{width:100%;height:100%;background:var(--c);animation:ls 1.4s ease-in-out infinite;transform:translateX(-100%);}
 @keyframes ls{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+/* Start screen */
+#start-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,10,16,.92);z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--c);text-align:center;}
+#start-overlay h2{font-size:16px;letter-spacing:5px;text-shadow:0 0 20px var(--c);}
+#start-overlay p{font-size:9px;letter-spacing:2px;opacity:.6;max-width:280px;line-height:16px;}
+#start-btn{background:transparent;border:1px solid var(--c);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:4px;padding:14px 32px;cursor:pointer;}
+#start-btn:active{background:rgba(0,255,204,.15);}
 </style>
 </head>
 <body>
@@ -53,6 +57,7 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
   <canvas id="c3d"></canvas>
   <div id="vr-div"></div>
   <div id="scanlines"></div>
+
   <div id="hud">
     <div class="corner tl"></div><div class="corner tr"></div>
     <div class="corner bl"></div><div class="corner br"></div>
@@ -62,24 +67,37 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
     <div id="hand-status">◌ BAŞLANIYOR</div>
     <div id="sel-info">— SEÇİLİ —</div>
     <div id="color-swatch" style="background:#00ffcc"></div>
+    <div id="menu-arrow"></div>
     <div id="help">
-      ☞ PARMAK + 1.4sn TUT = BUTON AKTİF<br>
-      🤏 PİNÇ = NESNE EKLE / TUT+TAŞI<br>
+      🤏 PİNÇ = NESNE YERLEŞTİR/TUT<br>
       ✊ YUMRUK = SÜRÜKLE<br>
       🖐 AÇIK EL = BIRAK<br>
       ✌ PEACE = RENK DEĞİŞTİR<br>
-      👎 BAŞ PARM. AŞAĞI = SİL<br>
-      ↔ İKİ EL = ÖLÇEK + DÖNDÜR
+      👎 BAŞ PARM. = SİL<br>
+      ↔ İKİ EL = ÖLÇEK+DÖNDÜR<br>
+      ☞ BUTONLARA BAK+TUT = AKTİF
     </div>
   </div>
-  <button id="vr-btn" onclick="toggleVR()">◈ VR MOD</button>
+
+  <div id="btns-row">
+    <button class="ui-btn" onclick="recallMenu()">◈ MENÜ ÇAĞIR</button>
+    <button class="ui-btn" onclick="toggleVR()">◈ VR MOD</button>
+    <button class="ui-btn red" onclick="clearAll()">✕ TEMİZLE</button>
+  </div>
 </div>
 
-<div id="loading">
+<!-- Start overlay (requests orientation permission) -->
+<div id="start-overlay">
+  <h2>TUNCER AR MODELER</h2>
+  <p>Nesneler ve menü butonları havada sabit durur.<br>Telefonu hareket ettirince onlar yerinde kalır.<br>Başka odaya geçince geri gelince tekrar görürsün.</p>
+  <button id="start-btn" onclick="startApp()">◈ BAŞLAT</button>
+</div>
+
+<div id="loading" style="display:none;">
   <div class="ttl">TUNCER AR MODELER</div>
-  <div class="sub">TuncerLab — MediaPipe + Three.js</div>
+  <div class="sub">TuncerLab</div>
   <div id="lbar-wrap"><div id="lbar"></div></div>
-  <div class="sub" id="load-msg">KAMERA BAŞLATILIYOR...</div>
+  <div class="sub" id="load-msg">BAŞLATILIYOR...</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
@@ -87,7 +105,9 @@ html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'
 <script>
 'use strict';
 
-// ═══ GLOBALS ══════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  GLOBALS
+// ═══════════════════════════════════════════════════════════
 let W = window.innerWidth, H = window.innerHeight;
 let vrMode = false, orientationActive = false;
 let scene, camera, renderer, stereoCamera;
@@ -95,7 +115,7 @@ let modelGroup, handVizGroup;
 let modelObjects = [], arButtons = [];
 let selectedObj = null;
 let hoverBtn = null, hoverStart = 0;
-const BTN_HOLD = 1400;
+const BTN_HOLD = 1400; // ms to hold for gesture activation
 let gestureL = 'NONE', gestureR = 'NONE';
 let gestureCooldown = 0;
 let twoActive = false, twoStartDist = 0, twoStartAngle = 0;
@@ -104,90 +124,99 @@ const PALETTE = [0x00ffcc,0xff4455,0xff8800,0x4488ff,0xffee00,0xcc44ff,0x44ff88,
 let colorIdx = 0, addShape = 'cube';
 const WORK_DEPTH = -2.0;
 
-const video = document.getElementById('video');
+const video    = document.getElementById('video');
 const bgCanvas = document.getElementById('bg-canvas');
-const bgCtx = bgCanvas.getContext('2d');
+const bgCtx    = bgCanvas.getContext('2d');
 
-// ═══ THREE.JS INIT ══════════════════════════════════════════
+// Button screen projections (for touch)
+const btnScreenPos = [];
+
+// ═══════════════════════════════════════════════════════════
+//  THREE.JS INIT
+// ═══════════════════════════════════════════════════════════
 function initThree() {
+  resizeAll();
   const canvas = document.getElementById('c3d');
-  resizeCanvases();
-
-  renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true });
+  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setClearColor(0x000000, 0);
   renderer.autoClear = false;
 
-  scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(68, W/H, 0.005, 500);
+  scene  = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(68, W / H, 0.005, 500);
+  camera.position.set(0, 0, 0);
   scene.add(camera);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
   const key = new THREE.DirectionalLight(0x00ffee, 1.2); key.position.set(2,4,2); scene.add(key);
-  const fill = new THREE.PointLight(0x0044ff, 0.8, 30); fill.position.set(-4,1,-3); scene.add(fill);
+  const fill = new THREE.PointLight(0x0055ff, 0.8, 30); fill.position.set(-4,1,-3); scene.add(fill);
 
   modelGroup   = new THREE.Group(); scene.add(modelGroup);
   handVizGroup = new THREE.Group(); scene.add(handVizGroup);
+
   stereoCamera = new THREE.StereoCamera();
   stereoCamera.eyeSep = 0.064;
 }
 
-function resizeCanvases() {
+function resizeAll() {
   W = window.innerWidth; H = window.innerHeight;
-  bgCanvas.width  = W; bgCanvas.height  = H;
-  const c3d = document.getElementById('c3d');
-  c3d.width = W; c3d.height = H;
+  bgCanvas.width = W; bgCanvas.height = H;
+  const c = document.getElementById('c3d');
+  c.width = W; c.height = H;
 }
 
-// ═══ 2D VIDEO BACKGROUND (cover-crop, VR split) ════════════
+// ═══════════════════════════════════════════════════════════
+//  VIDEO BACKGROUND  — 2D canvas, cover-crop, VR-split
+// ═══════════════════════════════════════════════════════════
 function drawBackground() {
+  bgCtx.clearRect(0, 0, W, H);
   if (!video || video.readyState < 2) {
-    bgCtx.fillStyle='#000a0e';
-    bgCtx.fillRect(0,0,W,H);
+    bgCtx.fillStyle = '#000a0e';
+    bgCtx.fillRect(0, 0, W, H);
     return;
   }
-  bgCtx.clearRect(0,0,W,H);
   if (vrMode) {
-    drawCover(0, 0, W/2, H);
-    drawCover(W/2, 0, W/2, H);
+    coverDraw(0,     0, W/2, H);
+    coverDraw(W/2,   0, W/2, H);
   } else {
-    drawCover(0, 0, W, H);
+    coverDraw(0, 0, W, H);
   }
 }
 
-function drawCover(dx, dy, dw, dh) {
+function coverDraw(dx, dy, dw, dh) {
   const vw = video.videoWidth  || 640;
   const vh = video.videoHeight || 480;
-  const scale  = Math.max(dw/vw, dh/vh);
-  const sw = vw * scale, sh = vh * scale;
-  const ox = dx + (dw - sw) / 2;
-  const oy = dy + (dh - sh) / 2;
-  bgCtx.drawImage(video, ox, oy, sw, sh);
+  const s  = Math.max(dw / vw, dh / vh);
+  const sw = vw * s, sh = vh * s;
+  bgCtx.drawImage(video, dx + (dw-sw)/2, dy + (dh-sh)/2, sw, sh);
 }
 
-// ═══ HAND SKELETON ══════════════════════════════════════════
-const HAND_CONN=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+// ═══════════════════════════════════════════════════════════
+//  HAND SKELETON VISUALIZER
+// ═══════════════════════════════════════════════════════════
+const CONN=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
 let hLines=[[],[]], hDots=[[],[]];
 
 function initHandViz() {
-  const COLS=[0x00ffcc,0xff8800];
-  for(let h=0;h<2;h++){
-    HAND_CONN.forEach(()=>{
-      const pos=new Float32Array(6), geo=new THREE.BufferGeometry();
-      const attr=new THREE.BufferAttribute(pos,3); attr.setUsage(THREE.DynamicDrawUsage);
-      geo.setAttribute('position',attr);
-      const l=new THREE.Line(geo,new THREE.LineBasicMaterial({color:COLS[h],transparent:true,opacity:0}));
+  const COLS = [0x00ffcc, 0xff8800];
+  for (let h = 0; h < 2; h++) {
+    CONN.forEach(() => {
+      const pos = new Float32Array(6), geo = new THREE.BufferGeometry();
+      const attr = new THREE.BufferAttribute(pos, 3);
+      attr.setUsage(THREE.DynamicDrawUsage); geo.setAttribute('position', attr);
+      const l = new THREE.Line(geo, new THREE.LineBasicMaterial({color:COLS[h],transparent:true,opacity:0}));
       handVizGroup.add(l); hLines[h].push(l);
     });
-    for(let i=0;i<21;i++){
-      const d=new THREE.Mesh(new THREE.SphereGeometry(0.007,6,6),new THREE.MeshBasicMaterial({color:COLS[h],transparent:true,opacity:0}));
+    for (let i = 0; i < 21; i++) {
+      const d = new THREE.Mesh(new THREE.SphereGeometry(0.007,6,6),
+        new THREE.MeshBasicMaterial({color:COLS[h],transparent:true,opacity:0}));
       handVizGroup.add(d); hDots[h].push(d);
     }
   }
 }
-function updateHandViz(lms,hi){
-  HAND_CONN.forEach((c,ci)=>{
+function updHandViz(lms, hi) {
+  CONN.forEach((c,ci)=>{
     const a=lm2w(lms[c[0]]),b=lm2w(lms[c[1]]);
     const attr=hLines[hi][ci].geometry.attributes.position;
     attr.setXYZ(0,a.x,a.y,a.z); attr.setXYZ(1,b.x,b.y,b.z); attr.needsUpdate=true;
@@ -195,27 +224,28 @@ function updateHandViz(lms,hi){
   });
   lms.forEach((lm,li)=>{hDots[hi][li].position.copy(lm2w(lm));hDots[hi][li].material.opacity=0.85;});
 }
-function hideHandViz(hi){hLines[hi].forEach(l=>l.material.opacity=0);hDots[hi].forEach(d=>d.material.opacity=0);}
+function hideHand(hi){hLines[hi].forEach(l=>l.material.opacity=0);hDots[hi].forEach(d=>d.material.opacity=0);}
 
-// ═══ COORDINATE MAPPING ════════════════════════════════════
-function lm2w(lm, depth=WORK_DEPTH){
-  const fovH=THREE.MathUtils.degToRad(camera.fov/2);
-  const ph=Math.abs(depth)*Math.tan(fovH)*2, pw=ph*(W/H);
-  // Back camera: do NOT mirror. Front camera: mirror x.
-  // Using back camera → no flip
-  const lx=(lm.x-0.5)*pw;
-  const ly=(0.5-lm.y)*ph;
-  const lz=depth+(lm.z||0)*0.6;
-  const v=new THREE.Vector3(lx,ly,lz);
+// ═══════════════════════════════════════════════════════════
+//  COORDINATE MAPPING
+// ═══════════════════════════════════════════════════════════
+function lm2w(lm, depth=WORK_DEPTH) {
+  // Back camera: no mirror flip
+  const fovH = THREE.MathUtils.degToRad(camera.fov / 2);
+  const ph = Math.abs(depth) * Math.tan(fovH) * 2;
+  const pw = ph * (W / H);
+  const lx = (lm.x - 0.5) * pw;
+  const ly = (0.5 - lm.y) * ph;
+  const lz = depth + (lm.z || 0) * 0.6;
+  const v = new THREE.Vector3(lx, ly, lz);
   v.applyMatrix4(camera.matrixWorld);
   return v;
 }
-function lm2ndc(lm){
-  // Back camera: no flip
-  return {x:lm.x*2-1, y:-(lm.y*2-1)};
-}
+function lm2ndc(lm){ return {x: lm.x*2-1, y: -(lm.y*2-1)}; }
 
-// ═══ AR BUTTONS (camera-parented, touch+gesture) ════════════
+// ═══════════════════════════════════════════════════════════
+//  AR BUTTONS  — WORLD SPACE (float in room, not on screen)
+// ═══════════════════════════════════════════════════════════
 const BTN_DEFS=[
   {id:'cube',    sym:'◻',lbl:'CUBE',  col:0x00ffcc},
   {id:'sphere',  sym:'●',lbl:'SPHERE',col:0x00ccff},
@@ -223,92 +253,202 @@ const BTN_DEFS=[
   {id:'cone',    sym:'▲',lbl:'CONE', col:0x00ffcc},
   {id:'torus',   sym:'⊚',lbl:'TORUS',col:0x00ffcc},
   {id:'delete',  sym:'✕',lbl:'DEL',  col:0xff4455},
-  {id:'clear',   sym:'↺',lbl:'CLEAR',col:0xff8800},
 ];
-
-// Store projected screen positions for touch detection
-const btnScreenPos = []; // {x,y} in pixels
 
 function makeBtnTex(sym,lbl,col,active,prog){
   const cv=document.createElement('canvas'); cv.width=128; cv.height=72;
   const ctx=cv.getContext('2d');
   const hex='#'+col.toString(16).padStart(6,'0');
-  ctx.fillStyle=active?'rgba(0,255,204,0.18)':'rgba(0,8,16,0.9)';
+  ctx.fillStyle=active?'rgba(0,255,204,0.18)':'rgba(0,8,16,0.92)';
   ctx.fillRect(0,0,128,72);
   ctx.strokeStyle=hex; ctx.lineWidth=active?2.5:1.5;
-  ctx.globalAlpha=active?1:0.8; ctx.strokeRect(2,2,124,68); ctx.globalAlpha=1;
-  if(prog>0){ctx.fillStyle=hex;ctx.globalAlpha=0.8;ctx.fillRect(4,66,120*prog,3);ctx.globalAlpha=1;}
-  ctx.fillStyle=hex; ctx.shadowColor=hex; ctx.shadowBlur=active?16:7;
-  ctx.font='bold 28px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.globalAlpha=active?1:0.82; ctx.strokeRect(2,2,124,68); ctx.globalAlpha=1;
+  if(prog>0){ctx.fillStyle=hex;ctx.globalAlpha=0.85;ctx.fillRect(4,66,120*prog,3);ctx.globalAlpha=1;}
+  ctx.fillStyle=hex; ctx.shadowColor=hex; ctx.shadowBlur=active?18:8;
+  ctx.font='bold 30px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillText(sym,64,28);
-  ctx.shadowBlur=4; ctx.font='9px monospace'; ctx.fillText(lbl,64,52); ctx.shadowBlur=0;
+  ctx.shadowBlur=5; ctx.font='9px monospace'; ctx.fillText(lbl,64,52); ctx.shadowBlur=0;
   return new THREE.CanvasTexture(cv);
 }
 
-function createARButtons(){
-  const n=BTN_DEFS.length, sp=0.112, totalW=(n-1)*sp;
-  // Position buttons at bottom of view: y=-0.22, z=-0.7
-  BTN_DEFS.forEach((def,i)=>{
-    const x=(i/(n-1)-0.5)*totalW;
-    const geo=new THREE.PlaneGeometry(0.096,0.056);
-    const mat=new THREE.MeshBasicMaterial({map:makeBtnTex(def.sym,def.lbl,def.col,false,0),transparent:true,side:THREE.DoubleSide,depthTest:false});
-    const mesh=new THREE.Mesh(geo,mat);
-    mesh.position.set(x,-0.22,-0.7); mesh.renderOrder=200;
-    const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:0.5,depthTest:false}));
-    el.renderOrder=201; mesh.add(el);
-    mesh.userData={...def,edge:el};
-    camera.add(mesh); arButtons.push(mesh);
-    btnScreenPos.push({x:0,y:0});
+function createARButtons() {
+  // Buttons in WORLD SPACE — a row floating 1.8m in front of initial camera
+  const n = BTN_DEFS.length;
+  const sp = 0.22;              // spacing between buttons (meters)
+  const totalW = (n-1) * sp;
+  const bz = -1.8, by = 0.05;  // 1.8m in front, slightly above center
+
+  BTN_DEFS.forEach((def, i) => {
+    const x = (i/(n-1) - 0.5) * totalW;
+    const geo = new THREE.PlaneGeometry(0.16, 0.09);
+    const mat = new THREE.MeshBasicMaterial({
+      map: makeBtnTex(def.sym,def.lbl,def.col,false,0),
+      transparent: true, side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, by, bz);  // WORLD position (not camera child)
+    mesh.renderOrder = 50;
+
+    // Glow border
+    const el = new THREE.LineSegments(
+      new THREE.EdgesGeometry(geo),
+      new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:0.6})
+    );
+    el.renderOrder = 51;
+    mesh.add(el);
+
+    // Vertical glow pole to ground (visual anchor)
+    const poleGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(0, -0.3, 0)
+    ]);
+    const poleMat = new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:0.25});
+    mesh.add(new THREE.Line(poleGeo, poleMat));
+
+    mesh.userData = {...def, edge:el};
+    scene.add(mesh);  // ADD TO SCENE (world space)
+    arButtons.push(mesh);
+    btnScreenPos.push({x:0, y:0, visible:false});
   });
 }
 
-function refreshBtn(btn,active,prog){
+function refreshBtn(btn, active, prog) {
   if(btn.material.map) btn.material.map.dispose();
-  btn.material.map=makeBtnTex(btn.userData.sym,btn.userData.lbl,btn.userData.col,active,prog);
-  btn.material.map.needsUpdate=true;
-  btn.userData.edge.material.opacity=active?0.9:0.5;
+  btn.material.map = makeBtnTex(btn.userData.sym,btn.userData.lbl,btn.userData.col,active,prog);
+  btn.material.map.needsUpdate = true;
+  btn.userData.edge.material.opacity = active ? 0.95 : 0.6;
 }
 
-// Update projected positions each frame for touch detection
-function updateBtnScreenPositions(){
-  arButtons.forEach((btn,i)=>{
-    const wp=new THREE.Vector3();
-    btn.getWorldPosition(wp);
-    const ndc=wp.clone().project(camera);
-    btnScreenPos[i]={
-      x:(ndc.x*0.5+0.5)*W,
-      y:(-ndc.y*0.5+0.5)*H
-    };
+// Update buttons each frame: billboard + screen projection
+function updateButtons() {
+  let anyVisible = false;
+  let menuDir = null; // direction arrow if all off-screen
+
+  arButtons.forEach((btn, i) => {
+    // Billboard: always face camera
+    btn.lookAt(camera.position);
+
+    // Project to screen
+    const wp  = btn.position.clone();
+    const ndc = wp.project(camera);
+    const sx  = (ndc.x * 0.5 + 0.5) * W;
+    const sy  = (-ndc.y * 0.5 + 0.5) * H;
+    const vis = ndc.z < 1 && sx > -80 && sx < W+80 && sy > -50 && sy < H+50;
+
+    btnScreenPos[i] = {x: sx, y: sy, visible: vis};
+    if(vis && ndc.z < 0.99) anyVisible = true;
+    if(!menuDir) menuDir = btn.position.clone();
   });
+
+  // Off-screen arrow indicator
+  showMenuArrow(!anyVisible, menuDir);
 }
 
-// ═══ TOUCH EVENTS for buttons ══════════════════════════════
-document.getElementById('c3d').addEventListener('pointerdown', (e)=>{
+function showMenuArrow(show, worldPos) {
+  const el = document.getElementById('menu-arrow');
+  if (!show || !worldPos) { el.style.opacity = '0'; return; }
+
+  // Project direction to screen edge
+  const ndc = worldPos.clone().project(camera);
+  const angle = Math.atan2(-ndc.y, ndc.x);
+  const deg   = (angle * 180 / Math.PI);
+  // Arrow symbol based on direction
+  const arrows = ['→','↗','↑','↖','←','↙','↓','↘','→'];
+  const idx = Math.round(((deg + 180) / 45)) % 8;
+  el.textContent = arrows[idx] + ' MENÜ';
+  el.style.opacity = '1';
+  // Position at screen edge
+  const ex = Math.cos(angle), ey = -Math.sin(angle);
+  el.style.left = (W/2 + ex * (W/2 - 60)) + 'px';
+  el.style.top  = (H/2 + ey * (H/2 - 60)) + 'px';
+  el.style.transform = 'translate(-50%,-50%)';
+}
+
+// Move menu buttons to be in front of current camera direction
+function recallMenu() {
+  const n = arButtons.length, sp = 0.22, totalW = (n-1) * sp;
+  // Direction 1.8m in front of camera
+  const fwd = new THREE.Vector3(0, 0, -1.8).applyQuaternion(camera.quaternion);
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  const up    = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+
+  arButtons.forEach((btn, i) => {
+    const t = (i/(n-1) - 0.5) * totalW;
+    btn.position.copy(fwd)
+      .addScaledVector(right, t)
+      .addScaledVector(up, 0.05)
+      .add(camera.position);
+  });
+  setMode('MENÜ ÇAĞRILDI');
+  saveBtnPositions();
+}
+window.recallMenu = recallMenu;
+
+function saveBtnPositions() {
+  try {
+    localStorage.setItem('tuncerARbtn', JSON.stringify(
+      arButtons.map(b=>({x:+b.position.x.toFixed(3),y:+b.position.y.toFixed(3),z:+b.position.z.toFixed(3)}))
+    ));
+  } catch(e) {}
+}
+function loadBtnPositions() {
+  try {
+    const raw = localStorage.getItem('tuncerARbtn');
+    if (!raw) return;
+    JSON.parse(raw).forEach((p,i)=>{
+      if(arButtons[i]) arButtons[i].position.set(p.x,p.y,p.z);
+    });
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOUCH EVENTS — tap screen where button appears
+// ═══════════════════════════════════════════════════════════
+document.getElementById('c3d').addEventListener('pointerdown', e => {
   e.preventDefault();
-  const rect=e.target.getBoundingClientRect();
-  const tx=e.clientX-rect.left, ty=e.clientY-rect.top;
-  // Check if tap is near any button
-  let nearest=null, nearestD=Infinity;
-  arButtons.forEach((btn,i)=>{
-    const sp=btnScreenPos[i];
-    const d=Math.hypot(tx-sp.x, ty-sp.y);
-    // Button is ~0.096 * (W/fovW) pixels wide ≈ check 60px radius
-    if(d<70 && d<nearestD){nearestD=d; nearest=btn;}
-  });
-  if(nearest){
-    activateButton(nearest.userData.id);
-    // Flash feedback
-    refreshBtn(nearest, true, 1);
-    setTimeout(()=>refreshBtn(nearest, false, 0), 300);
-  }
-},{passive:false});
+  const rect = e.target.getBoundingClientRect();
+  const tx = e.clientX - rect.left;
+  const ty = e.clientY - rect.top;
 
-// ═══ GESTURE DETECTION ════════════════════════════════════
-function extended(lms,tip,pip){return lms[tip].y < lms[pip].y-0.025;}
+  // Check buttons
+  let hit = null, hitD = Infinity;
+  arButtons.forEach((btn, i) => {
+    if (!btnScreenPos[i].visible) return;
+    const d = Math.hypot(tx - btnScreenPos[i].x, ty - btnScreenPos[i].y);
+    if (d < 75 && d < hitD) { hitD = d; hit = btn; }
+  });
+  if (hit) {
+    activateButton(hit.userData.id);
+    refreshBtn(hit, true, 1);
+    setTimeout(()=>refreshBtn(hit, false, 0), 350);
+    return;
+  }
+
+  // Check objects (select nearest to tap)
+  const ndcX = (tx/W)*2-1, ndcY = -(ty/H)*2+1;
+  const ray = new THREE.Raycaster();
+  ray.setFromCamera({x:ndcX,y:ndcY}, camera);
+  const hits = ray.intersectObjects(modelGroup.children, true);
+  if (hits.length > 0) {
+    // Find the top-level model object
+    let obj = hits[0].object;
+    while (obj.parent && obj.parent !== modelGroup) obj = obj.parent;
+    if (modelObjects.includes(obj)) {
+      if (selectedObj) highlight(selectedObj, false);
+      selectedObj = obj; highlight(selectedObj, true); updateSelInfo(selectedObj);
+      setMode('DOKUNULDU: ' + obj.userData.type.toUpperCase());
+    }
+  }
+}, {passive:false});
+
+// ═══════════════════════════════════════════════════════════
+//  GESTURE DETECTION
+// ═══════════════════════════════════════════════════════════
+function extended(lms,tip,pip){return lms[tip].y < lms[pip].y - 0.025;}
 function pinchDist(lms){const dx=lms[4].x-lms[8].x,dy=lms[4].y-lms[8].y;return Math.sqrt(dx*dx+dy*dy);}
 function detectGesture(lms){
   const pd=pinchDist(lms);
-  const idx=extended(lms,8,6),mid=extended(lms,12,10),rng=extended(lms,16,14),pnk=extended(lms,20,18);
+  const idx=extended(lms,8,6), mid=extended(lms,12,10), rng=extended(lms,16,14), pnk=extended(lms,20,18);
   if(pd<0.06) return 'PINCH';
   if(lms[4].y>lms[0].y+0.06&&!idx&&!mid&&!rng&&!pnk) return 'THUMBS_DOWN';
   if(idx&&mid&&!rng&&!pnk) return 'PEACE';
@@ -318,24 +458,45 @@ function detectGesture(lms){
   return 'NONE';
 }
 
-// ═══ OBJECT FACTORY ═══════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  OBJECT FACTORY  — all in WORLD SPACE
+// ═══════════════════════════════════════════════════════════
 const GEOS={
-  cube:()=>new THREE.BoxGeometry(0.27,0.27,0.27),
-  sphere:()=>new THREE.SphereGeometry(0.155,22,22),
-  cylinder:()=>new THREE.CylinderGeometry(0.1,0.1,0.3,22),
-  cone:()=>new THREE.ConeGeometry(0.14,0.32,22),
-  torus:()=>new THREE.TorusGeometry(0.13,0.05,14,30),
+  cube:     ()=>new THREE.BoxGeometry(0.27,0.27,0.27),
+  sphere:   ()=>new THREE.SphereGeometry(0.155,22,22),
+  cylinder: ()=>new THREE.CylinderGeometry(0.1,0.1,0.3,22),
+  cone:     ()=>new THREE.ConeGeometry(0.14,0.32,22),
+  torus:    ()=>new THREE.TorusGeometry(0.13,0.05,14,30),
 };
-function spawnObject(type,pos,color,id){
-  const geo=(GEOS[type]||GEOS.cube)();
-  const col=(color!==undefined)?color:PALETTE[colorIdx];
-  const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:0.22,metalness:0.45,roughness:0.38,transparent:true,opacity:0.87});
-  const mesh=new THREE.Mesh(geo,mat);
-  mesh.add(new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:0.22})));
-  const ring=new THREE.Mesh(new THREE.RingGeometry(0.21,0.245,36),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:0.3}));
-  ring.rotation.x=-Math.PI/2; ring.position.y=-0.19; mesh.add(ring);
+function spawnObject(type, pos, color, id) {
+  const geo = (GEOS[type]||GEOS.cube)();
+  const col = (color !== undefined) ? color : PALETTE[colorIdx];
+  const mat = new THREE.MeshStandardMaterial({
+    color:col, emissive:col, emissiveIntensity:0.22,
+    metalness:0.45, roughness:0.38, transparent:true, opacity:0.87
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+
+  // Wireframe overlay
+  mesh.add(new THREE.Mesh(geo.clone(),
+    new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:0.22})));
+
+  // Orbit ring
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.21,0.245,36),
+    new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:0.3})
+  );
+  ring.rotation.x = -Math.PI/2; ring.position.y = -0.19; mesh.add(ring);
+
+  // Ground shadow dot
+  const sd = new THREE.Mesh(
+    new THREE.CircleGeometry(0.12, 20),
+    new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.15,side:THREE.DoubleSide})
+  );
+  sd.rotation.x = -Math.PI/2; sd.position.y = -0.25; mesh.add(sd);
+
   mesh.position.copy(pos);
-  mesh.userData={type,color:col,id:id||(Date.now()+Math.random()),ring};
+  mesh.userData = {type, color:col, id:id||(Date.now()+Math.random()), ring};
   modelGroup.add(mesh); modelObjects.push(mesh);
   updateCount(); saveScene(); return mesh;
 }
@@ -345,31 +506,62 @@ function destroyObject(obj){
   if(selectedObj===obj){selectedObj=null;updateSelInfo(null);}
   updateCount(); saveScene();
 }
-function clearAll(){[...modelObjects].forEach(o=>modelGroup.remove(o));modelObjects=[];selectedObj=null;updateSelInfo(null);updateCount();saveScene();}
-function nearestObj(p,max=0.45){let best=null,bd=max;modelObjects.forEach(o=>{const d=p.distanceTo(o.position);if(d<bd){bd=d;best=o;}});return best;}
+function clearAll(){
+  [...modelObjects].forEach(o=>modelGroup.remove(o));
+  modelObjects=[]; selectedObj=null; updateSelInfo(null); updateCount(); saveScene();
+}
+window.clearAll = clearAll;
+function nearestObj(p,max=0.5){let best=null,bd=max;modelObjects.forEach(o=>{const d=p.distanceTo(o.position);if(d<bd){bd=d;best=o;}});return best;}
 function highlight(obj,on){if(!obj)return;obj.material.emissiveIntensity=on?0.7:0.22;if(obj.userData.ring)obj.userData.ring.material.opacity=on?0.75:0.3;}
 
-// ═══ PERSISTENCE ══════════════════════════════════════════
-function saveScene(){try{localStorage.setItem('tuncerARv2',JSON.stringify(modelObjects.map(o=>({t:o.userData.type,c:o.userData.color,id:o.userData.id,px:+o.position.x.toFixed(4),py:+o.position.y.toFixed(4),pz:+o.position.z.toFixed(4),rx:+o.rotation.x.toFixed(4),ry:+o.rotation.y.toFixed(4),rz:+o.rotation.z.toFixed(4),sx:+o.scale.x.toFixed(4),sy:+o.scale.y.toFixed(4),sz:+o.scale.z.toFixed(4)}))));}catch(e){}}
-function loadScene(){try{const raw=localStorage.getItem('tuncerARv2');if(!raw)return;JSON.parse(raw).forEach(d=>{const o=spawnObject(d.t,new THREE.Vector3(d.px,d.py,d.pz),d.c,d.id);o.rotation.set(d.rx,d.ry,d.rz);o.scale.set(d.sx,d.sy,d.sz);});}catch(e){}}
+// ═══════════════════════════════════════════════════════════
+//  PERSISTENCE
+// ═══════════════════════════════════════════════════════════
+function saveScene(){
+  try{
+    localStorage.setItem('tuncerARv3', JSON.stringify(
+      modelObjects.map(o=>({
+        t:o.userData.type, c:o.userData.color, id:o.userData.id,
+        px:+o.position.x.toFixed(4), py:+o.position.y.toFixed(4), pz:+o.position.z.toFixed(4),
+        rx:+o.rotation.x.toFixed(4), ry:+o.rotation.y.toFixed(4), rz:+o.rotation.z.toFixed(4),
+        sx:+o.scale.x.toFixed(4),    sy:+o.scale.y.toFixed(4),    sz:+o.scale.z.toFixed(4),
+      }))
+    ));
+  }catch(e){}
+}
+function loadScene(){
+  try{
+    const raw=localStorage.getItem('tuncerARv3'); if(!raw) return;
+    JSON.parse(raw).forEach(d=>{
+      const o=spawnObject(d.t, new THREE.Vector3(d.px,d.py,d.pz), d.c, d.id);
+      o.rotation.set(d.rx,d.ry,d.rz); o.scale.set(d.sx,d.sy,d.sz);
+    });
+  }catch(e){}
+}
 
-// ═══ BUTTON ACTIVATION ═══════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  BUTTON ACTIVATION
+// ═══════════════════════════════════════════════════════════
 function activateButton(id){
   if(['cube','sphere','cylinder','cone','torus'].includes(id)){addShape=id;setMode('EKLE: '+id.toUpperCase());}
   else if(id==='delete'){if(selectedObj){destroyObject(selectedObj);setMode('SİLİNDİ');}else setMode('ÖNCE NESNE SEÇ');}
   else if(id==='clear'){clearAll();setMode('SAHNE TEMİZLENDİ');}
 }
 
-// ═══ UI ══════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════════════════════
 function setMode(t){document.getElementById('mode-label').textContent='◈ '+t;}
 function setGesture(t){document.getElementById('gesture-label').textContent=t;}
 function updateCount(){document.getElementById('obj-count').textContent='NESNE: '+modelObjects.length;}
 function updateSelInfo(obj){const el=document.getElementById('sel-info');if(obj){el.textContent='▶ '+obj.userData.type.toUpperCase()+' SEÇİLİ';el.style.opacity='1';}else el.style.opacity='0';}
 function updateSwatch(){const h='#'+PALETTE[colorIdx].toString(16).padStart(6,'0');const s=document.getElementById('color-swatch');s.style.background=h;s.style.boxShadow='0 0 8px '+h;}
 
-// ═══ HAND PROCESSING ═════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  HAND PROCESSING
+// ═══════════════════════════════════════════════════════════
 function processHands(results){
-  hideHandViz(0); hideHandViz(1);
+  hideHand(0); hideHand(1);
   if(!results.multiHandLandmarks||results.multiHandLandmarks.length===0){
     gestureL=gestureR='NONE'; setGesture('EL GÖSTERİN...');
     document.getElementById('hand-status').textContent='◌ EL YOK';
@@ -378,44 +570,52 @@ function processHands(results){
   }
   const hands=results.multiHandLandmarks, sides=results.multiHandedness;
   document.getElementById('hand-status').textContent='◉ '+hands.length+' EL';
-  let leftLms=null,rightLms=null;
+
+  let leftLms=null, rightLms=null;
   sides.forEach((s,i)=>{if(s.label==='Right')leftLms=hands[i];else rightLms=hands[i];});
-  hands.forEach((lms,hi)=>updateHandViz(lms,hi));
-  if(leftLms) gestureL=detectGesture(leftLms); else gestureL='NONE';
+  hands.forEach((lms,hi)=>updHandViz(lms,hi));
+  if(leftLms)  gestureL=detectGesture(leftLms); else gestureL='NONE';
   if(rightLms) gestureR=detectGesture(rightLms); else gestureR='NONE';
-  const activeLms=rightLms||leftLms;
-  const activeG=rightLms?gestureR:gestureL;
+
+  const activeLms = rightLms||leftLms;
+  const activeG   = rightLms ? gestureR : gestureL;
 
   const GMAP={PINCH:'🤏PİNÇ',FIST:'✊YUMRUK',OPEN:'🖐AÇIK',POINT:'☞İŞARET',PEACE:'✌PEACE',THUMBS_DOWN:'👎SİL',NONE:'—'};
-  setGesture(((gestureL!=='NONE')?'SOL:'+(GMAP[gestureL]||gestureL)+' ':'')+((gestureR!=='NONE')?'SAĞ:'+(GMAP[gestureR]||gestureR):'')||'—');
+  const lt = gestureL!=='NONE' ? 'SOL:'+(GMAP[gestureL]||gestureL)+' ' : '';
+  const rt = gestureR!=='NONE' ? 'SAĞ:'+(GMAP[gestureR]||gestureR) : '';
+  setGesture((lt+rt)||'—');
 
-  // ── GESTURE BUTTON HOVER ──
+  // ── GESTURE BUTTON HOVER (point + hold) ──
   if(activeLms){
-    const tipNDC=lm2ndc(activeLms[8]);
-    let closestBtn=null,closestD=Infinity;
-    arButtons.forEach(btn=>{
+    const tipNDC = lm2ndc(activeLms[8]);
+    let closest=null, closestD=Infinity;
+    arButtons.forEach((btn,i)=>{
+      if(!btnScreenPos[i].visible) return;
       const wp=new THREE.Vector3(); btn.getWorldPosition(wp);
-      const ndc=wp.clone().project(camera);
-      const d=Math.hypot(tipNDC.x-ndc.x,tipNDC.y-ndc.y);
-      if(d<0.14&&d<closestD){closestD=d;closestBtn=btn;}
+      const ndc=wp.project(camera);
+      const d=Math.hypot(tipNDC.x-ndc.x, tipNDC.y-ndc.y);
+      if(d<0.16&&d<closestD){closestD=d;closest=btn;}
     });
-    if(closestBtn){
-      if(closestBtn!==hoverBtn){if(hoverBtn)refreshBtn(hoverBtn,false,0);hoverBtn=closestBtn;hoverStart=Date.now();}
+    if(closest){
+      if(closest!==hoverBtn){if(hoverBtn)refreshBtn(hoverBtn,false,0);hoverBtn=closest;hoverStart=Date.now();}
       const prog=Math.min((Date.now()-hoverStart)/BTN_HOLD,1);
       refreshBtn(hoverBtn,true,prog);
       if(prog>=1){activateButton(hoverBtn.userData.id);hoverStart=Date.now();}
     }else{if(hoverBtn){refreshBtn(hoverBtn,false,0);hoverBtn=null;}}
   }
 
-  // ── TWO-HAND ──
+  // ── TWO-HAND: scale + rotate ──
   if(leftLms&&rightLms&&selectedObj){
-    const lp=lm2w(leftLms[8]),rp=lm2w(rightLms[8]);
+    const lp=lm2w(leftLms[8]), rp=lm2w(rightLms[8]);
     const curD=lp.distanceTo(rp);
-    const lG=detectGesture(leftLms),rG=detectGesture(rightLms);
+    const lG=detectGesture(leftLms), rG=detectGesture(rightLms);
     if((lG==='PINCH'||lG==='FIST')&&(rG==='PINCH'||rG==='FIST')){
-      if(!twoActive){twoActive=true;twoStartDist=curD;twoStartScale.copy(selectedObj.scale);twoStartAngle=Math.atan2(rp.x-lp.x,rp.z-lp.z);twoStartRotY=selectedObj.rotation.y;}
-      else{
-        if(twoStartDist>0.01)selectedObj.scale.copy(twoStartScale.clone().multiplyScalar(THREE.MathUtils.clamp(curD/twoStartDist,0.1,8)));
+      if(!twoActive){
+        twoActive=true; twoStartDist=curD; twoStartScale.copy(selectedObj.scale);
+        twoStartAngle=Math.atan2(rp.x-lp.x,rp.z-lp.z); twoStartRotY=selectedObj.rotation.y;
+      }else{
+        if(twoStartDist>0.01)
+          selectedObj.scale.copy(twoStartScale.clone().multiplyScalar(THREE.MathUtils.clamp(curD/twoStartDist,0.1,8)));
         selectedObj.rotation.y=twoStartRotY+(Math.atan2(rp.x-lp.x,rp.z-lp.z)-twoStartAngle);
         setMode('ÖLÇEK:'+selectedObj.scale.x.toFixed(2)+' ROT:'+THREE.MathUtils.radToDeg(selectedObj.rotation.y).toFixed(0)+'°');
         saveScene();
@@ -427,15 +627,16 @@ function processHands(results){
   // ── SINGLE HAND ──
   if(!activeLms) return;
   const now=Date.now();
-  const indexPos=lm2w(activeLms[8]),thumbPos=lm2w(activeLms[4]);
-  const pinchPos=new THREE.Vector3().lerpVectors(indexPos,thumbPos,0.5);
+  const iPt=lm2w(activeLms[8]), tPt=lm2w(activeLms[4]);
+  const pinchPos=new THREE.Vector3().lerpVectors(iPt,tPt,0.5);
 
   switch(activeG){
     case 'PINCH':
       if(now>gestureCooldown){
-        if(selectedObj){selectedObj.position.copy(pinchPos);setMode('TAŞINIYOR');saveScene();}
-        else{
-          const near=nearestObj(pinchPos,0.45);
+        if(selectedObj){
+          selectedObj.position.copy(pinchPos); setMode('TAŞINIYOR'); saveScene();
+        }else{
+          const near=nearestObj(pinchPos,0.5);
           if(near){selectedObj=near;highlight(near,true);updateSelInfo(near);setMode('TUTULDU: '+near.userData.type.toUpperCase());}
           else{spawnObject(addShape,pinchPos.clone());setMode('EKLENDİ: '+addShape.toUpperCase());gestureCooldown=now+900;}
         }
@@ -443,153 +644,199 @@ function processHands(results){
       break;
     case 'FIST':
       if(selectedObj){selectedObj.position.copy(pinchPos);setMode('SÜRÜKLENIYOR');saveScene();}
-      else if(now>gestureCooldown){const near=nearestObj(pinchPos,0.45);if(near){selectedObj=near;highlight(near,true);updateSelInfo(near);gestureCooldown=now+300;}}
+      else if(now>gestureCooldown){
+        const near=nearestObj(pinchPos,0.5);
+        if(near){selectedObj=near;highlight(near,true);updateSelInfo(near);gestureCooldown=now+300;}
+      }
       break;
     case 'OPEN':
-      if(now>gestureCooldown&&selectedObj){highlight(selectedObj,false);selectedObj=null;updateSelInfo(null);setMode('BIRAKTI');gestureCooldown=now+300;twoActive=false;}
+      if(now>gestureCooldown&&selectedObj){
+        highlight(selectedObj,false);selectedObj=null;updateSelInfo(null);setMode('BIRAKTI');
+        gestureCooldown=now+300; twoActive=false;
+      }
       break;
     case 'PEACE':
-      if(now>gestureCooldown){colorIdx=(colorIdx+1)%PALETTE.length;updateSwatch();if(selectedObj){const nc=PALETTE[colorIdx];selectedObj.material.color.setHex(nc);selectedObj.material.emissive.setHex(nc);selectedObj.userData.color=nc;saveScene();}setMode('RENK: #'+PALETTE[colorIdx].toString(16).padStart(6,'0').toUpperCase());gestureCooldown=now+700;}
+      if(now>gestureCooldown){
+        colorIdx=(colorIdx+1)%PALETTE.length; updateSwatch();
+        if(selectedObj){
+          const nc=PALETTE[colorIdx];
+          selectedObj.material.color.setHex(nc);
+          selectedObj.material.emissive.setHex(nc);
+          selectedObj.userData.color=nc; saveScene();
+        }
+        setMode('RENK: #'+PALETTE[colorIdx].toString(16).padStart(6,'0').toUpperCase());
+        gestureCooldown=now+700;
+      }
       break;
     case 'THUMBS_DOWN':
-      if(now>gestureCooldown){const target=selectedObj||nearestObj(pinchPos,0.6);if(target){destroyObject(target);setMode('SİLİNDİ');}gestureCooldown=now+900;}
+      if(now>gestureCooldown){
+        const t=selectedObj||nearestObj(pinchPos,0.6);
+        if(t){destroyObject(t);setMode('SİLİNDİ');}
+        gestureCooldown=now+900;
+      }
       break;
     case 'POINT':
-      if(!hoverBtn) setMode('NİŞAN — BUTONA PARM. TUT (1.4s)');
+      if(!hoverBtn) setMode('BUTONA BAK + TUTAN (1.4s)');
       break;
   }
 }
 
-// ═══ DEVICE ORIENTATION ═══════════════════════════════════
-const _Q1=new THREE.Quaternion(-Math.sqrt(0.5),0,0,Math.sqrt(0.5));
-function onOrientation(e){
-  if(!orientationActive)return;
-  const{alpha,beta,gamma}=e; if(alpha==null)return;
-  const oa=screen.orientation?.angle??(window.orientation||0);
-  const eu=new THREE.Euler();
-  if(oa===0||oa===180) eu.set(THREE.MathUtils.degToRad(beta),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(-gamma),'YXZ');
-  else eu.set(THREE.MathUtils.degToRad(gamma),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(beta),'YXZ');
+// ═══════════════════════════════════════════════════════════
+//  DEVICE ORIENTATION  — rotates camera so world stays fixed
+// ═══════════════════════════════════════════════════════════
+const _Q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+
+function onOrientation(e) {
+  if (!orientationActive) return;
+  const {alpha, beta, gamma} = e;
+  if (alpha == null) return;
+  const oa = screen.orientation?.angle ?? (window.orientation || 0);
+  const eu = new THREE.Euler();
+  if (oa === 0 || oa === 180)
+    eu.set(THREE.MathUtils.degToRad(beta), THREE.MathUtils.degToRad(alpha), THREE.MathUtils.degToRad(-gamma), 'YXZ');
+  else
+    eu.set(THREE.MathUtils.degToRad(gamma), THREE.MathUtils.degToRad(alpha), THREE.MathUtils.degToRad(beta), 'YXZ');
   camera.quaternion.setFromEuler(eu).multiply(_Q1);
 }
-async function startOrientation(){
-  if(typeof DeviceOrientationEvent==='undefined')return;
-  if(typeof DeviceOrientationEvent.requestPermission==='function'){
-    try{const p=await DeviceOrientationEvent.requestPermission();if(p==='granted'){window.addEventListener('deviceorientation',onOrientation);orientationActive=true;}}catch(e){}
-  }else{window.addEventListener('deviceorientation',onOrientation);orientationActive=true;}
-}
 
-// ═══ VR TOGGLE ═════════════════════════════════════════════
-function toggleVR(){
-  vrMode=!vrMode;
-  document.getElementById('vr-div').style.display=vrMode?'block':'none';
-  document.getElementById('vr-btn').textContent=vrMode?'◈ NORMAL MOD':'◈ VR MOD';
-  if(vrMode){startOrientation();setMode('VR — CARDBOARD HAZIR');}
-  else{orientationActive=false;camera.quaternion.set(0,0,0,1);setMode('NORMAL MOD');}
-}
-window.toggleVR=toggleVR;
-
-// ═══ ANIMATION LOOP ════════════════════════════════════════
-const clock=new THREE.Clock();
-function animate(){
-  requestAnimationFrame(animate);
-  const t=clock.getElapsedTime();
-
-  // Draw video background
-  drawBackground();
-
-  // Animate objects
-  modelObjects.forEach((obj,i)=>{
-    obj.position.y+=Math.sin(t*1.2+i*1.7)*0.00025;
-    if(obj.userData.ring) obj.userData.ring.rotation.y=t*0.45+i;
-  });
-
-  // Update button screen positions for touch detection
-  updateBtnScreenPositions();
-
-  renderer.clear();
-  if(vrMode){
-    stereoCamera.update(camera);
-    const cw=renderer.domElement.width,ch=renderer.domElement.height;
-    renderer.setScissorTest(true);
-    renderer.setScissor(0,0,cw/2,ch);   renderer.setViewport(0,0,cw/2,ch);   renderer.render(scene,stereoCamera.cameraL);
-    renderer.setScissor(cw/2,0,cw/2,ch);renderer.setViewport(cw/2,0,cw/2,ch);renderer.render(scene,stereoCamera.cameraR);
-    renderer.setScissorTest(false);
-  }else{
-    renderer.setViewport(0,0,W,H); renderer.render(scene,camera);
+async function startOrientation() {
+  if (typeof DeviceOrientationEvent === 'undefined') return;
+  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const p = await DeviceOrientationEvent.requestPermission();
+      if (p === 'granted') { window.addEventListener('deviceorientation', onOrientation); orientationActive = true; }
+    } catch(e) { console.warn('Orient perm:', e); }
+  } else {
+    window.addEventListener('deviceorientation', onOrientation);
+    orientationActive = true;
   }
 }
 
-// ═══ MEDIAPIPE — BACK CAMERA ══════════════════════════════
-let handsInstance = null;
-async function initMediaPipe(){
-  const msg=document.getElementById('load-msg');
-  msg.textContent='MEDİAPİPE YÜKLENİYOR...';
+// ═══════════════════════════════════════════════════════════
+//  VR TOGGLE
+// ═══════════════════════════════════════════════════════════
+function toggleVR() {
+  vrMode = !vrMode;
+  document.getElementById('vr-div').style.display = vrMode ? 'block' : 'none';
+  // Update VR button text
+  const btns = document.querySelectorAll('.ui-btn');
+  btns[1].textContent = vrMode ? '◈ NORMAL' : '◈ VR MOD';
+  setMode(vrMode ? 'VR — CARDBOARD HAZIR' : 'NORMAL MOD');
+}
+window.toggleVR = toggleVR;
 
-  handsInstance=new Hands({
-    locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
+// ═══════════════════════════════════════════════════════════
+//  START BUTTON (requests permissions)
+// ═══════════════════════════════════════════════════════════
+async function startApp() {
+  document.getElementById('start-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'flex';
+
+  // Start orientation FIRST (needs user gesture)
+  await startOrientation();
+
+  // Then init MediaPipe
+  try {
+    await initMediaPipe();
+  } catch(err) {
+    console.error(err);
+    document.getElementById('load-msg').textContent = '⚠ KAMERA HATASI — HTTPS GEREKLİ';
+    document.getElementById('load-msg').style.color = '#ff4455';
+    setTimeout(()=>document.getElementById('loading').style.display='none', 3000);
+  }
+}
+window.startApp = startApp;
+
+// ═══════════════════════════════════════════════════════════
+//  MEDIAPIPE — back camera
+// ═══════════════════════════════════════════════════════════
+async function initMediaPipe() {
+  const msg = document.getElementById('load-msg');
+  msg.textContent = 'MEDİAPİPE YÜKLENİYOR...';
+
+  const hands = new Hands({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
   });
-  handsInstance.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.7,minTrackingConfidence:0.5});
-  handsInstance.onResults(processHands);
+  hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.7, minTrackingConfidence:0.5});
+  hands.onResults(processHands);
 
-  msg.textContent='KAMERA (ARKA) BAŞLATILIYOR...';
-
-  // Get back camera manually
-  const constraints={
-    video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:1280}, height:{ideal:720}
-    }
-  };
-  const stream=await navigator.mediaDevices.getUserMedia(constraints);
-  video.srcObject=stream;
-  await new Promise(r=>{video.onloadedmetadata=r;});
+  msg.textContent = 'ARKA KAMERA BAŞLATILIYOR...';
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} }
+  });
+  video.srcObject = stream;
+  await new Promise(r => { video.onloadedmetadata = r; });
   await video.play();
 
-  msg.textContent='EL ALGILAMA BAŞLATILIYOR...';
-
-  // Send frames to MediaPipe manually
-  async function sendFrame(){
-    if(video.readyState>=2 && !video.paused){
-      try{ await handsInstance.send({image:video}); }catch(e){}
+  msg.textContent = 'EL ALGILAMA...';
+  async function sendFrame() {
+    if (video.readyState >= 2 && !video.paused) {
+      try { await hands.send({image: video}); } catch(e) {}
     }
     requestAnimationFrame(sendFrame);
   }
   sendFrame();
 
-  document.getElementById('loading').style.display='none';
+  document.getElementById('loading').style.display = 'none';
   setMode('TARAMA MODU — EL GÖSTERİN');
-  document.getElementById('hand-status').textContent='◉ HAZIR';
+  document.getElementById('hand-status').textContent = '◉ HAZIR';
 }
 
-// ═══ RESIZE ═══════════════════════════════════════════════
-window.addEventListener('resize',()=>{
-  resizeCanvases();
-  if(renderer){
-    renderer.setSize(W,H);
-    camera.aspect=W/H;
-    camera.updateProjectionMatrix();
+// ═══════════════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ═══════════════════════════════════════════════════════════
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const t = clock.getElapsedTime();
+
+  // Video background
+  drawBackground();
+
+  // Float objects + spin ring
+  modelObjects.forEach((obj, i) => {
+    obj.position.y += Math.sin(t * 1.2 + i * 1.7) * 0.00025;
+    if (obj.userData.ring) obj.userData.ring.rotation.y = t * 0.45 + i;
+  });
+
+  // Billboard buttons + update screen projections
+  updateButtons();
+
+  // Render
+  renderer.clear();
+  if (vrMode) {
+    stereoCamera.update(camera);
+    const cw = renderer.domElement.width, ch = renderer.domElement.height;
+    renderer.setScissorTest(true);
+    renderer.setScissor(0,0,cw/2,ch);    renderer.setViewport(0,0,cw/2,ch);    renderer.render(scene, stereoCamera.cameraL);
+    renderer.setScissor(cw/2,0,cw/2,ch); renderer.setViewport(cw/2,0,cw/2,ch); renderer.render(scene, stereoCamera.cameraR);
+    renderer.setScissorTest(false);
+  } else {
+    renderer.setViewport(0,0,W,H);
+    renderer.render(scene, camera);
   }
+}
+
+// ═══════════════════════════════════════════════════════════
+//  RESIZE
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  resizeAll();
+  if (renderer) { renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix(); }
 });
 
-// ═══ MAIN ══════════════════════════════════════════════════
-async function main(){
+// ═══════════════════════════════════════════════════════════
+//  MAIN
+// ═══════════════════════════════════════════════════════════
+function main() {
   initThree();
   initHandViz();
   createARButtons();
-  loadScene();
+  loadBtnPositions(); // restore button positions if saved
+  loadScene();        // restore objects
   animate();
   updateSwatch();
-
-  try{
-    await initMediaPipe();
-  }catch(err){
-    console.error(err);
-    const lm=document.getElementById('load-msg');
-    lm.textContent='⚠ KAMERA HATASI — HTTPS GEREKLİ';
-    lm.style.color='#ff4455';
-    // Still hide loading after 3s so scene is visible
-    setTimeout(()=>document.getElementById('loading').style.display='none',3000);
-  }
 }
 main();
 </script>
