@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Cardboard VR - Tam Ölçü Lens & Tahta Eller & 6DOF Takip</title>
+    <title>Cardboard VR - Tam Ölçü Lens & Tahta Eller & Fix 6DOF</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -34,7 +34,6 @@
             z-index: 1;
         }
 
-        /* BİREBİR FOTOĞRAFTAKİ MASKE TASARIMI */
         #vr-mask-overlay {
             position: absolute;
             inset: 0;
@@ -43,18 +42,16 @@
             pointer-events: none;
         }
 
-        /* Siyah gölgelerin birbirini örtmesini (siyah ekran hatasını) engelleyen kapsayıcılar */
         .lens-container {
             flex: 1;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden; /* KRİTİK DÜZELTME: Gölgelerin taşmasını önler */
+            overflow: hidden;
             position: relative;
         }
 
-        /* Sol Lens: Solu kavisli (şişkin), sağı düz */
         .lens-cutout-left {
             width: 96%; 
             height: 94%;
@@ -62,7 +59,6 @@
             box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
         }
 
-        /* Sağ Lens: Sağı kavisli (şişkin), solu düz */
         .lens-cutout-right {
             width: 96%;
             height: 94%;
@@ -70,7 +66,6 @@
             box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
         }
 
-        /* Fotoğraftaki alt merkezde bulunan beyaz hizalama çizgisi */
         .cardboard-marker {
             position: absolute;
             bottom: 0;
@@ -107,14 +102,13 @@
 </head>
 <body class="select-none">
 
-    <!-- Başlangıç Ekranı -->
     <div id="welcome-screen" class="fixed inset-0 bg-slate-950 text-white z-50 flex flex-col items-center justify-center p-6 text-center">
         <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl">
             <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-yellow-600 to-amber-700 bg-clip-text text-transparent">
-                VR Cardboard (6DOF Takip)
+                VR Cardboard (6DOF Fix)
             </h1>
             <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                Artık gerçek hayatta <strong>eğildiğinizde</strong> ve <strong>yürüdüğünüzde</strong> kameranız da hareket edecek! Ayrıca el hareketlerinizle de yürümeye devam edebilirsiniz.
+                İvmeölçer motoru yenilendi! Her cihazla uyumlu hale getirildi. Gerçekte eğildiğinizde veya adım attığınızda kamera da tepki verecek.
             </p>
             
             <button id="start-btn" class="w-full bg-gradient-to-r from-yellow-700 to-amber-800 hover:from-yellow-600 hover:to-amber-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
@@ -123,7 +117,6 @@
         </div>
     </div>
 
-    <!-- Telefon Döndürme Uyarısı -->
     <div id="landscape-warning" class="fixed inset-0 bg-slate-950 z-40 text-white flex flex-col items-center justify-center p-6 text-center">
         <svg class="w-16 h-16 text-yellow-600 animate-bounce mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
@@ -133,20 +126,11 @@
 
     <video id="webcam" autoplay playsinline></video>
 
-    <!-- 3D Dünyanın Çizildiği Alan -->
     <div id="canvas-container"></div>
 
-    <!-- BİREBİR FOTOĞRAF ODAKLI LENS MASKESİ -->
     <div id="vr-mask-overlay">
-        <!-- Sol Lens Kutusu -->
-        <div class="lens-container">
-            <div class="lens-cutout-left"></div>
-        </div>
-        <!-- Sağ Lens Kutusu -->
-        <div class="lens-container">
-            <div class="lens-cutout-right"></div>
-        </div>
-        <!-- Orta Beyaz Çizgi -->
+        <div class="lens-container"><div class="lens-cutout-left"></div></div>
+        <div class="lens-container"><div class="lens-cutout-right"></div></div>
         <div class="cardboard-marker"></div>
     </div>
 
@@ -155,7 +139,6 @@
         let cameraGroup, cameraLeft, cameraRight; 
         const IPD = 0.062; 
 
-        // Tahta El Noktaları ve Bağlantıları
         let leftHandGroup, rightHandGroup;
         let handBonesLeft = [], handBonesRight = [];
         let handKnucklesLeft = [], handKnucklesRight = [];
@@ -168,16 +151,17 @@
         let prevYLeft = 0, prevYRight = 0, totalHandYMovement = 0;
         let lastMovementTime = Date.now();
 
-        // Sensör Değişkenleri (Rotasyon)
+        // Sensör Değişkenleri
         let deviceAlpha = 0, deviceBeta = 0, deviceGamma = 0;
         let hasGyro = false, screenOrientationAngle = 0;
         let isMouseDown = false, targetRotationX = 0, targetRotationY = 0;
         let keysPressed = {};
 
-        // 6DOF Fiziksel Hareket Entegrasyonu Değişkenleri (YENİ EKLENDİ)
-        let devPos = new THREE.Vector3(0, 1.6, 0); // Başlangıç kamera pozisyonu
+        // 6DOF Entegrasyonu Değişkenleri
+        let devPos = new THREE.Vector3(0, 1.6, 0); 
         let devVel = new THREE.Vector3(0, 0, 0);
         let deviceAccel = new THREE.Vector3(0, 0, 0);
+        let gravityVec = { x: 0, y: 0, z: 0 }; // Sensörü eksik cihazlar için yerçekimi filtresi
 
         let grabObjects = [];
         let humanoids = [];
@@ -198,6 +182,14 @@
         ];
 
         document.getElementById('start-btn').addEventListener('click', async () => {
+            // iOS Güvenliği: İzinleri butona basılır basılmaz ilk iş olarak istemeliyiz.
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    await DeviceOrientationEvent.requestPermission();
+                    await DeviceMotionEvent.requestPermission();
+                } catch (e) { console.error("Sensör izni alınamadı:", e); }
+            }
+
             const docEl = document.documentElement;
             if (docEl.requestFullscreen) docEl.requestFullscreen();
             else if (docEl.webkitRequestFullscreen) docEl.webkitRequestFullscreen();
@@ -207,18 +199,7 @@
                 screenOrientationAngle = screen.orientation ? screen.orientation.angle : (window.orientation || 0);
             });
 
-            // Gyroscope (Yön) ve İvmeölçer (Hareket) izinlerini al (iOS/Android)
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission === 'granted') {
-                        if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                            await DeviceMotionEvent.requestPermission();
-                        }
-                        initGyro();
-                    }
-                } catch (e) {}
-            } else { initGyro(); }
+            initGyro();
 
             document.getElementById('welcome-screen').style.display = 'none';
             initThree();
@@ -226,7 +207,7 @@
         });
 
         function initGyro() {
-            // Baş Rotasyonu (3DOF)
+            // 3DOF Yön Tespiti
             window.addEventListener('deviceorientation', (e) => {
                 if (e.alpha !== null) {
                     hasGyro = true;
@@ -234,23 +215,35 @@
                 }
             }, true);
 
-            // Fiziksel İvmelenme, Eğilme ve Yürüme Takibi (6DOF - YENİ EKLENDİ)
+            // 6DOF Konumsal İvme Tespiti (GELİŞMİŞ FİLTRELEME İLE)
             window.addEventListener('devicemotion', (e) => {
-                if (e.acceleration) {
-                    // Cihazın yerçekimsiz ham ivmesini alıyoruz
-                    let ax = e.acceleration.x || 0;
-                    let ay = e.acceleration.y || 0;
-                    let az = e.acceleration.z || 0;
+                let ax = 0, ay = 0, az = 0;
 
-                    // Sensör parazitlerini önlemek için küçük titreşimleri yok sayan "Deadzone" (Ölü bölge)
-                    const deadzone = 0.15; 
-                    ax = Math.abs(ax) < deadzone ? 0 : ax;
-                    ay = Math.abs(ay) < deadzone ? 0 : ay;
-                    az = Math.abs(az) < deadzone ? 0 : az;
+                // 1. Cihazda saf ivmeölçer varsa direkt kullan
+                if (e.acceleration && e.acceleration.x !== null) {
+                    ax = e.acceleration.x;
+                    ay = e.acceleration.y;
+                    az = e.acceleration.z;
+                } 
+                // 2. Saf ivmeölçer YOKSA, yerçekimi dahil veriden yerçekimini silerek kullan (Android Fix)
+                else if (e.accelerationIncludingGravity && e.accelerationIncludingGravity.x !== null) {
+                    const alpha = 0.8; // Low-pass filter sabiti
+                    gravityVec.x = alpha * gravityVec.x + (1 - alpha) * e.accelerationIncludingGravity.x;
+                    gravityVec.y = alpha * gravityVec.y + (1 - alpha) * e.accelerationIncludingGravity.y;
+                    gravityVec.z = alpha * gravityVec.z + (1 - alpha) * e.accelerationIncludingGravity.z;
 
-                    // Telefon yatay modda Cardboard içine yerleştirildiğinde eksenler Three.js'in yerel eksenleriyle uyumludur
-                    deviceAccel.set(ax, ay, az);
+                    ax = e.accelerationIncludingGravity.x - gravityVec.x;
+                    ay = e.accelerationIncludingGravity.y - gravityVec.y;
+                    az = e.accelerationIncludingGravity.z - gravityVec.z;
                 }
+
+                // Gürültü (Noise) Filtresi: Çok ufak el titremelerini yoksay
+                const deadzone = 0.1;
+                deviceAccel.set(
+                    Math.abs(ax) > deadzone ? ax : 0,
+                    Math.abs(ay) > deadzone ? ay : 0,
+                    Math.abs(az) > deadzone ? az : 0
+                );
             }, true);
         }
 
@@ -296,45 +289,32 @@
             return group;
         }
 
-        // --- NORMAL TAHTA EL TASARIMI ---
         function setupWoodenHand(handGroup, handBones, handKnuckles) {
             const woodMaterial = new THREE.MeshStandardMaterial({
-                color: 0x8b5a2b, 
-                roughness: 0.9,  
-                metalness: 0.05
+                color: 0x8b5a2b, roughness: 0.9, metalness: 0.05
             });
 
             const thickness = 0.015;
-
-            // Eklem Küreleri
             const knuckleGeo = new THREE.SphereGeometry(thickness, 16, 16);
             for (let i = 0; i < 21; i++) {
                 const sphere = new THREE.Mesh(knuckleGeo, woodMaterial);
-                sphere.visible = false;
-                sphere.castShadow = true;
-                sphere.receiveShadow = true;
-                handGroup.add(sphere);
-                handKnuckles.push(sphere);
+                sphere.visible = false; sphere.castShadow = true; sphere.receiveShadow = true;
+                handGroup.add(sphere); handKnuckles.push(sphere);
             }
 
-            // Kopmayan Kemik Silindirleri
             const boneGeo = new THREE.CylinderGeometry(thickness * 0.85, thickness * 0.85, 1, 12);
             boneGeo.rotateX(Math.PI / 2);
 
             FINGER_BONES.forEach(() => {
                 const cylinder = new THREE.Mesh(boneGeo, woodMaterial);
-                cylinder.visible = false;
-                cylinder.castShadow = true;
-                cylinder.receiveShadow = true;
-                handGroup.add(cylinder);
-                handBones.push(cylinder);
+                cylinder.visible = false; cylinder.castShadow = true; cylinder.receiveShadow = true;
+                handGroup.add(cylinder); handBones.push(cylinder);
             });
         }
 
         function updateBoneSegment(boneMesh, posA, posB) {
             const distance = posA.distanceTo(posB);
             if (distance < 0.001) return;
-
             boneMesh.position.lerpVectors(posA, posB, 0.5);
             boneMesh.scale.set(1, 1, distance);
             boneMesh.lookAt(posB);
@@ -348,7 +328,7 @@
             scene.fog = new THREE.FogExp2(0x87CEEB, 0.006); 
 
             cameraGroup = new THREE.Group();
-            cameraGroup.position.copy(devPos); // Kamera pozisyonunu 6DOF değişkenine bağladık
+            cameraGroup.position.copy(devPos); 
             scene.add(cameraGroup);
 
             cameraLeft = new THREE.PerspectiveCamera(70, (window.innerWidth / 2) / window.innerHeight, 0.05, 1000);
@@ -568,8 +548,8 @@
             const dt = 0.016; 
             const time = Date.now() * 0.003;
 
-            // Kafa Dönüşü (3DOF)
             if (hasGyro) {
+                // Kafa Rotasyonu
                 const a = THREE.MathUtils.degToRad(deviceAlpha);
                 const b = THREE.MathUtils.degToRad(deviceBeta);
                 const g = THREE.MathUtils.degToRad(deviceGamma);
@@ -583,52 +563,54 @@
                 qDev.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1,0,0), -Math.PI/2));
                 cameraGroup.quaternion.copy(qDev);
 
-                // --- 6DOF (KONUMSAL FİZİKSEL HAREKET) HESAPLAMASI ---
-                // Yerel cihaz ivmesini dünyanın rotasyonuna göre uyarlıyoruz
-                const worldAccel = deviceAccel.clone().applyQuaternion(cameraGroup.quaternion);
+                // --- GELİŞTİRİLMİŞ 6DOF MATEMATİĞİ ---
+                const localAccel = deviceAccel.clone();
+                
+                // İvme hissiyatını artırmak için güçlü bir çarpan
+                localAccel.multiplyScalar(4.5); 
+                
+                // Sensörün yerel yönünü, dünyanın yönüne çevir
+                localAccel.applyQuaternion(cameraGroup.quaternion);
 
-                // İvmeyi Hıza entegre et (Hareket hissini biraz güçlendiriyoruz - 1.5 çarpan)
-                devVel.addScaledVector(worldAccel, dt * 1.5);
+                // İvmeyi Hıza çevir
+                devVel.addScaledVector(localAccel, dt);
+                
+                // Çok yüksek hızları kes (kontrol kaybını engeller)
+                devVel.clampLength(0, 3.0);
 
-                // Sürtünme ve Sönümleme (Damping) - Sonsuz kaymayı engeller
-                if (deviceAccel.lengthSq() < 0.01) {
-                    devVel.multiplyScalar(0.6); // Eğer hareket durduysa hızlıca fren yap
-                } else {
-                    devVel.multiplyScalar(0.9); // Normal yürürken sürtünme
-                }
+                // Sürtünme: Hız anında kesilmezse buzda kayıyor gibi olursunuz.
+                devVel.multiplyScalar(0.85);
 
-                // Hızı Pozisyona entegre et
+                // Hızı Pozisyona çevir
                 devPos.addScaledVector(devVel, dt);
 
-                // Eğilme limitleri (Yerin altına girmemek veya çok uçmamak için)
-                if (devPos.y < 0.3) { 
-                    devPos.y = 0.3; 
-                    devVel.y = 0; 
-                } else if (devPos.y > 2.5) { 
-                    devPos.y = 2.5; 
-                    devVel.y = 0; 
+                // KALİBRASYON: Eğer kullanıcı durduysa boy hizasını yavaşça 1.6m'ye (orijinal boy) çek
+                // Bu sayede sensör sapmaları (drift) yüzünden kafanız yerin altında veya gökyüzünde kalmaz.
+                if (devVel.lengthSq() < 0.05) {
+                    devPos.y += (1.6 - devPos.y) * 0.03; 
                 }
+
+                // Sınırlar: Eğilince en fazla 0.4m yere yaklaş, zıplayınca 2.5m
+                if (devPos.y < 0.4) devPos.y = 0.4;
+                if (devPos.y > 2.5) devPos.y = 2.5;
             } else {
                 cameraGroup.quaternion.setFromEuler(new THREE.Euler(targetRotationX, targetRotationY, 0, 'YXZ'));
             }
 
-            // Orijinal El Sallayarak ve Klavye İle Yürüme Mekaniği (Mevcudun Üzerine Eklenir)
+            // MediaPipe (El sallayarak yürüme) veya Klavye
             let currentMoveSpeed = moveSpeed;
             if (keysPressed['w']) currentMoveSpeed = 4.0;
 
             if (currentMoveSpeed > 0.05) {
                 cameraGroup.getWorldDirection(moveDirection);
                 moveDirection.y = 0; moveDirection.normalize();
-                
-                // Kamera yerine devPos (Genel takip vektörü) güncelleniyor
                 devPos.addScaledVector(moveDirection, currentMoveSpeed * dt * -1);
-                
                 if (!keysPressed['w']) moveSpeed *= deceleration;
             } else { 
                 moveSpeed = 0; 
             }
 
-            // Final Pozisyonu Kameraya Uygula
+            // Hesaplanmış 6DOF pozisyonunu aktif et
             cameraGroup.position.copy(devPos);
 
             humanoids.forEach(robot => {
@@ -701,3 +683,4 @@
     </script>
 </body>
 </html>
+
