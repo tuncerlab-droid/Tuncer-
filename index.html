@@ -9,836 +9,725 @@
 :root{--c:#00ffcc;--c2:#ff8800;--c3:#ff4455;}
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:'Share Tech Mono',monospace;}
-#container{position:relative;width:100vw;height:100vh;}
-#bg-canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;}
-#c3d{position:absolute;top:0;left:0;width:100%;height:100%;z-index:2;touch-action:none;}
-#hud{position:absolute;top:0;left:0;width:100%;height:100%;z-index:10;pointer-events:none;}
-.corner{position:absolute;width:20px;height:20px;border:1.5px solid var(--c);opacity:.7;animation:cp 3s ease-in-out infinite;}
-.tl{top:10px;left:10px;border-right:none;border-bottom:none}
-.tr{top:10px;right:10px;border-left:none;border-bottom:none;animation-delay:.75s}
-.bl{bottom:10px;left:10px;border-right:none;border-top:none;animation-delay:1.5s}
-.br{bottom:10px;right:10px;border-left:none;border-top:none;animation-delay:2.25s}
-@keyframes cp{0%,100%{opacity:.4}50%{opacity:1}}
-#mode-label{position:absolute;top:14px;left:50%;transform:translateX(-50%);color:var(--c);font-size:11px;letter-spacing:4px;text-shadow:0 0 14px var(--c);background:rgba(0,8,14,.82);padding:5px 18px;border:1px solid rgba(0,255,204,.22);white-space:nowrap;}
-#gesture-label{position:absolute;bottom:100px;left:50%;transform:translateX(-50%);color:#00ff88;font-size:10px;letter-spacing:2px;text-shadow:0 0 8px #00ff88;background:rgba(0,8,14,.6);padding:4px 14px;white-space:nowrap;min-width:160px;text-align:center;}
-#obj-count{position:absolute;top:14px;right:14px;color:var(--c2);font-size:10px;letter-spacing:2px;text-shadow:0 0 8px var(--c2);}
-#hand-status{position:absolute;top:14px;left:14px;color:rgba(0,255,204,.65);font-size:10px;letter-spacing:2px;}
-#sel-info{position:absolute;bottom:100px;left:14px;color:var(--c2);font-size:9px;letter-spacing:2px;opacity:0;transition:opacity .3s;}
-#color-swatch{position:absolute;bottom:100px;right:14px;width:18px;height:18px;border:1px solid rgba(0,255,204,.5);}
-#help{position:absolute;top:46px;left:14px;color:rgba(0,255,204,.35);font-size:8px;letter-spacing:.8px;line-height:14px;}
-/* Off-screen button indicator */
-#menu-arrow{position:absolute;color:var(--c);font-size:12px;letter-spacing:1px;text-shadow:0 0 10px var(--c);background:rgba(0,8,14,.7);padding:3px 10px;border:1px solid rgba(0,255,204,.3);pointer-events:none;transition:opacity .3s;opacity:0;}
-#scanlines{position:absolute;top:0;left:0;width:100%;height:100%;z-index:6;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);}
-#vr-div{display:none;position:absolute;top:0;left:50%;width:2px;height:100%;background:rgba(0,255,204,.4);z-index:15;}
-/* Bottom button row */
-#btns-row{position:absolute;bottom:14px;left:0;width:100%;display:flex;justify-content:center;gap:8px;z-index:20;padding:0 10px;}
-.ui-btn{background:rgba(0,8,14,.85);border:1px solid var(--c);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:2px;padding:7px 10px;cursor:pointer;-webkit-tap-highlight-color:transparent;flex:1;max-width:120px;text-align:center;}
-.ui-btn:active{background:rgba(0,255,204,.2);}
-.ui-btn.red{border-color:var(--c3);color:var(--c3);}
-/* Loading */
-#loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#000a0e;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--c);text-align:center;}
-.ttl{font-size:18px;letter-spacing:6px;text-shadow:0 0 24px var(--c);}
-.sub{font-size:10px;letter-spacing:3px;opacity:.5;}
-#lbar-wrap{width:180px;height:2px;background:rgba(0,255,204,.15);overflow:hidden;}
+
+/* === OVERLAY (start screen) === */
+#overlay{position:fixed;inset:0;background:rgba(0,10,18,.96);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--c);padding:24px;text-align:center;}
+.ot{font-size:16px;letter-spacing:6px;text-shadow:0 0 22px var(--c);}
+.os{font-size:9px;letter-spacing:2px;opacity:.55;line-height:16px;max-width:300px;}
+.obtn{border:1px solid var(--c);color:var(--c);background:transparent;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:3px;padding:11px 26px;cursor:pointer;width:260px;text-align:center;}
+.obtn:active{background:rgba(0,255,204,.15);}
+.obtn.sec{border-color:rgba(0,255,204,.4);font-size:9px;padding:9px 22px;}
+.obtn.disabled{opacity:.3;pointer-events:none;}
+#lbar-w{width:180px;height:2px;background:rgba(0,255,204,.12);overflow:hidden;display:none;}
 #lbar{width:100%;height:100%;background:var(--c);animation:ls 1.4s ease-in-out infinite;transform:translateX(-100%);}
 @keyframes ls{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-/* Start screen */
-#start-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,10,16,.92);z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:var(--c);text-align:center;}
-#start-overlay h2{font-size:16px;letter-spacing:5px;text-shadow:0 0 20px var(--c);}
-#start-overlay p{font-size:9px;letter-spacing:2px;opacity:.6;max-width:280px;line-height:16px;}
-#start-btn{background:transparent;border:1px solid var(--c);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:4px;padding:14px 32px;cursor:pointer;}
-#start-btn:active{background:rgba(0,255,204,.15);}
+#load-msg{font-size:9px;letter-spacing:2px;opacity:.6;display:none;}
+#err-box{color:var(--c3);font-size:9px;letter-spacing:1px;line-height:15px;display:none;border:1px solid rgba(255,68,85,.3);padding:10px;max-width:280px;}
+
+/* === MAIN UI === */
+#ui{position:fixed;inset:0;z-index:50;pointer-events:none;}
+.corner{position:absolute;width:18px;height:18px;border:1.5px solid var(--c);opacity:.6;animation:cp 3s ease-in-out infinite;}
+.tl{top:10px;left:10px;border-right:none;border-bottom:none}
+.tr{top:10px;right:10px;border-left:none;border-bottom:none;animation-delay:.75s}
+.bl{bottom:52px;left:10px;border-right:none;border-top:none;animation-delay:1.5s}
+.br{bottom:52px;right:10px;border-left:none;border-top:none;animation-delay:2.25s}
+@keyframes cp{0%,100%{opacity:.3}50%{opacity:.9}}
+#mode-lbl{position:absolute;top:12px;left:50%;transform:translateX(-50%);color:var(--c);font-size:10px;letter-spacing:4px;text-shadow:0 0 14px var(--c);background:rgba(0,8,14,.82);padding:4px 16px;border:1px solid rgba(0,255,204,.2);white-space:nowrap;}
+#status{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);color:#00ff88;font-size:9px;letter-spacing:2px;text-shadow:0 0 8px #00ff88;background:rgba(0,8,14,.7);padding:3px 12px;white-space:nowrap;text-align:center;min-width:180px;}
+#cnt{position:absolute;top:12px;right:12px;color:var(--c2);font-size:9px;letter-spacing:2px;}
+#hs{position:absolute;top:12px;left:12px;color:rgba(0,255,204,.55);font-size:9px;letter-spacing:2px;}
+#sel{position:absolute;bottom:52px;left:12px;color:var(--c2);font-size:8px;letter-spacing:1px;opacity:0;transition:opacity .3s;}
+#sw{position:absolute;bottom:52px;right:12px;width:16px;height:16px;border:1px solid rgba(0,255,204,.4);}
+#scanlines{position:absolute;inset:0;z-index:6;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);}
+#menu-arrow{position:absolute;color:var(--c);font-size:10px;letter-spacing:1px;text-shadow:0 0 10px var(--c);background:rgba(0,8,14,.75);padding:3px 9px;border:1px solid rgba(0,255,204,.3);opacity:0;transition:opacity .4s;pointer-events:none;}
+
+/* === BOTTOM BAR === */
+#bar{position:fixed;bottom:0;left:0;width:100%;display:flex;z-index:100;pointer-events:all;}
+.bb{flex:1;background:rgba(0,8,16,.92);border-top:1px solid rgba(0,255,204,.2);border-right:1px solid rgba(0,255,204,.1);color:var(--c);font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;padding:8px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent;text-align:center;}
+.bb:active,.bb.on{background:rgba(0,255,204,.14);border-top-color:var(--c);}
+.bb.r{color:var(--c3);border-top-color:rgba(255,68,85,.3);}
+.bb.o{color:var(--c2);border-top-color:rgba(255,136,0,.3);}
+
+/* === RETICLE LABEL === */
+#reticle-lbl{position:fixed;top:50%;left:50%;transform:translate(-50%,40px);color:rgba(0,255,204,.5);font-size:8px;letter-spacing:2px;pointer-events:none;display:none;}
 </style>
 </head>
 <body>
-<div id="container">
-  <video id="video" playsinline autoplay muted style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;"></video>
-  <canvas id="bg-canvas"></canvas>
-  <canvas id="c3d"></canvas>
-  <div id="vr-div"></div>
+
+<!-- START OVERLAY -->
+<div id="overlay">
+  <div class="ot">TUNCER AR MODELER</div>
+  <div class="os" id="ovr-desc">Nesneler gerçek ortama sabitlenir — odaya geri dönünce aynı yerde durur.</div>
+  <div id="lbar-w"><div id="lbar"></div></div>
+  <div id="load-msg"></div>
+  <div id="err-box"></div>
+  <button class="obtn" id="btn-webxr" onclick="startWebXR()">◈ AR BAŞLAT (WebXR + ARCore)</button>
+  <button class="obtn sec" id="btn-gyro" onclick="startGyro()">◈ JIROSKOP MODU (fallback)</button>
+  <div class="os" style="opacity:.35">WebXR: Android Chrome + ARCore gerekir<br>Jiroskop: Her telefonda çalışır, yön tabanlı</div>
+</div>
+
+<!-- MAIN UI -->
+<div id="ui">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+  <div id="mode-lbl">◈ TUNCER AR MODELER</div>
+  <div id="status">HAZIR</div>
+  <div id="cnt">NESNE: 0</div>
+  <div id="hs"></div>
+  <div id="sel"></div>
+  <div id="sw" style="background:#00ffcc"></div>
+  <div id="menu-arrow"></div>
   <div id="scanlines"></div>
-
-  <div id="hud">
-    <div class="corner tl"></div><div class="corner tr"></div>
-    <div class="corner bl"></div><div class="corner br"></div>
-    <div id="mode-label">◈ TUNCER AR MODELER</div>
-    <div id="gesture-label">EL GÖSTERİN...</div>
-    <div id="obj-count">NESNE: 0</div>
-    <div id="hand-status">◌ BAŞLANIYOR</div>
-    <div id="sel-info">— SEÇİLİ —</div>
-    <div id="color-swatch" style="background:#00ffcc"></div>
-    <div id="menu-arrow"></div>
-    <div id="help">
-      🤏 PİNÇ = NESNE YERLEŞTİR/TUT<br>
-      ✊ YUMRUK = SÜRÜKLE<br>
-      🖐 AÇIK EL = BIRAK<br>
-      ✌ PEACE = RENK DEĞİŞTİR<br>
-      👎 BAŞ PARM. = SİL<br>
-      ↔ İKİ EL = ÖLÇEK+DÖNDÜR<br>
-      ☞ BUTONLARA BAK+TUT = AKTİF
-    </div>
-  </div>
-
-  <div id="btns-row">
-    <button class="ui-btn" onclick="recallMenu()">◈ MENÜ ÇAĞIR</button>
-    <button class="ui-btn" onclick="toggleVR()">◈ VR MOD</button>
-    <button class="ui-btn red" onclick="clearAll()">✕ TEMİZLE</button>
-  </div>
 </div>
 
-<!-- Start overlay (requests orientation permission) -->
-<div id="start-overlay">
-  <h2>TUNCER AR MODELER</h2>
-  <p>Nesneler ve menü butonları havada sabit durur.<br>Telefonu hareket ettirince onlar yerinde kalır.<br>Başka odaya geçince geri gelince tekrar görürsün.</p>
-  <button id="start-btn" onclick="startApp()">◈ BAŞLAT</button>
+<div id="reticle-lbl">▼ DOKUN: YERLEŞTİR</div>
+
+<!-- BOTTOM BAR -->
+<div id="bar">
+  <button class="bb on" id="bb-cube"     onclick="pick('cube')">◻<br>CUBE</button>
+  <button class="bb"    id="bb-sphere"   onclick="pick('sphere')">●<br>SPHERE</button>
+  <button class="bb"    id="bb-cylinder" onclick="pick('cylinder')">⬡<br>CYL</button>
+  <button class="bb"    id="bb-cone"     onclick="pick('cone')">▲<br>CONE</button>
+  <button class="bb"    id="bb-torus"    onclick="pick('torus')">⊚<br>TORUS</button>
+  <button class="bb o"                   onclick="recall()">≡<br>MENÜ</button>
+  <button class="bb r"                   onclick="delSel()">✕<br>SİL</button>
 </div>
 
-<div id="loading" style="display:none;">
-  <div class="ttl">TUNCER AR MODELER</div>
-  <div class="sub">TuncerLab</div>
-  <div id="lbar-wrap"><div id="lbar"></div></div>
-  <div class="sub" id="load-msg">BAŞLATILIYOR...</div>
-</div>
+<!-- THREE.JS CANVAS (full screen, z=1) -->
+<canvas id="c" style="position:fixed;inset:0;z-index:10;touch-action:none;width:100%;height:100%;"></canvas>
+
+<!-- FALLBACK BG CANVAS (z=0, behind Three.js) -->
+<canvas id="bg" style="position:fixed;inset:0;z-index:0;display:none;"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
 'use strict';
 
-// ═══════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
 //  GLOBALS
-// ═══════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
 let W = window.innerWidth, H = window.innerHeight;
-let vrMode = false, orientationActive = false;
 let scene, camera, renderer, stereoCamera;
-let modelGroup, handVizGroup;
-let modelObjects = [], arButtons = [];
+let modelGroup, btnGroup;
+let modelObjects = [], arBtns = [];
 let selectedObj = null;
-let hoverBtn = null, hoverStart = 0;
-const BTN_HOLD = 1400; // ms to hold for gesture activation
-let gestureL = 'NONE', gestureR = 'NONE';
-let gestureCooldown = 0;
-let twoActive = false, twoStartDist = 0, twoStartAngle = 0;
-let twoStartScale = new THREE.Vector3(), twoStartRotY = 0;
+let addShape = 'cube';
 const PALETTE = [0x00ffcc,0xff4455,0xff8800,0x4488ff,0xffee00,0xcc44ff,0x44ff88,0xff66aa];
-let colorIdx = 0, addShape = 'cube';
-const WORK_DEPTH = -2.0;
+let colorIdx = 0;
 
-const video    = document.getElementById('video');
-const bgCanvas = document.getElementById('bg-canvas');
-const bgCtx    = bgCanvas.getContext('2d');
+// Drag
+let dragObj = null, dragDepth = 0, pointerMoved = false;
+let pStart = {x:0,y:0};
 
-// Button screen projections (for touch)
-const btnScreenPos = [];
+// Gestures
+let gestureL='NONE', gestureR='NONE', gCool=0;
+let twoAct=false, twoD0=0, twoA0=0;
+let twoS0 = new THREE.Vector3(), twoR0 = 0;
 
-// ═══════════════════════════════════════════════════════════
+// Modes
+let mode = 'none'; // 'webxr' | 'gyro'
+
+// WebXR
+let xrSess=null, htSrc=null, htReq=false;
+
+// Fallback bg
+const bgEl = document.getElementById('bg');
+let bgCtx = null;
+let vidBack = null, vidFront = null;
+
+// Raycaster
+const raycaster = new THREE.Raycaster();
+
+// ─────────────────────────────────────────────────────────
 //  THREE.JS INIT
-// ═══════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
 function initThree() {
-  resizeAll();
-  const canvas = document.getElementById('c3d');
-  renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+  W = window.innerWidth; H = window.innerHeight;
+  const c = document.getElementById('c');
+  c.width = W; c.height = H;
+
+  renderer = new THREE.WebGLRenderer({canvas:c, alpha:true, antialias:true, logarithmicDepthBuffer:true});
   renderer.setSize(W, H);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0,0);
   renderer.autoClear = false;
 
   scene  = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(68, W / H, 0.005, 500);
-  camera.position.set(0, 0, 0);
+  camera = new THREE.PerspectiveCamera(70, W/H, 0.005, 500);
+  camera.position.set(0,0,0);
   scene.add(camera);
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-  const key = new THREE.DirectionalLight(0x00ffee, 1.2); key.position.set(2,4,2); scene.add(key);
-  const fill = new THREE.PointLight(0x0055ff, 0.8, 30); fill.position.set(-4,1,-3); scene.add(fill);
+  const kl = new THREE.DirectionalLight(0x00ffee,1.2); kl.position.set(2,4,2); scene.add(kl);
+  const pl = new THREE.PointLight(0x0055ff,0.7,30); pl.position.set(-4,1,-3); scene.add(pl);
 
-  modelGroup   = new THREE.Group(); scene.add(modelGroup);
-  handVizGroup = new THREE.Group(); scene.add(handVizGroup);
+  modelGroup = new THREE.Group(); scene.add(modelGroup);
+  btnGroup   = new THREE.Group(); scene.add(btnGroup);
 
   stereoCamera = new THREE.StereoCamera();
   stereoCamera.eyeSep = 0.064;
+
+  // Reticle
+  const rg = new THREE.RingGeometry(0.06,0.09,32);
+  const rm = new THREE.MeshBasicMaterial({color:0x00ffcc,side:THREE.DoubleSide,transparent:true,opacity:0.85});
+  window.reticle = new THREE.Mesh(rg,rm);
+  window.reticle.rotation.x = -Math.PI/2;
+  window.reticle.matrixAutoUpdate = false;
+  window.reticle.visible = false;
+  scene.add(window.reticle);
 }
 
-function resizeAll() {
-  W = window.innerWidth; H = window.innerHeight;
-  bgCanvas.width = W; bgCanvas.height = H;
-  const c = document.getElementById('c3d');
-  c.width = W; c.height = H;
-}
-
-// ═══════════════════════════════════════════════════════════
-//  VIDEO BACKGROUND  — 2D canvas, cover-crop, VR-split
-// ═══════════════════════════════════════════════════════════
-function drawBackground() {
-  bgCtx.clearRect(0, 0, W, H);
-  if (!video || video.readyState < 2) {
-    bgCtx.fillStyle = '#000a0e';
-    bgCtx.fillRect(0, 0, W, H);
-    return;
-  }
-  if (vrMode) {
-    coverDraw(0,     0, W/2, H);
-    coverDraw(W/2,   0, W/2, H);
-  } else {
-    coverDraw(0, 0, W, H);
-  }
-}
-
-function coverDraw(dx, dy, dw, dh) {
-  const vw = video.videoWidth  || 640;
-  const vh = video.videoHeight || 480;
-  const s  = Math.max(dw / vw, dh / vh);
-  const sw = vw * s, sh = vh * s;
-  bgCtx.drawImage(video, dx + (dw-sw)/2, dy + (dh-sh)/2, sw, sh);
-}
-
-// ═══════════════════════════════════════════════════════════
-//  HAND SKELETON VISUALIZER
-// ═══════════════════════════════════════════════════════════
-const CONN=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
-let hLines=[[],[]], hDots=[[],[]];
-
-function initHandViz() {
-  const COLS = [0x00ffcc, 0xff8800];
-  for (let h = 0; h < 2; h++) {
-    CONN.forEach(() => {
-      const pos = new Float32Array(6), geo = new THREE.BufferGeometry();
-      const attr = new THREE.BufferAttribute(pos, 3);
-      attr.setUsage(THREE.DynamicDrawUsage); geo.setAttribute('position', attr);
-      const l = new THREE.Line(geo, new THREE.LineBasicMaterial({color:COLS[h],transparent:true,opacity:0}));
-      handVizGroup.add(l); hLines[h].push(l);
-    });
-    for (let i = 0; i < 21; i++) {
-      const d = new THREE.Mesh(new THREE.SphereGeometry(0.007,6,6),
-        new THREE.MeshBasicMaterial({color:COLS[h],transparent:true,opacity:0}));
-      handVizGroup.add(d); hDots[h].push(d);
-    }
-  }
-}
-function updHandViz(lms, hi) {
-  CONN.forEach((c,ci)=>{
-    const a=lm2w(lms[c[0]]),b=lm2w(lms[c[1]]);
-    const attr=hLines[hi][ci].geometry.attributes.position;
-    attr.setXYZ(0,a.x,a.y,a.z); attr.setXYZ(1,b.x,b.y,b.z); attr.needsUpdate=true;
-    hLines[hi][ci].material.opacity=0.65;
-  });
-  lms.forEach((lm,li)=>{hDots[hi][li].position.copy(lm2w(lm));hDots[hi][li].material.opacity=0.85;});
-}
-function hideHand(hi){hLines[hi].forEach(l=>l.material.opacity=0);hDots[hi].forEach(d=>d.material.opacity=0);}
-
-// ═══════════════════════════════════════════════════════════
-//  COORDINATE MAPPING
-// ═══════════════════════════════════════════════════════════
-function lm2w(lm, depth=WORK_DEPTH) {
-  // Back camera: no mirror flip
-  const fovH = THREE.MathUtils.degToRad(camera.fov / 2);
-  const ph = Math.abs(depth) * Math.tan(fovH) * 2;
-  const pw = ph * (W / H);
-  const lx = (lm.x - 0.5) * pw;
-  const ly = (0.5 - lm.y) * ph;
-  const lz = depth + (lm.z || 0) * 0.6;
-  const v = new THREE.Vector3(lx, ly, lz);
-  v.applyMatrix4(camera.matrixWorld);
-  return v;
-}
-function lm2ndc(lm){ return {x: lm.x*2-1, y: -(lm.y*2-1)}; }
-
-// ═══════════════════════════════════════════════════════════
-//  AR BUTTONS  — WORLD SPACE (float in room, not on screen)
-// ═══════════════════════════════════════════════════════════
-const BTN_DEFS=[
+// ─────────────────────────────────────────────────────────
+//  AR BUTTONS  — world space, raycasted with Three.js
+// ─────────────────────────────────────────────────────────
+const BDEFS = [
   {id:'cube',    sym:'◻',lbl:'CUBE',  col:0x00ffcc},
-  {id:'sphere',  sym:'●',lbl:'SPHERE',col:0x00ccff},
+  {id:'sphere',  sym:'●',lbl:'SHP',  col:0x00ccff},
   {id:'cylinder',sym:'⬡',lbl:'CYL',  col:0x00ffcc},
   {id:'cone',    sym:'▲',lbl:'CONE', col:0x00ffcc},
-  {id:'torus',   sym:'⊚',lbl:'TORUS',col:0x00ffcc},
+  {id:'torus',   sym:'⊚',lbl:'TOR',  col:0x00ffcc},
+  {id:'color',   sym:'◈',lbl:'CLR',  col:0xffee00},
   {id:'delete',  sym:'✕',lbl:'DEL',  col:0xff4455},
 ];
 
-function makeBtnTex(sym,lbl,col,active,prog){
+function bTex(sym,lbl,col,active,prog){
   const cv=document.createElement('canvas'); cv.width=128; cv.height=72;
   const ctx=cv.getContext('2d');
-  const hex='#'+col.toString(16).padStart(6,'0');
-  ctx.fillStyle=active?'rgba(0,255,204,0.18)':'rgba(0,8,16,0.92)';
+  const h='#'+col.toString(16).padStart(6,'0');
+  ctx.fillStyle=active?'rgba(0,255,204,.18)':'rgba(0,8,16,.92)';
   ctx.fillRect(0,0,128,72);
-  ctx.strokeStyle=hex; ctx.lineWidth=active?2.5:1.5;
-  ctx.globalAlpha=active?1:0.82; ctx.strokeRect(2,2,124,68); ctx.globalAlpha=1;
-  if(prog>0){ctx.fillStyle=hex;ctx.globalAlpha=0.85;ctx.fillRect(4,66,120*prog,3);ctx.globalAlpha=1;}
-  ctx.fillStyle=hex; ctx.shadowColor=hex; ctx.shadowBlur=active?18:8;
-  ctx.font='bold 30px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(sym,64,28);
-  ctx.shadowBlur=5; ctx.font='9px monospace'; ctx.fillText(lbl,64,52); ctx.shadowBlur=0;
+  ctx.strokeStyle=h; ctx.lineWidth=active?2.5:1.5;
+  ctx.globalAlpha=active?1:.8; ctx.strokeRect(2,2,124,68); ctx.globalAlpha=1;
+  if(prog>0){ctx.fillStyle=h;ctx.globalAlpha=.85;ctx.fillRect(4,66,120*prog,3);ctx.globalAlpha=1;}
+  ctx.fillStyle=h; ctx.shadowColor=h; ctx.shadowBlur=active?18:8;
+  ctx.font='bold 32px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(sym,64,27);
+  ctx.shadowBlur=4; ctx.font='9px monospace'; ctx.fillText(lbl,64,53); ctx.shadowBlur=0;
   return new THREE.CanvasTexture(cv);
 }
 
-function createARButtons() {
-  // Buttons in WORLD SPACE — a row floating 1.8m in front of initial camera
-  const n = BTN_DEFS.length;
-  const sp = 0.22;              // spacing between buttons (meters)
-  const totalW = (n-1) * sp;
-  const bz = -1.8, by = 0.05;  // 1.8m in front, slightly above center
+function mkBtn(def,pos){
+  const geo = new THREE.PlaneGeometry(0.18,0.1);
+  const mat = new THREE.MeshBasicMaterial({map:bTex(def.sym,def.lbl,def.col,false,0),transparent:true,side:THREE.DoubleSide,depthTest:false});
+  const m = new THREE.Mesh(geo,mat);
+  m.renderOrder=50;
+  // Glow edge
+  const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:.65,depthTest:false}));
+  el.renderOrder=51; m.add(el);
+  m.userData={...def,edge:el,hoverStart:0,prog:0};
+  m.position.copy(pos);
+  btnGroup.add(m); arBtns.push(m); return m;
+}
 
-  BTN_DEFS.forEach((def, i) => {
-    const x = (i/(n-1) - 0.5) * totalW;
-    const geo = new THREE.PlaneGeometry(0.16, 0.09);
-    const mat = new THREE.MeshBasicMaterial({
-      map: makeBtnTex(def.sym,def.lbl,def.col,false,0),
-      transparent: true, side: THREE.DoubleSide
-    });
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(x, by, bz);  // WORLD position (not camera child)
-    mesh.renderOrder = 50;
-
-    // Glow border
-    const el = new THREE.LineSegments(
-      new THREE.EdgesGeometry(geo),
-      new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:0.6})
-    );
-    el.renderOrder = 51;
-    mesh.add(el);
-
-    // Vertical glow pole to ground (visual anchor)
-    const poleGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0, 0, 0),
-      new THREE.Vector3(0, -0.3, 0)
-    ]);
-    const poleMat = new THREE.LineBasicMaterial({color:def.col,transparent:true,opacity:0.25});
-    mesh.add(new THREE.Line(poleGeo, poleMat));
-
-    mesh.userData = {...def, edge:el};
-    scene.add(mesh);  // ADD TO SCENE (world space)
-    arButtons.push(mesh);
-    btnScreenPos.push({x:0, y:0, visible:false});
+function spawnButtons(centerWorld){
+  btnGroup.clear(); arBtns=[];
+  const n=BDEFS.length, sp=0.22, tw=(n-1)*sp;
+  BDEFS.forEach((def,i)=>{
+    const pos=centerWorld.clone();
+    pos.x += (i/(n-1)-0.5)*tw;
+    mkBtn(def,pos);
   });
+  saveBtnPos();
 }
 
-function refreshBtn(btn, active, prog) {
-  if(btn.material.map) btn.material.map.dispose();
-  btn.material.map = makeBtnTex(btn.userData.sym,btn.userData.lbl,btn.userData.col,active,prog);
-  btn.material.map.needsUpdate = true;
-  btn.userData.edge.material.opacity = active ? 0.95 : 0.6;
+function placeBtnsInFront(dist=2){
+  const center = new THREE.Vector3(0,0,-dist).applyQuaternion(camera.quaternion).add(camera.position);
+  center.y = camera.position.y - 0.25;
+  spawnButtons(center);
 }
 
-// Update buttons each frame: billboard + screen projection
-function updateButtons() {
-  let anyVisible = false;
-  let menuDir = null; // direction arrow if all off-screen
+function recall(){ placeBtnsInFront(1.8); setMode('MENÜ ÇAĞRILDI'); }
+window.recall=recall;
 
-  arButtons.forEach((btn, i) => {
-    // Billboard: always face camera
-    btn.lookAt(camera.position);
+function saveBtnPos(){
+  try{localStorage.setItem('tARbtn4',JSON.stringify(arBtns.map(b=>({x:+b.position.x.toFixed(3),y:+b.position.y.toFixed(3),z:+b.position.z.toFixed(3)}))));}catch(e){}
+}
+function loadBtnPos(){
+  try{const r=localStorage.getItem('tARbtn4');if(!r)return false;const d=JSON.parse(r);if(d.length!==BDEFS.length)return false;spawnButtons(new THREE.Vector3(0,0,-2));d.forEach((p,i)=>{if(arBtns[i])arBtns[i].position.set(p.x,p.y,p.z);});return true;}catch(e){return false;}
+}
 
-    // Project to screen
-    const wp  = btn.position.clone();
-    const ndc = wp.project(camera);
-    const sx  = (ndc.x * 0.5 + 0.5) * W;
-    const sy  = (-ndc.y * 0.5 + 0.5) * H;
-    const vis = ndc.z < 1 && sx > -80 && sx < W+80 && sy > -50 && sy < H+50;
+let hoverBtn=null, hoverT=0;
+const BTN_HOLD=1200;
 
-    btnScreenPos[i] = {x: sx, y: sy, visible: vis};
-    if(vis && ndc.z < 0.99) anyVisible = true;
-    if(!menuDir) menuDir = btn.position.clone();
+function refreshBtn(b,active,prog){
+  if(b.material.map) b.material.map.dispose();
+  b.material.map=bTex(b.userData.sym,b.userData.lbl,b.userData.col,active,prog);
+  b.material.map.needsUpdate=true;
+  b.userData.edge.material.opacity=active?.95:.65;
+}
+
+// Billboard + off-screen arrow
+function updateBtns(){
+  let anyVis=false;
+  arBtns.forEach(b=>{
+    b.lookAt(camera.position);
+    const p=b.position.clone().project(camera);
+    if(p.z<1&&Math.abs(p.x)<1.2&&Math.abs(p.y)<1.2) anyVis=true;
   });
-
-  // Off-screen arrow indicator
-  showMenuArrow(!anyVisible, menuDir);
+  const arr=document.getElementById('menu-arrow');
+  if(!anyVis&&arBtns.length>0){
+    const mid=arBtns[Math.floor(arBtns.length/2)];
+    const p=mid.position.clone().project(camera);
+    const ang=Math.atan2(-p.y,p.x);
+    const arrows=['→','↗','↑','↖','←','↙','↓','↘'];
+    const ai=Math.round(((ang*180/Math.PI+180)/45))%8;
+    arr.textContent=arrows[ai]+' MENÜ';
+    arr.style.opacity='1';
+    const ex=Math.cos(ang),ey=-Math.sin(ang);
+    arr.style.left=(W/2+ex*(W/2-58))+'px'; arr.style.top=(H/2+ey*(H/2-58))+'px';
+    arr.style.transform='translate(-50%,-50%)';
+  }else arr.style.opacity='0';
 }
 
-function showMenuArrow(show, worldPos) {
-  const el = document.getElementById('menu-arrow');
-  if (!show || !worldPos) { el.style.opacity = '0'; return; }
+// ─────────────────────────────────────────────────────────
+//  OBJECTS — world space
+// ─────────────────────────────────────────────────────────
+const GEOS={
+  cube:     ()=>new THREE.BoxGeometry(0.18,0.18,0.18),
+  sphere:   ()=>new THREE.SphereGeometry(0.11,22,22),
+  cylinder: ()=>new THREE.CylinderGeometry(0.07,0.07,0.22,22),
+  cone:     ()=>new THREE.ConeGeometry(0.1,0.24,22),
+  torus:    ()=>new THREE.TorusGeometry(0.09,0.035,14,30),
+};
+function spawnObj(type,pos,color,id){
+  const geo=(GEOS[type]||GEOS.cube)();
+  const col=color!==undefined?color:PALETTE[colorIdx];
+  const mat=new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.25,metalness:.4,roughness:.4,transparent:true,opacity:.88});
+  const m=new THREE.Mesh(geo,mat);
+  m.add(new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:.2})));
+  const ring=new THREE.Mesh(new THREE.RingGeometry(.14,.17,32),new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:.28}));
+  ring.rotation.x=-Math.PI/2; ring.position.y=-.13; m.add(ring);
+  m.position.copy(pos);
+  m.userData={type,color:col,id:id||(Date.now()+Math.random()),ring};
+  modelGroup.add(m); modelObjects.push(m);
+  updCnt(); saveSc(); return m;
+}
+function destroyObj(o){
+  if(!o)return; modelGroup.remove(o);
+  const i=modelObjects.indexOf(o); if(i>-1)modelObjects.splice(i,1);
+  if(selectedObj===o){selectedObj=null;updSel(null);}
+  updCnt(); saveSc();
+}
+function highlight(o,on){if(!o)return;o.material.emissiveIntensity=on?.72:.25;if(o.userData.ring)o.userData.ring.material.opacity=on?.7:.28;}
 
-  // Project direction to screen edge
-  const ndc = worldPos.clone().project(camera);
-  const angle = Math.atan2(-ndc.y, ndc.x);
-  const deg   = (angle * 180 / Math.PI);
-  // Arrow symbol based on direction
-  const arrows = ['→','↗','↑','↖','←','↙','↓','↘','→'];
-  const idx = Math.round(((deg + 180) / 45)) % 8;
-  el.textContent = arrows[idx] + ' MENÜ';
-  el.style.opacity = '1';
-  // Position at screen edge
-  const ex = Math.cos(angle), ey = -Math.sin(angle);
-  el.style.left = (W/2 + ex * (W/2 - 60)) + 'px';
-  el.style.top  = (H/2 + ey * (H/2 - 60)) + 'px';
-  el.style.transform = 'translate(-50%,-50%)';
+// ─────────────────────────────────────────────────────────
+//  PERSISTENCE
+// ─────────────────────────────────────────────────────────
+function saveSc(){try{localStorage.setItem('tARv5',JSON.stringify(modelObjects.map(o=>({t:o.userData.type,c:o.userData.color,id:o.userData.id,px:+o.position.x.toFixed(4),py:+o.position.y.toFixed(4),pz:+o.position.z.toFixed(4),rx:+o.rotation.x.toFixed(4),ry:+o.rotation.y.toFixed(4),rz:+o.rotation.z.toFixed(4),sx:+o.scale.x.toFixed(4),sy:+o.scale.y.toFixed(4),sz:+o.scale.z.toFixed(4)}))));}catch(e){}}
+function loadSc(){try{const r=localStorage.getItem('tARv5');if(!r)return;JSON.parse(r).forEach(d=>{const o=spawnObj(d.t,new THREE.Vector3(d.px,d.py,d.pz),d.c,d.id);o.rotation.set(d.rx,d.ry,d.rz);o.scale.set(d.sx,d.sy,d.sz);});}catch(e){}}
+
+// ─────────────────────────────────────────────────────────
+//  TOUCH / POINTER — raycast for 3D button hit
+// ─────────────────────────────────────────────────────────
+function getActiveCamera(){
+  // In WebXR, camera is updated by XR system; use same camera variable
+  return camera;
 }
 
-// Move menu buttons to be in front of current camera direction
-function recallMenu() {
-  const n = arButtons.length, sp = 0.22, totalW = (n-1) * sp;
-  // Direction 1.8m in front of camera
-  const fwd = new THREE.Vector3(0, 0, -1.8).applyQuaternion(camera.quaternion);
-  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
-  const up    = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
-
-  arButtons.forEach((btn, i) => {
-    const t = (i/(n-1) - 0.5) * totalW;
-    btn.position.copy(fwd)
-      .addScaledVector(right, t)
-      .addScaledVector(up, 0.05)
-      .add(camera.position);
-  });
-  setMode('MENÜ ÇAĞRILDI');
-  saveBtnPositions();
-}
-window.recallMenu = recallMenu;
-
-function saveBtnPositions() {
-  try {
-    localStorage.setItem('tuncerARbtn', JSON.stringify(
-      arButtons.map(b=>({x:+b.position.x.toFixed(3),y:+b.position.y.toFixed(3),z:+b.position.z.toFixed(3)}))
-    ));
-  } catch(e) {}
-}
-function loadBtnPositions() {
-  try {
-    const raw = localStorage.getItem('tuncerARbtn');
-    if (!raw) return;
-    JSON.parse(raw).forEach((p,i)=>{
-      if(arButtons[i]) arButtons[i].position.set(p.x,p.y,p.z);
-    });
-  } catch(e) {}
+function setupPointer(){
+  // Listen on BODY so WebXR dom-overlay touches are caught too
+  document.body.addEventListener('pointerdown', onPD, {passive:false});
+  document.body.addEventListener('pointermove', onPM, {passive:true});
+  document.body.addEventListener('pointerup',   onPU, {passive:true});
 }
 
-// ═══════════════════════════════════════════════════════════
-//  TOUCH EVENTS — tap screen where button appears
-// ═══════════════════════════════════════════════════════════
-document.getElementById('c3d').addEventListener('pointerdown', e => {
+function ndcFromEvent(e){
+  const r = document.getElementById('c').getBoundingClientRect();
+  return {x:((e.clientX-r.left)/r.width)*2-1, y:-((e.clientY-r.top)/r.height)*2+1};
+}
+
+function onPD(e){
+  // Ignore bar/overlay clicks
+  if(e.target.closest('#bar')||e.target.closest('#overlay')) return;
   e.preventDefault();
-  const rect = e.target.getBoundingClientRect();
-  const tx = e.clientX - rect.left;
-  const ty = e.clientY - rect.top;
+  pStart={x:e.clientX,y:e.clientY}; pointerMoved=false;
 
-  // Check buttons
-  let hit = null, hitD = Infinity;
-  arButtons.forEach((btn, i) => {
-    if (!btnScreenPos[i].visible) return;
-    const d = Math.hypot(tx - btnScreenPos[i].x, ty - btnScreenPos[i].y);
-    if (d < 75 && d < hitD) { hitD = d; hit = btn; }
-  });
-  if (hit) {
-    activateButton(hit.userData.id);
-    refreshBtn(hit, true, 1);
-    setTimeout(()=>refreshBtn(hit, false, 0), 350);
-    return;
-  }
+  const ndc = ndcFromEvent(e);
+  const cam = getActiveCamera();
+  raycaster.setFromCamera(ndc, cam);
 
-  // Check objects (select nearest to tap)
-  const ndcX = (tx/W)*2-1, ndcY = -(ty/H)*2+1;
-  const ray = new THREE.Raycaster();
-  ray.setFromCamera({x:ndcX,y:ndcY}, camera);
-  const hits = ray.intersectObjects(modelGroup.children, true);
-  if (hits.length > 0) {
-    // Find the top-level model object
-    let obj = hits[0].object;
-    while (obj.parent && obj.parent !== modelGroup) obj = obj.parent;
-    if (modelObjects.includes(obj)) {
-      if (selectedObj) highlight(selectedObj, false);
-      selectedObj = obj; highlight(selectedObj, true); updateSelInfo(selectedObj);
-      setMode('DOKUNULDU: ' + obj.userData.type.toUpperCase());
+  // 1) Hit AR buttons first (world-space raycast)
+  const bhits = raycaster.intersectObjects(btnGroup.children, true);
+  if(bhits.length>0){
+    let btn=bhits[0].object;
+    while(btn.parent&&btn.parent!==btnGroup) btn=btn.parent;
+    if(arBtns.includes(btn)){
+      doBtn(btn.userData.id);
+      refreshBtn(btn,true,1); setTimeout(()=>refreshBtn(btn,false,0),350);
+      return;
     }
   }
-}, {passive:false});
 
-// ═══════════════════════════════════════════════════════════
-//  GESTURE DETECTION
-// ═══════════════════════════════════════════════════════════
-function extended(lms,tip,pip){return lms[tip].y < lms[pip].y - 0.025;}
-function pinchDist(lms){const dx=lms[4].x-lms[8].x,dy=lms[4].y-lms[8].y;return Math.sqrt(dx*dx+dy*dy);}
-function detectGesture(lms){
-  const pd=pinchDist(lms);
-  const idx=extended(lms,8,6), mid=extended(lms,12,10), rng=extended(lms,16,14), pnk=extended(lms,20,18);
-  if(pd<0.06) return 'PINCH';
-  if(lms[4].y>lms[0].y+0.06&&!idx&&!mid&&!rng&&!pnk) return 'THUMBS_DOWN';
-  if(idx&&mid&&!rng&&!pnk) return 'PEACE';
-  if(!idx&&!mid&&!rng&&!pnk) return 'FIST';
-  if(idx&&!mid&&!rng&&!pnk) return 'POINT';
-  if(idx&&mid&&rng&&pnk) return 'OPEN';
-  return 'NONE';
-}
-
-// ═══════════════════════════════════════════════════════════
-//  OBJECT FACTORY  — all in WORLD SPACE
-// ═══════════════════════════════════════════════════════════
-const GEOS={
-  cube:     ()=>new THREE.BoxGeometry(0.27,0.27,0.27),
-  sphere:   ()=>new THREE.SphereGeometry(0.155,22,22),
-  cylinder: ()=>new THREE.CylinderGeometry(0.1,0.1,0.3,22),
-  cone:     ()=>new THREE.ConeGeometry(0.14,0.32,22),
-  torus:    ()=>new THREE.TorusGeometry(0.13,0.05,14,30),
-};
-function spawnObject(type, pos, color, id) {
-  const geo = (GEOS[type]||GEOS.cube)();
-  const col = (color !== undefined) ? color : PALETTE[colorIdx];
-  const mat = new THREE.MeshStandardMaterial({
-    color:col, emissive:col, emissiveIntensity:0.22,
-    metalness:0.45, roughness:0.38, transparent:true, opacity:0.87
-  });
-  const mesh = new THREE.Mesh(geo, mat);
-
-  // Wireframe overlay
-  mesh.add(new THREE.Mesh(geo.clone(),
-    new THREE.MeshBasicMaterial({color:col,wireframe:true,transparent:true,opacity:0.22})));
-
-  // Orbit ring
-  const ring = new THREE.Mesh(
-    new THREE.RingGeometry(0.21,0.245,36),
-    new THREE.MeshBasicMaterial({color:col,side:THREE.DoubleSide,transparent:true,opacity:0.3})
-  );
-  ring.rotation.x = -Math.PI/2; ring.position.y = -0.19; mesh.add(ring);
-
-  // Ground shadow dot
-  const sd = new THREE.Mesh(
-    new THREE.CircleGeometry(0.12, 20),
-    new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:0.15,side:THREE.DoubleSide})
-  );
-  sd.rotation.x = -Math.PI/2; sd.position.y = -0.25; mesh.add(sd);
-
-  mesh.position.copy(pos);
-  mesh.userData = {type, color:col, id:id||(Date.now()+Math.random()), ring};
-  modelGroup.add(mesh); modelObjects.push(mesh);
-  updateCount(); saveScene(); return mesh;
-}
-function destroyObject(obj){
-  modelGroup.remove(obj);
-  const i=modelObjects.indexOf(obj); if(i>-1) modelObjects.splice(i,1);
-  if(selectedObj===obj){selectedObj=null;updateSelInfo(null);}
-  updateCount(); saveScene();
-}
-function clearAll(){
-  [...modelObjects].forEach(o=>modelGroup.remove(o));
-  modelObjects=[]; selectedObj=null; updateSelInfo(null); updateCount(); saveScene();
-}
-window.clearAll = clearAll;
-function nearestObj(p,max=0.5){let best=null,bd=max;modelObjects.forEach(o=>{const d=p.distanceTo(o.position);if(d<bd){bd=d;best=o;}});return best;}
-function highlight(obj,on){if(!obj)return;obj.material.emissiveIntensity=on?0.7:0.22;if(obj.userData.ring)obj.userData.ring.material.opacity=on?0.75:0.3;}
-
-// ═══════════════════════════════════════════════════════════
-//  PERSISTENCE
-// ═══════════════════════════════════════════════════════════
-function saveScene(){
-  try{
-    localStorage.setItem('tuncerARv3', JSON.stringify(
-      modelObjects.map(o=>({
-        t:o.userData.type, c:o.userData.color, id:o.userData.id,
-        px:+o.position.x.toFixed(4), py:+o.position.y.toFixed(4), pz:+o.position.z.toFixed(4),
-        rx:+o.rotation.x.toFixed(4), ry:+o.rotation.y.toFixed(4), rz:+o.rotation.z.toFixed(4),
-        sx:+o.scale.x.toFixed(4),    sy:+o.scale.y.toFixed(4),    sz:+o.scale.z.toFixed(4),
-      }))
-    ));
-  }catch(e){}
-}
-function loadScene(){
-  try{
-    const raw=localStorage.getItem('tuncerARv3'); if(!raw) return;
-    JSON.parse(raw).forEach(d=>{
-      const o=spawnObject(d.t, new THREE.Vector3(d.px,d.py,d.pz), d.c, d.id);
-      o.rotation.set(d.rx,d.ry,d.rz); o.scale.set(d.sx,d.sy,d.sz);
-    });
-  }catch(e){}
-}
-
-// ═══════════════════════════════════════════════════════════
-//  BUTTON ACTIVATION
-// ═══════════════════════════════════════════════════════════
-function activateButton(id){
-  if(['cube','sphere','cylinder','cone','torus'].includes(id)){addShape=id;setMode('EKLE: '+id.toUpperCase());}
-  else if(id==='delete'){if(selectedObj){destroyObject(selectedObj);setMode('SİLİNDİ');}else setMode('ÖNCE NESNE SEÇ');}
-  else if(id==='clear'){clearAll();setMode('SAHNE TEMİZLENDİ');}
-}
-
-// ═══════════════════════════════════════════════════════════
-//  UI
-// ═══════════════════════════════════════════════════════════
-function setMode(t){document.getElementById('mode-label').textContent='◈ '+t;}
-function setGesture(t){document.getElementById('gesture-label').textContent=t;}
-function updateCount(){document.getElementById('obj-count').textContent='NESNE: '+modelObjects.length;}
-function updateSelInfo(obj){const el=document.getElementById('sel-info');if(obj){el.textContent='▶ '+obj.userData.type.toUpperCase()+' SEÇİLİ';el.style.opacity='1';}else el.style.opacity='0';}
-function updateSwatch(){const h='#'+PALETTE[colorIdx].toString(16).padStart(6,'0');const s=document.getElementById('color-swatch');s.style.background=h;s.style.boxShadow='0 0 8px '+h;}
-
-// ═══════════════════════════════════════════════════════════
-//  HAND PROCESSING
-// ═══════════════════════════════════════════════════════════
-function processHands(results){
-  hideHand(0); hideHand(1);
-  if(!results.multiHandLandmarks||results.multiHandLandmarks.length===0){
-    gestureL=gestureR='NONE'; setGesture('EL GÖSTERİN...');
-    document.getElementById('hand-status').textContent='◌ EL YOK';
-    if(selectedObj){highlight(selectedObj,false);selectedObj=null;updateSelInfo(null);}
-    twoActive=false; return;
-  }
-  const hands=results.multiHandLandmarks, sides=results.multiHandedness;
-  document.getElementById('hand-status').textContent='◉ '+hands.length+' EL';
-
-  let leftLms=null, rightLms=null;
-  sides.forEach((s,i)=>{if(s.label==='Right')leftLms=hands[i];else rightLms=hands[i];});
-  hands.forEach((lms,hi)=>updHandViz(lms,hi));
-  if(leftLms)  gestureL=detectGesture(leftLms); else gestureL='NONE';
-  if(rightLms) gestureR=detectGesture(rightLms); else gestureR='NONE';
-
-  const activeLms = rightLms||leftLms;
-  const activeG   = rightLms ? gestureR : gestureL;
-
-  const GMAP={PINCH:'🤏PİNÇ',FIST:'✊YUMRUK',OPEN:'🖐AÇIK',POINT:'☞İŞARET',PEACE:'✌PEACE',THUMBS_DOWN:'👎SİL',NONE:'—'};
-  const lt = gestureL!=='NONE' ? 'SOL:'+(GMAP[gestureL]||gestureL)+' ' : '';
-  const rt = gestureR!=='NONE' ? 'SAĞ:'+(GMAP[gestureR]||gestureR) : '';
-  setGesture((lt+rt)||'—');
-
-  // ── GESTURE BUTTON HOVER (point + hold) ──
-  if(activeLms){
-    const tipNDC = lm2ndc(activeLms[8]);
-    let closest=null, closestD=Infinity;
-    arButtons.forEach((btn,i)=>{
-      if(!btnScreenPos[i].visible) return;
-      const wp=new THREE.Vector3(); btn.getWorldPosition(wp);
-      const ndc=wp.project(camera);
-      const d=Math.hypot(tipNDC.x-ndc.x, tipNDC.y-ndc.y);
-      if(d<0.16&&d<closestD){closestD=d;closest=btn;}
-    });
-    if(closest){
-      if(closest!==hoverBtn){if(hoverBtn)refreshBtn(hoverBtn,false,0);hoverBtn=closest;hoverStart=Date.now();}
-      const prog=Math.min((Date.now()-hoverStart)/BTN_HOLD,1);
-      refreshBtn(hoverBtn,true,prog);
-      if(prog>=1){activateButton(hoverBtn.userData.id);hoverStart=Date.now();}
-    }else{if(hoverBtn){refreshBtn(hoverBtn,false,0);hoverBtn=null;}}
-  }
-
-  // ── TWO-HAND: scale + rotate ──
-  if(leftLms&&rightLms&&selectedObj){
-    const lp=lm2w(leftLms[8]), rp=lm2w(rightLms[8]);
-    const curD=lp.distanceTo(rp);
-    const lG=detectGesture(leftLms), rG=detectGesture(rightLms);
-    if((lG==='PINCH'||lG==='FIST')&&(rG==='PINCH'||rG==='FIST')){
-      if(!twoActive){
-        twoActive=true; twoStartDist=curD; twoStartScale.copy(selectedObj.scale);
-        twoStartAngle=Math.atan2(rp.x-lp.x,rp.z-lp.z); twoStartRotY=selectedObj.rotation.y;
-      }else{
-        if(twoStartDist>0.01)
-          selectedObj.scale.copy(twoStartScale.clone().multiplyScalar(THREE.MathUtils.clamp(curD/twoStartDist,0.1,8)));
-        selectedObj.rotation.y=twoStartRotY+(Math.atan2(rp.x-lp.x,rp.z-lp.z)-twoStartAngle);
-        setMode('ÖLÇEK:'+selectedObj.scale.x.toFixed(2)+' ROT:'+THREE.MathUtils.radToDeg(selectedObj.rotation.y).toFixed(0)+'°');
-        saveScene();
-      }
+  // 2) Hit model objects
+  const ohits = raycaster.intersectObjects(modelGroup.children, true);
+  if(ohits.length>0){
+    let o=ohits[0].object;
+    while(o.parent&&o.parent!==modelGroup) o=o.parent;
+    if(modelObjects.includes(o)){
+      if(selectedObj&&selectedObj!==o) highlight(selectedObj,false);
+      selectedObj=o; highlight(o,true); updSel(o);
+      dragObj=o; dragDepth=o.position.clone().project(cam).z;
+      setMode('SEÇİLDİ: '+o.userData.type.toUpperCase());
       return;
-    }else twoActive=false;
-  }else twoActive=false;
+    }
+  }
 
-  // ── SINGLE HAND ──
-  if(!activeLms) return;
-  const now=Date.now();
-  const iPt=lm2w(activeLms[8]), tPt=lm2w(activeLms[4]);
-  const pinchPos=new THREE.Vector3().lerpVectors(iPt,tPt,0.5);
+  // 3) No hit — prepare for potential place
+  dragObj=null;
+}
 
-  switch(activeG){
-    case 'PINCH':
-      if(now>gestureCooldown){
-        if(selectedObj){
-          selectedObj.position.copy(pinchPos); setMode('TAŞINIYOR'); saveScene();
-        }else{
-          const near=nearestObj(pinchPos,0.5);
-          if(near){selectedObj=near;highlight(near,true);updateSelInfo(near);setMode('TUTULDU: '+near.userData.type.toUpperCase());}
-          else{spawnObject(addShape,pinchPos.clone());setMode('EKLENDİ: '+addShape.toUpperCase());gestureCooldown=now+900;}
-        }
-      }
-      break;
-    case 'FIST':
-      if(selectedObj){selectedObj.position.copy(pinchPos);setMode('SÜRÜKLENIYOR');saveScene();}
-      else if(now>gestureCooldown){
-        const near=nearestObj(pinchPos,0.5);
-        if(near){selectedObj=near;highlight(near,true);updateSelInfo(near);gestureCooldown=now+300;}
-      }
-      break;
-    case 'OPEN':
-      if(now>gestureCooldown&&selectedObj){
-        highlight(selectedObj,false);selectedObj=null;updateSelInfo(null);setMode('BIRAKTI');
-        gestureCooldown=now+300; twoActive=false;
-      }
-      break;
-    case 'PEACE':
-      if(now>gestureCooldown){
-        colorIdx=(colorIdx+1)%PALETTE.length; updateSwatch();
-        if(selectedObj){
-          const nc=PALETTE[colorIdx];
-          selectedObj.material.color.setHex(nc);
-          selectedObj.material.emissive.setHex(nc);
-          selectedObj.userData.color=nc; saveScene();
-        }
-        setMode('RENK: #'+PALETTE[colorIdx].toString(16).padStart(6,'0').toUpperCase());
-        gestureCooldown=now+700;
-      }
-      break;
-    case 'THUMBS_DOWN':
-      if(now>gestureCooldown){
-        const t=selectedObj||nearestObj(pinchPos,0.6);
-        if(t){destroyObject(t);setMode('SİLİNDİ');}
-        gestureCooldown=now+900;
-      }
-      break;
-    case 'POINT':
-      if(!hoverBtn) setMode('BUTONA BAK + TUTAN (1.4s)');
-      break;
+function onPM(e){
+  if(!dragObj) return;
+  const dx=e.clientX-pStart.x, dy=e.clientY-pStart.y;
+  if(Math.hypot(dx,dy)>8) pointerMoved=true;
+  if(pointerMoved){
+    const ndc=ndcFromEvent(e);
+    const v=new THREE.Vector3(ndc.x,ndc.y,dragDepth).unproject(getActiveCamera());
+    dragObj.position.copy(v); setMode('TAŞINIYOR'); saveSc();
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-//  DEVICE ORIENTATION  — rotates camera so world stays fixed
-// ═══════════════════════════════════════════════════════════
-const _Q1 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5));
+function onPU(e){
+  if(e.target.closest('#bar')||e.target.closest('#overlay')) return;
+  if(dragObj){dragObj=null;saveSc();}
+  if(!pointerMoved){
+    // Tap on empty = place object
+    if(mode==='webxr'&&window.reticle&&window.reticle.visible){
+      const pos=new THREE.Vector3().setFromMatrixPosition(window.reticle.matrix);
+      spawnObj(addShape,pos);
+      setMode('EKLENDİ: '+addShape.toUpperCase());
+    } else if(mode==='gyro'){
+      const ndc=ndcFromEvent(e);
+      const cam=getActiveCamera();
+      // Place on a plane 2m in front of camera
+      const fwd=new THREE.Vector3(0,0,-2).applyQuaternion(cam.quaternion).add(cam.position);
+      const plN=new THREE.Vector3(0,0,1).applyQuaternion(cam.quaternion);
+      raycaster.setFromCamera(ndc,cam);
+      const t=plN.dot(fwd.clone().sub(cam.position))/plN.dot(raycaster.ray.direction);
+      if(t>0){
+        const pos=cam.position.clone().add(raycaster.ray.direction.clone().multiplyScalar(t));
+        spawnObj(addShape,pos);
+        setMode('EKLENDİ: '+addShape.toUpperCase());
+      }
+    }
+  }
+}
 
-function onOrientation(e) {
-  if (!orientationActive) return;
-  const {alpha, beta, gamma} = e;
-  if (alpha == null) return;
-  const oa = screen.orientation?.angle ?? (window.orientation || 0);
-  const eu = new THREE.Euler();
-  if (oa === 0 || oa === 180)
-    eu.set(THREE.MathUtils.degToRad(beta), THREE.MathUtils.degToRad(alpha), THREE.MathUtils.degToRad(-gamma), 'YXZ');
-  else
-    eu.set(THREE.MathUtils.degToRad(gamma), THREE.MathUtils.degToRad(alpha), THREE.MathUtils.degToRad(beta), 'YXZ');
+// XR select event = air tap
+function onXRSelect(){
+  if(window.reticle&&window.reticle.visible){
+    const pos=new THREE.Vector3().setFromMatrixPosition(window.reticle.matrix);
+    spawnObj(addShape,pos); setMode('EKLENDİ: '+addShape.toUpperCase());
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+//  BUTTON ACTIONS
+// ─────────────────────────────────────────────────────────
+function doBtn(id){
+  if(['cube','sphere','cylinder','cone','torus'].includes(id)) pick(id);
+  else if(id==='color'){colorIdx=(colorIdx+1)%PALETTE.length;updSwatch();if(selectedObj){const nc=PALETTE[colorIdx];selectedObj.material.color.setHex(nc);selectedObj.material.emissive.setHex(nc);selectedObj.userData.color=nc;saveSc();}}
+  else if(id==='delete'){if(selectedObj){destroyObj(selectedObj);setMode('SİLİNDİ');}else setMode('ÖNCE NESNE SEÇ');}
+}
+function pick(s){
+  addShape=s;
+  document.querySelectorAll('.bb').forEach(b=>b.classList.remove('on'));
+  const el=document.getElementById('bb-'+s); if(el) el.classList.add('on');
+  setMode('EKLE: '+s.toUpperCase());
+}
+function delSel(){ if(selectedObj){destroyObj(selectedObj);setMode('SİLİNDİ');}else setMode('ÖNCE NESNE SEÇ');}
+window.pick=pick; window.delSel=delSel;
+
+// ─────────────────────────────────────────────────────────
+//  MEDIAPIPE (front cam — gestures)
+// ─────────────────────────────────────────────────────────
+function extd(lms,t,p){return lms[t].y<lms[p].y-.025;}
+function pDist(lms){const dx=lms[4].x-lms[8].x,dy=lms[4].y-lms[8].y;return Math.sqrt(dx*dx+dy*dy);}
+function detG(lms){
+  const pd=pDist(lms),idx=extd(lms,8,6),mid=extd(lms,12,10),rng=extd(lms,16,14),pnk=extd(lms,20,18);
+  if(pd<.06)return'PINCH';
+  if(lms[4].y>lms[0].y+.06&&!idx&&!mid&&!rng&&!pnk)return'THUMBS_DOWN';
+  if(idx&&mid&&!rng&&!pnk)return'PEACE';
+  if(!idx&&!mid&&!rng&&!pnk)return'FIST';
+  if(idx&&!mid&&!rng&&!pnk)return'POINT';
+  if(idx&&mid&&rng&&pnk)return'OPEN';
+  return'NONE';
+}
+
+// Gesture hover on AR buttons (point + hold)
+function gestureButtonCheck(lms){
+  if(!lms) return;
+  const tip=lms[8]; // index fingertip in image space (0-1)
+  const ndcTip={x:tip.x*2-1, y:-(tip.y*2-1)};
+  raycaster.setFromCamera(ndcTip, getActiveCamera());
+  const hits=raycaster.intersectObjects(btnGroup.children,true);
+  if(hits.length>0){
+    let btn=hits[0].object;
+    while(btn.parent&&btn.parent!==btnGroup) btn=btn.parent;
+    if(arBtns.includes(btn)){
+      if(btn!==hoverBtn){if(hoverBtn)refreshBtn(hoverBtn,false,0);hoverBtn=btn;hoverT=Date.now();}
+      const prog=Math.min((Date.now()-hoverT)/BTN_HOLD,1);
+      refreshBtn(hoverBtn,true,prog);
+      if(prog>=1){doBtn(hoverBtn.userData.id);hoverT=Date.now();}
+      return;
+    }
+  }
+  if(hoverBtn){refreshBtn(hoverBtn,false,0);hoverBtn=null;}
+}
+
+function onHands(res){
+  if(!res.multiHandLandmarks||res.multiHandLandmarks.length===0){
+    gestureL=gestureR='NONE'; document.getElementById('hs').textContent=''; return;
+  }
+  const hands=res.multiHandLandmarks, sides=res.multiHandedness;
+  document.getElementById('hs').textContent='◉ '+hands.length+' EL';
+  let lLms=null,rLms=null;
+  sides.forEach((s,i)=>{if(s.label==='Right')lLms=hands[i];else rLms=hands[i];});
+  if(lLms)gestureL=detG(lLms);else gestureL='NONE';
+  if(rLms)gestureR=detG(rLms);else gestureR='NONE';
+  const activeG=rLms?gestureR:gestureL;
+  const activeLms=rLms||lLms;
+
+  // Gesture-based button hover
+  gestureButtonCheck(activeLms);
+
+  // Two-hand scale+rotate
+  const now=Date.now();
+  if(lLms&&rLms&&selectedObj){
+    const cam=getActiveCamera();
+    const fovH=THREE.MathUtils.degToRad(cam.fov/2);
+    const ph=2*Math.tan(fovH),pw=ph*(W/H);
+    const l2=(lm)=>{const v=new THREE.Vector3((lm.x-.5)*pw*2,(0.5-lm.y)*ph*2,-2);v.applyMatrix4(cam.matrixWorld);return v;};
+    const lp=l2(lLms[8]),rp=l2(rLms[8]);
+    const cd=lp.distanceTo(rp);
+    const lG=detG(lLms),rG=detG(rLms);
+    if((lG==='PINCH'||lG==='FIST')&&(rG==='PINCH'||rG==='FIST')){
+      if(!twoAct){twoAct=true;twoD0=cd;twoS0.copy(selectedObj.scale);twoA0=Math.atan2(rp.x-lp.x,rp.z-lp.z);twoR0=selectedObj.rotation.y;}
+      else{if(twoD0>0.01)selectedObj.scale.copy(twoS0.clone().multiplyScalar(THREE.MathUtils.clamp(cd/twoD0,.1,8)));selectedObj.rotation.y=twoR0+(Math.atan2(rp.x-lp.x,rp.z-lp.z)-twoA0);saveSc();}
+      return;
+    }else twoAct=false;
+  }else twoAct=false;
+
+  if(activeG==='THUMBS_DOWN'&&now>gCool&&selectedObj){destroyObj(selectedObj);gCool=now+900;}
+  if(activeG==='PEACE'&&now>gCool){colorIdx=(colorIdx+1)%PALETTE.length;updSwatch();if(selectedObj){const nc=PALETTE[colorIdx];selectedObj.material.color.setHex(nc);selectedObj.material.emissive.setHex(nc);selectedObj.userData.color=nc;saveSc();}gCool=now+700;}
+  if(activeG==='OPEN'&&selectedObj&&now>gCool){highlight(selectedObj,false);selectedObj=null;updSel(null);gCool=now+300;}
+}
+
+async function startMP(){
+  try{
+    const hands=new Hands({locateFile:f=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`});
+    hands.setOptions({maxNumHands:2,modelComplexity:0,minDetectionConfidence:.65,minTrackingConfidence:.5});
+    hands.onResults(onHands);
+    vidFront=document.createElement('video');
+    vidFront.setAttribute('playsinline','');vidFront.muted=true;
+    vidFront.style.cssText='position:fixed;width:1px;height:1px;opacity:0;z-index:-1;';
+    document.body.appendChild(vidFront);
+    const fs=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}});
+    vidFront.srcObject=fs;
+    await new Promise(r=>{vidFront.onloadedmetadata=r;}); await vidFront.play();
+    async function sf(){if(vidFront.readyState>=2&&!vidFront.paused){try{await hands.send({image:vidFront});}catch(e){}}requestAnimationFrame(sf);}
+    sf();
+  }catch(e){console.warn('MP:',e);}
+}
+
+// ─────────────────────────────────────────────────────────
+//  DEVICE ORIENTATION (gyro fallback)
+// ─────────────────────────────────────────────────────────
+const _Q1=new THREE.Quaternion(-Math.sqrt(.5),0,0,Math.sqrt(.5));
+let gyroOn=false;
+function onOrient(e){
+  if(!gyroOn)return;
+  const{alpha,beta,gamma}=e; if(alpha==null)return;
+  const oa=screen.orientation?.angle??(window.orientation||0);
+  const eu=new THREE.Euler();
+  if(oa===0||oa===180)eu.set(THREE.MathUtils.degToRad(beta),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(-gamma),'YXZ');
+  else eu.set(THREE.MathUtils.degToRad(gamma),THREE.MathUtils.degToRad(alpha),THREE.MathUtils.degToRad(beta),'YXZ');
   camera.quaternion.setFromEuler(eu).multiply(_Q1);
 }
+async function startGyroSensor(){
+  if(typeof DeviceOrientationEvent?.requestPermission==='function'){
+    try{const p=await DeviceOrientationEvent.requestPermission();if(p==='granted'){window.addEventListener('deviceorientation',onOrient);gyroOn=true;}}catch(e){}
+  }else{window.addEventListener('deviceorientation',onOrient);gyroOn=true;}
+}
 
-async function startOrientation() {
-  if (typeof DeviceOrientationEvent === 'undefined') return;
-  if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-    try {
-      const p = await DeviceOrientationEvent.requestPermission();
-      if (p === 'granted') { window.addEventListener('deviceorientation', onOrientation); orientationActive = true; }
-    } catch(e) { console.warn('Orient perm:', e); }
-  } else {
-    window.addEventListener('deviceorientation', onOrientation);
-    orientationActive = true;
+// Fallback bg canvas (cover-crop video)
+function drawBg(){
+  if(!bgCtx||!vidBack||vidBack.readyState<2)return;
+  const vw=vidBack.videoWidth||640,vh=vidBack.videoHeight||480;
+  const s=Math.max(W/vw,H/vh);
+  bgCtx.clearRect(0,0,W,H);
+  bgCtx.drawImage(vidBack,(W-vw*s)/2,(H-vh*s)/2,vw*s,vh*s);
+}
+
+// ─────────────────────────────────────────────────────────
+//  WEBXR AR
+// ─────────────────────────────────────────────────────────
+async function startWebXR(){
+  showLoad('WebXR KONTROL EDİLİYOR...');
+  try{
+    if(!navigator.xr) throw new Error('WebXR API bulunamadı');
+    const sup=await navigator.xr.isSessionSupported('immersive-ar');
+    if(!sup) throw new Error('immersive-ar desteklenmiyor (ARCore gerekli)');
+
+    showLoad('AR OTURUMU BAŞLATILIYOR...');
+    renderer.xr.enabled=true;
+
+    xrSess=await navigator.xr.requestSession('immersive-ar',{
+      requiredFeatures:['hit-test'],
+      optionalFeatures:['dom-overlay','local-floor'],
+      domOverlay:{root:document.getElementById('ui')}
+    });
+    await renderer.xr.setSession(xrSess);
+
+    xrSess.addEventListener('end',()=>{xrSess=null;htSrc=null;htReq=false;renderer.xr.enabled=false;mode='none';});
+    xrSess.addEventListener('select',onXRSelect);
+
+    renderer.setAnimationLoop(xrLoop);
+    mode='webxr';
+    hideOverlay();
+    document.getElementById('reticle-lbl').style.display='block';
+    setMode('YÜZEYE TAP → NESNE YERLEŞTİR');
+    setSts('WebXR AR — Yüzeyi tara');
+
+    // Buttons + scene
+    if(!loadBtnPos()) placeBtnsInFront(1.8);
+    loadSc(); startMP();
+
+  }catch(e){
+    console.error(e);
+    showErr('WebXR başarısız:\n'+e.message+'\n\nARCore kurulu değil veya desteklenmiyor.\nJiroskop modunu dene ↓');
   }
 }
+window.startWebXR=startWebXR;
 
-// ═══════════════════════════════════════════════════════════
-//  VR TOGGLE
-// ═══════════════════════════════════════════════════════════
-function toggleVR() {
-  vrMode = !vrMode;
-  document.getElementById('vr-div').style.display = vrMode ? 'block' : 'none';
-  // Update VR button text
-  const btns = document.querySelectorAll('.ui-btn');
-  btns[1].textContent = vrMode ? '◈ NORMAL' : '◈ VR MOD';
-  setMode(vrMode ? 'VR — CARDBOARD HAZIR' : 'NORMAL MOD');
-}
-window.toggleVR = toggleVR;
-
-// ═══════════════════════════════════════════════════════════
-//  START BUTTON (requests permissions)
-// ═══════════════════════════════════════════════════════════
-async function startApp() {
-  document.getElementById('start-overlay').style.display = 'none';
-  document.getElementById('loading').style.display = 'flex';
-
-  // Start orientation FIRST (needs user gesture)
-  await startOrientation();
-
-  // Then init MediaPipe
-  try {
-    await initMediaPipe();
-  } catch(err) {
-    console.error(err);
-    document.getElementById('load-msg').textContent = '⚠ KAMERA HATASI — HTTPS GEREKLİ';
-    document.getElementById('load-msg').style.color = '#ff4455';
-    setTimeout(()=>document.getElementById('loading').style.display='none', 3000);
-  }
-}
-window.startApp = startApp;
-
-// ═══════════════════════════════════════════════════════════
-//  MEDIAPIPE — back camera
-// ═══════════════════════════════════════════════════════════
-async function initMediaPipe() {
-  const msg = document.getElementById('load-msg');
-  msg.textContent = 'MEDİAPİPE YÜKLENİYOR...';
-
-  const hands = new Hands({
-    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${f}`
-  });
-  hands.setOptions({maxNumHands:2, modelComplexity:1, minDetectionConfidence:0.7, minTrackingConfidence:0.5});
-  hands.onResults(processHands);
-
-  msg.textContent = 'ARKA KAMERA BAŞLATILIYOR...';
-  const stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} }
-  });
-  video.srcObject = stream;
-  await new Promise(r => { video.onloadedmetadata = r; });
-  await video.play();
-
-  msg.textContent = 'EL ALGILAMA...';
-  async function sendFrame() {
-    if (video.readyState >= 2 && !video.paused) {
-      try { await hands.send({image: video}); } catch(e) {}
+// WebXR render loop
+function xrLoop(time,frame){
+  const t=(time||0)/1000;
+  if(frame){
+    const sess=renderer.xr.getSession();
+    const rs=renderer.xr.getReferenceSpace();
+    if(!htReq&&sess){
+      htReq=true;
+      sess.requestReferenceSpace('viewer').then(vs=>{
+        sess.requestHitTestSource({space:vs}).then(src=>{htSrc=src;});
+      });
     }
-    requestAnimationFrame(sendFrame);
+    if(htSrc&&rs){
+      const hits=frame.getHitTestResults(htSrc);
+      if(hits.length>0){
+        window.reticle.visible=true;
+        window.reticle.matrix.fromArray(hits[0].getPose(rs).transform.matrix);
+        window.reticle.updateMatrixWorld(true);
+      }else window.reticle.visible=false;
+    }
   }
-  sendFrame();
-
-  document.getElementById('loading').style.display = 'none';
-  setMode('TARAMA MODU — EL GÖSTERİN');
-  document.getElementById('hand-status').textContent = '◉ HAZIR';
+  animObjs(t); updateBtns();
+  renderer.render(scene,camera);
 }
 
-// ═══════════════════════════════════════════════════════════
-//  ANIMATION LOOP
-// ═══════════════════════════════════════════════════════════
-const clock = new THREE.Clock();
+// ─────────────────────────────────────────────────────────
+//  GYRO FALLBACK MODE
+// ─────────────────────────────────────────────────────────
+async function startGyro(){
+  showLoad('JIROSKOP + KAMERA BAŞLATILIYOR...');
+  await startGyroSensor();
+  try{
+    vidBack=document.createElement('video');
+    vidBack.setAttribute('playsinline','');vidBack.muted=true;
+    vidBack.style.cssText='position:fixed;width:1px;height:1px;opacity:0;z-index:-1;';
+    document.body.appendChild(vidBack);
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}}});
+    vidBack.srcObject=s;
+    await new Promise(r=>{vidBack.onloadedmetadata=r;}); await vidBack.play();
+    bgEl.style.display='block';
+    bgEl.width=W; bgEl.height=H;
+    bgCtx=bgEl.getContext('2d');
+  }catch(e){console.warn('BackCam:',e);}
 
-function animate() {
-  requestAnimationFrame(animate);
-  const t = clock.getElapsedTime();
+  renderer.setAnimationLoop(gyroLoop);
+  mode='gyro';
+  hideOverlay();
+  setMode('JIROSKOP — TAP: NESNE YERLEŞTİR (2m önde)');
+  setSts('Kameraya bak + TAP = nesne yerleştir');
 
-  // Video background
-  drawBackground();
+  if(!loadBtnPos()) placeBtnsInFront(1.8);
+  loadSc(); startMP();
+}
+window.startGyro=startGyro;
 
-  // Float objects + spin ring
-  modelObjects.forEach((obj, i) => {
-    obj.position.y += Math.sin(t * 1.2 + i * 1.7) * 0.00025;
-    if (obj.userData.ring) obj.userData.ring.rotation.y = t * 0.45 + i;
-  });
-
-  // Billboard buttons + update screen projections
-  updateButtons();
-
-  // Render
+function gyroLoop(time){
+  const t=(time||0)/1000;
+  drawBg(); animObjs(t); updateBtns();
   renderer.clear();
-  if (vrMode) {
-    stereoCamera.update(camera);
-    const cw = renderer.domElement.width, ch = renderer.domElement.height;
-    renderer.setScissorTest(true);
-    renderer.setScissor(0,0,cw/2,ch);    renderer.setViewport(0,0,cw/2,ch);    renderer.render(scene, stereoCamera.cameraL);
-    renderer.setScissor(cw/2,0,cw/2,ch); renderer.setViewport(cw/2,0,cw/2,ch); renderer.render(scene, stereoCamera.cameraR);
-    renderer.setScissorTest(false);
-  } else {
-    renderer.setViewport(0,0,W,H);
-    renderer.render(scene, camera);
+  renderer.setViewport(0,0,W,H);
+  renderer.render(scene,camera);
+}
+
+// ─────────────────────────────────────────────────────────
+//  ANIMATION
+// ─────────────────────────────────────────────────────────
+function animObjs(t){
+  modelObjects.forEach((o,i)=>{
+    o.position.y+=Math.sin(t*1.2+i*1.7)*.00022;
+    if(o.userData.ring)o.userData.ring.rotation.y=t*.4+i;
+  });
+  // Reticle pulse
+  if(window.reticle&&window.reticle.visible){
+    const s=1+.12*Math.sin(t*4);
+    window.reticle.scale.set(s,s,s);
   }
 }
 
-// ═══════════════════════════════════════════════════════════
+// ─────────────────────────────────────────────────────────
+//  UI HELPERS
+// ─────────────────────────────────────────────────────────
+function setMode(t){document.getElementById('mode-lbl').textContent='◈ '+t;}
+function setSts(t){document.getElementById('status').textContent=t;}
+function updCnt(){document.getElementById('cnt').textContent='NESNE: '+modelObjects.length;}
+function updSel(o){const el=document.getElementById('sel');if(o){el.textContent='▶ '+o.userData.type.toUpperCase();el.style.opacity='1';}else el.style.opacity='0';}
+function updSwatch(){const h='#'+PALETTE[colorIdx].toString(16).padStart(6,'0');const s=document.getElementById('sw');s.style.background=h;s.style.boxShadow='0 0 8px '+h;}
+
+function showLoad(msg){
+  const ov=document.getElementById('overlay');
+  ov.querySelector('#btn-webxr').style.display='none';
+  ov.querySelector('#btn-gyro').style.display='none';
+  document.getElementById('lbar-w').style.display='block';
+  document.getElementById('load-msg').style.display='block';
+  document.getElementById('load-msg').textContent=msg;
+  document.getElementById('err-box').style.display='none';
+  ov.style.display='flex';
+}
+function hideOverlay(){document.getElementById('overlay').style.display='none';}
+function showErr(msg){
+  document.getElementById('lbar-w').style.display='none';
+  document.getElementById('load-msg').style.display='none';
+  const eb=document.getElementById('err-box');
+  eb.textContent=msg; eb.style.display='block';
+  document.getElementById('btn-gyro').style.display='block';
+  document.getElementById('btn-webxr').style.display='block';
+}
+
+// ─────────────────────────────────────────────────────────
 //  RESIZE
-// ═══════════════════════════════════════════════════════════
-window.addEventListener('resize', () => {
-  resizeAll();
-  if (renderer) { renderer.setSize(W,H); camera.aspect=W/H; camera.updateProjectionMatrix(); }
+// ─────────────────────────────────────────────────────────
+window.addEventListener('resize',()=>{
+  W=window.innerWidth;H=window.innerHeight;
+  const c=document.getElementById('c');c.width=W;c.height=H;
+  if(bgEl){bgEl.width=W;bgEl.height=H;}
+  if(renderer&&!renderer.xr.isPresenting){renderer.setSize(W,H);camera.aspect=W/H;camera.updateProjectionMatrix();}
 });
 
-// ═══════════════════════════════════════════════════════════
-//  MAIN
-// ═══════════════════════════════════════════════════════════
-function main() {
-  initThree();
-  initHandViz();
-  createARButtons();
-  loadBtnPositions(); // restore button positions if saved
-  loadScene();        // restore objects
-  animate();
-  updateSwatch();
+// ─────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────
+function init(){
+  initThree(); setupPointer(); updSwatch();
+  navigator.xr?.isSessionSupported('immersive-ar').then(s=>{
+    if(!s){ document.getElementById('btn-webxr').textContent='◈ AR BAŞLAT (ARCore Yok?)'; document.getElementById('btn-webxr').classList.add('disabled'); }
+  }).catch(()=>{});
 }
-main();
+init();
 </script>
 </body>
 </html>
