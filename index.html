@@ -39,29 +39,35 @@
             position: absolute;
             inset: 0;
             display: flex;
-            justify-content: center; /* Ekranları tam merkeze sıkıştırır */
-            align-items: center;
             z-index: 10;
             pointer-events: none;
-            overflow: hidden;
         }
 
-        /* Sol Lens: Solu kavisli (şişkin), sağı düz (aradaki boşluğu kapatmak için) */
+        /* Siyah gölgelerin birbirini örtmesini (siyah ekran hatasını) engelleyen kapsayıcılar */
+        .lens-container {
+            flex: 1;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; /* KRİTİK DÜZELTME: Gölgelerin taşmasını önler */
+            position: relative;
+        }
+
+        /* Sol Lens: Solu kavisli (şişkin), sağı düz */
         .lens-cutout-left {
-            width: 48vw; 
-            height: 94vh;
+            width: 96%; 
+            height: 94%;
             border-radius: 18% 2% 2% 18% / 50% 3% 3% 50%;
-            box-shadow: 0 0 0 4000px #000, inset 0 0 15px rgba(0,0,0,0.8);
-            margin-right: 2px; /* Ekranlar arası milimetrik boşluk */
+            box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
         }
 
         /* Sağ Lens: Sağı kavisli (şişkin), solu düz */
         .lens-cutout-right {
-            width: 48vw;
-            height: 94vh;
+            width: 96%;
+            height: 94%;
             border-radius: 2% 18% 18% 2% / 3% 50% 50% 3%;
-            box-shadow: 0 0 0 4000px #000, inset 0 0 15px rgba(0,0,0,0.8);
-            margin-left: 2px;
+            box-shadow: 0 0 0 2000px #000, inset 0 0 15px rgba(0,0,0,0.8);
         }
 
         /* Fotoğraftaki alt merkezde bulunan beyaz hizalama çizgisi */
@@ -105,10 +111,10 @@
     <div id="welcome-screen" class="fixed inset-0 bg-slate-950 text-white z-50 flex flex-col items-center justify-center p-6 text-center">
         <div class="max-w-md bg-slate-900 border border-slate-800 p-8 rounded-2xl shadow-2xl">
             <h1 class="text-3xl font-extrabold mb-4 bg-gradient-to-r from-yellow-600 to-amber-700 bg-clip-text text-transparent">
-                VR Cardboard Son Sürüm
+                VR Cardboard (Görüntü Fix)
             </h1>
             <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-                Boşluklar azaltıldı, <strong>fotoğraftaki D-şekilli kavisli lens</strong> birebir uygulandı. Eller neon olmaktan çıkarılıp <strong>normal tahta (ahşap)</strong> görünüme getirildi.
+                Siyah ekran hatası giderildi! <strong>Fotoğraftaki D-şekilli kavisli lens</strong> ve <strong>ahşap eller</strong> artık net bir şekilde görünecek.
             </p>
             
             <button id="start-btn" class="w-full bg-gradient-to-r from-yellow-700 to-amber-800 hover:from-yellow-600 hover:to-amber-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition transform active:scale-95 duration-200">
@@ -130,10 +136,17 @@
     <!-- 3D Dünyanın Çizildiği Alan -->
     <div id="canvas-container"></div>
 
-    <!-- BİREBİR FOTOĞRAF ODAKLI LENS MASKESİ -->
+    <!-- BİREBİR FOTOĞRAF ODAKLI LENS MASKESİ (Düzeltilmiş) -->
     <div id="vr-mask-overlay">
-        <div class="lens-cutout-left"></div>
-        <div class="lens-cutout-right"></div>
+        <!-- Sol Lens Kutusu -->
+        <div class="lens-container">
+            <div class="lens-cutout-left"></div>
+        </div>
+        <!-- Sağ Lens Kutusu -->
+        <div class="lens-container">
+            <div class="lens-cutout-right"></div>
+        </div>
+        <!-- Orta Beyaz Çizgi -->
         <div class="cardboard-marker"></div>
     </div>
 
@@ -253,10 +266,9 @@
 
         // --- NORMAL TAHTA EL TASARIMI ---
         function setupWoodenHand(handGroup, handBones, handKnuckles) {
-            // Neon / Hologram iptal. Normal, mat, katı ahşap (tahta) dokusu eklendi.
             const woodMaterial = new THREE.MeshStandardMaterial({
                 color: 0x8b5a2b, // Klasik ahşap/tahta rengi
-                roughness: 0.9,  // Parlamayan mat yüzey
+                roughness: 0.9,  
                 metalness: 0.05
             });
 
@@ -273,7 +285,7 @@
                 handKnuckles.push(sphere);
             }
 
-            // Kopmayan, sağlam bağlı Kemik Silindirleri
+            // Kopmayan Kemik Silindirleri
             const boneGeo = new THREE.CylinderGeometry(thickness * 0.85, thickness * 0.85, 1, 12);
             boneGeo.rotateX(Math.PI / 2);
 
@@ -367,7 +379,7 @@
             cameraGroup.add(leftHandGroup);
             cameraGroup.add(rightHandGroup);
 
-            // Yeni Tahta (Ahşap) Elleri Kur
+            // Tahta (Ahşap) Elleri Kur
             setupWoodenHand(leftHandGroup, handBonesLeft, handKnucklesLeft);
             setupWoodenHand(rightHandGroup, handBonesRight, handKnucklesRight);
 
@@ -608,13 +620,11 @@
 
             renderer.clear();
             
-            // Sol Göz
             renderer.setViewport(0, 0, w / 2, h);
             renderer.setScissor(0, 0, w / 2, h);
             renderer.setScissorTest(true);
             renderer.render(scene, cameraLeft);
 
-            // Sağ Göz
             renderer.setViewport(w / 2, 0, w / 2, h);
             renderer.setScissor(w / 2, 0, w / 2, h);
             renderer.setScissorTest(true);
@@ -623,3 +633,4 @@
     </script>
 </body>
 </html>
+
