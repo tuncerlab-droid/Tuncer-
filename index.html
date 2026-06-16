@@ -3,15 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortex AI - Klasik Arayüz</title>
+    <title>Cortex AI - Pro</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap');
-        
+    <style id="custom-styles">
+        :root {
+            --primary-color: #3b82f6;
+            --border-radius: 12px;
+            --font-family: 'Inter', sans-serif;
+            --bg-opacity: 1;
+            --blur-amount: 0px;
+        }
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-family);
             background-color: #f4f4f5;
             color: #18181b;
             transition: all 0.3s ease;
@@ -22,21 +28,21 @@
             color: #f4f4f5;
         }
 
-        .chat-container {
-            max-width: 900px;
-            margin: 0 auto;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+        .glass-effect {
+            background-color: rgba(255, 255, 255, var(--bg-opacity)) !important;
+            backdrop-filter: blur(var(--blur-amount));
+        }
+
+        .dark-mode .glass-effect {
+            background-color: rgba(24, 24, 27, var(--bg-opacity)) !important;
         }
 
         .message-bubble {
             max-width: 85%;
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: var(--border-radius);
             margin-bottom: 16px;
             line-height: 1.6;
-            font-size: 0.95rem;
             animation: fadeIn 0.3s ease;
         }
 
@@ -46,31 +52,26 @@
         }
 
         .user-message {
-            background-color: #3b82f6;
+            background-color: var(--primary-color);
             color: white;
             align-self: flex-end;
-            border-bottom-right-radius: 2px;
         }
 
         .ai-message {
             background-color: #ffffff;
-            color: #18181b;
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            align-self: flex-start;
         }
 
         .dark-mode .ai-message {
             background-color: #18181b;
-            color: #f4f4f5;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
         }
 
         .sidebar {
-            width: 300px;
+            width: 320px;
             height: 100vh;
             position: fixed;
-            right: -300px;
+            right: -320px;
             top: 0;
             background: white;
             box-shadow: -2px 0 10px rgba(0,0,0,0.1);
@@ -80,212 +81,163 @@
             overflow-y: auto;
         }
 
-        .dark-mode .sidebar {
-            background: #18181b;
-            color: white;
-        }
+        .dark-mode .sidebar { background: #18181b; color: white; }
+        .sidebar.active { right: 0; }
 
-        .sidebar.active {
-            right: 0;
+        .chat-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-
-        .input-area {
-            background: white;
-            border-top: 1px solid #e4e4e7;
-            padding: 20px;
-        }
-
-        .dark-mode .input-area {
-            background: #09090b;
-            border-color: #27272a;
-        }
-
-        code {
-            font-family: 'Fira Code', monospace;
-            background: #f1f1f1;
-            padding: 2px 4px;
-            border-radius: 4px;
-        }
-
-        .dark-mode code {
-            background: #27272a;
-        }
-
-        .search-badge {
-            display: inline-flex;
-            align-items: center;
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            margin-right: 8px;
-            margin-bottom: 8px;
-        }
-
-        .youtube-badge { background: #fee2e2; color: #dc2626; }
-        .wiki-badge { background: #f3f4f6; color: #374151; }
     </style>
 </head>
 <body class="dark-mode">
 
     <div class="chat-container">
         <!-- Header -->
-        <header class="flex items-center justify-between p-4 border-b border-zinc-800">
+        <header class="flex items-center justify-between p-4 border-b border-zinc-800 glass-effect">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-brain text-white"></i>
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <i class="fas fa-brain text-white text-xl"></i>
                 </div>
-                <h1 class="font-semibold text-lg">Cortex AI</h1>
+                <div>
+                    <h1 class="font-bold text-lg leading-none">Cortex AI</h1>
+                    <span class="text-[10px] text-zinc-500 uppercase tracking-widest">Premium Interface</span>
+                </div>
             </div>
             <div class="flex items-center gap-4">
                 <div id="g_id_onload"
-                     data-client_id="1086108306224-oaaajektfvmauf2gbrm7dkn5nn8seb1m.apps.googleusercontent.com"
+                     data-client_id="397912151341-5q7naq4rb30e5nk7g4omhpp9klr5qi2d.apps.googleusercontent.com"
                      data-callback="handleCredentialResponse"
                      data-auto_prompt="false">
                 </div>
-                <div class="g_id_signin" data-type="standard"></div>
-                <button onclick="toggleSidebar()" class="p-2 hover:bg-zinc-800 rounded-full transition">
-                    <i class="fas fa-cog"></i>
+                <div class="g_id_signin" data-type="icon" data-shape="circle"></div>
+                <button onclick="toggleSidebar()" class="w-10 h-10 flex items-center justify-center hover:bg-zinc-800 rounded-full transition">
+                    <i class="fas fa-sliders-h"></i>
                 </button>
             </div>
         </header>
 
         <!-- Chat History -->
-        <main id="chat-history" class="flex-1 overflow-y-auto p-4 flex flex-col">
-            <div class="ai-message message-bubble">
-                Merhaba! Ben TuncerLab & Cortex tarafından geliştirilen AI asistanıyım. Size nasıl yardımcı olabilirim?
-                <div class="mt-2 text-xs opacity-50">Sistem hazır.</div>
+        <main id="chat-history" class="flex-1 overflow-y-auto p-6 flex flex-col space-y-2">
+            <div class="ai-message message-bubble glass-effect">
+                Merhaba! Ben Cortex. Görünümümü dilediğin gibi kişiselleştirebilirsin. Sana nasıl yardımcı olabilirim?
             </div>
         </main>
 
         <!-- Input Area -->
-        <div class="input-area">
+        <div class="p-4 glass-effect border-t border-zinc-800">
             <div class="flex gap-2 mb-3">
-                <button id="yt-toggle" onclick="toggleSearch('youtube')" class="search-badge bg-zinc-800 text-zinc-400 hover:bg-red-900/20 hover:text-red-500 transition-colors">
-                    <i class="fab fa-youtube mr-1"></i> YouTube Ara
+                <button id="yt-toggle" onclick="toggleSearch('youtube')" class="px-3 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 hover:text-red-500 transition-all">
+                    <i class="fab fa-youtube mr-1"></i> YouTube
                 </button>
-                <button id="wiki-toggle" onclick="toggleSearch('wikipedia')" class="search-badge bg-zinc-800 text-zinc-400 hover:bg-blue-900/20 hover:text-blue-500 transition-colors">
-                    <i class="fab fa-wikipedia-w mr-1"></i> Wikipedia Ara
+                <button id="wiki-toggle" onclick="toggleSearch('wikipedia')" class="px-3 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 hover:text-blue-500 transition-all">
+                    <i class="fab fa-wikipedia-w mr-1"></i> Wikipedia
                 </button>
             </div>
             <div class="relative flex items-center">
-                <textarea id="user-input" rows="1" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none" placeholder="Mesajınızı yazın..."></textarea>
-                <button onclick="sendMessage()" class="absolute right-3 p-2 text-blue-500 hover:text-blue-400">
-                    <i class="fas fa-paper-plane"></i>
+                <textarea id="user-input" rows="1" class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-5 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none transition-all" placeholder="Mesajınızı buraya bırakın..."></textarea>
+                <button onclick="sendMessage()" class="absolute right-4 p-2 text-blue-500 hover:scale-110 transition-transform">
+                    <i class="fas fa-paper-plane text-lg"></i>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Sidebar / Settings -->
+    <!-- Sidebar / Customization -->
     <div id="sidebar" class="sidebar">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-xl font-bold">Ayarlar</h2>
-            <button onclick="toggleSidebar()" class="text-zinc-500 hover:text-white">
-                <i class="fas fa-times"></i>
-            </button>
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-xl font-bold">Kişiselleştirme</h2>
+            <button onclick="toggleSidebar()" class="text-zinc-500 hover:text-white"><i class="fas fa-times"></i></button>
         </div>
 
-        <div class="space-y-6">
-            <!-- Appearance -->
+        <div class="space-y-8">
+            <!-- Theme Color -->
             <div>
-                <label class="block text-sm font-medium mb-2">Görünüm</label>
-                <button onclick="toggleDarkMode()" class="w-full py-2 px-4 bg-zinc-800 rounded-lg flex items-center justify-between">
-                    <span>Koyu Tema</span>
-                    <i class="fas fa-moon"></i>
-                </button>
-            </div>
-
-            <!-- Model Settings -->
-            <div class="space-y-4">
-                <h3 class="text-sm font-semibold uppercase text-zinc-500">Model Parametreleri</h3>
-                
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-xs">Temperature</label>
-                        <span id="val-temp" class="text-xs text-blue-500">0.7</span>
-                    </div>
-                    <input type="range" min="0.1" max="2.0" step="0.1" value="0.7" class="w-full accent-blue-600" oninput="updateSetting('temp', this.value)">
-                </div>
-
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-xs">Top P</label>
-                        <span id="val-top_p" class="text-xs text-blue-500">0.95</span>
-                    </div>
-                    <input type="range" min="0.0" max="1.0" step="0.05" value="0.95" class="w-full accent-blue-600" oninput="updateSetting('top_p', this.value)">
-                </div>
-
-                <div>
-                    <div class="flex justify-between mb-1">
-                        <label class="text-xs">Max Tokens</label>
-                        <span id="val-max_tokens" class="text-xs text-blue-500">256</span>
-                    </div>
-                    <input type="range" min="1" max="2048" step="1" value="256" class="w-full accent-blue-600" oninput="updateSetting('max_tokens', this.value)">
+                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Ana Renk</label>
+                <div class="flex gap-3">
+                    <button onclick="updateStyle('--primary-color', '#3b82f6')" class="w-8 h-8 rounded-full bg-blue-500 ring-2 ring-offset-2 ring-transparent focus:ring-blue-500"></button>
+                    <button onclick="updateStyle('--primary-color', '#8b5cf6')" class="w-8 h-8 rounded-full bg-purple-500"></button>
+                    <button onclick="updateStyle('--primary-color', '#10b981')" class="w-8 h-8 rounded-full bg-emerald-500"></button>
+                    <button onclick="updateStyle('--primary-color', '#f43f5e')" class="w-8 h-8 rounded-full bg-rose-500"></button>
+                    <input type="color" onchange="updateStyle('--primary-color', this.value)" class="w-8 h-8 rounded-full overflow-hidden border-none bg-transparent cursor-pointer">
                 </div>
             </div>
 
-            <!-- System Prompt -->
+            <!-- Corner Radius -->
             <div>
-                <label class="block text-sm font-medium mb-2">Sistem Rolü</label>
-                <textarea id="system-prompt" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" rows="3" placeholder="Örn: Sen yardımcı bir asistansın..."></textarea>
+                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Köşe Yumuşatma</label>
+                <select onchange="updateStyle('--border-radius', this.value)" class="w-full bg-zinc-100 dark:bg-zinc-800 p-2 rounded-lg text-sm">
+                    <option value="4px">Keskin (4px)</option>
+                    <option value="12px" selected>Standart (12px)</option>
+                    <option value="24px">Oval (24px)</option>
+                    <option value="40px">Tam Yuvarlak (40px)</option>
+                </select>
             </div>
 
-            <button onclick="resetChat()" class="w-full py-2 px-4 bg-red-600/20 text-red-500 rounded-lg hover:bg-red-600/30 transition">
-                Konuşmayı Sıfırla
+            <!-- Glass Effect -->
+            <div>
+                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Cam Efekti (Glassmorphism)</label>
+                <div class="space-y-4">
+                    <div>
+                        <span class="text-[10px] text-zinc-400">Saydamlık</span>
+                        <input type="range" min="0.1" max="1" step="0.1" value="1" oninput="updateStyle('--bg-opacity', this.value)" class="w-full accent-blue-500">
+                    </div>
+                    <div>
+                        <span class="text-[10px] text-zinc-400">Bulanıklık (Blur)</span>
+                        <input type="range" min="0" max="20" step="1" value="0" oninput="updateStyle('--blur-amount', this.value + 'px')" class="w-full accent-blue-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Font Selection -->
+            <div>
+                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Yazı Tipi</label>
+                <select onchange="updateStyle('--font-family', this.value)" class="w-full bg-zinc-100 dark:bg-zinc-800 p-2 rounded-lg text-sm">
+                    <option value="'Inter', sans-serif">Modern (Inter)</option>
+                    <option value="'Fira Code', monospace">Yazılımcı (Fira Code)</option>
+                    <option value="'Georgia', serif">Klasik (Serif)</option>
+                    <option value="'System-ui', sans-serif">Sistem</option>
+                </select>
+            </div>
+
+            <!-- Dark/Light Mode -->
+            <button onclick="toggleDarkMode()" class="w-full py-3 px-4 bg-zinc-800 rounded-xl flex items-center justify-between hover:bg-zinc-700 transition">
+                <span class="text-sm">Gece/Gündüz Modu</span>
+                <i class="fas fa-circle-half-stroke"></i>
             </button>
         </div>
     </div>
 
     <script>
-        let settings = {
-            temp: 0.7,
-            top_p: 0.95,
-            max_tokens: 256,
-            system: ""
-        };
+        let activeSearches = { youtube: false, wikipedia: false };
 
-        let activeSearches = {
-            youtube: false,
-            wikipedia: false
-        };
-
-        // Google Auth
         function handleCredentialResponse(response) {
-            console.log("Encoded JWT ID token: " + response.credential);
             const payload = JSON.parse(atob(response.credential.split('.')[1]));
-            addMessage('ai', `Hoş geldin, ${payload.name}! Başarıyla giriş yaptın.`);
+            addMessage('ai', `Hoş geldin ${payload.name}! Kişiselleştirilmiş deneyimin hazır.`);
         }
 
-        function toggleSidebar() {
-            document.getElementById('sidebar').classList.toggle('active');
-        }
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
+        function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
 
-        function toggleDarkMode() {
-            document.body.classList.toggle('dark-mode');
-        }
-
-        function updateSetting(key, val) {
-            settings[key] = val;
-            document.getElementById(`val-${key}`).innerText = val;
+        function updateStyle(property, value) {
+            document.documentElement.style.setProperty(property, value);
         }
 
         function toggleSearch(type) {
             activeSearches[type] = !activeSearches[type];
             const btn = document.getElementById(`${type === 'youtube' ? 'yt' : 'wiki'}-toggle`);
-            if (activeSearches[type]) {
-                btn.classList.remove('bg-zinc-800', 'text-zinc-400');
-                btn.classList.add(type === 'youtube' ? 'bg-red-600' : 'bg-blue-600', 'text-white');
-            } else {
-                btn.classList.add('bg-zinc-800', 'text-zinc-400');
-                btn.classList.remove('bg-red-600', 'bg-blue-600', 'text-white');
-            }
+            btn.classList.toggle('bg-zinc-800');
+            btn.classList.toggle(type === 'youtube' ? 'bg-red-600/20' : 'bg-blue-600/20');
+            btn.classList.toggle(type === 'youtube' ? 'text-red-500' : 'text-blue-500');
         }
 
         function addMessage(role, text) {
             const history = document.getElementById('chat-history');
             const div = document.createElement('div');
-            div.className = `${role === 'user' ? 'user-message' : 'ai-message'} message-bubble`;
+            div.className = `${role === 'user' ? 'user-message' : 'ai-message'} message-bubble glass-effect shadow-sm`;
             div.innerText = text;
             history.appendChild(div);
             history.scrollTop = history.scrollHeight;
@@ -299,21 +251,25 @@
             addMessage('user', text);
             input.value = '';
             
-            // Mesaj gönderildi, backend entegrasyonu için hazır.
-            console.log("Mesaj gönderildi:", text, "Ayarlar:", settings, "Aramalar:", activeSearches);
+            try {
+                // Flask Backend'e istek atıyoruz
+                const response = await fetch('http://localhost:5000/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: text,
+                        searches: activeSearches
+                    })
+                });
+                const data = await response.json();
+                addMessage('ai', data.response);
+            } catch (error) {
+                console.error("Hata:", error);
+                addMessage('ai', "Hata: Backend sunucusuna bağlanılamadı. Lütfen app.py dosyasının çalıştığından emin olun.");
+            }
         }
 
-        function resetChat() {
-            document.getElementById('chat-history').innerHTML = `
-                <div class="ai-message message-bubble">
-                    Konuşma sıfırlandı. Yeni bir başlangıç yapabiliriz!
-                </div>
-            `;
-            toggleSidebar();
-        }
-
-        // Enter tuşu ile gönderme
-        document.getElementById('user-input').addEventListener('keypress', function (e) {
+        document.getElementById('user-input').addEventListener('keypress', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
