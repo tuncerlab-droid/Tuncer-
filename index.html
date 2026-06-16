@@ -2,563 +2,323 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>MuJoCo VR Modu</title>
-    <!-- MediaPipe Hands (telefon kamerası el takibi için) -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cortex AI - Klasik Arayüz</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body, html {
-            background: #000; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
-            width: 100vw; height: 100vh;
-            color: white; font-family: sans-serif;
-            touch-action: none; /* Ekranın kaymasını önle */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fira+Code:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f4f5;
+            color: #18181b;
+            transition: all 0.3s ease;
         }
 
-        /* ── GİRİŞ MENÜSÜ ── */
-        #menu {
-            background: #1a1a2e; padding: 28px 24px;
-            border-radius: 14px; text-align: center;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.7);
-            max-width: 340px; width: 90%; z-index: 10;
-            border: 1px solid #333;
-        }
-        #menu h2 { font-size: 22px; margin-bottom: 16px; letter-spacing: 1px; }
-        #menu input {
-            padding: 12px; margin: 8px 0; width: 100%;
-            border-radius: 8px; border: 1px solid #555;
-            background: #111; color: white; font-size: 16px;
-        }
-        #menu button {
-            padding: 13px; margin-top: 10px; width: 100%;
-            border-radius: 8px; border: none;
-            background: #4CAF50; color: white;
-            font-weight: bold; font-size: 16px; cursor: pointer;
-            transition: background 0.2s;
-        }
-        #menu button:hover { background: #43a047; }
-        #status { margin-top: 12px; font-size: 13px; color: #aaa; }
-
-        /* ── VR EKRANI ── */
-        #vr-screen {
-            display: none;
-            width: 100vw; height: 100vh;
-            object-fit: fill;
-            position: fixed; top: 0; left: 0;
+        .dark-mode {
+            background-color: #09090b;
+            color: #f4f4f5;
         }
 
-        /* ── HUD: KULLANICI LİSTESİ ── */
-        #hud {
-            display: none;
-            position: fixed; top: 0; left: 0; right: 0;
-            pointer-events: none; z-index: 20;
-            padding: 8px 10px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.45), transparent);
-        }
-        #user-list {
-            display: flex; gap: 7px; flex-wrap: wrap;
-        }
-        .user-badge {
-            background: rgba(0,0,0,0.55);
-            border-radius: 14px; padding: 3px 10px;
-            font-size: 11px; font-weight: bold;
-            border: 2px solid transparent;
-            letter-spacing: 0.5px;
+        .chat-container {
+            max-width: 900px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* ── PUSH-TO-TALK BUTONU ── */
-        #ptt-btn {
-            display: none;
-            position: fixed; bottom: 34px;
-            left: 50%; transform: translateX(-50%);
-            width: 74px; height: 74px; border-radius: 50%;
-            background: rgba(30, 30, 30, 0.85);
-            border: 3px solid #666; font-size: 30px;
-            pointer-events: auto; z-index: 30;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            user-select: none; -webkit-user-select: none;
-            display: none; align-items: center; justify-content: center;
-        }
-        #ptt-btn.talking {
-            background: rgba(200, 30, 30, 0.92);
-            border-color: #ff4444;
-            box-shadow: 0 0 22px rgba(255, 60, 60, 0.75);
-            transform: translateX(-50%) scale(1.12);
-        }
-
-        /* ── MİK DURUM YAZISI ── */
-        #mic-status {
-            display: none;
-            position: fixed; bottom: 118px;
-            left: 50%; transform: translateX(-50%);
-            background: rgba(180, 30, 30, 0.88);
-            color: white; padding: 5px 14px;
-            border-radius: 20px; font-size: 12px;
-            font-weight: bold; z-index: 30;
-            pointer-events: none; white-space: nowrap;
-        }
-
-        /* ── DOKUNMA GÖSTERGELERİ ── */
-        #touch-hint {
-            display: none;
-            position: fixed; bottom: 120px; right: 12px;
-            font-size: 10px; color: rgba(255,255,255,0.45);
-            z-index: 25; pointer-events: none; text-align: right;
+        .message-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 16px;
             line-height: 1.6;
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background-color: #3b82f6;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .ai-message {
+            background-color: #ffffff;
+            color: #18181b;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .dark-mode .ai-message {
+            background-color: #18181b;
+            color: #f4f4f5;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .sidebar {
+            width: 300px;
+            height: 100vh;
+            position: fixed;
+            right: -300px;
+            top: 0;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s ease;
+            z-index: 50;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .dark-mode .sidebar {
+            background: #18181b;
+            color: white;
+        }
+
+        .sidebar.active {
+            right: 0;
+        }
+
+        .input-area {
+            background: white;
+            border-top: 1px solid #e4e4e7;
+            padding: 20px;
+        }
+
+        .dark-mode .input-area {
+            background: #09090b;
+            border-color: #27272a;
+        }
+
+        code {
+            font-family: 'Fira Code', monospace;
+            background: #f1f1f1;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+
+        .dark-mode code {
+            background: #27272a;
+        }
+
+        .search-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        .youtube-badge { background: #fee2e2; color: #dc2626; }
+        .wiki-badge { background: #f3f4f6; color: #374151; }
     </style>
 </head>
-<body>
+<body class="dark-mode">
 
-<!-- MediaPipe için gizli kamera beslemesi -->
-<video id="mp-video" playsinline muted style="
-    display:none; position:fixed; bottom:6px; right:6px;
-    width:80px; height:60px; border-radius:6px;
-    border:2px solid rgba(0,255,0,0.5); z-index:40;
-    object-fit:cover;
-"></video>
+    <div class="chat-container">
+        <!-- Header -->
+        <header class="flex items-center justify-between p-4 border-b border-zinc-800">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-brain text-white"></i>
+                </div>
+                <h1 class="font-semibold text-lg">Cortex AI</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="g_id_onload"
+                     data-client_id="1086108306224-oaaajektfvmauf2gbrm7dkn5nn8seb1m.apps.googleusercontent.com"
+                     data-callback="handleCredentialResponse"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin" data-type="standard"></div>
+                <button onclick="toggleSidebar()" class="p-2 hover:bg-zinc-800 rounded-full transition">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        </header>
 
-<!-- GİRİŞ MENÜSÜ -->
-<div id="menu">
-    <h2>🥽 VR Gözlük Modu</h2>
-    <input type="text" id="ip" value="192.168.10.22" placeholder="Sunucu IP Adresi">
-    <button onclick="startVR()">Bağlan ve Gözlüğe Tak</button>
-    <p id="status">Hazır.</p>
-</div>
+        <!-- Chat History -->
+        <main id="chat-history" class="flex-1 overflow-y-auto p-4 flex flex-col">
+            <div class="ai-message message-bubble">
+                Merhaba! Ben TuncerLab & Cortex tarafından geliştirilen AI asistanıyım. Size nasıl yardımcı olabilirim?
+                <div class="mt-2 text-xs opacity-50">Sistem hazır.</div>
+            </div>
+        </main>
 
-<!-- VR ÇIKTI -->
-<img id="vr-screen" src="" alt="">
+        <!-- Input Area -->
+        <div class="input-area">
+            <div class="flex gap-2 mb-3">
+                <button id="yt-toggle" onclick="toggleSearch('youtube')" class="search-badge bg-zinc-800 text-zinc-400 hover:bg-red-900/20 hover:text-red-500 transition-colors">
+                    <i class="fab fa-youtube mr-1"></i> YouTube Ara
+                </button>
+                <button id="wiki-toggle" onclick="toggleSearch('wikipedia')" class="search-badge bg-zinc-800 text-zinc-400 hover:bg-blue-900/20 hover:text-blue-500 transition-colors">
+                    <i class="fab fa-wikipedia-w mr-1"></i> Wikipedia Ara
+                </button>
+            </div>
+            <div class="relative flex items-center">
+                <textarea id="user-input" rows="1" class="w-full bg-zinc-900 border border-zinc-800 rounded-xl py-3 px-4 pr-12 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none" placeholder="Mesajınızı yazın..."></textarea>
+                <button onclick="sendMessage()" class="absolute right-3 p-2 text-blue-500 hover:text-blue-400">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
 
-<!-- HUD -->
-<div id="hud">
-    <div id="user-list"></div>
-</div>
+    <!-- Sidebar / Settings -->
+    <div id="sidebar" class="sidebar">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold">Ayarlar</h2>
+            <button onclick="toggleSidebar()" class="text-zinc-500 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
 
-<!-- Push-to-Talk butonu -->
-<button id="ptt-btn" title="Bas ve Konuş (Push-to-Talk)">🎤</button>
-<div id="mic-status">🔴 MİKROFON AÇIK</div>
+        <div class="space-y-6">
+            <!-- Appearance -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Görünüm</label>
+                <button onclick="toggleDarkMode()" class="w-full py-2 px-4 bg-zinc-800 rounded-lg flex items-center justify-between">
+                    <span>Koyu Tema</span>
+                    <i class="fas fa-moon"></i>
+                </button>
+            </div>
 
-<!-- Dokunma ipucu -->
-<div id="touch-hint">
-    1 parmak → iki el<br>
-    2 parmak → sol / sağ el
-</div>
+            <!-- Model Settings -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-semibold uppercase text-zinc-500">Model Parametreleri</h3>
+                
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-xs">Temperature</label>
+                        <span id="val-temp" class="text-xs text-blue-500">0.7</span>
+                    </div>
+                    <input type="range" min="0.1" max="2.0" step="0.1" value="0.7" class="w-full accent-blue-600" oninput="updateSetting('temp', this.value)">
+                </div>
 
-<script>
-// ============================================================
-// GLOBAL DEĞİŞKENLER
-// ============================================================
-let ws          = null;
-let offsetAlpha = null;
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-xs">Top P</label>
+                        <span id="val-top_p" class="text-xs text-blue-500">0.95</span>
+                    </div>
+                    <input type="range" min="0.0" max="1.0" step="0.05" value="0.95" class="w-full accent-blue-600" oninput="updateSetting('top_p', this.value)">
+                </div>
 
-// Sunucuya gönderilecek durum
-const state = {
-    w: false, a: false, s: false, d: false,
-    alpha: 0, beta: 0, gamma: 0,
-    lhand: [0.3, 0.6],   // normalleştirilmiş sol el konumu
-    rhand: [0.7, 0.6],   // normalleştirilmiş sağ el konumu
-};
+                <div>
+                    <div class="flex justify-between mb-1">
+                        <label class="text-xs">Max Tokens</label>
+                        <span id="val-max_tokens" class="text-xs text-blue-500">256</span>
+                    </div>
+                    <input type="range" min="1" max="2048" step="1" value="256" class="w-full accent-blue-600" oninput="updateSetting('max_tokens', this.value)">
+                </div>
+            </div>
 
-// ── SES SİSTEMİ ──
-let audioCtx      = null;
-let micStream     = null;
-let micSource     = null;
-let micProcessor  = null;
-let isTalking     = false;
+            <!-- System Prompt -->
+            <div>
+                <label class="block text-sm font-medium mb-2">Sistem Rolü</label>
+                <textarea id="system-prompt" class="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-sm" rows="3" placeholder="Örn: Sen yardımcı bir asistansın..."></textarea>
+            </div>
 
-// AUDIO_MARKER = 0xAA 0xBB (Python tarafıyla eşleşmeli)
-const AUDIO_MARKER_0 = 0xAA;
-const AUDIO_MARKER_1 = 0xBB;
+            <button onclick="resetChat()" class="w-full py-2 px-4 bg-red-600/20 text-red-500 rounded-lg hover:bg-red-600/30 transition">
+                Konuşmayı Sıfırla
+            </button>
+        </div>
+    </div>
 
-// PCM çalma kuyrugu
-const audioPlayQueue = [];
-let   isPlayingAudio = false;
-
-// ── KAMERA DURUMU (MediaPipe) ──
-let cameraActive = false;
-
-// ── KOŞAR GİBİ EL SALLAMA → İLERİ YÜRÜME TESPİTİ ──
-const SWING_FRAMES    = 12;    // Kaç frame geçmişe bakılacak
-const SWING_THRESHOLD = 0.07;  // Y ekseninde min sallanma mesafesi (0-1 arası)
-const lYHist = [];              // Sol el Y geçmişi
-const rYHist = [];              // Sağ el Y geçmişi
-
-function swingDetected() {
-    const check = (hist) =>
-        hist.length >= 5 &&
-        (Math.max(...hist) - Math.min(...hist)) > SWING_THRESHOLD;
-    // En az bir elin sallanması yeterli (VR'da bir el görünmeyebilir)
-    return check(lYHist) || check(rYHist);
-}
-
-// ============================================================
-// IP OTO-DOLDUR
-// ============================================================
-window.onload = () => {
-    const host = window.location.hostname;
-    if (host && host !== "localhost") {
-        document.getElementById('ip').value = host;
-    }
-};
-
-// ============================================================
-// VR BAĞLANTISI
-// ============================================================
-function startVR() {
-    const ip = document.getElementById('ip').value.trim();
-    document.getElementById('status').innerText = "Bağlanıyor...";
-
-    ws = new WebSocket("ws://" + ip + ":5005");
-    ws.binaryType = "arraybuffer";   // Binary mesajları ArrayBuffer olarak al
-
-    ws.onopen = () => {
-        // Menüyü gizle, VR ve HUD'u göster
-        document.getElementById('menu').style.display       = 'none';
-        document.getElementById('vr-screen').style.display  = 'block';
-        document.getElementById('hud').style.display        = 'block';
-        document.getElementById('touch-hint').style.display = 'block';
-
-        const pttBtn = document.getElementById('ptt-btn');
-        pttBtn.style.display     = 'flex';
-        pttBtn.style.alignItems  = 'center';
-        pttBtn.style.justifyContent = 'center';
-
-        // Tam ekran dene
-        try { document.documentElement.requestFullscreen(); } catch(_) {}
-
-        // Jiroskop izni (iOS için)
-        if (typeof DeviceOrientationEvent !== 'undefined' &&
-            typeof DeviceOrientationEvent.requestPermission === 'function') {
-            DeviceOrientationEvent.requestPermission().then(st => {
-                if (st === 'granted') window.addEventListener('deviceorientation', handleOrientation);
-            });
-        } else {
-            window.addEventListener('deviceorientation', handleOrientation);
-        }
-
-        // Ses bağlamını ilk etkileşimde başlat
-        initAudio();
-
-        // Telefon kamerasıyla MediaPipe el takibini başlat
-        initMediaPipe();
-    };
-
-    ws.onmessage = (e) => {
-        // ── BINARY: ses verisi ──
-        if (e.data instanceof ArrayBuffer) {
-            const bytes = new Uint8Array(e.data);
-            if (bytes.length > 2 &&
-                bytes[0] === AUDIO_MARKER_0 &&
-                bytes[1] === AUDIO_MARKER_1) {
-                // Marker'ı kaldır, PCM'i kuyruğa ekle
-                enqueuePCM(e.data.slice(2));
-            }
-            return;
-        }
-
-        // ── TEXT: JSON frame (görüntü + kullanıcı listesi) ──
-        if (typeof e.data === 'string') {
-            try {
-                const data = JSON.parse(e.data);
-                if (data.type === 'frame') {
-                    document.getElementById('vr-screen').src = data.img;
-                    updateUserList(data.users || []);
-                }
-            } catch (_) {
-                // Eski format desteği (düz base64)
-                if (e.data.startsWith("data:image")) {
-                    document.getElementById('vr-screen').src = e.data;
-                }
-            }
-        }
-    };
-
-    ws.onclose = () => {
-        document.getElementById('menu').style.display       = 'block';
-        document.getElementById('vr-screen').style.display  = 'none';
-        document.getElementById('hud').style.display        = 'none';
-        document.getElementById('ptt-btn').style.display    = 'none';
-        document.getElementById('touch-hint').style.display = 'none';
-        document.getElementById('status').innerText         = "Bağlantı koptu.";
-        stopMic();
-    };
-
-    ws.onerror = () => {
-        document.getElementById('status').innerText = "Bağlantı hatası! IP'yi kontrol edin.";
-    };
-}
-
-// ============================================================
-// KULLANICI LİSTESİ HUD
-// ============================================================
-function updateUserList(users) {
-    const list = document.getElementById('user-list');
-    list.innerHTML = '';
-
-    // Kendi badge'imiz (her zaman yeşil, Kullanıcı 0)
-    const selfBadge = document.createElement('div');
-    selfBadge.className     = 'user-badge';
-    selfBadge.style.borderColor = 'rgb(0,255,0)';
-    selfBadge.style.color       = 'rgb(0,255,0)';
-    selfBadge.textContent       = '👤 Sen';
-    list.appendChild(selfBadge);
-
-    // Uzak kullanıcılar
-    users.forEach(u => {
-        const [r, g, b] = u.color;
-        const badge = document.createElement('div');
-        badge.className     = 'user-badge';
-        badge.style.borderColor = `rgb(${r},${g},${b})`;
-        badge.style.color       = `rgb(${r},${g},${b})`;
-        badge.textContent       = `👤 #${u.id}`;
-        list.appendChild(badge);
-    });
-}
-
-// ============================================================
-// JİROSKOP (Kafa hareketi → kamera)
-// ============================================================
-function handleOrientation(e) {
-    if (e.alpha === null) return;
-    if (offsetAlpha === null) offsetAlpha = e.alpha;
-    let a = e.alpha - offsetAlpha;
-    if (a >  180) a -= 360;
-    if (a < -180) a += 360;
-    state.alpha = a;
-    state.beta  = e.beta;
-    state.gamma = e.gamma;
-}
-
-// ============================================================
-// TEL KAMERASI — MEDİAPİPE EL TAKİBİ
-// Her telefon kendi kamerasıyla ellerini takip eder.
-// Sonuçlar state.lhand / state.rhand'a yazılır → WebSocket ile sunucuya gider.
-// ============================================================
-function initMediaPipe() {
-    const video   = document.getElementById('mp-video');
-    const camHint = document.getElementById('touch-hint');
-
-    // Kütüphaneler CDN'den yüklü değilse sessizce çık (touch fallback devrede kalır)
-    if (typeof Hands === 'undefined' || typeof Camera === 'undefined') {
-        console.warn('📷 [MP] MediaPipe yüklenemedi, dokunma modu aktif.');
-        return;
-    }
-
-    const hands = new Hands({
-        locateFile: (file) =>
-            `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/${file}`
-    });
-
-    hands.setOptions({
-        maxNumHands:            2,
-        modelComplexity:        0,   // 0 = hafif model (telefon için)
-        minDetectionConfidence: 0.5,
-        minTrackingConfidence:  0.5,
-    });
-
-    hands.onResults((results) => {
-        let sawL = false, sawR = false;
-
-        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-                const lm    = results.multiHandLandmarks[i];
-                const label = results.multiHandedness[i].classification[0].label;
-                const palm  = lm[9];   // Orta parmak MCP = avuç içi merkezi
-
-                // Arka kamera → ayna yok → etiketler doğrudan doğru
-                if (label === 'Left') {
-                    state.lhand = [palm.x, palm.y];
-                    lYHist.push(palm.y);
-                    if (lYHist.length > SWING_FRAMES) lYHist.shift();
-                    sawL = true;
-                } else {
-                    state.rhand = [palm.x, palm.y];
-                    rYHist.push(palm.y);
-                    if (rYHist.length > SWING_FRAMES) rYHist.shift();
-                    sawR = true;
-                }
-            }
-        }
-
-        // El kaybolunca geçmişi yavaşça boşalt (sahte pozitif önler)
-        if (!sawL && lYHist.length > 0) lYHist.shift();
-        if (!sawR && rYHist.length > 0) rYHist.shift();
-
-        // Koşar gibi el sallama → W tuşu gibi ileri yürüme
-        state.w = swingDetected();
-    });
-
-    const mpCamera = new Camera(video, {
-        onFrame: async () => {
-            await hands.send({ image: video });
-        },
-        width:      320,
-        height:     240,
-        facingMode: 'environment',   // Arka kamera (VR için)
-    });
-
-    mpCamera.start()
-        .then(() => {
-            cameraActive = true;
-            video.style.display = 'block';
-            camHint.innerHTML   = '🏃 El salla → ileri yürü';
-            console.log('📷 [MP] Arka kamera el takibi başladı.');
-        })
-        .catch((err) => {
-            console.warn('📷 [MP] Kamera başlatılamadı:', err);
-            camHint.innerHTML = '⚠️ Kamera izni gerekli';
-        });
-}
-
-// ============================================================
-// KLAVYE (WASD)
-// ============================================================
-window.addEventListener('keydown', e => {
-    if (['w','a','s','d'].includes(e.key.toLowerCase())) state[e.key.toLowerCase()] = true;
-});
-window.addEventListener('keyup', e => {
-    if (['w','a','s','d'].includes(e.key.toLowerCase())) state[e.key.toLowerCase()] = false;
-});
-
-// ============================================================
-// DURUM GÖNDERİMİ  (30 kez/sn)
-// ============================================================
-setInterval(() => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        ws.send(JSON.stringify(state));
-    }
-}, 33);
-
-// ============================================================
-// SES SİSTEMİ  ← YENİ
-// Raw PCM Int16 → WebSocket binary → diğer istemciler
-// ============================================================
-function initAudio() {
-    try {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        console.log(`🔊 AudioContext başlatıldı. SampleRate: ${audioCtx.sampleRate} Hz`);
-    } catch (err) {
-        console.warn('Ses başlatılamadı:', err);
-    }
-}
-
-// ── KAYIT (Push-to-Talk) ──
-async function startMic() {
-    if (!audioCtx)   initAudio();
-    if (isTalking)   return;
-
-    try {
-        micStream = await navigator.mediaDevices.getUserMedia({
-            audio: {
-                channelCount:    1,
-                echoCancellation: true,
-                noiseSuppression: true,
-                autoGainControl:  true,
-            }
-        });
-
-        micSource    = audioCtx.createMediaStreamSource(micStream);
-        // ScriptProcessorNode: her 2048 örnekte bir callback
-        micProcessor = audioCtx.createScriptProcessor(2048, 1, 1);
-
-        micProcessor.onaudioprocess = (ev) => {
-            if (!isTalking || !ws || ws.readyState !== WebSocket.OPEN) return;
-
-            const f32 = ev.inputBuffer.getChannelData(0);
-            const i16 = new Int16Array(f32.length);
-            for (let i = 0; i < f32.length; i++) {
-                // Float32 [-1,1] → Int16 [-32768,32767]
-                i16[i] = Math.max(-32768, Math.min(32767, f32[i] * 32768));
-            }
-            ws.send(i16.buffer);   // Binary olarak gönder
+    <script>
+        let settings = {
+            temp: 0.7,
+            top_p: 0.95,
+            max_tokens: 256,
+            system: ""
         };
 
-        micSource.connect(micProcessor);
-        // Boş bir gain node'a bağla (lokal geri dönüşü önler)
-        const silentGain = audioCtx.createGain();
-        silentGain.gain.value = 0;
-        micProcessor.connect(silentGain);
-        silentGain.connect(audioCtx.destination);
+        let activeSearches = {
+            youtube: false,
+            wikipedia: false
+        };
 
-        isTalking = true;
-        document.getElementById('ptt-btn').classList.add('talking');
-        document.getElementById('mic-status').style.display = 'block';
-        console.log('🎤 Mikrofon açık.');
-
-    } catch (err) {
-        console.error('Mikrofon hatası:', err);
-        alert('Mikrofon izni gerekli! Tarayıcı ayarlarından izin verin.');
-    }
-}
-
-function stopMic() {
-    if (!isTalking) return;
-    isTalking = false;
-
-    if (micProcessor) { micProcessor.disconnect(); micProcessor = null; }
-    if (micSource)    { micSource.disconnect();    micSource    = null; }
-    if (micStream)    { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
-
-    document.getElementById('ptt-btn').classList.remove('talking');
-    document.getElementById('mic-status').style.display = 'none';
-    console.log('🔇 Mikrofon kapatıldı.');
-}
-
-// ── ÇALMA (gelen PCM Int16) ──
-function enqueuePCM(arrayBuffer) {
-    audioPlayQueue.push(arrayBuffer);
-    if (!isPlayingAudio) playNextPCM();
-}
-
-function playNextPCM() {
-    if (!audioCtx || audioPlayQueue.length === 0) {
-        isPlayingAudio = false;
-        return;
-    }
-    isPlayingAudio = true;
-
-    const buf = audioPlayQueue.shift();
-    try {
-        const i16   = new Int16Array(buf);
-        const f32   = new Float32Array(i16.length);
-        for (let i = 0; i < i16.length; i++) {
-            f32[i] = i16[i] / 32768;
+        // Google Auth
+        function handleCredentialResponse(response) {
+            console.log("Encoded JWT ID token: " + response.credential);
+            const payload = JSON.parse(atob(response.credential.split('.')[1]));
+            addMessage('ai', `Hoş geldin, ${payload.name}! Başarıyla giriş yaptın.`);
         }
 
-        const abuf = audioCtx.createBuffer(1, f32.length, audioCtx.sampleRate);
-        abuf.copyToChannel(f32, 0);
+        function toggleSidebar() {
+            document.getElementById('sidebar').classList.toggle('active');
+        }
 
-        const src  = audioCtx.createBufferSource();
-        src.buffer = abuf;
-        src.connect(audioCtx.destination);
-        src.onended = playNextPCM;
-        src.start(0);
-    } catch (err) {
-        console.warn('PCM çalma hatası:', err);
-        playNextPCM();
-    }
-}
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+        }
 
-// ── Push-to-Talk buton olayları ──
-const pttBtn = document.getElementById('ptt-btn');
+        function updateSetting(key, val) {
+            settings[key] = val;
+            document.getElementById(`val-${key}`).innerText = val;
+        }
 
-pttBtn.addEventListener('mousedown',  startMic);
-pttBtn.addEventListener('mouseup',    stopMic);
-pttBtn.addEventListener('mouseleave', stopMic);
+        function toggleSearch(type) {
+            activeSearches[type] = !activeSearches[type];
+            const btn = document.getElementById(`${type === 'youtube' ? 'yt' : 'wiki'}-toggle`);
+            if (activeSearches[type]) {
+                btn.classList.remove('bg-zinc-800', 'text-zinc-400');
+                btn.classList.add(type === 'youtube' ? 'bg-red-600' : 'bg-blue-600', 'text-white');
+            } else {
+                btn.classList.add('bg-zinc-800', 'text-zinc-400');
+                btn.classList.remove('bg-red-600', 'bg-blue-600', 'text-white');
+            }
+        }
 
-pttBtn.addEventListener('touchstart', (e) => {
-    e.stopPropagation();
-    startMic();
-}, { passive: true });
+        function addMessage(role, text) {
+            const history = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = `${role === 'user' ? 'user-message' : 'ai-message'} message-bubble`;
+            div.innerText = text;
+            history.appendChild(div);
+            history.scrollTop = history.scrollHeight;
+        }
 
-pttBtn.addEventListener('touchend', (e) => {
-    e.stopPropagation();
-    stopMic();
-}, { passive: true });
-</script>
+        async function sendMessage() {
+            const input = document.getElementById('user-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            addMessage('user', text);
+            input.value = '';
+            
+            // Mesaj gönderildi, backend entegrasyonu için hazır.
+            console.log("Mesaj gönderildi:", text, "Ayarlar:", settings, "Aramalar:", activeSearches);
+        }
+
+        function resetChat() {
+            document.getElementById('chat-history').innerHTML = `
+                <div class="ai-message message-bubble">
+                    Konuşma sıfırlandı. Yeni bir başlangıç yapabiliriz!
+                </div>
+            `;
+            toggleSidebar();
+        }
+
+        // Enter tuşu ile gönderme
+        document.getElementById('user-input').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
 </body>
 </html>
