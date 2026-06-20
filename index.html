@@ -1,222 +1,72 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cortex AI - Advanced</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style id="custom-styles">
-        :root {
-            --primary-color: #3b82f6;
-            --border-radius: 12px;
-            --font-family: 'Inter', sans-serif;
-            --bg-opacity: 1;
-            --blur-amount: 0px;
-        }
-        body { font-family: var(--font-family); background-color: #f4f4f5; color: #18181b; transition: all 0.3s ease; }
-        .dark-mode { background-color: #09090b; color: #f4f4f5; }
-        .glass-effect { background-color: rgba(255, 255, 255, var(--bg-opacity)) !important; backdrop-filter: blur(var(--blur-amount)); }
-        .dark-mode .glass-effect { background-color: rgba(24, 24, 27, var(--bg-opacity)) !important; }
-        .message-bubble { max-width: 85%; padding: 12px 16px; border-radius: var(--border-radius); margin-bottom: 16px; line-height: 1.6; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .user-message { background-color: var(--primary-color); color: white; align-self: flex-end; }
-        .ai-message { background-color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); align-self: flex-start; }
-        .dark-mode .ai-message { background-color: #18181b; }
-        .sidebar { width: 320px; height: 100vh; position: fixed; right: -320px; top: 0; background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.1); transition: right 0.3s ease; z-index: 50; padding: 20px; overflow-y: auto; }
-        .dark-mode .sidebar { background: #18181b; color: white; }
-        .sidebar.active { right: 0; }
-        .chat-container { max-width: 1000px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
-        .locked-feature { filter: grayscale(1); opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
-        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
-    </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>TUNCERLAB // AR TOUCH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
 </head>
-<body class="dark-mode">
+<body>
 
-    <div class="chat-container">
-        <!-- Header -->
-        <header class="flex items-center justify-between p-4 border-b border-zinc-800 glass-effect">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                    <i class="fas fa-brain text-white text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg leading-none">Cortex AI</h1>
-                    <span id="user-status" class="text-[10px] text-zinc-500 uppercase tracking-widest">Misafir</span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4">
-                <!-- Google Login Button -->
-                <div id="login-container">
-                    <div id="g_id_onload"
-                         data-client_id="397912151341-5q7naq4rb30e5nk7g4omhpp9klr5qi2d.apps.googleusercontent.com"
-                         data-callback="handleCredentialResponse"
-                         data-auto_prompt="false">
-                    </div>
-                    <div class="g_id_signin" data-type="icon" data-shape="circle"></div>
-                </div>
-                
-                <!-- User Profile (Hidden by default) -->
-                <div id="user-profile" class="hidden flex items-center gap-3">
-                    <img id="user-img" src="" class="user-avatar border border-zinc-700">
-                    <button onclick="logout()" class="text-xs text-red-500 hover:underline">Çıkış</button>
-                </div>
+  <!-- ============ KURULUM EKRANI ============ -->
+  <div id="setup-screen">
+    <div class="setup-card">
+      <div class="brand">
+        <span class="brand-mark">⌖</span>
+        <h1>TUNCER<span class="accent">LAB</span></h1>
+      </div>
+      <div class="brand-sub">AR TOUCH // EL TAKİP SİSTEMİ</div>
 
-                <button onclick="toggleSidebar()" class="w-10 h-10 flex items-center justify-center hover:bg-zinc-800 rounded-full transition">
-                    <i class="fas fa-sliders-h"></i>
-                </button>
-            </div>
-        </header>
+      <div class="divider"></div>
 
-        <!-- Chat History -->
-        <main id="chat-history" class="flex-1 overflow-y-auto p-6 flex flex-col space-y-2">
-            <div class="ai-message message-bubble glass-effect">
-                Merhaba! Ben Cortex. Tüm özellikleri kullanabilmek için lütfen giriş yapın.
-            </div>
-        </main>
+      <label class="field-label">SUNUCU ADRESİ (PC)</label>
+      <input id="ws-address" type="text" inputmode="url" placeholder="wss://192.168.1.X:8765" />
 
-        <!-- Input Area -->
-        <div class="p-4 glass-effect border-t border-zinc-800">
-            <div id="locked-overlay" class="flex gap-2 mb-3">
-                <button id="yt-toggle" onclick="toggleSearch('youtube')" class="locked-feature px-3 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 hover:text-red-500 transition-all">
-                    <i class="fab fa-youtube mr-1"></i> YouTube
-                </button>
-                <button id="wiki-toggle" onclick="toggleSearch('wikipedia')" class="locked-feature px-3 py-1 rounded-full bg-zinc-800 text-xs text-zinc-400 hover:text-blue-500 transition-all">
-                    <i class="fab fa-wikipedia-w mr-1"></i> Wikipedia
-                </button>
-                <span class="text-[10px] text-zinc-600 self-center italic">Giriş yapınca açılır</span>
-            </div>
-            <div class="relative flex items-center">
-                <textarea id="user-input" rows="1" class="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl py-4 px-5 pr-14 focus:outline-none focus:ring-2 focus:ring-blue-600 resize-none transition-all" placeholder="Mesajınızı buraya bırakın..."></textarea>
-                <button onclick="sendMessage()" class="absolute right-4 p-2 text-blue-500 hover:scale-110 transition-transform">
-                    <i class="fas fa-paper-plane text-lg"></i>
-                </button>
-            </div>
-        </div>
+      <button id="btn-connect" class="btn btn-outline">
+        <span class="btn-dot" id="conn-dot"></span> BAĞLAN
+      </button>
+
+      <div id="conn-status" class="status-line">BAĞLANTI YOK</div>
+
+      <div class="divider"></div>
+
+      <button id="btn-enter-vr" class="btn btn-solid" disabled>
+        VR MODUNA GİR
+      </button>
+
+      <div class="hint">
+        Telefonu Google Cardboard'a yerleştirmeden önce sensör izinlerini onayla.
+        PC'de <code>hand_tracker_server.py</code> çalışıyor olmalı.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ VR SAHNE ============ -->
+  <div id="vr-container">
+    <canvas id="vr-canvas"></canvas>
+
+    <div id="hud">
+      <div class="hud-corner hud-tl"><span id="hud-fps">0</span> FPS</div>
+      <div class="hud-corner hud-tr"><span id="hud-conn">●</span> <span id="hud-conn-text">OFFLINE</span></div>
+      <div class="hud-corner hud-bl">EL: <span id="hud-hands">0</span> &nbsp; HIZ: <span id="hud-speed">0.0</span> m/s</div>
+      <div class="hud-corner hud-br" id="hud-touch">—</div>
+      <div class="hud-center-line"></div>
+      <div id="hud-warning" class="hud-warning"></div>
     </div>
 
-    <!-- Sidebar / Customization -->
-    <div id="sidebar" class="sidebar">
-        <div class="flex justify-between items-center mb-8">
-            <h2 class="text-xl font-bold">Ayarlar</h2>
-            <button onclick="toggleSidebar()" class="text-zinc-500 hover:text-white"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="space-y-6">
-            <div>
-                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Görünüm</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="toggleDarkMode()" class="py-2 bg-zinc-800 rounded-lg text-xs">Mod Değiştir</button>
-                    <button onclick="resetStyles()" class="py-2 bg-zinc-800 rounded-lg text-xs">Sıfırla</button>
-                </div>
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Ana Renk</label>
-                <input type="color" onchange="updateStyle('--primary-color', this.value)" class="w-full h-10 rounded-lg overflow-hidden border-none bg-zinc-800 cursor-pointer">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-zinc-500 uppercase mb-3">Köşe Stili</label>
-                <select onchange="updateStyle('--border-radius', this.value)" class="w-full bg-zinc-800 p-2 rounded-lg text-xs">
-                    <option value="4px">Keskin</option>
-                    <option value="12px" selected>Standart</option>
-                    <option value="24px">Oval</option>
-                </select>
-            </div>
-        </div>
-    </div>
+    <button id="btn-exit-vr" aria-label="Çıkış">✕</button>
+  </div>
 
-    <script>
-        let activeSearches = { youtube: false, wikipedia: false };
-        let currentUser = JSON.parse(localStorage.getItem('cortex_user')) || null;
-
-        // Sayfa yüklendiğinde kullanıcıyı kontrol et
-        window.onload = () => {
-            if (currentUser) {
-                applyLoginState(currentUser);
-            }
-        };
-
-        function handleCredentialResponse(response) {
-            const payload = JSON.parse(atob(response.credential.split('.')[1]));
-            currentUser = {
-                name: payload.name,
-                email: payload.email,
-                picture: payload.picture,
-                id: payload.sub
-            };
-            localStorage.setItem('cortex_user', JSON.stringify(currentUser));
-            applyLoginState(currentUser);
-            addMessage('ai', `Hoş geldin ${currentUser.name}! Seni tanıdım, artık tüm özellikler aktif.`);
-        }
-
-        function applyLoginState(user) {
-            document.getElementById('login-container').classList.add('hidden');
-            document.getElementById('user-profile').classList.remove('hidden');
-            document.getElementById('user-img').src = user.picture;
-            document.getElementById('user-status').innerText = user.name;
-            
-            // Kilitli özellikleri aç
-            document.getElementById('yt-toggle').classList.remove('locked-feature');
-            document.getElementById('wiki-toggle').classList.remove('locked-feature');
-            document.querySelector('#locked-overlay span').classList.add('hidden');
-        }
-
-        function logout() {
-            localStorage.removeItem('cortex_user');
-            location.reload();
-        }
-
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('active'); }
-        function toggleDarkMode() { document.body.classList.toggle('dark-mode'); }
-        function updateStyle(p, v) { document.documentElement.style.setProperty(p, v); }
-        function resetStyles() { location.reload(); }
-
-        function toggleSearch(type) {
-            if (!currentUser) return;
-            activeSearches[type] = !activeSearches[type];
-            const btn = document.getElementById(`${type === 'youtube' ? 'yt' : 'wiki'}-toggle`);
-            btn.classList.toggle('bg-zinc-800');
-            btn.classList.toggle(type === 'youtube' ? 'bg-red-600/20' : 'bg-blue-600/20');
-            btn.classList.toggle(type === 'youtube' ? 'text-red-500' : 'text-blue-500');
-        }
-
-        function addMessage(role, text) {
-            const history = document.getElementById('chat-history');
-            const div = document.createElement('div');
-            div.className = `${role === 'user' ? 'user-message' : 'ai-message'} message-bubble glass-effect shadow-sm`;
-            div.innerText = text;
-            history.appendChild(div);
-            history.scrollTop = history.scrollHeight;
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById('user-input');
-            const text = input.value.trim();
-            if (!text) return;
-
-            addMessage('user', text);
-            input.value = '';
-            
-            try {
-                const response = await fetch('http://localhost:5000/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        message: text,
-                        user: currentUser, // Kullanıcı bilgilerini gönder
-                        searches: activeSearches
-                    })
-                });
-                const data = await response.json();
-                addMessage('ai', data.response);
-            } catch (error) {
-                addMessage('ai', "Hata: Sunucuya bağlanılamadı.");
-            }
-        }
-
-        document.getElementById('user-input').addEventListener('keypress', e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-        });
-    </script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
