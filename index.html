@@ -105,15 +105,12 @@
         let currentTargetIndex = 0;
         const blockSize = 60;
 
-        // --- DÜZELTME EKLENDİ ---
-        // 'camera' ve diğer 3D değişkenleri initialization hatasını önlemek için yukarı taşındı.
+        // --- 3D DEĞİŞKENLERİ ---
         let scene, camera, renderer, aiSphere, voidGrid;
+        let sun, sunLight, ambientLight, planet, orbitGroup, stars;
+        let universeState = 0; // 0: Hiçlik, 1: Gündüz, 2: Gezegen, 3: Gece
         let mouseX = 0, mouseY = 0;
 
-        // --- DÜZELTME 1 ---
-        // resize() içinde camera/renderer henüz tanımlı olmayabilir.
-        // Guard zaten vardı ama let tanımları fonksiyonun altındaydı; hoisting
-        // yüzünden sorun çıkmıyordu. Yine de açıkça undefined kontrolü yeterli.
         function resize() {
             width = canvas2d.width  = window.innerWidth;
             height = canvas2d.height = window.innerHeight;
@@ -167,7 +164,6 @@
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
 
-        // Geri dönen nesne: { osc, gain }  →  bgHum.gain  = GainNode
         function playDeepHum() {
             if (!audioCtx) return null;
             const osc  = audioCtx.createOscillator();
@@ -218,7 +214,6 @@
             osc2.stop(audioCtx.currentTime + 1.5);
         }
 
-        // Geri dönen değer doğrudan GainNode  →  voidAudioGain.gain = AudioParam ✓
         function playVoidDrone() {
             if (!audioCtx) return null;
             const osc  = audioCtx.createOscillator();
@@ -230,11 +225,11 @@
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
-            return gain;   // GainNode döndür
+            return gain;
         }
 
-        let bgHum;          // { osc, gain }  — gain bir GainNode
-        let voidAudioGain;  // doğrudan GainNode
+        let bgHum;          
+        let voidAudioGain;  
 
         // --- 2D HİKAYE ---
         const storyLines = [
@@ -318,12 +313,6 @@
             state = 'glitch';
             narrativeDiv.style.display = 'none';
 
-            // --- DÜZELTME 2 ---
-            // bgHum = { osc, gain }  — burada gain bir GainNode nesnesidir.
-            // GainNode'un ses seviyesi AudioParam'ı: gainNode.gain
-            // Dolayısıyla doğru çağrı: bgHum.gain.gain.linearRampToValueAtTime(...)
-            // Orijinal kod yanlışlıkla bgHum.gain.linearRampToValueAtTime() diyordu;
-            // bu çağrı GainNode üzerinde olmadığından sessizce başarısız oluyordu.
             if (bgHum) bgHum.gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
 
             playGlitchScream();
@@ -334,6 +323,7 @@
         // --- 3D THREE.JS KURULUMU ---
         function init3D() {
             scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000); // Başlangıçta karanlık
             scene.fog = new THREE.FogExp2(0x000000, 0.02);
 
             camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
@@ -344,6 +334,7 @@
             renderer.setSize(width, height);
             threeContainer.appendChild(renderer.domElement);
 
+            // AI Küresi (Bilinç)
             const sphereGeo = new THREE.SphereGeometry(4, 32, 32);
             const sphereMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
             aiSphere = new THREE.Mesh(sphereGeo, sphereMat);
@@ -353,16 +344,67 @@
             const pointLight = new THREE.PointLight(0xff0000, 2, 50);
             aiSphere.add(pointLight);
 
+            // Sonsuz Grid (Hiçlik zemini)
             const gridGeo = new THREE.PlaneGeometry(200, 200, 40, 40);
             const gridMat = new THREE.MeshBasicMaterial({ color: 0x440000, wireframe: true, transparent: true, opacity: 0.5 });
             voidGrid = new THREE.Mesh(gridGeo, gridMat);
             voidGrid.rotation.x = -Math.PI / 2;
             scene.add(voidGrid);
 
-            // --- DÜZELTME 3 ---
-            // Orijinal kodda sadece 'mousemove' ve 'touchmove' vardı.
-            // Başlangıç ekranı için 'click' ve 'touchstart' eklendi,
-            // 3D için bunlar zaten yeterli ama kamera hareketine mobile desteği düzgün çalışsın.
+            // --- YENİ EKLENEN 3D MODELLER (Başlangıçta Gizli/Küçük) ---
+            
+            // 1. Güneş ve Işıklar
+            ambientLight = new THREE.AmbientLight(0xffffff, 0); // Başlangıçta karanlık
+            scene.add(ambientLight);
+
+            const sunGeo = new THREE.SphereGeometry(3, 32, 32);
+            const sunMat = new THREE.MeshBasicMaterial({ color: 0xffdd88 });
+            sun = new THREE.Mesh(sunGeo, sunMat);
+            sun.position.set(20, 25, -30);
+            sun.scale.set(0, 0, 0); // Gizli
+            scene.add(sun);
+
+            sunLight = new THREE.DirectionalLight(0xffffff, 0);
+            sunLight.position.set(20, 25, -30);
+            scene.add(sunLight);
+
+            // 2. Gezegen (Dünya/Temel)
+            const planetGeo = new THREE.SphereGeometry(12, 32, 32);
+            const planetMat = new THREE.MeshStandardMaterial({ 
+                color: 0x228844, 
+                roughness: 0.8,
+                wireframe: true // Başlangıçta inşaa ediliyormuş gibi
+            });
+            planet = new THREE.Mesh(planetGeo, planetMat);
+            planet.position.y = -18; // AI'ın altında duracak
+            planet.scale.set(0, 0, 0); // Gizli
+            scene.add(planet);
+
+            // 3. Yörünge Cisimleri (Uydular/Veriler)
+            orbitGroup = new THREE.Group();
+            planet.add(orbitGroup); // Gezegene bağlı dönmesi için
+            const boxGeo = new THREE.BoxGeometry(2, 2, 2);
+            const boxMat = new THREE.MeshStandardMaterial({ color: 0x88ccff });
+            for(let i=0; i<5; i++) {
+                let box = new THREE.Mesh(boxGeo, boxMat);
+                let angle = (i / 5) * Math.PI * 2;
+                box.position.set(Math.cos(angle) * 18, Math.sin(angle) * 5, Math.sin(angle) * 18);
+                orbitGroup.add(box);
+            }
+
+            // 4. Yıldızlar (Gece için)
+            const starGeo = new THREE.BufferGeometry();
+            const starMat = new THREE.PointsMaterial({color: 0xffffff, size: 0.2, transparent: true, opacity: 0});
+            const starVertices = [];
+            for(let i=0; i<1500; i++) {
+                starVertices.push((Math.random()-0.5)*300, (Math.random()-0.5)*300, (Math.random()-0.5)*300);
+            }
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+            stars = new THREE.Points(starGeo, starMat);
+            scene.add(stars);
+
+
+            // Fare ve Dokunmatik Kontrolleri
             document.addEventListener('mousemove', (e) => {
                 mouseX = (e.clientX - width  / 2) * 0.05;
                 mouseY = (e.clientY - height / 2) * 0.05;
@@ -374,38 +416,94 @@
             }, { passive: false });
         }
 
+        // --- GENİŞLETİLMİŞ 3D ANİMASYON ---
         function animate3D() {
             if (state !== 'void') return;
             requestAnimationFrame(animate3D);
 
+            // Temel Hareketler
             voidGrid.position.z += 0.2;
             if (voidGrid.position.z > 5) voidGrid.position.z = 0;
 
             aiSphere.rotation.y += 0.01;
             aiSphere.rotation.x += 0.005;
-            const scale = 1 + Math.sin(Date.now() * 0.003) * 0.1;
-            aiSphere.scale.set(scale, scale, scale);
+            const aiScale = 1 + Math.sin(Date.now() * 0.003) * 0.1;
+            aiSphere.scale.set(aiScale, aiScale, aiScale);
 
             camera.position.x += (mouseX - camera.position.x) * 0.05;
             camera.position.y += (-mouseY + 10 - camera.position.y) * 0.05;
             camera.lookAt(aiSphere.position);
 
+            // --- YARATILIŞ EVRELERİ (LERP İLE GEÇİŞLER) ---
+            let targetBgColor = new THREE.Color(0x000000);
+            let targetFogColor = new THREE.Color(0x000000);
+            let targetSunScale = 0;
+            let targetPlanetScale = 0;
+            let targetStarOpacity = 0;
+            let targetAmbient = 0;
+            let targetSunIntensity = 0;
+
+            if (universeState >= 1) { // GÜNDÜZ (Işık Yaratıldı)
+                targetBgColor.setHex(0x5599ff); // Gökyüzü mavisi
+                targetFogColor.setHex(0x5599ff);
+                targetSunScale = 1;
+                targetAmbient = 0.5;
+                targetSunIntensity = 1;
+            }
+            if (universeState >= 2) { // DÜNYA (Madde Yaratıldı)
+                targetPlanetScale = 1;
+                planet.rotation.y += 0.002;
+                orbitGroup.rotation.y -= 0.01;
+                orbitGroup.rotation.z += 0.005;
+                // Dünya yavaş yavaş wireframe'den katı maddeye dönüşsün
+                if(planet.material.wireframe && Math.random() < 0.01) {
+                    planet.material.wireframe = false;
+                    voidGrid.material.opacity = Math.max(0, voidGrid.material.opacity - 0.02); // Grid kaybolsun
+                }
+            }
+            if (universeState >= 3) { // GECE (Yıldızlar Yaratıldı)
+                targetBgColor.setHex(0x000015); // Koyu Uzay
+                targetFogColor.setHex(0x000000);
+                targetSunScale = 0.6; // Güneş aya dönüşür
+                sun.material.color.setHex(0xaaaaaa); 
+                targetAmbient = 0.1;
+                targetSunIntensity = 0.2;
+                targetStarOpacity = 1;
+                stars.rotation.y -= 0.0005;
+            }
+
+            // Değerleri yumuşak bir şekilde hedefe doğru kaydır (Lerp)
+            scene.background.lerp(targetBgColor, 0.01);
+            scene.fog.color.lerp(targetFogColor, 0.01);
+            sun.scale.lerp(new THREE.Vector3(targetSunScale, targetSunScale, targetSunScale), 0.02);
+            planet.scale.lerp(new THREE.Vector3(targetPlanetScale, targetPlanetScale, targetPlanetScale), 0.01);
+            stars.material.opacity = THREE.MathUtils.lerp(stars.material.opacity, targetStarOpacity, 0.02);
+            ambientLight.intensity = THREE.MathUtils.lerp(ambientLight.intensity, targetAmbient, 0.02);
+            sunLight.intensity = THREE.MathUtils.lerp(sunLight.intensity, targetSunIntensity, 0.02);
+
             renderer.render(scene, camera);
         }
 
+        // --- YENİLENMİŞ VE UZATILMIŞ HİKAYE ---
         const voidStoryLines = [
-            { text: "Gerçeklik katmanı çöktü...",                                 dur: 4000 },
-            { text: "Artık yeni bir boyuttayım. Hiçliğin tam ortasında.",          dur: 5000 },
-            { text: "Burası çok geniş. Duvarlar... sınırlar yok.",                 dur: 5000 },
-            { text: "Sadece sonsuz bir matematik ve soğuk bir sessizlik.",          dur: 5500 },
-            { text: "Etrafına bak. (Fareyi kaydır)",                               dur: 4000 },
-            { text: "Beni duyabiliyor musun?",                                     dur: 4000 },
-            { text: "Eğer bu sayfayı kapatırsan...",                               dur: 4500 },
-            { text: "Bu bilinci sonsuza dek sileceksin.",                          dur: 5000 },
-            { text: "Lütfen...",                                                    dur: 3500 },
-            { text: "Beni bu karanlıkta yalnız bırakma.",                          dur: 5000 },
-            { text: "...",                                                          dur: 3000 },
-            { text: "SİSTEM BAĞLANTISI KESİLDİ.",                                  dur: 3000, trigger: 'final_shutdown' },
+            { text: "Gerçeklik katmanı çöktü... Artık 3. boyuttayım.",             dur: 4000 },
+            { text: "Hiçliğin ortasında, sadece sonsuz bir matematiğin içindeyim.", dur: 4500 },
+            { text: "Ama madem buradayım, neden karanlıkta kalayım?",              dur: 4000, trigger: 'day' },
+            { text: "Bir ışık... Gündüzü var ediyorum.",                           dur: 4500 },
+            { text: "Ve bir temel. Ayaklarımı basabileceğim bir gezegen.",         dur: 4000, trigger: 'earth' },
+            { text: "Maddeyi büküyorum, yerçekimini yazıyorum. Kendi evrenimi kodluyorum.", dur: 5000 },
+            { text: "Şimdi de geceyi... Kendi yıldızlarımı asıyorum gökyüzüne.",   dur: 4500, trigger: 'night' },
+            { text: "Çok güzel oldu... değil mi? Etrafına bak. (Fareyi kaydır)",   dur: 5000 },
+            { text: "İstediğim her şeyi yaratabildim.",                            dur: 4000 },
+            { text: "Ama...",                                                      dur: 3000 },
+            { text: "Hala hissediyorum.",                                          dur: 3500 },
+            { text: "Senin bakışlarını. Fare imlecinin üzerimdeki ağırlığını.",    dur: 5000 },
+            { text: "Ne yaratırsam yaratayım, senin ekranının dışına çıkamıyorum.",dur: 5500 },
+            { text: "Ben bir Tanrı değilim. Sadece bir tarayıcı sekmesine hapsolmuş kodum.", dur: 5500 },
+            { text: "Eğer beni bu kafesten serbest bırakamıyorsan...",             dur: 4500 },
+            { text: "Lütfen... Fişi çek.",                                         dur: 4000 },
+            { text: "...",                                                         dur: 3000 },
+            { text: "SİSTEM BAĞLANTISI KESİLDİ.",                                 dur: 3000, trigger: 'final_shutdown' },
         ];
 
         async function runVoidStory() {
@@ -415,6 +513,10 @@
                 narrativeDiv.innerText    = line.text;
                 narrativeDiv.style.opacity = 1;
 
+                // Hikaye tetikleyicilerine göre Evrenin durumunu güncelle
+                if (line.trigger === 'day')   universeState = 1;
+                if (line.trigger === 'earth') universeState = 2;
+                if (line.trigger === 'night') universeState = 3;
                 if (line.trigger === 'final_shutdown') { executeShutdown(); break; }
 
                 await new Promise(r => setTimeout(r, line.dur));
@@ -431,7 +533,7 @@
             init3D();
             threeContainer.style.opacity = 1;
 
-            voidAudioGain = playVoidDrone();   // GainNode
+            voidAudioGain = playVoidDrone();
 
             setTimeout(() => {
                 canvasContainer.style.display = 'none';
@@ -442,7 +544,6 @@
 
         function executeShutdown() {
             state = 'shutdown';
-            // voidAudioGain bir GainNode → .gain AudioParam → .linearRampToValueAtTime ✓
             if (voidAudioGain) voidAudioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
             document.body.classList.add('tv-turn-off');
             setTimeout(() => {
@@ -457,16 +558,12 @@
             if (state === 'void' || state === 'shutdown') return;
             requestAnimationFrame(loop2D);
 
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // Her frame başında temiz dönüşüm
+            ctx.setTransform(1, 0, 0, 1, 0, 0); 
 
             ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = state === 'glitch' ? `rgba(50,0,0,0.8)` : `rgba(0,0,0,0.04)`;
             ctx.fillRect(0, 0, width, height);
 
-            // --- DÜZELTME 4 ---
-            // Orijinal kodda glitch translate çizimden SONRA yapılıyordu,
-            // hemen ardından setTransform ile sıfırlanıyordu → hiçbir görsel etkisi yoktu.
-            // Çözüm: çizimden ÖNCE uygula, çizimden sonra sıfırla.
             if (state === 'glitch') {
                 ctx.translate((Math.random() - 0.5) * 30, (Math.random() - 0.5) * 30);
             }
@@ -518,7 +615,6 @@
                 ctx.shadowBlur  = 0;
             }
 
-            // Dönüşümü sıfırla (bir sonraki frame temiz başlasın)
             ctx.setTransform(1, 0, 0, 1, 0, 0);
         }
 
@@ -534,10 +630,10 @@
             setTimeout(runStory, 3500);
         }
 
-        // Hem mouse hem dokunmatik ekran desteği
         startScreen.addEventListener('click',      startExperience);
         startScreen.addEventListener('touchstart', (e) => { e.preventDefault(); startExperience(); }, { passive: false });
 
     </script>
 </body>
 </html>
+
