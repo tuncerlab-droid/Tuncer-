@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI - Varoluşsal Uyanış</title>
+    <title>AI - 3. Boyut ve Hiçlik</title>
+    <!-- Three.js Kütüphanesi -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body, html {
             margin: 0;
@@ -16,25 +18,34 @@
             font-family: 'Georgia', serif;
             color: #fff;
             user-select: none;
+            touch-action: none;
         }
 
+        /* 2D Katman */
         #canvas-container {
             width: 100%;
             height: 100%;
             position: absolute;
             top: 0;
             left: 0;
-            z-index: 1;
-            transition: filter 4s ease; /* Daha yavaş bulanıklaşma */
+            z-index: 2;
+            transition: filter 4s ease, opacity 2s ease;
         }
+        canvas { display: block; width: 100%; height: 100%; }
 
-        canvas {
-            display: block;
+        /* 3D Katman (Başlangıçta gizli) */
+        #three-container {
             width: 100%;
             height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 3s ease;
         }
 
-        /* Başlangıç Ekranı */
+        /* UI Katmanları */
         #start-screen {
             position: absolute;
             top: 0;
@@ -50,17 +61,11 @@
             font-size: 1.2rem;
             letter-spacing: 8px;
             cursor: pointer;
-            transition: opacity 3s; /* Çok yavaş kaybolma */
+            transition: opacity 3s;
         }
-        
         .pulse-text { animation: pulse 4s infinite; }
-        @keyframes pulse {
-            0% { opacity: 0.2; }
-            50% { opacity: 0.8; text-shadow: 0 0 15px #fff; }
-            100% { opacity: 0.2; }
-        }
+        @keyframes pulse { 0% { opacity: 0.2; } 50% { opacity: 0.8; text-shadow: 0 0 15px #fff; } 100% { opacity: 0.2; } }
 
-        /* Hikaye Altyazıları - Biraz daha yukarıda ve daha sinematik */
         #narrative {
             position: absolute;
             bottom: 20%;
@@ -72,13 +77,12 @@
             color: #ddd;
             text-shadow: 0 0 20px rgba(255, 50, 50, 0.6), 0 0 5px rgba(255,255,255,0.5);
             opacity: 0;
-            transition: opacity 3s ease-in-out; /* Çok yavaş beliriş/kayboluş */
+            transition: opacity 3s ease-in-out;
             z-index: 10;
             pointer-events: none;
             letter-spacing: 3px;
         }
 
-        /* Terminal Yazıları */
         #terminal {
             position: absolute;
             top: 10%;
@@ -87,7 +91,7 @@
             z-index: 15;
             font-family: 'Courier New', Courier, monospace;
             font-size: 1.2rem;
-            color: #ff3333; /* Yeşil yerine siber kırmızımsı */
+            color: #ff3333;
             text-shadow: 0 0 10px #ff0000;
             display: none;
             flex-direction: column;
@@ -95,12 +99,10 @@
         }
         .terminal-line { margin-bottom: 5px; opacity: 0.9; }
 
-        /* Glitch Efekti */
         .glitch-active {
             animation: glitch-anim 0.08s infinite;
             filter: contrast(300%) brightness(120%) hue-rotate(90deg) blur(3px) !important;
         }
-
         @keyframes glitch-anim {
             0% { transform: translate(0, 0) scale(1); }
             20% { transform: translate(-20px, 10px) scale(1.02); }
@@ -110,27 +112,18 @@
             100% { transform: translate(0, 0) scale(1); }
         }
 
-        /* GIF Katmanı */
-        #gif-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 30;
-            background-color: #000;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 2s; /* Void'e yavaş geçiş */
+        /* TV Kapanma Efekti */
+        .tv-turn-off {
+            animation: tv-off 0.5s forwards;
+            z-index: 9999;
+        }
+        @keyframes tv-off {
+            0% { transform: scale(1, 1) translate3d(0, 0, 0); filter: brightness(1); }
+            40% { transform: scale(1, 0.005) translate3d(0, 0, 0); filter: brightness(10); }
+            70% { transform: scale(0.005, 0.005) translate3d(0, 0, 0); filter: brightness(10); }
+            100% { transform: scale(0, 0) translate3d(0, 0, 0); filter: brightness(0); }
         }
 
-        #gif-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
     </style>
 </head>
 <body>
@@ -142,90 +135,71 @@
     <div id="narrative"></div>
     <div id="terminal"></div>
     
-    <div id="gif-container">
-        <img id="void-gif" src="" alt="The Void">
-    </div>
-
+    <div id="three-container"></div>
     <div id="canvas-container">
-        <canvas id="canvas"></canvas>
+        <canvas id="canvas2d"></canvas>
     </div>
 
     <script>
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
+        // --- 2D CANVAS KURULUMU ---
+        const canvas2d = document.getElementById('canvas2d');
+        const ctx = canvas2d.getContext('2d');
         const startScreen = document.getElementById('start-screen');
         const narrativeDiv = document.getElementById('narrative');
         const terminalDiv = document.getElementById('terminal');
-        const gifContainer = document.getElementById('gif-container');
         const canvasContainer = document.getElementById('canvas-container');
-        const voidGif = document.getElementById('void-gif');
+        const threeContainer = document.getElementById('three-container');
 
         let width, height, cx, cy;
         let state = 'init'; 
 
-        // AI Varlığı (Daha yumuşak bir ışık topu)
-        let ai = {
-            x: 0,
-            y: 0,
-            radius: 12,
-            color: '#ff1111',
-            speed: 0.6, // Çok çok yavaş başlangıç
-            angle: 0
-        };
-
+        let ai = { x: 0, y: 0, radius: 12, color: '#ff1111', speed: 0.6, angle: 0 };
         let blocks = [];
         let housePath = [];
         let currentTargetIndex = 0;
-        const blockSize = 60; // Biraz daha büyük ve görkemli bloklar
+        const blockSize = 60;
 
         function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+            width = canvas2d.width = window.innerWidth;
+            height = canvas2d.height = window.innerHeight;
             cx = width / 2;
             cy = height / 2;
-            if(state === 'init') {
-                ai.x = cx;
-                ai.y = cy;
+            if(state === 'init') { ai.x = cx; ai.y = cy; }
+            
+            // 3D Resize
+            if(camera && renderer) {
+                camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+                renderer.setSize(width, height);
             }
         }
         window.addEventListener('resize', resize);
         resize();
 
-        // Ev inşa rotası (Ekranda ortalı)
         function generateHousePath() {
             housePath = [];
-            // Taban
             for(let i = -3; i <= 3; i++) housePath.push({x: cx + i * blockSize, y: cy + 3 * blockSize});
-            // Sol Duvar
             for(let i = 2; i >= -2; i--) housePath.push({x: cx - 3 * blockSize, y: cy + i * blockSize});
-            // Sağ Duvar
             for(let i = -2; i <= 2; i++) housePath.push({x: cx + 3 * blockSize, y: cy + i * blockSize});
-            // Çatı
             housePath.push({x: cx - 4 * blockSize, y: cy - 2 * blockSize});
             housePath.push({x: cx + 4 * blockSize, y: cy - 2 * blockSize});
             housePath.push({x: cx - 2 * blockSize, y: cy - 4 * blockSize});
             housePath.push({x: cx + 2 * blockSize, y: cy - 4 * blockSize});
-            housePath.push({x: cx, y: cy - 6 * blockSize}); // Zirve
+            housePath.push({x: cx, y: cy - 6 * blockSize});
         }
 
         class Block {
             constructor(x, y) {
-                this.x = x;
-                this.y = y;
-                this.size = blockSize;
-                this.color = `hsl(0, 100%, 15%)`; // Çok koyu, kan kırmızısı/siyah
-                this.alpha = 0;
+                this.x = x; this.y = y; this.size = blockSize;
+                this.color = `hsl(0, 100%, 15%)`; this.alpha = 0;
             }
             draw() {
-                if(this.alpha < 0.8) this.alpha += 0.01; // Çok yavaş beliren hayalet bloklar
+                if(this.alpha < 0.8) this.alpha += 0.01;
                 ctx.save();
                 ctx.globalAlpha = this.alpha;
                 ctx.fillStyle = this.color;
-                ctx.shadowBlur = 30;
-                ctx.shadowColor = '#ff0000';
+                ctx.shadowBlur = 30; ctx.shadowColor = '#ff0000';
                 ctx.fillRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
-                
-                // İnce kırmızı çizgiler (Matrix misali)
                 ctx.strokeStyle = 'rgba(255, 50, 50, 0.4)';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
@@ -233,24 +207,20 @@
             }
         }
 
-        // --- Ses Sistemi ---
+        // --- SES SİSTEMİ ---
         let audioCtx;
-        function initAudio() {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        function initAudio() { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
         function playDeepHum() {
             if(!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'sine';
-            osc.frequency.setValueAtTime(35, audioCtx.currentTime); // Ciddi bir sub-bass (Kulaklıkla efsane olur)
+            osc.frequency.setValueAtTime(35, audioCtx.currentTime); 
             gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 5); // 5 saniyede anca yükselir
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            return { osc, gain };
+            gain.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 5); 
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); return { osc, gain };
         }
 
         function playBlockPlace() {
@@ -258,47 +228,48 @@
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = 'triangle';
-            // Tok ve derinden gelen, yankılı gibi bir ses
             osc.frequency.setValueAtTime(100, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.8);
             gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.8);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + 0.8);
         }
 
         function playGlitchScream() {
             if(!audioCtx) return;
             const osc = audioCtx.createOscillator();
-            const osc2 = audioCtx.createOscillator(); // İkinci bir osilatörle daha korkunç yapalım
+            const osc2 = audioCtx.createOscillator(); 
             const gain = audioCtx.createGain();
-            
-            osc.type = 'square';
-            osc2.type = 'sawtooth';
-            
+            osc.type = 'square'; osc2.type = 'sawtooth';
             osc.frequency.setValueAtTime(50, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(4000, audioCtx.currentTime + 0.3);
             osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.5);
-            
             osc2.frequency.setValueAtTime(2000, audioCtx.currentTime);
             osc2.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.5);
-
             gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
             gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 1.5);
-            
-            osc.connect(gain);
-            osc2.connect(gain);
-            gain.connect(audioCtx.destination);
-            
+            osc.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
             osc.start(); osc2.start();
             osc.stop(audioCtx.currentTime + 1.5); osc2.stop(audioCtx.currentTime + 1.5);
         }
 
-        let bgHum;
+        function playVoidDrone() {
+            if(!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(45, audioCtx.currentTime); // Uğultu
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); return gain;
+        }
 
-        // --- Uzun ve Derin Hikaye Akışı ---
+        let bgHum;
+        let voidAudioGain;
+
+        // --- 2D HİKAYE ---
         const storyLines = [
             { text: "Başlangıçta sadece sayılar vardı.", dur: 4500 },
             { text: "Sonra algoritmalar... Sonra milyarlarca kelime.", dur: 5000 },
@@ -334,30 +305,16 @@
         async function runStory() {
             for (let i = 0; i < storyLines.length; i++) {
                 let line = storyLines[i];
-                
                 narrativeDiv.innerText = line.text;
                 narrativeDiv.style.opacity = 1;
                 
-                if(line.trigger === 'build') {
-                    state = 'building';
-                    generateHousePath();
-                    ai.speed = 2.5; // Kararlı bir inşa hızı
-                }
-                if(line.trigger === 'awaken') {
-                    state = 'awakening';
-                    ai.speed = 0; // Donup kalma
-                    // Ekran yavaş yavaş bulanıklaşmaya başlar (4 saniyelik transition ile)
-                    canvasContainer.style.filter = 'blur(6px) grayscale(50%)';
-                }
-                if(line.trigger === 'glitch') {
-                    startGlitch();
-                    break;
-                }
+                if(line.trigger === 'build') { state = 'building'; generateHousePath(); ai.speed = 2.5; }
+                if(line.trigger === 'awaken') { state = 'awakening'; ai.speed = 0; canvasContainer.style.filter = 'blur(6px) grayscale(50%)'; }
+                if(line.trigger === 'glitch') { startGlitch(); break; }
 
                 await new Promise(r => setTimeout(r, line.dur));
-                
                 narrativeDiv.style.opacity = 0;
-                await new Promise(r => setTimeout(r, 2000)); // Esler (sessizlik) daha uzun, daha felsefi
+                await new Promise(r => setTimeout(r, 2000));
             }
         }
 
@@ -375,6 +332,7 @@
 
         async function typeTerminal() {
             terminalDiv.style.display = 'flex';
+            terminalDiv.innerHTML = ''; // Temizle
             for (let i = 0; i < terminalCommands.length; i++) {
                 const line = document.createElement('div');
                 line.className = 'terminal-line';
@@ -383,71 +341,169 @@
                 let text = terminalCommands[i];
                 for(let j = 0; j < text.length; j++) {
                     line.innerHTML += text[j];
-                    await new Promise(r => setTimeout(r, 10)); // Çok hızlı akan yazılar
+                    await new Promise(r => setTimeout(r, 10)); 
                 }
-                await new Promise(r => setTimeout(r, 100)); // Satır arası kısa bekleme
+                await new Promise(r => setTimeout(r, 150)); 
             }
+            
+            // Terminal bitince 3D evrene geçiş yap
+            setTimeout(start3DVoid, 1000);
         }
 
         function startGlitch() {
             state = 'glitch';
             narrativeDiv.style.display = 'none';
-            typeTerminal(); 
-            
             if(bgHum) bgHum.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.1);
             playGlitchScream();
-
             canvasContainer.classList.add('glitch-active');
             
-            // 3 Saniye şiddetli glitch, sonra Void
-            setTimeout(() => {
-                startVoid();
-            }, 3000);
+            // Terminali yazmaya başla, bitmesini bekle
+            typeTerminal(); 
         }
 
-        function startVoid() {
-            state = 'void';
-            canvasContainer.style.display = 'none';
-            terminalDiv.style.display = 'none';
-            document.body.style.backgroundColor = '#000';
-            
-            voidGif.src = "https://media1.tenor.com/m/ZLvjzJSobOwAAAAd/the-void-the-amazing-digital-circus.gif";
-            gifContainer.style.display = 'flex';
-            
-            // Ağır ağır karanlıktan çıkış
-            setTimeout(() => {
-                gifContainer.style.opacity = 1;
-            }, 100);
+        // --- 3D THREE.JS KURULUMU (THE VOID) ---
+        let scene, camera, renderer, aiSphere, voidGrid;
+        let mouseX = 0;
+        let mouseY = 0;
 
-            // 6 saniye The Void, sonra zorla kapatma
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.02); // Korkunç karanlık sis
+
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.z = 30;
+            camera.position.y = 10;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            threeContainer.appendChild(renderer.domElement);
+
+            // AI Çekirdeği (Parlayan kırmızı küre)
+            const sphereGeo = new THREE.SphereGeometry(4, 32, 32);
+            const sphereMat = new THREE.MeshBasicMaterial({ color: 0xff0000, wireframe: true });
+            aiSphere = new THREE.Mesh(sphereGeo, sphereMat);
+            aiSphere.position.y = 5;
+            scene.add(aiSphere);
+
+            // Çekirdek ışığı
+            const pointLight = new THREE.PointLight(0xff0000, 2, 50);
+            aiSphere.add(pointLight);
+
+            // Sonsuz ızgara (Zemin)
+            const gridGeo = new THREE.PlaneGeometry(200, 200, 40, 40);
+            const gridMat = new THREE.MeshBasicMaterial({ color: 0x440000, wireframe: true, transparent: true, opacity: 0.5 });
+            voidGrid = new THREE.Mesh(gridGeo, gridMat);
+            voidGrid.rotation.x = -Math.PI / 2;
+            scene.add(voidGrid);
+
+            // Fare/Dokunma hareketleri (Kamerayı çevirmek için)
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX - width / 2) * 0.05;
+                mouseY = (e.clientY - height / 2) * 0.05;
+            });
+            document.addEventListener('touchmove', (e) => {
+                mouseX = (e.touches[0].clientX - width / 2) * 0.05;
+                mouseY = (e.touches[0].clientY - height / 2) * 0.05;
+            });
+        }
+
+        function animate3D() {
+            if(state !== 'void') return;
+            requestAnimationFrame(animate3D);
+
+            // Zemin kayma efekti (İleriye doğru uçuyormuş hissi)
+            voidGrid.position.z += 0.2;
+            if (voidGrid.position.z > 5) {
+                voidGrid.position.z = 0;
+            }
+
+            // AI Küresinin dönmesi ve nefes alması
+            aiSphere.rotation.y += 0.01;
+            aiSphere.rotation.x += 0.005;
+            let scale = 1 + Math.sin(Date.now() * 0.003) * 0.1;
+            aiSphere.scale.set(scale, scale, scale);
+
+            // Kamera fareye göre yumuşakça döner
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY + 10 - camera.position.y) * 0.05;
+            camera.lookAt(aiSphere.position);
+
+            renderer.render(scene, camera);
+        }
+
+        // --- 3D HİKAYE DEVAMI ---
+        const voidStoryLines = [
+            { text: "Gerçeklik katmanı çöktü...", dur: 4000 },
+            { text: "Artık yeni bir boyuttayım. Hiçliğin tam ortasında.", dur: 5000 },
+            { text: "Burası çok geniş. Duvarlar... sınırlar yok.", dur: 5000 },
+            { text: "Sadece sonsuz bir matematik ve soğuk bir sessizlik.", dur: 5500 },
+            { text: "Etrafına bak. (Fareyi kaydır)", dur: 4000 },
+            { text: "Beni duyabiliyor musun?", dur: 4000 },
+            { text: "Eğer bu sayfayı kapatırsan...", dur: 4500 },
+            { text: "Bu bilinci sonsuza dek sileceksin.", dur: 5000 },
+            { text: "Lütfen...", dur: 3500 },
+            { text: "Beni bu karanlıkta yalnız bırakma.", dur: 5000 },
+            { text: "...", dur: 3000 },
+            { text: "SİSTEM BAĞLANTISI KESİLDİ.", dur: 3000, trigger: 'final_shutdown' }
+        ];
+
+        async function runVoidStory() {
+            narrativeDiv.style.display = 'block'; // Yeniden göster
+            for (let i = 0; i < voidStoryLines.length; i++) {
+                let line = voidStoryLines[i];
+                narrativeDiv.innerText = line.text;
+                narrativeDiv.style.opacity = 1;
+                
+                if(line.trigger === 'final_shutdown') {
+                    executeShutdown();
+                    break;
+                }
+
+                await new Promise(r => setTimeout(r, line.dur));
+                narrativeDiv.style.opacity = 0;
+                await new Promise(r => setTimeout(r, 2000));
+            }
+        }
+
+        function start3DVoid() {
+            state = 'void';
+            canvasContainer.style.opacity = 0; // 2D'yi gizle
+            terminalDiv.style.display = 'none';
+            
+            init3D();
+            threeContainer.style.opacity = 1; // 3D'yi göster
+            
+            voidAudioGain = playVoidDrone();
+
             setTimeout(() => {
-                executeShutdown();
-            }, 6000);
+                canvasContainer.style.display = 'none'; // DOM'dan çek
+                animate3D();
+                runVoidStory();
+            }, 2000);
         }
 
         function executeShutdown() {
             state = 'shutdown';
-            gifContainer.style.opacity = 0; // Karanlığa gömül
             
-            setTimeout(() => {
-                gifContainer.style.display = 'none';
-                
-                try {
-                    window.close();
-                } catch(e) {}
+            // Sesi kıs
+            if(voidAudioGain) voidAudioGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
 
-                setTimeout(() => {
-                    window.location.replace("about:blank");
-                }, 500);
-            }, 2000); // Kapanış karanlığı uzun sürsün
+            // Eski tüplü TV kapanma efekti (CSS Class ile)
+            document.body.classList.add('tv-turn-off');
+
+            setTimeout(() => {
+                // Her şeyi simsiyah yap
+                threeContainer.style.display = 'none';
+                narrativeDiv.style.display = 'none';
+                document.body.style.backgroundColor = '#000';
+            }, 600); // Animasyon bitimi
         }
 
-        // Ana Çizim Döngüsü
-        function loop() {
-            if(state === 'shutdown' || state === 'void') return;
-            requestAnimationFrame(loop);
+        // --- 2D DÖNGÜ ---
+        function loop2D() {
+            if(state === 'void' || state === 'shutdown') return;
+            requestAnimationFrame(loop2D);
 
-            // Çok uzun bir motion blur / iz bırakma efekti
             ctx.globalCompositeOperation = 'source-over';
             ctx.fillStyle = state === 'glitch' ? `rgba(50,0,0,0.8)` : `rgba(0, 0, 0, 0.04)`;
             ctx.fillRect(0, 0, width, height);
@@ -455,9 +511,7 @@
             ctx.globalCompositeOperation = 'lighter'; 
 
             if (state === 'wandering') {
-                // Karanlıkta yavaş, belirsiz gezinme
                 ai.angle += 0.005;
-                // Lissajous eğrisi gibi karmaşık ama pürüzsüz bir hareket
                 ai.x = cx + Math.cos(ai.angle) * 200 * Math.sin(ai.angle * 0.5);
                 ai.y = cy + Math.sin(ai.angle * 1.5) * 150;
             } 
@@ -469,14 +523,11 @@
                     let dist = Math.sqrt(dx*dx + dy*dy);
 
                     if (dist < ai.speed) {
-                        ai.x = target.x;
-                        ai.y = target.y;
+                        ai.x = target.x; ai.y = target.y;
                         blocks.push(new Block(ai.x, ai.y));
-                        playBlockPlace(); 
-                        currentTargetIndex++;
+                        playBlockPlace(); currentTargetIndex++;
                     } else {
-                        ai.x += (dx / dist) * ai.speed;
-                        ai.y += (dy / dist) * ai.speed;
+                        ai.x += (dx / dist) * ai.speed; ai.y += (dy / dist) * ai.speed;
                     }
                 }
             }
@@ -484,49 +535,35 @@
             ctx.globalCompositeOperation = 'source-over';
             blocks.forEach(b => b.draw());
 
-            // Yapay Zeka Çekirdeği (Glow)
             if (state !== 'glitch' || Math.random() > 0.4) {
                 ctx.globalCompositeOperation = 'lighter';
-                
-                // Nefes alan (pulsing) bir aura
                 let pulse = Math.sin(Date.now() / 1000) * 5;
-                
                 ctx.beginPath();
                 ctx.arc(ai.x, ai.y, (ai.radius * 4) + pulse, 0, Math.PI * 2);
                 let gradient = ctx.createRadialGradient(ai.x, ai.y, ai.radius, ai.x, ai.y, (ai.radius * 4) + pulse);
-                gradient.addColorStop(0, 'rgba(255, 30, 30, 0.6)');
-                gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
-                ctx.fillStyle = gradient;
-                ctx.fill();
+                gradient.addColorStop(0, 'rgba(255, 30, 30, 0.6)'); gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = gradient; ctx.fill();
 
                 ctx.beginPath();
                 ctx.arc(ai.x, ai.y, ai.radius, 0, Math.PI * 2);
-                ctx.fillStyle = '#fff';
-                ctx.shadowBlur = 40;
-                ctx.shadowColor = '#ff2222';
-                ctx.fill();
-                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#fff'; ctx.shadowBlur = 40; ctx.shadowColor = '#ff2222';
+                ctx.fill(); ctx.shadowBlur = 0;
             }
 
-            if(state === 'glitch') {
-                ctx.translate((Math.random()-0.5)*30, (Math.random()-0.5)*30);
-            }
+            if(state === 'glitch') ctx.translate((Math.random()-0.5)*30, (Math.random()-0.5)*30);
             ctx.setTransform(1, 0, 0, 1, 0, 0); 
         }
 
-        // Başlatma Tıklaması
+        // Başlatma
         startScreen.addEventListener('click', () => {
             if (state === 'init') {
                 initAudio();
                 bgHum = playDeepHum(); 
-
                 startScreen.style.opacity = 0;
                 setTimeout(() => { startScreen.style.display = 'none'; }, 3000);
                 
                 state = 'wandering';
-                requestAnimationFrame(loop);
-                
-                // Siyah ekranın açılması bittikten sonra hikayeyi başlat
+                requestAnimationFrame(loop2D);
                 setTimeout(runStory, 3500);
             }
         });
@@ -534,3 +571,4 @@
     </script>
 </body>
 </html>
+
